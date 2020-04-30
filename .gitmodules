@@ -1,0 +1,15 @@
+[submodule "third_party/googletest"]
+	path = third_party/googletest
+	url = https://github.com/google/googletest.git
+[submodule "third_party/takatori"]
+	path = third_party/takatori
+	url = git@github.com:project-tsurugi/takatori.git
+[submodule "third_party/yugawara"]
+	path = third_party/yugawara
+	url = git@github.com:project-tsurugi/yugawara.git
+[submodule "third_party/hopscotch-map"]
+	path = third_party/hopscotch-map
+	url = https://github.com/Tessil/hopscotch-map.git
+[submodule "third_party/shakujo"]
+	path = third_party/shakujo
+	url = git@github.com:project-tsurugi/shakujo.git
