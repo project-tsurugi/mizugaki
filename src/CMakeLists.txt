@@ -1,5 +1,26 @@
 add_library(mizugaki
-    deleteme.cpp
+
+    # common tools
+    mizugaki/document_map.cpp
+    mizugaki/placeholder_map.cpp
+    mizugaki/placeholder_entry.cpp
+
+    # shakujo IR translator
+    mizugaki/translator/shakujo_translator.cpp
+    mizugaki/translator/shakujo_translator_context.cpp
+    mizugaki/translator/shakujo_translator_result.cpp
+    mizugaki/translator/shakujo_translator_diagnostic.cpp
+    mizugaki/translator/shakujo_translator_impl.cpp
+    mizugaki/translator/shakujo_translator_context_impl.cpp
+    mizugaki/translator/details/relation_info.cpp
+    mizugaki/translator/details/variable_scope.cpp
+    mizugaki/translator/details/type_info_translator.cpp
+    mizugaki/translator/details/value_info_translator.cpp
+    mizugaki/translator/details/type_translator.cpp
+    mizugaki/translator/details/scalar_expression_translator.cpp
+    mizugaki/translator/details/relation_expression_translator.cpp
+    mizugaki/translator/details/aggregate_analyzer.cpp
+    mizugaki/translator/details/dml_statement_translator.cpp
 )
 
 target_include_directories(mizugaki

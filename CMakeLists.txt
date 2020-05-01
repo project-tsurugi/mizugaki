@@ -27,8 +27,12 @@ find_package(fpdecimal 3.68 REQUIRED)
 
 find_package(tsl-hopscotch-map 2.2 REQUIRED)
 
+set(Boost_USE_STATIC_LIBS OFF)
+set(Boost_USE_MULTITHREADED ON)
+set(Boost_USE_STATIC_RUNTIME OFF)
 find_package(Boost 1.65
     COMPONENTS container
+    COMPONENTS stacktrace_backtrace
     REQUIRED)
 
 find_package(Doxygen

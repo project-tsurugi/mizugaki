@@ -24,4 +24,10 @@ target_link_libraries(mizugaki-test-main
     PUBLIC gtest
 )
 
-add_test_executable(deleteme_test.cpp)
+add_test_executable(mizugaki/translator/shakujo_translator_test.cpp)
+add_test_executable(mizugaki/translator/details/type_info_translator_test.cpp)
+add_test_executable(mizugaki/translator/details/value_info_translator_test.cpp)
+add_test_executable(mizugaki/translator/details/type_translator_test.cpp)
+add_test_executable(mizugaki/translator/details/scalar_expression_translator_test.cpp)
+add_test_executable(mizugaki/translator/details/relation_expression_translator_test.cpp)
+add_test_executable(mizugaki/translator/details/dml_statement_translator_test.cpp)
