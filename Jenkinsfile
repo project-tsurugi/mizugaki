@@ -31,10 +31,10 @@ pipeline {
                 '''
             }
         }
-        stage ('Install fpdecimal') {
+        stage ('Install fpdecimal in yugawara') {
             steps {
                 sh '''
-                    cd third_party/takatori/third_party/fpdecimal
+                    cd third_party/yugawara/third_party/takatori/third_party/fpdecimal
                     git log -n 1 --format=%H
                     # git clean -dfx
                     mkdir -p build
@@ -46,10 +46,10 @@ pipeline {
                 '''
             }
         }
-        stage ('Install takatori') {
+        stage ('Install takatori in yugawara') {
             steps {
                 sh '''
-                    cd third_party/takatori
+                    cd third_party/yugawara/third_party/takatori
                     git log -n 1 --format=%H
                     # git clean -dfx
                     mkdir -p build

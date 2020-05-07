@@ -27,10 +27,6 @@ optional packages:
 
 ### Install sub-modules
 
-#### `third_party/takatori`
-
-see [README](https://github.com/project-tsurugi/takatori/blob/master/README.md).
-
 #### `third_party/yugawara`
 
 see [README](https://github.com/project-tsurugi/yugawara/blob/master/README.md).
