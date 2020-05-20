@@ -32,8 +32,6 @@ target_link_libraries(mizugaki
     PUBLIC takatori
     PUBLIC yugawara
     PUBLIC shakujo-model # FIXME:transitive
-    PRIVATE shakujo-analyzer # FIXME:transitive
-    PRIVATE shakujo-parser # FIXME:transitive
     PRIVATE tsl::hopscotch_map
 )
 
@@ -100,6 +98,4 @@ target_include_directories(mizugaki-impl
 target_link_libraries(mizugaki-impl
     INTERFACE mizugaki
     INTERFACE tsl::hopscotch_map
-    INTERFACE shakujo-analyzer # FIXME:transitive
-    INTERFACE shakujo-parser # FIXME:transitive
 )
