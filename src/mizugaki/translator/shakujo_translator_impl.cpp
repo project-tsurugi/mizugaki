@@ -120,8 +120,8 @@ impl& impl::initialize(
     context_ = context;
     documents_ = documents;
     placeholders_ = placeholders;
-    types_ = decltype(types_) { context.get_object_creator() };
-    values_ = decltype(values_) { context.get_object_creator() };
+    types_ = decltype(types_) { context.get_object_creator(), true };
+    values_ = decltype(values_) { context.get_object_creator(), true };
     return *this;
 }
 
