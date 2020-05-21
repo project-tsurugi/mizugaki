@@ -30,7 +30,6 @@
 namespace mizugaki::translator::details {
 
 using translator_type = shakujo_translator::impl;
-using options_type = shakujo_translator_options;
 using result_type = shakujo_translator_result;
 using diagnostic_type = shakujo_translator_diagnostic;
 using code_type = diagnostic_type::code_type;

@@ -15,7 +15,7 @@ using ::takatori::util::downcast;
 using ::takatori::util::finalizer;
 
 impl::result_type impl::operator()(
-        options_type& options,
+        options_type const& options,
         ::shakujo::model::statement::Statement const& statement,
         document_map const& documents,
         placeholder_map const& placeholders) {
@@ -27,10 +27,6 @@ impl::result_type impl::operator()(
         result = std::move(diagnostics_);
     }
     return result;
-}
-
-impl::options_type& shakujo_translator::impl::options() {
-    return *options_;
 }
 
 impl::options_type const& shakujo_translator::impl::options() const {
@@ -135,7 +131,7 @@ impl& impl::extract(shakujo_translator& interface) noexcept {
 }
 
 impl& impl::initialize(
-        options_type& options,
+        options_type const& options,
         document_map const& documents,
         placeholder_map const& placeholders) {
     options_ = options;

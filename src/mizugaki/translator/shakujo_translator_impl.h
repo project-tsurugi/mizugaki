@@ -27,12 +27,11 @@ public:
     using diagnostic_type = shakujo_translator::diagnostic_type;
 
     [[nodiscard]] result_type operator()(
-            options_type& options,
+            options_type const& options,
             ::shakujo::model::statement::Statement const& statement,
             document_map const& documents = {},
             placeholder_map const& placeholders = {});
 
-    [[nodiscard]] options_type& options();
     [[nodiscard]] options_type const& options() const;
     [[nodiscard]] ::takatori::util::object_creator object_creator() const;
 
@@ -57,7 +56,7 @@ public:
     [[nodiscard]] std::vector<std::shared_ptr<::yugawara::function::declaration const>>& function_buffer() noexcept;
 
     impl& initialize(
-            options_type& options,
+            options_type const& options,
             document_map const& documents = {},
             placeholder_map const& placeholders = {});
 
@@ -66,7 +65,7 @@ public:
     static impl& extract(shakujo_translator& interface) noexcept;
 
 private:
-    ::takatori::util::optional_ptr<options_type> options_;
+    ::takatori::util::optional_ptr<options_type const> options_;
     ::takatori::util::optional_ptr<document_map const> documents_;
     ::takatori::util::optional_ptr<placeholder_map const> placeholders_;
     std::vector<diagnostic_type> diagnostics_;

@@ -15,7 +15,7 @@ shakujo_translator::shakujo_translator(shakujo_translator&& other) noexcept = de
 shakujo_translator& shakujo_translator::operator=(shakujo_translator&& other) noexcept = default;
 
 shakujo_translator::result_type shakujo_translator::operator()(
-        options_type& options,
+        options_type const& options,
         ::shakujo::model::statement::Statement const& statement,
         document_map const& documents,
         placeholder_map const& placeholders) {

@@ -76,7 +76,7 @@ public:
      * @return invalid result if an error was occurred
      */
     [[nodiscard]] result_type operator()(
-            options_type& options,
+            options_type const& options,
             ::shakujo::model::statement::Statement const& statement,
             document_map const& documents = {},
             placeholder_map const& placeholders = {});
