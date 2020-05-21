@@ -17,7 +17,7 @@ shakujo_translator& shakujo_translator::operator=(shakujo_translator&& other) no
 shakujo_translator::result_type shakujo_translator::operator()(
         options_type const& options,
         ::shakujo::model::statement::Statement const& statement,
-        document_map const& documents,
+        ::takatori::document::document_map const& documents,
         placeholder_map const& placeholders) {
     auto&& this_impl = impl::extract(*this);
     return this_impl(options, statement, documents, placeholders);

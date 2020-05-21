@@ -8,8 +8,10 @@
 #include <takatori/statement/statement.h>
 #include <takatori/util/object_creator.h>
 
+#include <yugawara/diagnostic.h>
+
 #include "shakujo_translator_result_kind.h"
-#include "shakujo_translator_diagnostic.h"
+#include "shakujo_translator_code.h"
 
 namespace mizugaki::translator {
 
@@ -112,9 +114,12 @@ public:
     /// @brief the element kind.
     using kind_type = shakujo_translator_result_kind;
 
+    /// @brief the diagnostic information type.
+    using diagnostic_type = ::yugawara::diagnostic<shakujo_translator_code>;
+
     /// @brief the entity type
     using entity_type = std::variant<
-            std::vector<shakujo_translator_diagnostic>, // diagnostics
+            std::vector<diagnostic_type>, // diagnostics
             ::takatori::util::unique_object_ptr<::takatori::relation::graph_type>, // execution_plan
             ::takatori::util::unique_object_ptr<::takatori::statement::statement>>; // statement
 
@@ -136,7 +141,7 @@ public:
      * @brief creates a new instance.
      * @param element the diagnostics
      */
-    shakujo_translator_result(std::vector<shakujo_translator_diagnostic> element) noexcept; // NOLINT
+    shakujo_translator_result(std::vector<diagnostic_type> element) noexcept; // NOLINT
 
     /**
      * @brief creates a new instance.

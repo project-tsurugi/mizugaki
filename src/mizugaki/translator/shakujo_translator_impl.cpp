@@ -17,7 +17,7 @@ using ::takatori::util::finalizer;
 impl::result_type impl::operator()(
         options_type const& options,
         ::shakujo::model::statement::Statement const& statement,
-        document_map const& documents,
+        ::takatori::document::document_map const& documents,
         placeholder_map const& placeholders) {
     initialize(options, documents, placeholders);
     finalizer f { [this] { finalize(); } };
@@ -132,7 +132,7 @@ impl& impl::extract(shakujo_translator& interface) noexcept {
 
 impl& impl::initialize(
         options_type const& options,
-        document_map const& documents,
+        ::takatori::document::document_map const& documents,
         placeholder_map const& placeholders) {
     options_ = options;
     documents_ = documents;

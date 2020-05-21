@@ -28,7 +28,7 @@
 namespace mizugaki::translator {
 
 using namespace ::mizugaki::translator::testing;
-using code = shakujo_translator_diagnostic_code;
+using code = shakujo_translator_code;
 using result_kind = shakujo_translator::result_type::kind_type;
 
 namespace type = ::takatori::type;
@@ -75,7 +75,7 @@ public:
             {},
     };
     placeholder_map placeholders;
-    document_map documents;
+    ::takatori::document::document_map documents;
     ::shakujo::model::IRFactory ir;
     ::yugawara::binding::factory bindings { options.get_object_creator() };
 };

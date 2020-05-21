@@ -43,9 +43,9 @@ inline shakujo_translator_options new_options(
     };
 }
 
-inline optional_ptr<shakujo_translator_diagnostic const> occurred(
-        shakujo_translator_diagnostic_code code,
-        ::takatori::util::sequence_view<shakujo_translator_diagnostic const> diagnostics) {
+inline optional_ptr<::yugawara::diagnostic<shakujo_translator_code> const> occurred(
+        shakujo_translator_code code,
+        ::takatori::util::sequence_view<::yugawara::diagnostic<shakujo_translator_code> const> diagnostics) {
     for (auto&& d : diagnostics) {
         if (d.code() == code) {
             return d;

@@ -1,7 +1,6 @@
 add_library(mizugaki
 
     # common tools
-    mizugaki/document_map.cpp
     mizugaki/placeholder_map.cpp
     mizugaki/placeholder_entry.cpp
 
@@ -9,7 +8,6 @@ add_library(mizugaki
     mizugaki/translator/shakujo_translator.cpp
     mizugaki/translator/shakujo_translator_options.cpp
     mizugaki/translator/shakujo_translator_result.cpp
-    mizugaki/translator/shakujo_translator_diagnostic.cpp
     mizugaki/translator/shakujo_translator_impl.cpp
     mizugaki/translator/details/relation_info.cpp
     mizugaki/translator/details/variable_scope.cpp

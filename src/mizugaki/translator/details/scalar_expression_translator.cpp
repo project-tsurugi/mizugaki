@@ -35,12 +35,9 @@
 
 namespace mizugaki::translator::details {
 
-namespace {
-
 using translator_type = shakujo_translator::impl;
 using result_type = ::takatori::util::unique_object_ptr<::takatori::scalar::expression>;
-using diagnostic_type = shakujo_translator_diagnostic;
-using code_type = diagnostic_type::code_type;
+using code_type = shakujo_translator_code;
 
 using ::takatori::util::fail;
 using ::takatori::util::sequence_view;
@@ -49,6 +46,8 @@ using ::takatori::util::unsafe_downcast;
 
 namespace scalar = ::takatori::scalar;
 namespace extension = ::yugawara::extension;
+
+namespace {
 
 template<class T>
 class complement {
@@ -216,14 +215,7 @@ public:
             auto r = analyzer.resolve(e, false, translator_.types());
             if (analyzer.has_diagnostics()) {
                 for (auto&& d : analyzer.diagnostics()) {
-                    translator_.diagnostics().emplace_back(
-                            code_type::type_error,
-                            string_builder {}
-                                    << d.code()
-                                    << ": " << d.actual_type()
-                                    << ", expected " << d.expected_categories()
-                                    << string_builder::to_string,
-                            d.region());
+                    translator_.diagnostics().emplace_back(convert(d.code()), d.message(), d.location());
                 }
                 return {};
             }
@@ -493,6 +485,19 @@ private:
             }
         }
         return candidates[result_at];
+    }
+
+    static code_type convert(::yugawara::analyzer::expression_analyzer_code code) noexcept {
+        using kind = decltype(code);
+        switch (code) {
+            case kind::unknown: return code_type::unknown;
+            case kind::unsupported_type: return code_type::unsupported_type;
+            case kind::ambiguous_type: return code_type::ambiguous_type;
+            case kind::inconsistent_type: return code_type::inconsistent_type;
+            case kind::unresolved_variable: return code_type::unresolved_variable;
+            case kind::inconsistent_number_of_elements: return code_type::inconsistent_number_of_elements;
+        }
+        fail();
     }
 };
 

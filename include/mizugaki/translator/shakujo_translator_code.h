@@ -1,27 +1,55 @@
 #pragma once
 
+#include <iostream>
+#include <string>
+#include <string_view>
+
 namespace mizugaki::translator {
 
 /**
  * @brief represents diagnostic code of IR translator.
  */
-enum class shakujo_translator_diagnostic_code {
+enum class shakujo_translator_code {
     /// @brief unknown diagnostic.
     unknown = 0,
+    /// @brief the input type is not supported.
     unsupported_type,
+    /// @brief the input value is not supported.
     unsupported_value,
+    /// @brief the input statement is not supported.
     unsupported_statement,
+    /// @brief the input scalar expression is not supported.
     unsupported_scalar_expression,
+    /// @brief the input relation expression is not supported.
     unsupported_relational_operator,
+
+    /// @brief there is no such the table.
     table_not_found,
+    /// @brief there is no such the column.
     column_not_found,
+    /// @brief there is no such the variable.
     variable_not_found,
+    /// @brief there is no such the function.
     function_not_found,
+
+    /// @brief there are ambiguous function overloads.
     function_ambiguous,
+
+    /// @brief mismatch table.
     inconsistent_table,
+    /// @brief mismatch table columns.
     inconsistent_columns,
+    /// @brief aggregation target column exists at wrong position.
     invalid_aggregation_column,
-    type_error,
+
+    /// @brief input type is not distinguished for the overloaded operations.
+    ambiguous_type,
+    /// @brief the set of type input is inconsistent for this operation.
+    inconsistent_type,
+    /// @brief the referring variable is not resolved.
+    unresolved_variable,
+    /// @brief the number of values is wrong.
+    inconsistent_number_of_elements,
 };
 
 /**
@@ -29,9 +57,9 @@ enum class shakujo_translator_diagnostic_code {
  * @param value the target value
  * @return the corresponded string representation
  */
-inline constexpr std::string_view to_string_view(shakujo_translator_diagnostic_code value) noexcept {
+inline constexpr std::string_view to_string_view(shakujo_translator_code value) noexcept {
     using namespace std::string_view_literals;
-    using kind = shakujo_translator_diagnostic_code;
+    using kind = shakujo_translator_code;
     switch (value) {
         case kind::unknown: return "unknown"sv;
         case kind::unsupported_type: return "unsupported_type"sv;
@@ -47,7 +75,10 @@ inline constexpr std::string_view to_string_view(shakujo_translator_diagnostic_c
         case kind::inconsistent_table: return "inconsistent_table"sv;
         case kind::inconsistent_columns: return "inconsistent_columns"sv;
         case kind::invalid_aggregation_column: return "invalid_aggregation_column"sv;
-        case kind::type_error: return "type_error"sv;
+        case kind::ambiguous_type: return "ambiguous_type"sv;
+        case kind::inconsistent_type: return "inconsistent_type"sv;
+        case kind::unresolved_variable: return "unresolved_variable"sv;
+        case kind::inconsistent_number_of_elements: return "inconsistent_number_of_elements"sv;
     }
     std::abort();
 }
@@ -58,7 +89,7 @@ inline constexpr std::string_view to_string_view(shakujo_translator_diagnostic_c
  * @param value the target value
  * @return the output
  */
-inline std::ostream& operator<<(std::ostream& out, shakujo_translator_diagnostic_code value) {
+inline std::ostream& operator<<(std::ostream& out, shakujo_translator_code value) {
     return out << to_string_view(value);
 }
 

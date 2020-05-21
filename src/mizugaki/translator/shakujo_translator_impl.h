@@ -29,7 +29,7 @@ public:
     [[nodiscard]] result_type operator()(
             options_type const& options,
             ::shakujo::model::statement::Statement const& statement,
-            document_map const& documents = {},
+            ::takatori::document::document_map const& documents = {},
             placeholder_map const& placeholders = {});
 
     [[nodiscard]] options_type const& options() const;
@@ -57,7 +57,7 @@ public:
 
     impl& initialize(
             options_type const& options,
-            document_map const& documents = {},
+            ::takatori::document::document_map const& documents = {},
             placeholder_map const& placeholders = {});
 
     void finalize();
@@ -66,7 +66,7 @@ public:
 
 private:
     ::takatori::util::optional_ptr<options_type const> options_;
-    ::takatori::util::optional_ptr<document_map const> documents_;
+    ::takatori::util::optional_ptr<::takatori::document::document_map const> documents_;
     ::takatori::util::optional_ptr<placeholder_map const> placeholders_;
     std::vector<diagnostic_type> diagnostics_;
 

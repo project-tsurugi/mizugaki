@@ -4,7 +4,7 @@ namespace mizugaki::translator {
 
 using ::takatori::util::unique_object_ptr;
 
-shakujo_translator_result::shakujo_translator_result(std::vector<shakujo_translator_diagnostic> element) noexcept
+shakujo_translator_result::shakujo_translator_result(std::vector<diagnostic_type> element) noexcept
     : entity_(std::in_place_index<static_cast<std::size_t>(kind_type::diagnostics)>, std::move(element))
 {}
 

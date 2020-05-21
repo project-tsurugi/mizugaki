@@ -3,16 +3,18 @@
 #include <memory>
 
 #include <takatori/document/document.h>
+#include <takatori/document/document_map.h>
 
 #include <takatori/util/optional_ptr.h>
 
+#include <yugawara/diagnostic.h>
+
 #include <shakujo/model/statement/Statement.h>
 
-#include <mizugaki/document_map.h>
 #include <mizugaki/placeholder_map.h>
 
 #include "shakujo_translator_options.h"
-#include "shakujo_translator_diagnostic.h"
+#include "shakujo_translator_code.h"
 #include "shakujo_translator_result.h"
 
 namespace mizugaki::translator {
@@ -32,7 +34,7 @@ public:
     using result_type = shakujo_translator_result;
 
     /// @brief the diagnostic information type.
-    using diagnostic_type = shakujo_translator_diagnostic;
+    using diagnostic_type = result_type::diagnostic_type;
 
     /**
      * @brief creates a new instance.
@@ -78,7 +80,7 @@ public:
     [[nodiscard]] result_type operator()(
             options_type const& options,
             ::shakujo::model::statement::Statement const& statement,
-            document_map const& documents = {},
+            ::takatori::document::document_map const& documents = {},
             placeholder_map const& placeholders = {});
 
 private:

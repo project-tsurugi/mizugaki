@@ -34,7 +34,7 @@
 namespace mizugaki::translator::details {
 
 using namespace ::mizugaki::translator::testing;
-using code = shakujo_translator_diagnostic_code;
+using code = shakujo_translator_code;
 
 namespace type = ::takatori::type;
 namespace value = ::takatori::value;
@@ -351,7 +351,7 @@ TEST_F(scalar_expression_translator_test, function_call_child_error) {
                     f.Literal(tinfo::Null(), vinfo::Null())));
     auto r = engine.process(*s, { options, {} });
     ASSERT_FALSE(r);
-    EXPECT_TRUE(occurred(code::type_error, entry.diagnostics()));
+    EXPECT_TRUE(occurred(code::ambiguous_type, entry.diagnostics()));
 }
 
 TEST_F(scalar_expression_translator_test, aggregate_function_call_quantifier_absent) {

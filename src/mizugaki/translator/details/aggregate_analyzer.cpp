@@ -11,14 +11,14 @@
 #include <takatori/util/string_builder.h>
 
 #include <yugawara/binding/factory.h>
+#include <yugawara/binding/extract.h>
 
 #include <yugawara/extension/scalar/aggregate_function_call.h>
 
 namespace mizugaki::translator::details {
 
 using translator_type = shakujo_translator::impl;
-using diagnostic_type = shakujo_translator_diagnostic;
-using code_type = diagnostic_type::code_type;
+using code_type = shakujo_translator_code;
 
 namespace descriptor = ::takatori::descriptor;
 namespace scalar = ::takatori::scalar;
@@ -177,8 +177,7 @@ private:
 
     void resolve(descriptor::variable const& variable, descriptor::aggregate_function const& desc) {
         auto&& e = translator_.expression_analyzer();
-        auto&& info = ::yugawara::binding::unwrap(desc);
-        e.variables().bind(variable, info.declaration(), true);
+        e.variables().bind(variable, ::yugawara::binding::extract(desc), true);
     }
 
     void consume(object_ownership_reference<scalar::expression> expr) {

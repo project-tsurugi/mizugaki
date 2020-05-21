@@ -19,7 +19,7 @@
 namespace mizugaki::translator::details {
 
 using namespace ::mizugaki::translator::testing;
-using code = shakujo_translator_diagnostic_code;
+using code = shakujo_translator_code;
 
 namespace tv = ::takatori::value;
 

@@ -15,8 +15,7 @@ namespace value = ::takatori::value;
 
 using translator_type = shakujo_translator::impl;
 using result_type = std::shared_ptr<::takatori::value::data>;
-using diagnostic_type = shakujo_translator_diagnostic;
-using code_type = diagnostic_type::code_type;
+using code_type = shakujo_translator_code;
 
 using ::takatori::util::string_builder;
 

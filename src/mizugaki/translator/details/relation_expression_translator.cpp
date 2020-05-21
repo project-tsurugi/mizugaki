@@ -33,8 +33,7 @@ namespace mizugaki::translator::details {
 
 using translator_type = shakujo_translator::impl;
 using result_type = ::takatori::util::optional_ptr<::takatori::relation::expression::output_port_type>;
-using diagnostic_type = shakujo_translator_diagnostic;
-using code_type = diagnostic_type::code_type;
+using code_type = shakujo_translator_code;
 
 using ::takatori::util::fail;
 using ::takatori::util::optional_ptr;
