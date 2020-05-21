@@ -252,14 +252,14 @@ public:
         object_vector<write::tuple> tuples { translator_.object_creator().allocator() };
         tuples.emplace_back(std::move(tuple));
 
-        std::unique_ptr<::takatori::statement::statement> result = std::make_unique<write>(
+        auto result = create<write>(
                 ::takatori::statement::write_kind::insert,
                 factory()(*index),
                 std::move(columns),
                 std::move(tuples));
         result->region() = translator_.region(node.region());
 
-        return std::move(result);
+        return { std::move(result) };
     }
 
 private:
@@ -273,8 +273,8 @@ private:
         return {};
     }
 
-    [[nodiscard]] std::unique_ptr<relation::graph_type> new_graph() const {
-        return std::make_unique<relation::graph_type>(translator_.object_creator());
+    [[nodiscard]] unique_object_ptr<relation::graph_type> new_graph() const {
+        return create<relation::graph_type>(translator_.object_creator());
     }
 
     template<class T>
@@ -282,6 +282,11 @@ private:
         object_vector<T> result { translator_.object_creator().allocator() };
         result.reserve(capacity);
         return result;
+    }
+
+    template<class T, class... Args>
+    [[nodiscard]] unique_object_ptr<T> create(Args&&... args) const {
+        return translator_.object_creator().create_unique<T>(std::forward<Args>(args)...);
     }
 
     [[nodiscard]] ::yugawara::binding::factory factory() const noexcept {
