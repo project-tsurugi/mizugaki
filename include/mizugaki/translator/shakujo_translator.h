@@ -11,7 +11,7 @@
 #include <mizugaki/document_map.h>
 #include <mizugaki/placeholder_map.h>
 
-#include "shakujo_translator_context.h"
+#include "shakujo_translator_options.h"
 #include "shakujo_translator_diagnostic.h"
 #include "shakujo_translator_result.h"
 
@@ -25,8 +25,8 @@ public:
     /// @private
     class impl;
 
-    /// @brief the context type.
-    using context_type = shakujo_translator_context;
+    /// @brief the options type.
+    using options_type = shakujo_translator_options;
 
     /// @brief the result type.
     using result_type = shakujo_translator_result;
@@ -68,7 +68,7 @@ public:
      *
      *      If error occurred during translation, this function will return an invalid result.
      *
-     * @param context the translation context
+     * @param options the translation options
      * @param statement the translation target
      * @param documents the source document map
      * @param placeholders the placeholder map
@@ -76,7 +76,7 @@ public:
      * @return invalid result if an error was occurred
      */
     [[nodiscard]] result_type operator()(
-            context_type& context,
+            options_type& options,
             ::shakujo::model::statement::Statement const& statement,
             document_map const& documents = {},
             placeholder_map const& placeholders = {});

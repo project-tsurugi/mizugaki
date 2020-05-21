@@ -68,7 +68,7 @@ public:
     });
 
     shakujo_translator translator;
-    shakujo_translator_context context {
+    shakujo_translator_options options {
             storages,
             {},
             {},
@@ -77,12 +77,12 @@ public:
     placeholder_map placeholders;
     document_map documents;
     ::shakujo::model::IRFactory ir;
-    ::yugawara::binding::factory bindings { context.get_object_creator() };
+    ::yugawara::binding::factory bindings { options.get_object_creator() };
 };
 
 TEST_F(shakujo_translator_test, plan) {
     auto s = ir.EmitStatement(ir.ScanExpression(ir.Name("T0")));
-    auto r = translator(context, *s, documents, placeholders);
+    auto r = translator(options, *s, documents, placeholders);
     ASSERT_EQ(r.kind(), result_kind::execution_plan);
 
     auto ptr = r.release<result_kind::execution_plan>();
@@ -109,7 +109,7 @@ TEST_F(shakujo_translator_test, statement) {
                     ir.InsertValuesStatementColumn(ir.Name("C1"), ir.Literal(tinfo::Int(32), 1)),
                     ir.InsertValuesStatementColumn(ir.Name("C2"), ir.Literal(tinfo::Int(32), 2)),
             });
-    auto r = translator(context, *s, documents, placeholders);
+    auto r = translator(options, *s, documents, placeholders);
     ASSERT_EQ(r.kind(), result_kind::statement);
 
     auto ptr = r.release<result_kind::statement>();
@@ -132,7 +132,7 @@ TEST_F(shakujo_translator_test, statement) {
 
 TEST_F(shakujo_translator_test, diagnostics) {
     auto s = ir.EmitStatement(ir.ScanExpression(ir.Name("MISSING")));
-    auto r = translator(context, *s, documents, placeholders);
+    auto r = translator(options, *s, documents, placeholders);
     ASSERT_EQ(r.kind(), result_kind::diagnostics);
 
     auto v = r.release<result_kind::diagnostics>();
@@ -154,7 +154,7 @@ TEST_F(shakujo_translator_test, document) {
     });
 
     auto s = ir.EmitStatement(ir.ScanExpression(std::move(name)));
-    auto r = translator(context, *s, documents, placeholders);
+    auto r = translator(options, *s, documents, placeholders);
     ASSERT_EQ(r.kind(), result_kind::diagnostics);
 
     auto v = r.release<result_kind::diagnostics>();
@@ -176,7 +176,7 @@ TEST_F(shakujo_translator_test, placeholder) {
                     ir.InsertValuesStatementColumn(ir.Name("C1"), ir.Placeholder("p1")),
                     ir.InsertValuesStatementColumn(ir.Name("C2"), ir.Placeholder("p2")),
             });
-    auto r = translator(context, *s, documents, placeholders);
+    auto r = translator(options, *s, documents, placeholders);
     ASSERT_EQ(r.kind(), result_kind::statement);
 
     auto ptr = r.release<result_kind::statement>();

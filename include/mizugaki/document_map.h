@@ -10,7 +10,7 @@
 namespace mizugaki {
 
 /**
- * @brief provides of documents.
+ * @brief provides documents.
  */
 class document_map {
 public:

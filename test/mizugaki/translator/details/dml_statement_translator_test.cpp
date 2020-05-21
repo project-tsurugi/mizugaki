@@ -97,11 +97,11 @@ public:
     });
 
     shakujo_translator::impl entry { new_translator_impl() };
-    shakujo_translator_context::impl context { new_context_impl(storages) };
-    dml_statement_translator engine { entry.initialize(context) };
+    shakujo_translator_options options { new_options(storages) };
+    dml_statement_translator engine { entry.initialize(options) };
 
     ::shakujo::model::IRFactory ir;
-    ::yugawara::binding::factory bindings { context.get_object_creator() };
+    ::yugawara::binding::factory bindings { options.get_object_creator() };
 };
 
 TEST_F(dml_statement_translator_test, emit) {

@@ -30,7 +30,7 @@
 namespace mizugaki::translator::details {
 
 using translator_type = shakujo_translator::impl;
-using context_type = shakujo_translator_context::impl;
+using options_type = shakujo_translator_options;
 using result_type = shakujo_translator_result;
 using diagnostic_type = shakujo_translator_diagnostic;
 using code_type = diagnostic_type::code_type;
@@ -244,7 +244,7 @@ public:
             columns.emplace_back(factory()(*c));
 
             scalar_expression_translator t { translator_ };
-            auto v = t.process(*column->value(), { translator_.context(), {} });
+            auto v = t.process(*column->value(), { translator_.options(), {} });
             if (!v) return {};
 
             tuple.elements().push_back(std::move(v));
@@ -290,7 +290,7 @@ private:
     }
 
     [[nodiscard]] optional_ptr<::yugawara::storage::index const> find_table(::shakujo::model::name::Name const* name) {
-        auto&& index = translator_.context().find_table(*name);
+        auto&& index = translator_.find_table(*name);
         if (!index) {
             report(code_type::table_not_found, *name, string_builder {}
                     << "table `" << *name << "' is not found");
@@ -348,7 +348,7 @@ private:
             relation_info const& relation,
             unique_object_ptr<::takatori::relation::project>& projection) const {
         scalar_expression_translator scalars { translator_ };
-        auto v = scalars.process(node, { translator_.context(), relation });
+        auto v = scalars.process(node, { translator_.options(), relation });
         if (!v) return {};
 
         // return variable directly if it is just a variable reference

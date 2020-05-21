@@ -49,18 +49,21 @@ using quantifier = ::yugawara::aggregate::set_quantifier;
 
 class scalar_expression_translator_test : public ::testing::Test {
 public:
+    std::shared_ptr<::yugawara::function::configurable_provider> functions = std::make_shared<::yugawara::function::configurable_provider>();
+    std::shared_ptr<::yugawara::aggregate::configurable_provider> aggregates = std::make_shared<::yugawara::aggregate::configurable_provider>();
+
     shakujo_translator::impl entry { new_translator_impl() };
-    shakujo_translator_context::impl context { new_context_impl() };
+    shakujo_translator_options options { new_options({}, {}, functions, aggregates) };
     placeholder_map placeholders;
-    scalar_expression_translator engine { entry.initialize(context, {}, placeholders) };
+    scalar_expression_translator engine { entry.initialize(options, {}, placeholders) };
 
     ::shakujo::model::IRFactory f;
-    ::yugawara::binding::factory bindings { context.get_object_creator() };
+    ::yugawara::binding::factory bindings { options.get_object_creator() };
 };
 
 TEST_F(scalar_expression_translator_test, literal) {
     auto s = f.Literal(tinfo::Int(32), vinfo::Int(100));
-    auto r = engine.process(*s, { context, {} });
+    auto r = engine.process(*s, { options, {} });
     ASSERT_TRUE(r);
     EXPECT_EQ(*r, scalar::immediate(value::int4(100), type::int4()));
 }
@@ -71,14 +74,14 @@ TEST_F(scalar_expression_translator_test, variable_reference) {
     relation.add_column(v, "x");
 
     auto s = f.VariableReference(f.Name("x"));
-    auto r = engine.process(*s, { context, relation });
+    auto r = engine.process(*s, { options, relation });
     ASSERT_TRUE(r);
     EXPECT_EQ(*r, scalar::variable_reference(v));
 }
 
 TEST_F(scalar_expression_translator_test, variable_reference_missing) {
     auto s = f.VariableReference(f.Name("x"));
-    auto r = engine.process(*s, { context, {} });
+    auto r = engine.process(*s, { options, {} });
     ASSERT_FALSE(r);
     EXPECT_TRUE(occurred(code::variable_not_found, entry.diagnostics()));
 }
@@ -86,7 +89,7 @@ TEST_F(scalar_expression_translator_test, variable_reference_missing) {
 TEST_F(scalar_expression_translator_test, unary_operator) {
     using Op = ::shakujo::model::expression::UnaryOperator::Kind;
     auto s = f.UnaryOperator(Op::IS_NULL, f.Literal(tinfo::Bool(), true));
-    auto r = engine.process(*s, { context, {} });
+    auto r = engine.process(*s, { options, {} });
     ASSERT_TRUE(r);
     EXPECT_EQ(*r, scalar::unary(
             scalar::unary_operator::is_null,
@@ -96,7 +99,7 @@ TEST_F(scalar_expression_translator_test, unary_operator) {
 TEST_F(scalar_expression_translator_test, unary_operator_complement) {
     using Op = ::shakujo::model::expression::UnaryOperator::Kind;
     auto s = f.UnaryOperator(Op::IS_NOT_NULL, f.Literal(tinfo::Bool(), true));
-    auto r = engine.process(*s, { context, {} });
+    auto r = engine.process(*s, { options, {} });
     ASSERT_TRUE(r);
     EXPECT_EQ(*r, scalar::unary(
             scalar::unary_operator::conditional_not,
@@ -108,7 +111,7 @@ TEST_F(scalar_expression_translator_test, unary_operator_complement) {
 TEST_F(scalar_expression_translator_test, unary_operator_unsupported) {
     using Op = ::shakujo::model::expression::UnaryOperator::Kind;
     auto s = f.UnaryOperator(Op::CHECK_NULL, f.Literal(tinfo::Bool(), true));
-    auto r = engine.process(*s, { context, {} });
+    auto r = engine.process(*s, { options, {} });
     ASSERT_FALSE(r);
     EXPECT_TRUE(occurred(code::unsupported_scalar_expression, entry.diagnostics()));
 }
@@ -119,7 +122,7 @@ TEST_F(scalar_expression_translator_test, binary_operator) {
             Op::ADD,
             f.Literal(tinfo::Int(32), vinfo::Int(1)),
             f.Literal(tinfo::Int(32), vinfo::Int(2)));
-    auto r = engine.process(*s, { context, {} });
+    auto r = engine.process(*s, { options, {} });
     ASSERT_TRUE(r);
     EXPECT_EQ(*r, scalar::binary(
             scalar::binary_operator::add,
@@ -133,7 +136,7 @@ TEST_F(scalar_expression_translator_test, binary_operator_compare) {
             Op::EQUAL,
             f.Literal(tinfo::Int(32), vinfo::Int(1)),
             f.Literal(tinfo::Int(32), vinfo::Int(2)));
-    auto r = engine.process(*s, { context, {} });
+    auto r = engine.process(*s, { options, {} });
     ASSERT_TRUE(r);
     EXPECT_EQ(*r, scalar::compare(
             scalar::comparison_operator::equal,
@@ -147,7 +150,7 @@ TEST_F(scalar_expression_translator_test, binary_operator_match) {
             Op::LIKE,
             f.Literal(tinfo::String(), vinfo::String("ABC")),
             f.Literal(tinfo::String(), vinfo::String("A%")));
-    auto r = engine.process(*s, { context, {} });
+    auto r = engine.process(*s, { options, {} });
     ASSERT_TRUE(r);
     EXPECT_EQ(*r, scalar::match(
             scalar::match_operator::like,
@@ -162,7 +165,7 @@ TEST_F(scalar_expression_translator_test, binary_operator_match_complement) {
             Op::NOT_LIKE,
             f.Literal(tinfo::String(), vinfo::String("ABC")),
             f.Literal(tinfo::String(), vinfo::String("A%")));
-    auto r = engine.process(*s, { context, {} });
+    auto r = engine.process(*s, { options, {} });
     ASSERT_TRUE(r);
     EXPECT_EQ(*r, scalar::unary(
             scalar::unary_operator::conditional_not,
@@ -179,7 +182,7 @@ TEST_F(scalar_expression_translator_test, binary_operator_unsupported) {
             Op::RELATION_IN,
             f.Literal(tinfo::String(), vinfo::String("ABC")),
             f.Literal(tinfo::String(), vinfo::String("A%")));
-    auto r = engine.process(*s, { context, {} });
+    auto r = engine.process(*s, { options, {} });
     ASSERT_FALSE(r);
     EXPECT_TRUE(occurred(code::unsupported_scalar_expression, entry.diagnostics()));
 }
@@ -190,7 +193,7 @@ TEST_F(scalar_expression_translator_test, cast) {
             Op::CAST,
             f.Int32Type(),
             f.Literal(tinfo::Int(64), vinfo::Int(1)));
-    auto r = engine.process(*s, { context, {} });
+    auto r = engine.process(*s, { options, {} });
     ASSERT_TRUE(r);
     EXPECT_EQ(*r, scalar::cast(
             type::int4(),
@@ -202,7 +205,7 @@ TEST_F(scalar_expression_translator_test, cast_implicit) {
     auto s = f.ImplicitCast(
             tinfo::Int(32),
             f.Literal(tinfo::Int(64), vinfo::Int(1)));
-    auto r = engine.process(*s, { context, {} });
+    auto r = engine.process(*s, { options, {} });
     ASSERT_TRUE(r);
     EXPECT_EQ(*r, scalar::cast(
             type::int4(),
@@ -213,21 +216,20 @@ TEST_F(scalar_expression_translator_test, cast_implicit) {
 TEST_F(scalar_expression_translator_test, placeholder) {
     placeholders.add(":x", { value::int4(1), type::int8() });
     auto s = f.Placeholder(":x");
-    auto r = engine.process(*s, { context, {} });
+    auto r = engine.process(*s, { options, {} });
     ASSERT_TRUE(r);
     EXPECT_EQ(*r, scalar::immediate(value::int4(1), type::int8()));
 }
 
 TEST_F(scalar_expression_translator_test, placeholder_missing) {
     auto s = f.Placeholder(":x");
-    auto r = engine.process(*s, { context, {} });
+    auto r = engine.process(*s, { options, {} });
     ASSERT_FALSE(r);
     EXPECT_TRUE(occurred(code::variable_not_found, entry.diagnostics()));
 }
 
 TEST_F(scalar_expression_translator_test, function_call) {
-    auto fs = std::make_shared<::yugawara::function::configurable_provider>();
-    auto d = fs->add({
+    auto d = functions->add({
             20'001,
             "f",
             type::int4 {},
@@ -235,11 +237,10 @@ TEST_F(scalar_expression_translator_test, function_call) {
                     type::int8 {},
             },
     });
-    context.functions(fs);
     auto s = f.FunctionCall(
             f.Name("f"),
             f.Literal(tinfo::Int(64), vinfo::Int(1)));
-    auto r = engine.process(*s, { context, {} });
+    auto r = engine.process(*s, { options, {} });
     ASSERT_TRUE(r);
     EXPECT_EQ(*r, scalar::function_call(
             bindings(d),
@@ -250,8 +251,7 @@ TEST_F(scalar_expression_translator_test, function_call) {
 }
 
 TEST_F(scalar_expression_translator_test, function_call_overload) {
-    auto fs = std::make_shared<::yugawara::function::configurable_provider>();
-    auto d = fs->add({
+    auto d = functions->add({
             20'001,
             "f",
             type::int4 {},
@@ -259,7 +259,7 @@ TEST_F(scalar_expression_translator_test, function_call_overload) {
                     type::int8 {},
             },
     });
-    fs->add({
+    functions->add({
             20'002,
             "f",
             type::int4 {},
@@ -267,11 +267,10 @@ TEST_F(scalar_expression_translator_test, function_call_overload) {
                     type::boolean {},
             },
     });
-    context.functions(fs);
     auto s = f.FunctionCall(
             f.Name("f"),
             f.Literal(tinfo::Int(64), vinfo::Int(1)));
-    auto r = engine.process(*s, { context, {} });
+    auto r = engine.process(*s, { options, {} });
     ASSERT_TRUE(r);
     EXPECT_EQ(*r, scalar::function_call(
             bindings(d),
@@ -281,8 +280,7 @@ TEST_F(scalar_expression_translator_test, function_call_overload) {
 }
 
 TEST_F(scalar_expression_translator_test, function_call_overload_candidates) {
-    auto fs = std::make_shared<::yugawara::function::configurable_provider>();
-    auto d = fs->add({
+    auto d = functions->add({
             20'001,
             "f",
             type::int4 {},
@@ -290,7 +288,7 @@ TEST_F(scalar_expression_translator_test, function_call_overload_candidates) {
                     type::int4 {},
             },
     });
-    fs->add({
+    functions->add({
             20'002,
             "f",
             type::int8 {},
@@ -298,11 +296,10 @@ TEST_F(scalar_expression_translator_test, function_call_overload_candidates) {
                     type::int8 {},
             },
     });
-    context.functions(fs);
     auto s = f.FunctionCall(
             f.Name("f"),
             f.Literal(tinfo::Int(64), vinfo::Int(1)));
-    auto r = engine.process(*s, { context, {} });
+    auto r = engine.process(*s, { options, {} });
     ASSERT_TRUE(r);
     EXPECT_EQ(*r, scalar::function_call(
             bindings(d),
@@ -312,19 +309,16 @@ TEST_F(scalar_expression_translator_test, function_call_overload_candidates) {
 }
 
 TEST_F(scalar_expression_translator_test, function_call_missing) {
-    auto fs = std::make_shared<::yugawara::function::configurable_provider>();
-    context.functions(fs);
     auto s = f.FunctionCall(
             f.Name("f"),
             f.Literal(tinfo::Int(64), vinfo::Int(1)));
-    auto r = engine.process(*s, { context, {} });
+    auto r = engine.process(*s, { options, {} });
     ASSERT_FALSE(r);
     EXPECT_TRUE(occurred(code::function_not_found, entry.diagnostics()));
 }
 
 TEST_F(scalar_expression_translator_test, function_call_overload_umbiguous) {
-    auto fs = std::make_shared<::yugawara::function::configurable_provider>();
-    fs->add({
+    functions->add({
             20'001,
             "f",
             type::int4 {},
@@ -332,7 +326,7 @@ TEST_F(scalar_expression_translator_test, function_call_overload_umbiguous) {
                     type::decimal { 5, 2 },
             },
     });
-    fs->add({
+    functions->add({
             20'002,
             "f",
             type::int8 {},
@@ -340,11 +334,10 @@ TEST_F(scalar_expression_translator_test, function_call_overload_umbiguous) {
                     type::int4 {},
             },
     });
-    context.functions(fs);
     auto s = f.FunctionCall(
             f.Name("f"),
             f.Literal(tinfo::Int(8), vinfo::Int(1)));
-    auto r = engine.process(*s, { context, {} });
+    auto r = engine.process(*s, { options, {} });
     ASSERT_FALSE(r);
     EXPECT_TRUE(occurred(code::function_ambiguous, entry.diagnostics()));
 }
@@ -356,14 +349,13 @@ TEST_F(scalar_expression_translator_test, function_call_child_error) {
                     ::shakujo::model::expression::BinaryOperator::Kind::ADD,
                     f.Literal(tinfo::Null(), vinfo::Null()),
                     f.Literal(tinfo::Null(), vinfo::Null())));
-    auto r = engine.process(*s, { context, {} });
+    auto r = engine.process(*s, { options, {} });
     ASSERT_FALSE(r);
     EXPECT_TRUE(occurred(code::type_error, entry.diagnostics()));
 }
 
 TEST_F(scalar_expression_translator_test, aggregate_function_call_quantifier_absent) {
-    auto fs = std::make_shared<::yugawara::aggregate::configurable_provider>();
-    auto d = fs->add({
+    auto d = aggregates->add({
             20'001,
             "f",
             quantifier::all,
@@ -372,7 +364,7 @@ TEST_F(scalar_expression_translator_test, aggregate_function_call_quantifier_abs
                     type::int8 {},
             },
     });
-    fs->add({
+    aggregates->add({
             20'002,
             "f",
             quantifier::distinct,
@@ -381,11 +373,10 @@ TEST_F(scalar_expression_translator_test, aggregate_function_call_quantifier_abs
                     type::int8 {},
             },
     });
-    context.aggregates(fs);
     auto s = f.FunctionCall(
             f.Name("f"),
             f.Literal(tinfo::Int(64), vinfo::Int(1)));
-    auto r = engine.process(*s, { context, {} });
+    auto r = engine.process(*s, { options, {} });
     ASSERT_TRUE(r);
     EXPECT_EQ(*r, extension::scalar::aggregate_function_call(
             bindings(d),
@@ -396,8 +387,7 @@ TEST_F(scalar_expression_translator_test, aggregate_function_call_quantifier_abs
 }
 
 TEST_F(scalar_expression_translator_test, aggregate_function_call_quantifier_all) {
-    auto fs = std::make_shared<::yugawara::aggregate::configurable_provider>();
-    auto d = fs->add({
+    auto d = aggregates->add({
             20'001,
             "f",
             quantifier::all,
@@ -406,7 +396,7 @@ TEST_F(scalar_expression_translator_test, aggregate_function_call_quantifier_all
                     type::int8 {},
             },
     });
-    fs->add({
+    aggregates->add({
             20'002,
             "f",
             quantifier::distinct,
@@ -415,12 +405,11 @@ TEST_F(scalar_expression_translator_test, aggregate_function_call_quantifier_all
                     type::int8 {},
             },
     });
-    context.aggregates(fs);
     auto s = f.FunctionCall(
             f.Name("f"),
             f.Literal(tinfo::Int(64), vinfo::Int(1)),
             ::shakujo::model::expression::FunctionCall::Quantifier::ALL);
-    auto r = engine.process(*s, { context, {} });
+    auto r = engine.process(*s, { options, {} });
     ASSERT_TRUE(r);
     EXPECT_EQ(*r, extension::scalar::aggregate_function_call(
             bindings(d),
@@ -431,8 +420,7 @@ TEST_F(scalar_expression_translator_test, aggregate_function_call_quantifier_all
 }
 
 TEST_F(scalar_expression_translator_test, aggregate_function_call_quantifier_distinct) {
-    auto fs = std::make_shared<::yugawara::aggregate::configurable_provider>();
-    fs->add({
+    aggregates->add({
             20'001,
             "f",
             quantifier::all,
@@ -441,7 +429,7 @@ TEST_F(scalar_expression_translator_test, aggregate_function_call_quantifier_dis
                     type::int8 {},
             },
     });
-    auto d = fs->add({
+    auto d = aggregates->add({
             20'002,
             "f",
             quantifier::distinct,
@@ -450,12 +438,11 @@ TEST_F(scalar_expression_translator_test, aggregate_function_call_quantifier_dis
                     type::int8 {},
             },
     });
-    context.aggregates(fs);
     auto s = f.FunctionCall(
             f.Name("f"),
             f.Literal(tinfo::Int(64), vinfo::Int(1)),
             ::shakujo::model::expression::FunctionCall::Quantifier::DISTINCT);
-    auto r = engine.process(*s, { context, {} });
+    auto r = engine.process(*s, { options, {} });
     ASSERT_TRUE(r);
     EXPECT_EQ(*r, extension::scalar::aggregate_function_call(
             bindings(d),
@@ -466,20 +453,18 @@ TEST_F(scalar_expression_translator_test, aggregate_function_call_quantifier_dis
 }
 
 TEST_F(scalar_expression_translator_test, aggregate_function_call_quantifier_asterisk) {
-    auto fs = std::make_shared<::yugawara::aggregate::configurable_provider>();
-    auto d = fs->add({
+    auto d = aggregates->add({
             20'001,
             "f",
             quantifier::all,
             type::int4 {},
             {},
     });
-    context.aggregates(fs);
     auto s = f.FunctionCall(
             f.Name("f"),
             {},
             ::shakujo::model::expression::FunctionCall::Quantifier::ASTERISK);
-    auto r = engine.process(*s, { context, {} });
+    auto r = engine.process(*s, { options, {} });
     ASSERT_TRUE(r);
     EXPECT_EQ(*r, extension::scalar::aggregate_function_call(
             bindings(d),
@@ -488,20 +473,17 @@ TEST_F(scalar_expression_translator_test, aggregate_function_call_quantifier_ast
 }
 
 TEST_F(scalar_expression_translator_test, aggregate_function_call_missing) {
-    auto fs = std::make_shared<::yugawara::aggregate::configurable_provider>();
-    context.aggregates(fs);
     auto s = f.FunctionCall(
             f.Name("f"),
             f.Literal(tinfo::Int(64), vinfo::Int(1)),
             ::shakujo::model::expression::FunctionCall::Quantifier::ALL);
-    auto r = engine.process(*s, { context, {} });
+    auto r = engine.process(*s, { options, {} });
     ASSERT_FALSE(r);
     EXPECT_TRUE(occurred(code::function_not_found, entry.diagnostics()));
 }
 
 TEST_F(scalar_expression_translator_test, aggregate_function_call_overload_umbiguous) {
-    auto fs = std::make_shared<::yugawara::aggregate::configurable_provider>();
-    fs->add({
+    aggregates->add({
             20'001,
             "f",
             quantifier::all,
@@ -510,7 +492,7 @@ TEST_F(scalar_expression_translator_test, aggregate_function_call_overload_umbig
                     type::decimal { 5, 2 },
             },
     });
-    fs->add({
+    aggregates->add({
             20'002,
             "f",
             quantifier::all,
@@ -519,20 +501,17 @@ TEST_F(scalar_expression_translator_test, aggregate_function_call_overload_umbig
                     type::int4 {},
             },
     });
-    context.aggregates(fs);
     auto s = f.FunctionCall(
             f.Name("f"),
             f.Literal(tinfo::Int(64), vinfo::Int(1)),
             ::shakujo::model::expression::FunctionCall::Quantifier::ALL);
-    auto r = engine.process(*s, { context, {} });
+    auto r = engine.process(*s, { options, {} });
     ASSERT_FALSE(r);
     EXPECT_TRUE(occurred(code::function_ambiguous, entry.diagnostics()));
 }
 
 TEST_F(scalar_expression_translator_test, aggregate_function_call_overload_conflict) {
-    auto fs = std::make_shared<::yugawara::function::configurable_provider>();
-    auto as = std::make_shared<::yugawara::aggregate::configurable_provider>();
-    fs->add({
+    functions->add({
             20'001,
             "f",
             type::int4 {},
@@ -540,7 +519,7 @@ TEST_F(scalar_expression_translator_test, aggregate_function_call_overload_confl
                     type::int4 {},
             },
     });
-    as->add({
+    aggregates->add({
             20'002,
             "f",
             quantifier::all,
@@ -549,12 +528,10 @@ TEST_F(scalar_expression_translator_test, aggregate_function_call_overload_confl
                     type::int4 {},
             },
     });
-    context.functions(fs);
-    context.aggregates(as);
     auto s = f.FunctionCall(
             f.Name("f"),
             f.Literal(tinfo::Int(32), vinfo::Int(1)));
-    auto r = engine.process(*s, { context, {} });
+    auto r = engine.process(*s, { options, {} });
     ASSERT_FALSE(r);
     EXPECT_TRUE(occurred(code::function_ambiguous, entry.diagnostics()));
 }

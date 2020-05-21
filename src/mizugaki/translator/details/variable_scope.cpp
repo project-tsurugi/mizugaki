@@ -10,8 +10,8 @@ namespace mizugaki::translator::details {
 
 using ::takatori::util::unsafe_downcast;
 
-variable_scope::variable_scope(context_type const& context, relation_info const& relation) noexcept
-    : context_(context)
+variable_scope::variable_scope(options_type const& options, relation_info const& relation) noexcept
+    : options_(options)
     , relation_(relation)
 {}
 
@@ -21,8 +21,8 @@ std::optional<::takatori::descriptor::variable> variable_scope::find(::shakujo::
     }
     if (name.kind() == ::shakujo::model::name::SimpleName::tag) {
         auto&& n = unsafe_downcast<::shakujo::model::name::SimpleName>(name);
-        if (auto v = context_.variables().find(n.token())) {
-            ::yugawara::binding::factory f { context_.get_object_creator() };
+        if (auto v = options_.variables().find(n.token())) {
+            ::yugawara::binding::factory f { options_.get_object_creator() };
             return f(std::move(v));
         }
     }

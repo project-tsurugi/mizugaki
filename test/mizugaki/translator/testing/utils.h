@@ -12,7 +12,6 @@
 #include <yugawara/storage/provider.h>
 
 #include <mizugaki/translator/shakujo_translator_impl.h>
-#include <mizugaki/translator/shakujo_translator_context_impl.h>
 
 #include <mizugaki/translator/details/relation_info.h>
 
@@ -29,11 +28,19 @@ inline shakujo_translator::impl new_translator_impl() {
     return result;
 }
 
-inline shakujo_translator_context::impl new_context_impl(
-        std::shared_ptr<::yugawara::storage::provider const> storages = {}) {
-    shakujo_translator_context::impl result;
-    result.storages(std::move(storages));
-    return result;
+inline shakujo_translator_options new_options(
+        std::shared_ptr<::yugawara::storage::provider const> storages = {},
+        std::shared_ptr<::yugawara::variable::provider const> variables = {},
+        std::shared_ptr<::yugawara::function::provider const> functions = {},
+        std::shared_ptr<::yugawara::aggregate::provider const> aggregate_functions = {},
+        ::takatori::util::object_creator creator = {}) {
+    return {
+            std::move(storages),
+            std::move(variables),
+            std::move(functions),
+            std::move(aggregate_functions),
+            creator,
+    };
 }
 
 inline optional_ptr<shakujo_translator_diagnostic const> occurred(

@@ -20,6 +20,7 @@
 
 #include <yugawara/binding/factory.h>
 #include <yugawara/storage/configurable_provider.h>
+#include <yugawara/function/configurable_provider.h>
 #include <yugawara/aggregate/configurable_provider.h>
 
 #include <shakujo/common/core/type/Int.h>
@@ -46,6 +47,10 @@ class relation_expression_translator_test : public ::testing::Test {
 public:
     std::shared_ptr<::yugawara::storage::configurable_provider> storages
             = std::make_shared<::yugawara::storage::configurable_provider>();
+    std::shared_ptr<::yugawara::function::configurable_provider> functions
+            = std::make_shared<::yugawara::function::configurable_provider>();
+    std::shared_ptr<::yugawara::aggregate::configurable_provider> aggregates
+            = std::make_shared<::yugawara::aggregate::configurable_provider>();
 
     std::shared_ptr<::yugawara::storage::table> t0 = storages->add_table("T0", {
             "T0",
@@ -95,11 +100,11 @@ public:
     });
 
     shakujo_translator::impl entry { new_translator_impl() };
-    shakujo_translator_context::impl context { new_context_impl(storages) };
-    relation_expression_translator engine { entry.initialize(context) };
+    shakujo_translator_options options { new_options(storages, {}, functions, aggregates) };
+    relation_expression_translator engine { entry.initialize(options) };
 
     ::shakujo::model::IRFactory ir;
-    ::yugawara::binding::factory bindings { context.get_object_creator() };
+    ::yugawara::binding::factory bindings { options.get_object_creator() };
 
     ::takatori::relation::graph_type graph;
     relation_info rinfo;
@@ -308,7 +313,6 @@ TEST_F(relation_expression_translator_test, DISABLED_project_chain) { // FIXME: 
 }
 
 TEST_F(relation_expression_translator_test, project_aggregate) {
-    auto aggregates = std::make_shared<::yugawara::aggregate::configurable_provider>();
     auto f = aggregates->add({
             20'001,
             "f",
@@ -319,8 +323,6 @@ TEST_F(relation_expression_translator_test, project_aggregate) {
             },
 
     });
-    context.aggregates(aggregates);
-
     auto s = ir.ProjectionExpression(
             ir.ScanExpression(ir.Name("T0")),
             {
@@ -353,7 +355,6 @@ TEST_F(relation_expression_translator_test, project_aggregate) {
 }
 
 TEST_F(relation_expression_translator_test, project_aggregate_after_project) {
-    auto aggregates = std::make_shared<::yugawara::aggregate::configurable_provider>();
     auto f = aggregates->add({
             20'001,
             "f",
@@ -364,8 +365,6 @@ TEST_F(relation_expression_translator_test, project_aggregate_after_project) {
             },
 
     });
-    context.aggregates(aggregates);
-
     auto s = ir.ProjectionExpression(
             ir.ScanExpression(ir.Name("T0")),
             {
@@ -409,7 +408,6 @@ TEST_F(relation_expression_translator_test, project_aggregate_after_project) {
 }
 
 TEST_F(relation_expression_translator_test, project_aggregate_and_project) {
-    auto aggregates = std::make_shared<::yugawara::aggregate::configurable_provider>();
     auto f1 = aggregates->add({
             20'001,
             "f1",
@@ -430,8 +428,6 @@ TEST_F(relation_expression_translator_test, project_aggregate_and_project) {
             },
 
     });
-    context.aggregates(aggregates);
-
     auto s = ir.ProjectionExpression(
             ir.ScanExpression(ir.Name("T0")),
             {
@@ -484,7 +480,6 @@ TEST_F(relation_expression_translator_test, project_aggregate_and_project) {
 }
 
 TEST_F(relation_expression_translator_test, project_aggregate_group) {
-    auto aggregates = std::make_shared<::yugawara::aggregate::configurable_provider>();
     auto f = aggregates->add({
             20'001,
             "f",
@@ -495,8 +490,6 @@ TEST_F(relation_expression_translator_test, project_aggregate_group) {
             },
 
     });
-    context.aggregates(aggregates);
-
     auto s = ir.ProjectionExpression(
             ir.GroupExpression(
                     ir.ScanExpression(ir.Name("T0")),
@@ -538,7 +531,6 @@ TEST_F(relation_expression_translator_test, project_aggregate_group) {
 }
 
 TEST_F(relation_expression_translator_test, project_aggregate_group_with_key) {
-    auto aggregates = std::make_shared<::yugawara::aggregate::configurable_provider>();
     auto f = aggregates->add({
             20'001,
             "f",
@@ -549,8 +541,6 @@ TEST_F(relation_expression_translator_test, project_aggregate_group_with_key) {
             },
 
     });
-    context.aggregates(aggregates);
-
     auto s = ir.ProjectionExpression(
             ir.GroupExpression(
                     ir.ScanExpression(ir.Name("T0")),
@@ -586,7 +576,6 @@ TEST_F(relation_expression_translator_test, project_aggregate_group_with_key) {
 }
 
 TEST_F(relation_expression_translator_test, project_aggregate_group_key_only) {
-    auto aggregates = std::make_shared<::yugawara::aggregate::configurable_provider>();
     auto f = aggregates->add({
             20'001,
             "f",
@@ -597,8 +586,6 @@ TEST_F(relation_expression_translator_test, project_aggregate_group_key_only) {
             },
 
     });
-    context.aggregates(aggregates);
-
     auto s = ir.ProjectionExpression(
             ir.GroupExpression(
                     ir.ScanExpression(ir.Name("T0")),
@@ -670,7 +657,6 @@ TEST_F(relation_expression_translator_test, project_aggregate_deep_bare_group_me
 }
 
 TEST_F(relation_expression_translator_test, project_aggregate_group_complex_key) {
-    auto aggregates = std::make_shared<::yugawara::aggregate::configurable_provider>();
     auto f = aggregates->add({
             20'001,
             "f",
@@ -681,8 +667,6 @@ TEST_F(relation_expression_translator_test, project_aggregate_group_complex_key)
             },
 
     });
-    context.aggregates(aggregates);
-
     auto s = ir.ProjectionExpression(
             ir.GroupExpression(
                     ir.ScanExpression(ir.Name("T0")),

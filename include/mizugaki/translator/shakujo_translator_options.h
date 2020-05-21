@@ -15,18 +15,10 @@
 namespace mizugaki::translator {
 
 /**
- * @brief contextual information of shakujo_translator.
+ * @brief options of shakujo_translator.
  */
-class shakujo_translator_context {
+class shakujo_translator_options {
 public:
-    /// @private
-    class impl;
-
-    /**
-     * @brief creates a new instance.
-     */
-    shakujo_translator_context();
-
     /**
      * @brief creates a new instance.
      * @param storages the storage element provider
@@ -36,29 +28,12 @@ public:
      * @param creator the object creator to build IR elements
      * @note if each provider is empty, it will provide nothing
      */
-    explicit shakujo_translator_context(
+    shakujo_translator_options(
             std::shared_ptr<::yugawara::storage::provider const> storages,
             std::shared_ptr<::yugawara::variable::provider const> variables,
             std::shared_ptr<::yugawara::function::provider const> functions,
             std::shared_ptr<::yugawara::aggregate::provider const> aggregate_functions,
             ::takatori::util::object_creator creator = {});
-
-    ~shakujo_translator_context();
-
-    shakujo_translator_context(shakujo_translator_context const& other) = delete;
-    shakujo_translator_context& operator=(shakujo_translator_context const& other) = delete;
-
-    /**
-     * @brief creates a new instance.
-     * @param other the copy source
-     */
-    shakujo_translator_context(shakujo_translator_context&& other) noexcept;
-
-    /**
-     * @brief assigns the given object into this.
-     * @param other the copy source
-     */
-    shakujo_translator_context& operator=(shakujo_translator_context&& other) noexcept;
 
     /**
      * @brief returns the storage element provider.
@@ -88,11 +63,14 @@ public:
      * @brief returns the object creator for building IR elements.
      * @return the object creator
      */
-    [[nodiscard]] ::takatori::util::object_creator get_object_creator() const;
+    [[nodiscard]] ::takatori::util::object_creator get_object_creator() const noexcept;
 
 private:
-    std::unique_ptr<impl> impl_;
-    friend impl;
+    ::takatori::util::object_creator creator_;
+    std::shared_ptr<::yugawara::storage::provider const> storages_;
+    std::shared_ptr<::yugawara::variable::provider const> variables_;
+    std::shared_ptr<::yugawara::function::provider const> functions_;
+    std::shared_ptr<::yugawara::aggregate::provider const> aggregate_functions_;
 };
 
 } // namespace mizugaki::translator

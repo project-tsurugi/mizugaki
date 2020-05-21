@@ -28,8 +28,8 @@ namespace vinfo = ::shakujo::common::core::value;
 class value_info_translator_test : public ::testing::Test {
 public:
     shakujo_translator::impl entry { new_translator_impl() };
-    shakujo_translator_context::impl context { new_context_impl() };
-    value_info_translator engine { entry.initialize(context) };
+    shakujo_translator_options options { new_options() };
+    value_info_translator engine { entry.initialize(options) };
 };
 
 TEST_F(value_info_translator_test, int32) {

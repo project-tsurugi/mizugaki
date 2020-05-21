@@ -7,7 +7,6 @@
 
 #include "variable_scope.h"
 #include "../shakujo_translator_impl.h"
-#include "../shakujo_translator_context_impl.h"
 
 namespace mizugaki::translator::details {
 

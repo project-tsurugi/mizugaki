@@ -7,11 +7,10 @@ add_library(mizugaki
 
     # shakujo IR translator
     mizugaki/translator/shakujo_translator.cpp
-    mizugaki/translator/shakujo_translator_context.cpp
+    mizugaki/translator/shakujo_translator_options.cpp
     mizugaki/translator/shakujo_translator_result.cpp
     mizugaki/translator/shakujo_translator_diagnostic.cpp
     mizugaki/translator/shakujo_translator_impl.cpp
-    mizugaki/translator/shakujo_translator_context_impl.cpp
     mizugaki/translator/details/relation_info.cpp
     mizugaki/translator/details/variable_scope.cpp
     mizugaki/translator/details/type_info_translator.cpp

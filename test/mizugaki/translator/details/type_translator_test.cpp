@@ -19,8 +19,8 @@ namespace tt = ::takatori::type;
 class type_translator_test : public ::testing::Test {
 public:
     shakujo_translator::impl entry { new_translator_impl() };
-    shakujo_translator_context::impl context { new_context_impl() };
-    type_translator engine { entry.initialize(context) };
+    shakujo_translator_options options { new_options() };
+    type_translator engine { entry.initialize(options) };
     
     ::shakujo::model::IRFactory f;
 };

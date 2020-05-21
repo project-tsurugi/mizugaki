@@ -14,27 +14,26 @@
 #include <yugawara/util/object_repository.h>
 
 #include <shakujo/common/core/DocumentRegion.h>
+#include <shakujo/model/name/Name.h>
 
 #include <mizugaki/translator/shakujo_translator.h>
-
-#include "shakujo_translator_context_impl.h"
 
 namespace mizugaki::translator {
 
 class shakujo_translator::impl {
 public:
-    using context_type = shakujo_translator::context_type::impl;
+    using options_type = shakujo_translator::options_type;
     using result_type = shakujo_translator::result_type;
     using diagnostic_type = shakujo_translator::diagnostic_type;
 
     [[nodiscard]] result_type operator()(
-            context_type& context,
+            options_type& options,
             ::shakujo::model::statement::Statement const& statement,
             document_map const& documents = {},
             placeholder_map const& placeholders = {});
 
-    [[nodiscard]] context_type& context();
-    [[nodiscard]] context_type const& context() const;
+    [[nodiscard]] options_type& options();
+    [[nodiscard]] options_type const& options() const;
     [[nodiscard]] ::takatori::util::object_creator object_creator() const;
 
     [[nodiscard]] std::vector<diagnostic_type>& diagnostics() noexcept;
@@ -43,6 +42,9 @@ public:
     [[nodiscard]] ::takatori::document::region region(::shakujo::common::core::DocumentRegion const& region) const;
 
     [[nodiscard]] ::takatori::util::unique_object_ptr<::takatori::scalar::expression> placeholder(std::string_view name) const;
+
+    [[nodiscard]] ::takatori::util::optional_ptr<::yugawara::storage::index const> find_table(std::string_view name) const;
+    [[nodiscard]] ::takatori::util::optional_ptr<::yugawara::storage::index const> find_table(::shakujo::model::name::Name const& name) const;
 
     [[nodiscard]] ::yugawara::util::object_repository<::takatori::type::data>& types() noexcept;
     [[nodiscard]] ::yugawara::util::object_repository<::takatori::value::data>& values() noexcept;
@@ -55,7 +57,7 @@ public:
     [[nodiscard]] std::vector<std::shared_ptr<::yugawara::function::declaration const>>& function_buffer() noexcept;
 
     impl& initialize(
-            context_type& context,
+            options_type& options,
             document_map const& documents = {},
             placeholder_map const& placeholders = {});
 
@@ -64,7 +66,7 @@ public:
     static impl& extract(shakujo_translator& interface) noexcept;
 
 private:
-    ::takatori::util::optional_ptr<context_type> context_;
+    ::takatori::util::optional_ptr<options_type> options_;
     ::takatori::util::optional_ptr<document_map const> documents_;
     ::takatori::util::optional_ptr<placeholder_map const> placeholders_;
     std::vector<diagnostic_type> diagnostics_;

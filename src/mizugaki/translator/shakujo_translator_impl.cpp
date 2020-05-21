@@ -1,6 +1,9 @@
 #include "shakujo_translator_impl.h"
 
 #include <takatori/util/finalizer.h>
+#include <takatori/util/downcast.h>
+
+#include <shakujo/model/name/SimpleName.h>
 
 #include "details/dml_statement_translator.h"
 
@@ -8,14 +11,15 @@ namespace mizugaki::translator {
 
 using impl = shakujo_translator::impl;
 
+using ::takatori::util::downcast;
 using ::takatori::util::finalizer;
 
 impl::result_type impl::operator()(
-        context_type& context,
+        options_type& options,
         ::shakujo::model::statement::Statement const& statement,
         document_map const& documents,
         placeholder_map const& placeholders) {
-    initialize(context, documents, placeholders);
+    initialize(options, documents, placeholders);
     finalizer f { [this] { finalize(); } };
     details::dml_statement_translator translator { *this };
     auto result = translator.process(statement);
@@ -25,16 +29,16 @@ impl::result_type impl::operator()(
     return result;
 }
 
-impl::context_type& shakujo_translator::impl::context() {
-    return *context_;
+impl::options_type& shakujo_translator::impl::options() {
+    return *options_;
 }
 
-impl::context_type const& shakujo_translator::impl::context() const {
-    return *context_;
+impl::options_type const& shakujo_translator::impl::options() const {
+    return *options_;
 }
 
 ::takatori::util::object_creator shakujo_translator::impl::object_creator() const {
-    return context().get_object_creator();
+    return options().get_object_creator();
 }
 
 std::vector<impl::diagnostic_type>& impl::diagnostics() noexcept {
@@ -81,6 +85,23 @@ static ::takatori::document::position convert0(
     return {};
 }
 
+::takatori::util::optional_ptr<::yugawara::storage::index const> impl::find_table(std::string_view name) const {
+    if (auto table = options().storages().find_table(name)) {
+        if (auto index = options().storages().find_primary_index(*table)) {
+            return *index;
+        }
+    }
+    return {};
+}
+
+::takatori::util::optional_ptr<::yugawara::storage::index const> impl::find_table(::shakujo::model::name::Name const& name) const {
+    if (auto const* n = downcast<::shakujo::model::name::SimpleName>(&name); n != nullptr) {
+        return find_table(n->token());
+    }
+    // FIXME: qualified table name
+    return {};
+}
+
 ::yugawara::util::object_repository<::takatori::type::data>& impl::types() noexcept {
     return types_;
 }
@@ -114,19 +135,19 @@ impl& impl::extract(shakujo_translator& interface) noexcept {
 }
 
 impl& impl::initialize(
-        context_type& context,
+        options_type& options,
         document_map const& documents,
         placeholder_map const& placeholders) {
-    context_ = context;
+    options_ = options;
     documents_ = documents;
     placeholders_ = placeholders;
-    types_ = decltype(types_) { context.get_object_creator(), true };
-    values_ = decltype(values_) { context.get_object_creator(), true };
+    types_ = decltype(types_) { options.get_object_creator(), true };
+    values_ = decltype(values_) { options.get_object_creator(), true };
     return *this;
 }
 
 void impl::finalize() {
-    context_ = nullptr;
+    options_ = nullptr;
     documents_ = nullptr;
     placeholders_ = nullptr;
     types_ = {};

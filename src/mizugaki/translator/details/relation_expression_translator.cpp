@@ -84,7 +84,7 @@ public:
 
     result_type operator()(::shakujo::model::expression::relation::ScanExpression const& node) {
         auto c = translator_.object_creator();
-        auto&& index = translator_.context().find_table(*node.table());
+        auto&& index = translator_.find_table(*node.table());
         if (!index) {
             return report(code_type::table_not_found, *node.table(), string_builder {}
                     << *node.table());
@@ -128,7 +128,7 @@ public:
         if (!source) return {};
 
         scalar_expression_translator e { translator_ };
-        auto c = e.process(*node.condition(), { translator_.context(), relation_ });
+        auto c = e.process(*node.condition(), { translator_.options(), relation_ });
         if (!c) return {};
 
         auto&& r = create<relation::filter>(
@@ -156,7 +156,7 @@ public:
         auto columns = new_vector<relation::project::column>(node.columns().size());
         for (auto const* column : node.columns()) {
             scalar_expression_translator e { translator_ };
-            auto v = e.process(*column->value(), { translator_.context(), relation_ });
+            auto v = e.process(*column->value(), { translator_.options(), relation_ });
             if (!v) return {};
 
             if (!saw_aggregate) {
@@ -214,7 +214,7 @@ public:
         unique_object_ptr<scalar::expression> cond {};
         if (node.condition() != nullptr) {
             scalar_expression_translator e { translator_ };
-            cond = e.process(*node.condition(), { translator_.context(), relation_ });
+            cond = e.process(*node.condition(), { translator_.options(), relation_ });
             if (!cond) return {};
         }
 
@@ -274,7 +274,7 @@ public:
         auto keys = new_vector<relation::intermediate::limit::sort_key>(node.elements().size());
         for (auto&& elem : node.elements()) {
             scalar_expression_translator e { translator_ };
-            auto v = e.process(*elem->key(), { translator_.context(), relation_ });
+            auto v = e.process(*elem->key(), { translator_.options(), relation_ });
             if (!v) return {};
 
             auto vv = extract_variable(*v);
@@ -386,7 +386,7 @@ private:
             group_keys.reserve(group->keys().size());
             for (auto&& key : group->keys()) {
                 scalar_expression_translator e { translator_ };
-                auto v = e.process(*key, { translator_.context(), relation_ });
+                auto v = e.process(*key, { translator_.options(), relation_ });
                 if (!v) return {};
                 auto vv = extract_variable(*v);
                 if (!vv) {

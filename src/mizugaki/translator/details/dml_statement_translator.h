@@ -5,7 +5,6 @@
 #include <mizugaki/translator/shakujo_translator_result.h>
 
 #include "../shakujo_translator_impl.h"
-#include "../shakujo_translator_context_impl.h"
 
 namespace mizugaki::translator::details {
 

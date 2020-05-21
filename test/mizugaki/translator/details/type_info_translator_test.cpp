@@ -27,8 +27,8 @@ namespace tinfo = ::shakujo::common::core::type;
 class type_info_translator_test : public ::testing::Test {
 public:
     shakujo_translator::impl entry { new_translator_impl() };
-    shakujo_translator_context::impl context { new_context_impl() };
-    type_info_translator engine { entry.initialize(context) };
+    shakujo_translator_options options { new_options() };
+    type_info_translator engine { entry.initialize(options) };
 };
 
 TEST_F(type_info_translator_test, int8) {
