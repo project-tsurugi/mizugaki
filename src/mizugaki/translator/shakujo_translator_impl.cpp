@@ -82,8 +82,8 @@ static ::takatori::document::position convert0(
 }
 
 ::takatori::util::optional_ptr<::yugawara::storage::index const> impl::find_table(std::string_view name) const {
-    if (auto table = options().storages().find_table(name)) {
-        if (auto index = options().storages().find_primary_index(*table)) {
+    if (auto table = options().storage_provider().find_table(name)) {
+        if (auto index = options().storage_provider().find_primary_index(*table)) {
             return *index;
         }
     }

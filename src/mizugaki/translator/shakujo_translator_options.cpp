@@ -8,45 +8,45 @@
 namespace mizugaki::translator {
 
 shakujo_translator_options::shakujo_translator_options(
-        std::shared_ptr<::yugawara::storage::provider const> storages,
-        std::shared_ptr<::yugawara::variable::provider const> variables,
-        std::shared_ptr<::yugawara::function::provider const> functions,
-        std::shared_ptr<::yugawara::aggregate::provider const> aggregate_functions,
+        std::shared_ptr<::yugawara::storage::provider const> storage_provider,
+        std::shared_ptr<::yugawara::variable::provider const> variable_provider,
+        std::shared_ptr<::yugawara::function::provider const> function_provider,
+        std::shared_ptr<::yugawara::aggregate::provider const> aggregate_function_provider,
         ::takatori::util::object_creator creator)
     : creator_(creator)
-    , storages_(std::move(storages))
-    , variables_(std::move(variables))
-    , functions_(std::move(functions))
-    , aggregate_functions_(std::move(aggregate_functions))
+    , storage_provider_(std::move(storage_provider))
+    , variable_provider_(std::move(variable_provider))
+    , function_provider_(std::move(function_provider))
+    , aggregate_function_provider_(std::move(aggregate_function_provider))
 {}
 
-::yugawara::storage::provider const& shakujo_translator_options::storages() const noexcept {
-    if (storages_) {
-        return *storages_;
+::yugawara::storage::provider const& shakujo_translator_options::storage_provider() const noexcept {
+    if (storage_provider_) {
+        return *storage_provider_;
     }
     static ::yugawara::storage::configurable_provider const empty;
     return empty;
 }
 
-::yugawara::variable::provider const& shakujo_translator_options::variables() const noexcept {
-    if (variables_) {
-        return *variables_;
+::yugawara::variable::provider const& shakujo_translator_options::variable_provider() const noexcept {
+    if (variable_provider_) {
+        return *variable_provider_;
     }
     static ::yugawara::variable::configurable_provider const empty;
     return empty;
 }
 
-::yugawara::function::provider const& shakujo_translator_options::functions() const noexcept {
-    if (functions_) {
-        return *functions_;
+::yugawara::function::provider const& shakujo_translator_options::function_provider() const noexcept {
+    if (function_provider_) {
+        return *function_provider_;
     }
     static ::yugawara::function::configurable_provider const empty;
     return empty;
 }
 
-::yugawara::aggregate::provider const& shakujo_translator_options::aggregate_functions() const noexcept {
-    if (aggregate_functions_) {
-        return *aggregate_functions_;
+::yugawara::aggregate::provider const& shakujo_translator_options::aggregate_function_provider() const noexcept {
+    if (aggregate_function_provider_) {
+        return *aggregate_function_provider_;
     }
     static ::yugawara::aggregate::configurable_provider const empty;
     return empty;

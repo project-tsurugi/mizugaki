@@ -424,7 +424,7 @@ private:
         // NOTE: should be filled to translator_.type_buffer()
         translator_.function_buffer().clear();
         auto param_count = translator_.type_buffer().size();
-        translator_.options().functions().each(
+        translator_.options().function_provider().each(
                 name,
                 param_count,
                 [this](std::shared_ptr<::yugawara::function::declaration const> const& d) {
@@ -440,7 +440,7 @@ private:
             ::yugawara::aggregate::set_quantifier quantifier) {
         // NOTE: should be filled to translator_.type_buffer()
         translator_.aggregate_buffer().clear();
-        translator_.options().aggregate_functions().each(
+        translator_.options().aggregate_function_provider().each(
                 name,
                 quantifier,
                 translator_.type_buffer().size(),

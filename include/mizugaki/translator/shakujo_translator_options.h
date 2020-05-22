@@ -21,43 +21,43 @@ class shakujo_translator_options {
 public:
     /**
      * @brief creates a new instance.
-     * @param storages the storage element provider
-     * @param variables the external variable declaration provider
-     * @param functions the function declaration provider
-     * @param aggregate_functions the aggregate function declaration provider
+     * @param storage_provider the storage element provider
+     * @param variable_provider the external variable declaration provider
+     * @param function_provider the function declaration provider
+     * @param aggregate_function_provider the aggregate function declaration provider
      * @param creator the object creator to build IR elements
      * @note if each provider is empty, it will provide nothing
      */
     shakujo_translator_options(
-            std::shared_ptr<::yugawara::storage::provider const> storages,
-            std::shared_ptr<::yugawara::variable::provider const> variables,
-            std::shared_ptr<::yugawara::function::provider const> functions,
-            std::shared_ptr<::yugawara::aggregate::provider const> aggregate_functions,
+            std::shared_ptr<::yugawara::storage::provider const> storage_provider,
+            std::shared_ptr<::yugawara::variable::provider const> variable_provider,
+            std::shared_ptr<::yugawara::function::provider const> function_provider,
+            std::shared_ptr<::yugawara::aggregate::provider const> aggregate_function_provider,
             ::takatori::util::object_creator creator = {});
 
     /**
      * @brief returns the storage element provider.
      * @return the storage element provider
      */
-    [[nodiscard]] ::yugawara::storage::provider const& storages() const noexcept;
+    [[nodiscard]] ::yugawara::storage::provider const& storage_provider() const noexcept;
 
     /**
      * @brief returns the external variable declaration provider.
      * @return the variable provider
      */
-    [[nodiscard]] ::yugawara::variable::provider const& variables() const noexcept;
+    [[nodiscard]] ::yugawara::variable::provider const& variable_provider() const noexcept;
 
     /**
      * @brief returns the function declaration provider.
      * @return the function provider
      */
-    [[nodiscard]] ::yugawara::function::provider const& functions() const noexcept;
+    [[nodiscard]] ::yugawara::function::provider const& function_provider() const noexcept;
 
     /**
      * @brief returns the aggregate function declaration provider.
      * @return the aggregate function provider
      */
-    [[nodiscard]] ::yugawara::aggregate::provider const& aggregate_functions() const noexcept;
+    [[nodiscard]] ::yugawara::aggregate::provider const& aggregate_function_provider() const noexcept;
 
     /**
      * @brief returns the object creator for building IR elements.
@@ -67,10 +67,10 @@ public:
 
 private:
     ::takatori::util::object_creator creator_;
-    std::shared_ptr<::yugawara::storage::provider const> storages_;
-    std::shared_ptr<::yugawara::variable::provider const> variables_;
-    std::shared_ptr<::yugawara::function::provider const> functions_;
-    std::shared_ptr<::yugawara::aggregate::provider const> aggregate_functions_;
+    std::shared_ptr<::yugawara::storage::provider const> storage_provider_;
+    std::shared_ptr<::yugawara::variable::provider const> variable_provider_;
+    std::shared_ptr<::yugawara::function::provider const> function_provider_;
+    std::shared_ptr<::yugawara::aggregate::provider const> aggregate_function_provider_;
 };
 
 } // namespace mizugaki::translator
