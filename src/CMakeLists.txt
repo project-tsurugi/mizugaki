@@ -59,14 +59,14 @@ if (FORCE_INSTALL_RPATH)
         set_target_properties(mizugaki
             PROPERTIES
             INSTALL_RPATH "${rpath}"
-            )
+        )
     endif()
 
     # add other than */lib paths
     set_target_properties(mizugaki
         PROPERTIES
         INSTALL_RPATH_USE_LINK_PATH ON
-        )
+    )
 endif (FORCE_INSTALL_RPATH)
 
 install(
