@@ -305,11 +305,6 @@ private:
         return result;
     }
 
-    result_type bless(::shakujo::model::Node const& node, result_type result) {
-        result->region() = translator_.region(node.region());
-        return result;
-    }
-
     static std::string_view as_simple_name(::shakujo::model::name::Name const* name) {
         if (name != nullptr && name->kind() == ::shakujo::model::name::SimpleName::tag) {
             return unsafe_downcast<::shakujo::model::name::SimpleName>(*name).token();
@@ -495,7 +490,7 @@ private:
             case kind::ambiguous_type: return code_type::ambiguous_type;
             case kind::inconsistent_type: return code_type::inconsistent_type;
             case kind::unresolved_variable: return code_type::unresolved_variable;
-            case kind::inconsistent_number_of_elements: return code_type::inconsistent_number_of_elements;
+            case kind::inconsistent_elements: return code_type::inconsistent_elements;
         }
         fail();
     }

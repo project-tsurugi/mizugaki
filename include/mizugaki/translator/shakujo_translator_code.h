@@ -49,7 +49,7 @@ enum class shakujo_translator_code {
     /// @brief the referring variable is not resolved.
     unresolved_variable,
     /// @brief the number of values is wrong.
-    inconsistent_number_of_elements,
+    inconsistent_elements,
 };
 
 /**
@@ -78,7 +78,7 @@ inline constexpr std::string_view to_string_view(shakujo_translator_code value) 
         case kind::ambiguous_type: return "ambiguous_type"sv;
         case kind::inconsistent_type: return "inconsistent_type"sv;
         case kind::unresolved_variable: return "unresolved_variable"sv;
-        case kind::inconsistent_number_of_elements: return "inconsistent_number_of_elements"sv;
+        case kind::inconsistent_elements: return "inconsistent_elements"sv;
     }
     std::abort();
 }
