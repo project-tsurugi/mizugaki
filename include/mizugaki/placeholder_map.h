@@ -10,6 +10,8 @@
 
 namespace mizugaki {
 
+// FIXME: rename as "host variable"
+
 /**
  * @brief provides placeholders.
  */
