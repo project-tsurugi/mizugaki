@@ -2,6 +2,7 @@ add_library(mizugaki
 
     # AST models
     mizugaki/ast/node_region.cpp
+    mizugaki/ast/compilation_unit.cpp
 
     mizugaki/ast/common/sort_element.cpp
     mizugaki/ast/common/target_element.cpp

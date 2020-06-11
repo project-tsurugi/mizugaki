@@ -157,7 +157,7 @@ public:
      * @brief creates a new instance.
      * @param other the move source
      */
-    clone_wrapper(clone_wrapper&& other) noexcept(std::is_nothrow_move_constructible_v<target_type>) = default;
+    clone_wrapper(clone_wrapper&& other) noexcept = default;
 
     /**
      * @brief assigns into this.
