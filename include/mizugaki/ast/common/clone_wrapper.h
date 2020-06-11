@@ -157,14 +157,14 @@ public:
      * @brief creates a new instance.
      * @param other the move source
      */
-    clone_wrapper(clone_wrapper&& other) noexcept = default;
+    clone_wrapper(clone_wrapper&& other) noexcept(std::is_nothrow_move_constructible_v<target_type>) = default;
 
     /**
      * @brief assigns into this.
      * @param other the move source
      * @return this
      */
-    clone_wrapper& operator=(clone_wrapper&& other) noexcept = default;
+    clone_wrapper& operator=(clone_wrapper&& other) noexcept(std::is_nothrow_move_assignable_v<target_type>) = default;
 
     /**
      * @brief returns the holding element.
