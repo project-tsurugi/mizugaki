@@ -59,27 +59,31 @@ using kind_set = ::takatori::util::enum_set<
 
 /**
  * @brief provides the implementation type of the query expression kind.
- * @tparam Kind the value kind
+ * @tparam K the kind type
+ * @tparam Kind the node kind
  */
-template<kind Kind> struct type_of;
+template<class K, K Kind> struct type_of;
 
-/// @copydoc type_of
-template<kind Kind> using type_of_t = typename type_of<Kind>::type;
+/**
+ * @brief provides the implementation type of the node kind.
+ * @tparam Kind the node kind
+ */
+template<auto Kind> using type_of_t = typename type_of<decltype(Kind), Kind>::type;
 
 /// @brief provides implementation type of kind::query.
-template<> struct type_of<kind::query> : ::takatori::util::meta_type<query> {};
+template<> struct type_of<kind, kind::query> : ::takatori::util::meta_type<query> {};
 
 /// @brief provides implementation type of kind::table_reference.
-template<> struct type_of<kind::table_reference> : ::takatori::util::meta_type<table_reference> {};
+template<> struct type_of<kind, kind::table_reference> : ::takatori::util::meta_type<table_reference> {};
 
 /// @brief provides implementation type of kind::table_value_constructor.
-template<> struct type_of<kind::table_value_constructor> : ::takatori::util::meta_type<table_value_constructor> {};
+template<> struct type_of<kind, kind::table_value_constructor> : ::takatori::util::meta_type<table_value_constructor> {};
 
 /// @brief provides implementation type of kind::binary_expression.
-template<> struct type_of<kind::binary_expression> : ::takatori::util::meta_type<binary_expression> {};
+template<> struct type_of<kind, kind::binary_expression> : ::takatori::util::meta_type<binary_expression> {};
 
 /// @brief provides implementation type of kind::with_expression.
-template<> struct type_of<kind::with_expression> : ::takatori::util::meta_type<with_expression> {};
+template<> struct type_of<kind, kind::with_expression> : ::takatori::util::meta_type<with_expression> {};
 
 /**
  * @brief returns string representation of the value.

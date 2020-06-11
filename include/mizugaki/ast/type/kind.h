@@ -163,78 +163,82 @@ using kind_set = ::takatori::util::enum_set<
 
 /**
  * @brief provides the implementation type of the type kind.
- * @tparam Kind the type kind
+ * @tparam K the kind type
+ * @tparam Kind the node kind
  */
-template<kind Kind> struct type_of;
+template<class K, K Kind> struct type_of;
 
-/// @copydoc type_of
-template<kind Kind> using type_of_t = typename type_of<Kind>::type;
+/**
+ * @brief provides the implementation type of the node kind.
+ * @tparam Kind the node kind
+ */
+template<auto Kind> using type_of_t = typename type_of<decltype(Kind), Kind>::type;
 
 /// @brief provides implementation type of kind::unknown.
-template<> struct type_of<kind::unknown> : ::takatori::util::meta_type<simple> {};
+template<> struct type_of<kind, kind::unknown> : ::takatori::util::meta_type<simple> {};
 
 /// @brief provides implementation type of kind::character.
-template<> struct type_of<kind::character> : ::takatori::util::meta_type<character_string> {};
+template<> struct type_of<kind, kind::character> : ::takatori::util::meta_type<character_string> {};
 
 /// @brief provides implementation type of kind::character_varying.
-template<> struct type_of<kind::character_varying> : ::takatori::util::meta_type<character_string> {};
+template<> struct type_of<kind, kind::character_varying> : ::takatori::util::meta_type<character_string> {};
 
 // @brief provides implementation type of kind::character_large_object.
-// FIXME: template<> struct type_of<kind::character_large_object> : ::takatori::util::meta_type<> {};
+// FIXME: template<> struct type_of<kind, kind::character_large_object> : ::takatori::util::meta_type<> {};
 
 /// @brief provides implementation type of kind::bit.
-template<> struct type_of<kind::bit> : ::takatori::util::meta_type<bit_string> {};
+template<> struct type_of<kind, kind::bit> : ::takatori::util::meta_type<bit_string> {};
 
 /// @brief provides implementation type of kind::bit_varying.
-template<> struct type_of<kind::bit_varying> : ::takatori::util::meta_type<bit_string> {};
+template<> struct type_of<kind, kind::bit_varying> : ::takatori::util::meta_type<bit_string> {};
 
 // @brief provides implementation type of kind::binary_large_object.
-// FIXME: template<> struct type_of<kind::binary_large_object> : ::takatori::util::meta_type<> {};
+// FIXME: template<> struct type_of<kind, kind::binary_large_object> : ::takatori::util::meta_type<> {};
 
 /// @brief provides implementation type of kind::numeric.
-template<> struct type_of<kind::numeric> : ::takatori::util::meta_type<decimal> {};
+template<> struct type_of<kind, kind::numeric> : ::takatori::util::meta_type<decimal> {};
 
 /// @brief provides implementation type of kind::decimal.
-template<> struct type_of<kind::decimal> : ::takatori::util::meta_type<decimal> {};
+template<> struct type_of<kind, kind::decimal> : ::takatori::util::meta_type<decimal> {};
 
 /// @brief provides implementation type of kind::tiny_integer.
-template<> struct type_of<kind::tiny_integer> : ::takatori::util::meta_type<simple> {};
+template<> struct type_of<kind, kind::tiny_integer> : ::takatori::util::meta_type<simple> {};
 
 /// @brief provides implementation type of kind::small_integer.
-template<> struct type_of<kind::small_integer> : ::takatori::util::meta_type<simple> {};
+template<> struct type_of<kind, kind::small_integer> : ::takatori::util::meta_type<simple> {};
 
 /// @brief provides implementation type of kind::integer.
-template<> struct type_of<kind::integer> : ::takatori::util::meta_type<simple> {};
+template<> struct type_of<kind, kind::integer> : ::takatori::util::meta_type<simple> {};
 
 /// @brief provides implementation type of kind::big_integer.
-template<> struct type_of<kind::big_integer> : ::takatori::util::meta_type<simple> {};
+template<> struct type_of<kind, kind::big_integer> : ::takatori::util::meta_type<simple> {};
 
 /// @brief provides implementation type of kind::real.
-template<> struct type_of<kind::real> : ::takatori::util::meta_type<simple> {};
+template<> struct type_of<kind, kind::real> : ::takatori::util::meta_type<simple> {};
 
 /// @brief provides implementation type of kind::double_precision.
-template<> struct type_of<kind::double_precision> : ::takatori::util::meta_type<simple> {};
+template<> struct type_of<kind, kind::double_precision> : ::takatori::util::meta_type<simple> {};
 
 /// @brief provides implementation type of kind::binary_integer.
-template<> struct type_of<kind::binary_integer> : ::takatori::util::meta_type<binary_numeric> {};
+template<> struct type_of<kind, kind::binary_integer> : ::takatori::util::meta_type<binary_numeric> {};
 
 /// @brief provides implementation type of kind::binary_float.
-template<> struct type_of<kind::binary_float> : ::takatori::util::meta_type<binary_numeric> {};
+template<> struct type_of<kind, kind::binary_float> : ::takatori::util::meta_type<binary_numeric> {};
 
 /// @brief provides implementation type of kind::boolean.
-template<> struct type_of<kind::boolean> : ::takatori::util::meta_type<simple> {};
+template<> struct type_of<kind, kind::boolean> : ::takatori::util::meta_type<simple> {};
 
 /// @brief provides implementation type of kind::date.
-template<> struct type_of<kind::date> : ::takatori::util::meta_type<simple> {};
+template<> struct type_of<kind, kind::date> : ::takatori::util::meta_type<simple> {};
 
 /// @brief provides implementation type of kind::time.
-template<> struct type_of<kind::time> : ::takatori::util::meta_type<datetime> {};
+template<> struct type_of<kind, kind::time> : ::takatori::util::meta_type<datetime> {};
 
 /// @brief provides implementation type of kind::timestamp.
-template<> struct type_of<kind::timestamp> : ::takatori::util::meta_type<datetime> {};
+template<> struct type_of<kind, kind::timestamp> : ::takatori::util::meta_type<datetime> {};
 
 /// @brief provides implementation type of kind::interval.
-template<> struct type_of<kind::interval> : ::takatori::util::meta_type<interval> {};
+template<> struct type_of<kind, kind::interval> : ::takatori::util::meta_type<interval> {};
 
 /**
  * @brief returns string representation of the value.

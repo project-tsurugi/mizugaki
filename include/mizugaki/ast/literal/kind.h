@@ -130,51 +130,52 @@ using kind_set = ::takatori::util::enum_set<
 
 /**
  * @brief provides the implementation type of the value kind.
- * @tparam Kind the value kind
+ * @tparam K the kind type
+ * @tparam Kind the node kind
  */
-template<kind Kind> struct type_of;
+template<class K, K Kind> struct type_of;
 
 /// @copydoc type_of
-template<kind Kind> using type_of_t = typename type_of<Kind>::type;
+template<kind Kind> using type_of_t = typename type_of<decltype(Kind), Kind>::type;
 
 /// @brief provides implementation type of kind::boolean.
-template<> struct type_of<kind::boolean> : ::takatori::util::meta_type<boolean> {};
+template<> struct type_of<kind, kind::boolean> : ::takatori::util::meta_type<boolean> {};
 
 /// @brief provides implementation type of kind::exact_numeric.
-template<> struct type_of<kind::exact_numeric> : ::takatori::util::meta_type<numeric> {};
+template<> struct type_of<kind, kind::exact_numeric> : ::takatori::util::meta_type<numeric> {};
 
 /// @brief provides implementation type of kind::approximate_numeric.
-template<> struct type_of<kind::approximate_numeric> : ::takatori::util::meta_type<numeric> {};
+template<> struct type_of<kind, kind::approximate_numeric> : ::takatori::util::meta_type<numeric> {};
 
 /// @brief provides implementation type of kind::character_string.
-template<> struct type_of<kind::character_string> : ::takatori::util::meta_type<string> {};
+template<> struct type_of<kind, kind::character_string> : ::takatori::util::meta_type<string> {};
 
 /// @brief provides implementation type of kind::bit_string.
-template<> struct type_of<kind::bit_string> : ::takatori::util::meta_type<string> {};
+template<> struct type_of<kind, kind::bit_string> : ::takatori::util::meta_type<string> {};
 
 /// @brief provides implementation type of kind::hex_string.
-template<> struct type_of<kind::hex_string> : ::takatori::util::meta_type<string> {};
+template<> struct type_of<kind, kind::hex_string> : ::takatori::util::meta_type<string> {};
 
 /// @brief provides implementation type of kind::date.
-template<> struct type_of<kind::date> : ::takatori::util::meta_type<datetime> {};
+template<> struct type_of<kind, kind::date> : ::takatori::util::meta_type<datetime> {};
 
 /// @brief provides implementation type of kind::time.
-template<> struct type_of<kind::time> : ::takatori::util::meta_type<datetime> {};
+template<> struct type_of<kind, kind::time> : ::takatori::util::meta_type<datetime> {};
 
 /// @brief provides implementation type of kind::timestamp.
-template<> struct type_of<kind::timestamp> : ::takatori::util::meta_type<datetime> {};
+template<> struct type_of<kind, kind::timestamp> : ::takatori::util::meta_type<datetime> {};
 
 /// @brief provides implementation type of kind::interval.
-template<> struct type_of<kind::interval> : ::takatori::util::meta_type<interval> {};
+template<> struct type_of<kind, kind::interval> : ::takatori::util::meta_type<interval> {};
 
 /// @brief provides implementation type of kind::null.
-template<> struct type_of<kind::null> : ::takatori::util::meta_type<special<kind::null>> {};
+template<> struct type_of<kind, kind::null> : ::takatori::util::meta_type<special<kind::null>> {};
 
 /// @brief provides implementation type of kind::empty.
-template<> struct type_of<kind::empty> : ::takatori::util::meta_type<special<kind::empty>> {};
+template<> struct type_of<kind, kind::empty> : ::takatori::util::meta_type<special<kind::empty>> {};
 
 /// @brief provides implementation type of kind::default_.
-template<> struct type_of<kind::default_> : ::takatori::util::meta_type<special<kind::default_>> {};
+template<> struct type_of<kind, kind::default_> : ::takatori::util::meta_type<special<kind::default_>> {};
 
 /**
  * @brief returns string representation of the value.

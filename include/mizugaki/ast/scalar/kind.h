@@ -180,72 +180,76 @@ using kind_set = ::takatori::util::enum_set<
 
 /**
  * @brief provides the implementation type of the scalar expression kind.
- * @tparam Kind the scalar expression kind
+ * @tparam K the kind type
+ * @tparam Kind the node kind
  */
-template<kind Kind> struct type_of;
+template<class K, K Kind> struct type_of;
 
-/// @copydoc type_of
-template<kind Kind> using type_of_t = typename type_of<Kind>::type;
+/**
+ * @brief provides the implementation type of the node kind.
+ * @tparam Kind the node kind
+ */
+template<auto Kind> using type_of_t = typename type_of<decltype(Kind), Kind>::type;
 
 /// @brief provides implementation type of kind::literal_expression.
-template<> struct type_of<kind::literal_expression> : ::takatori::util::meta_type<literal_expression> {};
+template<> struct type_of<kind, kind::literal_expression> : ::takatori::util::meta_type<literal_expression> {};
 
 /// @brief provides implementation type of kind::variable_reference.
-template<> struct type_of<kind::variable_reference> : ::takatori::util::meta_type<variable_reference> {};
+template<> struct type_of<kind, kind::variable_reference> : ::takatori::util::meta_type<variable_reference> {};
 
 /// @brief provides implementation type of kind::field_reference.
-template<> struct type_of<kind::field_reference> : ::takatori::util::meta_type<field_reference> {};
+template<> struct type_of<kind, kind::field_reference> : ::takatori::util::meta_type<field_reference> {};
 
 /// @brief provides implementation type of kind::subquery.
-template<> struct type_of<kind::subquery> : ::takatori::util::meta_type<subquery> {};
+template<> struct type_of<kind, kind::subquery> : ::takatori::util::meta_type<subquery> {};
 
 /// @brief provides implementation type of kind::case_expression.
-template<> struct type_of<kind::case_expression> : ::takatori::util::meta_type<case_expression> {};
+template<> struct type_of<kind, kind::case_expression> : ::takatori::util::meta_type<case_expression> {};
 
 /// @brief provides implementation type of kind::cast_expression.
-template<> struct type_of<kind::cast_expression> : ::takatori::util::meta_type<cast_expression> {};
+template<> struct type_of<kind, kind::cast_expression> : ::takatori::util::meta_type<cast_expression> {};
 
 /// @brief provides implementation type of kind::unary_expression.
-template<> struct type_of<kind::unary_expression> : ::takatori::util::meta_type<unary_expression> {};
+template<> struct type_of<kind, kind::unary_expression> : ::takatori::util::meta_type<unary_expression> {};
 
 /// @brief provides implementation type of kind::binary_expression.
-template<> struct type_of<kind::binary_expression> : ::takatori::util::meta_type<binary_expression> {};
+template<> struct type_of<kind, kind::binary_expression> : ::takatori::util::meta_type<binary_expression> {};
 
 /// @brief provides implementation type of kind::value_constructor.
-template<> struct type_of<kind::value_constructor> : ::takatori::util::meta_type<value_constructor> {};
+template<> struct type_of<kind, kind::value_constructor> : ::takatori::util::meta_type<value_constructor> {};
 
 /// @brief provides implementation type of kind::comparison_predicate.
-template<> struct type_of<kind::comparison_predicate> : ::takatori::util::meta_type<comparison_predicate> {};
+template<> struct type_of<kind, kind::comparison_predicate> : ::takatori::util::meta_type<comparison_predicate> {};
 
 /// @brief provides implementation type of kind::between_predicate.
-template<> struct type_of<kind::between_predicate> : ::takatori::util::meta_type<between_predicate> {};
+template<> struct type_of<kind, kind::between_predicate> : ::takatori::util::meta_type<between_predicate> {};
 
 /// @brief provides implementation type of kind::in_predicate.
-template<> struct type_of<kind::in_predicate> : ::takatori::util::meta_type<in_predicate> {};
+template<> struct type_of<kind, kind::in_predicate> : ::takatori::util::meta_type<in_predicate> {};
 
 /// @brief provides implementation type of kind::pattern_match_predicate.
-template<> struct type_of<kind::pattern_match_predicate> : ::takatori::util::meta_type<pattern_match_predicate> {};
+template<> struct type_of<kind, kind::pattern_match_predicate> : ::takatori::util::meta_type<pattern_match_predicate> {};
 
 /// @brief provides implementation type of kind::function_invocation.
-template<> struct type_of<kind::function_invocation> : ::takatori::util::meta_type<function_invocation> {};
+template<> struct type_of<kind, kind::function_invocation> : ::takatori::util::meta_type<function_invocation> {};
 
 /// @brief provides implementation type of kind::set_function_invocation.
-template<> struct type_of<kind::set_function_invocation> : ::takatori::util::meta_type<set_function_invocation> {};
+template<> struct type_of<kind, kind::set_function_invocation> : ::takatori::util::meta_type<set_function_invocation> {};
 
 /// @brief provides implementation type of kind::builtin_function_invocation.
-template<> struct type_of<kind::builtin_function_invocation> : ::takatori::util::meta_type<builtin_function_invocation> {};
+template<> struct type_of<kind, kind::builtin_function_invocation> : ::takatori::util::meta_type<builtin_function_invocation> {};
 
 /// @brief provides implementation type of kind::builtin_set_function_invocation.
-template<> struct type_of<kind::builtin_set_function_invocation> : ::takatori::util::meta_type<builtin_set_function_invocation> {};
+template<> struct type_of<kind, kind::builtin_set_function_invocation> : ::takatori::util::meta_type<builtin_set_function_invocation> {};
 
 /// @brief provides implementation type of kind::new_invocation.
-template<> struct type_of<kind::new_invocation> : ::takatori::util::meta_type<new_invocation> {};
+template<> struct type_of<kind, kind::new_invocation> : ::takatori::util::meta_type<new_invocation> {};
 
 /// @brief provides implementation type of kind::method_invocation.
-template<> struct type_of<kind::method_invocation> : ::takatori::util::meta_type<method_invocation> {};
+template<> struct type_of<kind, kind::method_invocation> : ::takatori::util::meta_type<method_invocation> {};
 
 /// @brief provides implementation type of kind::static_method_invocation.
-template<> struct type_of<kind::static_method_invocation> : ::takatori::util::meta_type<static_method_invocation> {};
+template<> struct type_of<kind, kind::static_method_invocation> : ::takatori::util::meta_type<static_method_invocation> {};
 
 /**
  * @brief returns string representation of the value.

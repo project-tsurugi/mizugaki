@@ -52,24 +52,28 @@ using kind_set = ::takatori::util::enum_set<
 
 /**
  * @brief provides the implementation type of the table expression kind.
- * @tparam Kind the value kind
+ * @tparam K the kind type
+ * @tparam Kind the node kind
  */
-template<kind Kind> struct type_of;
+template<class K, K Kind> struct type_of;
 
-/// @copydoc type_of
-template<kind Kind> using type_of_t = typename type_of<Kind>::type;
+/**
+ * @brief provides the implementation type of the node kind.
+ * @tparam Kind the node kind
+ */
+template<auto Kind> using type_of_t = typename type_of<decltype(Kind), Kind>::type;
 
 /// @brief provides implementation type of kind::table_reference.
-template<> struct type_of<kind::table_reference> : ::takatori::util::meta_type<table_reference> {};
+template<> struct type_of<kind, kind::table_reference> : ::takatori::util::meta_type<table_reference> {};
 
 /// @brief provides implementation type of kind::unnest.
-template<> struct type_of<kind::unnest> : ::takatori::util::meta_type<unnest> {};
+template<> struct type_of<kind, kind::unnest> : ::takatori::util::meta_type<unnest> {};
 
 /// @brief provides implementation type of kind::join.
-template<> struct type_of<kind::join> : ::takatori::util::meta_type<join> {};
+template<> struct type_of<kind, kind::join> : ::takatori::util::meta_type<join> {};
 
 /// @brief provides implementation type of kind::subquery.
-template<> struct type_of<kind::subquery> : ::takatori::util::meta_type<subquery> {};
+template<> struct type_of<kind, kind::subquery> : ::takatori::util::meta_type<subquery> {};
 
 /**
  * @brief returns string representation of the value.

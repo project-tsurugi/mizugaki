@@ -28,18 +28,22 @@ enum class kind {
 
 /**
  * @brief provides the implementation type of the type kind.
- * @tparam Kind the type kind
+ * @tparam K the kind type
+ * @tparam Kind the node kind
  */
-template<kind Kind> struct type_of;
+template<class K, K Kind> struct type_of;
 
-/// @copydoc type_of
-template<kind Kind> using type_of_t = typename type_of<Kind>::type;
+/**
+ * @brief provides the implementation type of the node kind.
+ * @tparam Kind the node kind
+ */
+template<auto Kind> using type_of_t = typename type_of<decltype(Kind), Kind>::type;
 
 /// @brief provides implementation type of kind::simple.
-template<> struct type_of<kind::simple> : ::takatori::util::meta_type<simple> {};
+template<> struct type_of<kind, kind::simple> : ::takatori::util::meta_type<simple> {};
 
 /// @brief provides implementation type of kind::qualified.
-template<> struct type_of<kind::qualified> : ::takatori::util::meta_type<qualified> {};
+template<> struct type_of<kind, kind::qualified> : ::takatori::util::meta_type<qualified> {};
 
 /**
  * @brief returns string representation of the value.

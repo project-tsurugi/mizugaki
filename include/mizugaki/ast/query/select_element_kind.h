@@ -44,23 +44,18 @@ using select_element_kind_set = ::takatori::util::enum_set<
         select_element_kind::column,
         select_element_kind::all_fields>;
 
-/**
- * @brief provides the implementation type of the select element.
- * @tparam Kind the value kind
- */
-template<select_element_kind Kind> struct select_element_of;
+template<class K, K Kind> struct type_of;
 
-/// @copydoc select_element_of
-template<select_element_kind Kind> using select_element_of_t = typename select_element_of<Kind>::type;
+template<auto Kind> using type_of_t = typename type_of<decltype(Kind), Kind>::type;
 
 /// @brief provides implementation type of select_element_kind::column.
-template<> struct select_element_of<select_element_kind::column> : ::takatori::util::meta_type<select_column> {};
+template<> struct type_of<select_element_kind, select_element_kind::column> : ::takatori::util::meta_type<select_column> {};
 
 /// @brief provides implementation type of select_element_kind::asterisk.
-template<> struct select_element_of<select_element_kind::asterisk> : ::takatori::util::meta_type<select_asterisk> {};
+template<> struct type_of<select_element_kind, select_element_kind::asterisk> : ::takatori::util::meta_type<select_asterisk> {};
 
 /// @brief provides implementation type of select_element_kind::all_fields.
-template<> struct select_element_of<select_element_kind::all_fields> : ::takatori::util::meta_type<select_all_fields> {};
+template<> struct type_of<select_element_kind, select_element_kind::all_fields> : ::takatori::util::meta_type<select_all_fields> {};
 
 /**
  * @brief returns string representation of the value.

@@ -32,17 +32,12 @@ using grouping_element_kind_set = ::takatori::util::enum_set<
         grouping_element_kind::column,
         grouping_element_kind::column>; // FIXME
 
-/**
- * @brief provides the implementation type of the select element.
- * @tparam Kind the value kind
- */
-template<grouping_element_kind Kind> struct grouping_element_of;
+template<class K, K Kind> struct type_of;
 
-/// @copydoc grouping_element_of
-template<grouping_element_kind Kind> using grouping_element_of_t = typename grouping_element_of<Kind>::type;
+template<auto Kind> using type_of_t = typename type_of<decltype(Kind), Kind>::type;
 
 /// @brief provides implementation type of grouping_element_kind::column.
-template<> struct grouping_element_of<grouping_element_kind::column> : ::takatori::util::meta_type<grouping_column> {};
+template<> struct type_of<grouping_element_kind, grouping_element_kind::column> : ::takatori::util::meta_type<grouping_column> {};
 
 /**
  * @brief returns string representation of the value.
