@@ -88,7 +88,7 @@ public:
 
     /**
      * @brief returns whether or not `LATERAL` is specified.
-     * @return true if `ONLY` is specified
+     * @return true if `LATERAL` is specified
      * @return false
      */
     [[nodiscard]] bool_type& is_lateral() noexcept;

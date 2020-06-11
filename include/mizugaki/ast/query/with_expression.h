@@ -2,6 +2,7 @@
 
 #include <takatori/util/object_creator.h>
 
+#include <mizugaki/ast/common/regioned.h>
 #include <mizugaki/ast/common/vector.h>
 #include <mizugaki/ast/scalar/expression.h>
 
@@ -21,7 +22,10 @@ class with_expression final : public expression {
 public:
     /// @brief the element type.
     using element_type = with_element;
-    
+
+    /// @brief truth type with element region information.
+    using bool_type = common::regioned<bool>;
+
     /// @brief the node kind of this.
     static constexpr node_kind_type tag = node_kind_type::with_expression;
 
@@ -29,11 +33,13 @@ public:
      * @brief creates a new instance.
      * @param elements the named query declarations
      * @param body the body expression
+     * @param is_recursive whether or not `RECURSIVE` is specified
      * @param region the node region
      */
     explicit with_expression(
             common::vector<element_type> elements,
             ::takatori::util::unique_object_ptr<expression> body,
+            bool_type is_recursive = { false },
             region_type region = {}) noexcept;
 
     /**
@@ -73,9 +79,20 @@ public:
     /// @copydoc body()
     [[nodiscard]] ::takatori::util::unique_object_ptr<expression> const& body() const noexcept;
 
+    /**
+     * @brief returns whether or not `RECURSIVE` is specified.
+     * @return true if `RECURSIVE` is specified
+     * @return false
+     */
+    [[nodiscard]] bool_type& is_recursive() noexcept;
+
+    /// @copydoc is_recursive()
+    [[nodiscard]] bool_type const& is_recursive() const noexcept;
+
 private:
     common::vector<element_type> elements_;
     ::takatori::util::unique_object_ptr<expression> body_;
+    bool_type is_recursive_;
 };
 
 } // namespace mizugaki::ast::query
