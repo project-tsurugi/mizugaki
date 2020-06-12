@@ -22,17 +22,19 @@ binary_numeric::binary_numeric(
 }
 
 binary_numeric::binary_numeric(binary_numeric const& other, object_creator) :
-    binary_numeric(
+    binary_numeric {
             other.type_kind_,
             other.precision_,
-            other.region())
+            other.region(),
+    }
 {}
 
 binary_numeric::binary_numeric(binary_numeric&& other, object_creator) :
-    binary_numeric(
+    binary_numeric {
             other.type_kind_,
             std::move(other.precision_),
-            other.region())
+            other.region(),
+    }
 {}
 
 binary_numeric* binary_numeric::clone(object_creator creator) const& {

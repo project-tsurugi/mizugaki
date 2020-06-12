@@ -25,23 +25,25 @@ between_predicate::between_predicate(
 {}
 
 between_predicate::between_predicate(between_predicate const& other, object_creator creator) :
-    between_predicate(
+    between_predicate {
             clone_unique(other.target_, creator),
             clone_unique(other.left_, creator),
             clone_unique(other.right_, creator),
             other.operator_kind_,
             other.is_not_,
-            other.region())
+            other.region(),
+    }
 {}
 
 between_predicate::between_predicate(between_predicate&& other, object_creator creator) :
-    between_predicate(
+    between_predicate {
             clone_unique(std::move(other.target_), creator),
             clone_unique(std::move(other.left_), creator),
             clone_unique(std::move(other.right_), creator),
             other.operator_kind_,
             other.is_not_,
-            other.region())
+            other.region(),
+    }
 {}
 
 between_predicate* between_predicate::clone(object_creator creator) const& {

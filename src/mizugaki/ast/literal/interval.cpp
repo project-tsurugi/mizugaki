@@ -15,15 +15,17 @@ interval::interval(
 {}
 
 interval::interval(interval const& other, object_creator creator) :
-    interval(
-            value_type { other.value_, creator.allocator() },
-            other.region())
+    interval {
+            value_type{other.value_, creator.allocator()},
+            other.region(),
+    }
 {}
 
 interval::interval(interval&& other, object_creator creator) :
-    interval(
-            value_type { std::move(other.value_), creator.allocator() },
-            other.region())
+    interval {
+            value_type{std::move(other.value_), creator.allocator()},
+            other.region(),
+    }
 {}
 
 interval* interval::clone(object_creator creator) const& {

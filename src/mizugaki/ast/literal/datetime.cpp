@@ -21,17 +21,19 @@ datetime::datetime(
 }
 
 datetime::datetime(datetime const& other, object_creator creator) :
-    datetime(
+    datetime {
             other.value_kind_,
-            value_type { other.value_, creator.allocator() },
-            other.region())
+            value_type{other.value_, creator.allocator()},
+            other.region(),
+    }
 {}
 
 datetime::datetime(datetime&& other, object_creator creator) :
-    datetime(
+    datetime {
             other.value_kind_,
-            value_type { std::move(other.value_), creator.allocator() },
-            other.region())
+            value_type{std::move(other.value_), creator.allocator()},
+            other.region(),
+    }
 {}
 
 datetime* datetime::clone(object_creator creator) const& {

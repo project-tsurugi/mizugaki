@@ -50,31 +50,28 @@ public:
      * @brief returns a container of the qualified identifier.
      * @return the qualified identifier
      */
-    [[nodiscard]] simple& last() noexcept override;
+    [[nodiscard]] identifier_type const& last_identifier() const noexcept override;
 
-    /// @copydoc last()
-    [[nodiscard]] simple const& last() const noexcept override;
-
-    /// @copydoc last()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<simple>& mutable_last() noexcept;
+    /// @copydoc qualifier()
+    [[nodiscard]] ::takatori::util::optional_ptr<name const> optional_qualifier() const noexcept override;
 
     /**
      * @brief returns the qualifier of this name.
      * @return the qualifier
      */
-    [[nodiscard]] name& qualifier() noexcept;
+    [[nodiscard]] ::takatori::util::unique_object_ptr<name>& qualifier() noexcept;
 
     /// @copydoc qualifier()
-    [[nodiscard]] name const& qualifier() const noexcept;
-
-    [[nodiscard]] ::takatori::util::optional_ptr<name> optional_qualifier() noexcept override;
-    [[nodiscard]] ::takatori::util::optional_ptr<name const> optional_qualifier() const noexcept override;
+    [[nodiscard]] ::takatori::util::unique_object_ptr<name> const& qualifier() const noexcept;
 
     /**
-     * @brief returns a container of the qualifier of this name.
-     * @return the qualifier
+     * @brief returns a container of the qualified identifier.
+     * @return the qualified identifier
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<name>& mutable_qualifier() noexcept;
+    [[nodiscard]] ::takatori::util::unique_object_ptr<simple>& last() noexcept;
+
+    /// @copydoc last()
+    [[nodiscard]] ::takatori::util::unique_object_ptr<simple> const& last() const noexcept;
 
 private:
     ::takatori::util::unique_object_ptr<name> qualifier_;

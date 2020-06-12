@@ -22,17 +22,19 @@ bit_string::bit_string(
 }
 
 bit_string::bit_string(bit_string const& other, object_creator) :
-    bit_string(
+    bit_string {
             other.type_kind_,
             other.length_,
-            other.region())
+            other.region(),
+    }
 {}
 
 bit_string::bit_string(bit_string&& other, object_creator) :
-    bit_string(
+    bit_string {
             other.type_kind_,
             std::move(other.length_),
-            other.region())
+            other.region(),
+    }
 {}
 
 bit_string* bit_string::clone(object_creator creator) const& {

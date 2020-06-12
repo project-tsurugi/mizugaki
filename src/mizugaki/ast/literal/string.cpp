@@ -25,19 +25,21 @@ string::string(
 }
 
 string::string(string const& other, object_creator creator) :
-    string(
+    string {
             other.value_kind_,
             value_type { other.value_, creator.allocator() },
             concatenations_type { other.concatenations_, creator.allocator() },
-            other.region())
+            other.region(),
+    }
 {}
 
 string::string(string&& other, object_creator creator) :
-    string(
+    string{
             other.value_kind_,
             value_type { std::move(other.value_), creator.allocator() },
             concatenations_type { std::move(other.concatenations_), creator.allocator() },
-            other.region())
+            other.region(),
+    }
 {}
 
 string* string::clone(object_creator creator) const& {

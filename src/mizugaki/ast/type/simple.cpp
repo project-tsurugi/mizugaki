@@ -17,11 +17,17 @@ simple::simple(type_kind_type type_kind, region_type region) :
 }
 
 simple::simple(simple const& other, object_creator) :
-    simple(other.type_kind_, other.region())
+    simple {
+            other.type_kind_,
+            other.region(),
+    }
 {}
 
 simple::simple(simple&& other, object_creator) :
-    simple(other.type_kind_, other.region())
+    simple {
+            other.type_kind_,
+            other.region(),
+    }
 {}
 
 simple* simple::clone(object_creator creator) const& {

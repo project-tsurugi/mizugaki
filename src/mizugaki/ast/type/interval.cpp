@@ -11,11 +11,11 @@ interval::interval(region_type region) noexcept :
 {}
 
 interval::interval(interval const& other, object_creator) noexcept :
-    interval(other.region())
+    interval { other.region() }
 {}
 
 interval::interval(interval&& other, object_creator) noexcept :
-    interval(other.region())
+    interval { other.region() }
 {}
 
 interval* interval::clone(object_creator creator) const& {

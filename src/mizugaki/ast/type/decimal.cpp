@@ -25,19 +25,21 @@ decimal::decimal(
 }
 
 decimal::decimal(decimal const& other, object_creator) :
-    decimal(
+    decimal {
             other.type_kind_,
             other.precision_,
             other.scale_,
-            other.region())
+            other.region(),
+    }
 {}
 
 decimal::decimal(decimal&& other, object_creator) :
-    decimal(
+    decimal {
             other.type_kind_,
             std::move(other.precision_),
             std::move(other.scale_),
-            other.region())
+            other.region(),
+    }
 {}
 
 decimal* decimal::clone(object_creator creator) const& {

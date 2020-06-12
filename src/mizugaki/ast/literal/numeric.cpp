@@ -24,19 +24,21 @@ numeric::numeric(
 }
 
 numeric::numeric(numeric const& other, object_creator creator) :
-    numeric(
+    numeric {
             other.value_kind_,
             other.sign_,
-            value_type { other.unsigned_value_, creator.allocator() },
-            other.region())
+            value_type{other.unsigned_value_, creator.allocator()},
+            other.region(),
+    }
 {}
 
 numeric::numeric(numeric&& other, object_creator creator) :
-    numeric(
+    numeric {
             other.value_kind_,
             std::move(other.sign_),
             value_type { std::move(other.unsigned_value_), creator.allocator() },
-            other.region())
+            other.region(),
+    }
 {}
 
 numeric* numeric::clone(object_creator creator) const& {

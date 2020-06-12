@@ -3,18 +3,20 @@
 #include <takatori/util/optional_ptr.h>
 
 #include <mizugaki/ast/node.h>
+#include <mizugaki/ast/common/chars.h>
 
 #include "kind.h"
 
 namespace mizugaki::ast::name {
-
-class simple;
 
 /**
  * @brief an abstract super interface of name models.
  */
 class name : public node {
 public:
+    /// @brief the identifier type.
+    using identifier_type = common::chars;
+
     /// @brief the node kind type.
     using node_kind_type = kind;
 
@@ -29,22 +31,16 @@ public:
     [[nodiscard]] virtual node_kind_type node_kind() const noexcept = 0;
 
     /**
-     * @brief returns the last name.
-     * @return the last name
+     * @brief returns identifier of the last name.
+     * @return the last identifier
      */
-    [[nodiscard]] virtual simple& last() noexcept = 0;
-
-    /// @copydoc last()
-    [[nodiscard]] virtual simple const& last() const noexcept = 0;
+    [[nodiscard]] virtual identifier_type const& last_identifier() const noexcept = 0;
 
     /**
      * @brief returns the name qualifier.
      * @return the name qualifier
      * @return empty if this does not have any qualifier
      */
-    [[nodiscard]] virtual ::takatori::util::optional_ptr<name> optional_qualifier() noexcept = 0;
-
-    /// @copydoc optional_qualifier()
     [[nodiscard]] virtual ::takatori::util::optional_ptr<name const> optional_qualifier() const noexcept = 0;
 };
 

@@ -22,17 +22,19 @@ datetime::datetime(
 }
 
 datetime::datetime(datetime const& other, object_creator) :
-    datetime(
+    datetime {
             other.type_kind_,
             other.has_time_zone_,
-            other.region())
+            other.region(),
+    }
 {}
 
 datetime::datetime(datetime&& other, object_creator) :
-    datetime(
+    datetime {
             other.type_kind_,
             std::move(other.has_time_zone_),
-            other.region())
+            other.region(),
+    }
 {}
 
 datetime* datetime::clone(object_creator creator) const& {

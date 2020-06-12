@@ -2,8 +2,6 @@
 
 namespace mizugaki::ast::name {
 
-using identifier_type = simple::identifier_type;
-
 using ::takatori::util::object_creator;
 using ::takatori::util::optional_ptr;
 
@@ -13,15 +11,17 @@ simple::simple(identifier_type identifier, region_type region) noexcept :
 {}
 
 simple::simple(simple const& other, object_creator creator) :
-    simple(
-        identifier_type { other.identifier_, creator.allocator() },
-            other.region())
+    simple {
+            { other.identifier_, creator.allocator() },
+            other.region(),
+    }
 {}
 
 simple::simple(simple&& other, object_creator creator) :
-    simple(
-            identifier_type { std::move(other.identifier_), creator.allocator() },
-            other.region())
+    simple {
+            { std::move(other.identifier_), creator.allocator() },
+            other.region(),
+    }
 {}
 
 simple* simple::clone(object_creator creator) const& {
@@ -36,27 +36,19 @@ name::node_kind_type simple::node_kind() const noexcept {
     return tag;
 }
 
-simple& simple::last() noexcept {
-    return *this;
-}
-
-simple const& simple::last() const noexcept {
-    return *this;
-}
-
-optional_ptr<name> simple::optional_qualifier() noexcept {
-    return {};
+name::identifier_type const& simple::last_identifier() const noexcept {
+    return identifier();
 }
 
 optional_ptr<name const> simple::optional_qualifier() const noexcept {
     return {};
 }
 
-identifier_type& simple::identifier() noexcept {
+name::identifier_type& simple::identifier() noexcept {
     return identifier_;
 }
 
-identifier_type const& simple::identifier() const noexcept {
+name::identifier_type const& simple::identifier() const noexcept {
     return identifier_;
 }
 

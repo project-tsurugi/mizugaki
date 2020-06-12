@@ -19,17 +19,19 @@ qualified::qualified(
 {}
 
 qualified::qualified(qualified const& other, object_creator creator) :
-    qualified(
+    qualified{
             clone_unique(other.qualifier_, creator),
             clone_unique(other.last_, creator),
-            other.region())
+            other.region(),
+    }
 {}
 
 qualified::qualified(qualified&& other, object_creator creator) :
-    qualified(
+    qualified{
             clone_unique(std::move(other.qualifier_), creator),
             clone_unique(std::move(other.last_), creator),
-            other.region())
+            other.region(),
+    }
 {}
 
 qualified* qualified::clone(object_creator creator) const& {
@@ -44,36 +46,28 @@ name::node_kind_type qualified::node_kind() const noexcept {
     return tag;
 }
 
-simple& qualified::last() noexcept {
-    return *last_;
-}
-
-simple const& qualified::last() const noexcept {
-    return *last_;
-}
-
-unique_object_ptr<simple>& qualified::mutable_last() noexcept {
-    return last_;
-}
-
-name& qualified::qualifier() noexcept {
-    return *qualifier_;
-}
-
-name const& qualified::qualifier() const noexcept {
-    return *qualifier_;
-}
-
-optional_ptr<name> qualified::optional_qualifier() noexcept {
-    return optional_ptr { qualifier_.get() };
+name::identifier_type const& qualified::last_identifier() const noexcept {
+    return last()->identifier();
 }
 
 optional_ptr<name const> qualified::optional_qualifier() const noexcept {
-    return optional_ptr { qualifier_.get() };
+    return takatori::util::optional_ptr<name const>();
 }
 
-::takatori::util::unique_object_ptr<name>& qualified::mutable_qualifier() noexcept {
+unique_object_ptr<name>& qualified::qualifier() noexcept {
     return qualifier_;
+}
+
+unique_object_ptr<name> const& qualified::qualifier() const noexcept {
+    return qualifier_;
+}
+
+unique_object_ptr<simple>& qualified::last() noexcept {
+    return last_;
+}
+
+unique_object_ptr<simple> const& qualified::last() const noexcept {
+    return last_;
 }
 
 } // namespace mizugaki::ast::name

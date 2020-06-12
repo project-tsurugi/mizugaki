@@ -1,7 +1,5 @@
 #pragma once
 
-#include <mizugaki/ast/common/chars.h>
-
 #include "name.h"
 
 namespace mizugaki::ast::name {
@@ -14,9 +12,6 @@ class simple final : public name {
     using super = name;
 
 public:
-    /// @brief the identifier type.
-    using identifier_type = common::chars;
-
     /// @brief the node kind of this.
     static constexpr node_kind_type tag = node_kind_type::simple;
 
@@ -46,22 +41,13 @@ public:
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 
-    /**
-     * @brief returns this.
-     * @return this
-     */
-    [[nodiscard]] simple& last() noexcept override;
-
-    /// @copydoc last()
-    [[nodiscard]] simple const& last() const noexcept override;
+    /// @copydoc identifier()
+    [[nodiscard]] identifier_type const& last_identifier() const noexcept override;
 
     /**
      * @brief always returns empty.
      * @return empty
      */
-    [[nodiscard]] ::takatori::util::optional_ptr<name> optional_qualifier() noexcept override;
-
-    /// @copydoc optional_qualifier()
     [[nodiscard]] ::takatori::util::optional_ptr<name const> optional_qualifier() const noexcept override;
 
     /**

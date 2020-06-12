@@ -13,11 +13,17 @@ boolean::boolean(value_type value, region_type region) noexcept :
 {}
 
 boolean::boolean(boolean const& other, object_creator) noexcept :
-    boolean(other.value_, other.region())
+    boolean {
+            other.value_,
+            other.region(),
+    }
 {}
 
 boolean::boolean(boolean&& other, object_creator) noexcept :
-    boolean(other.value_, other.region())
+    boolean {
+            other.value_,
+            other.region(),
+    }
 {}
 
 boolean* boolean::clone(object_creator creator) const& {
