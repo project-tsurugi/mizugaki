@@ -16,16 +16,17 @@ git submodule update --init --recursive
 ```dockerfile
 FROM ubuntu:18.04
 
-RUN apt update -y && apt install -y git build-essential cmake ninja-build
+RUN apt update -y && apt install -y git build-essential cmake flex ninja-build
 ```
 
 optional packages:
 
+* `bison` (only `>= 3.6`)
 * `doxygen`
 * `graphviz`
 * `clang-tidy-9`
 
-### Install sub-modules
+### Install modules
 
 #### `third_party/yugawara`
 
@@ -48,6 +49,25 @@ cmake --build . --target install
 
 see https://github.com/Tessil/hopscotch-map
 
+#### GNU Bison `>= 3.6`
+
+This project requires GNU Bison `>= 3.6`.
+Please run `bison --version` and check the printed version.
+
+```sh
+# install packages to build bison
+sudo apt update -y
+sudo apt install -y curl m4
+
+curl http://ftp.jaist.ac.jp/pub/GNU/bison/bison-3.6.2.tar.gz | tar zxv
+cd bison-3.6.2
+./configure --prefix=/path/to/install
+make -j4
+make install # or sudo make install
+```
+
+If you install the above to a non-standard path, please specify `-DCMAKE_PREFIX_PATH=</path/to/install>` to cmake.
+
 ## How to build
 
 ```sh
@@ -60,6 +80,7 @@ cmake --build .
 available options:
 
 * `-DCMAKE_INSTALL_PREFIX=/path/to/install-root` - change install location
+* `-DCMAKE_PREFIX_PATH=/path/to/install-root` - add installation search path (including `bison` command)
 * `-DBUILD_SHARED_LIBS=OFF` - create static libraries instead of shared libraries
 * `-DBUILD_TESTS=OFF` - don't build test programs
 * `-DBUILD_DOCUMENTS=OFF` - don't build documents by doxygen
