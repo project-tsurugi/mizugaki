@@ -1,3 +1,36 @@
+set(FLEX_FLAGS_DEBUG "-d")
+set(FLEX_FLAGS_RELEASE "-Cfe")
+set(FLEX_FLAGS_RELWITHDEBINFO "-Cfe")
+set(FLEX_FLAGS_MINSIZEREL "-Ce")
+
+set(BISON_FLAGS_DEBUG "-Wall -Werror")
+set(BISON_FLAGS_RELEASE "-Wall -Werror")
+set(BISON_FLAGS_RELWITHDEBINFO "-Wall -Werror")
+set(BISON_FLAGS_MINSIZEREL "-Wall -Werror")
+
+string(TOUPPER ${CMAKE_BUILD_TYPE} UPPER_CMAKE_BUILD_TYPE)
+set(FLEX_FLAGS "${FLEX_FLAGS_${UPPER_CMAKE_BUILD_TYPE}}")
+set(BISON_FLAGS "${BISON_FLAGS_${UPPER_CMAKE_BUILD_TYPE}}")
+
+FILE(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mizugaki/parser)
+
+FLEX_TARGET(sql_scanner
+    mizugaki/parser/sql_scanner.ll
+    ${CMAKE_CURRENT_BINARY_DIR}/mizugaki/parser/sql_scanner_generated.cpp
+    COMPILE_FLAGS "${FLEX_FLAGS}"
+)
+
+BISON_TARGET(sql_parser
+    mizugaki/parser/sql_parser.yy
+    ${CMAKE_CURRENT_BINARY_DIR}/mizugaki/parser/sql_parser_generated.cpp
+    COMPILE_FLAGS "${BISON_FLAGS}"
+)
+
+ADD_FLEX_BISON_DEPENDENCY(
+    sql_scanner
+    sql_parser
+)
+
 add_library(mizugaki
 
     # AST models
@@ -70,6 +103,14 @@ add_library(mizugaki
     mizugaki/ast/statement/delete_statement.cpp
     mizugaki/ast/statement/set_element.cpp
 
+    # SQL parser
+    mizugaki/parser/sql_parser.cpp
+    mizugaki/parser/sql_parser_result.cpp
+    mizugaki/parser/sql_scanner.cpp
+    mizugaki/parser/sql_driver.cpp
+    ${FLEX_sql_scanner_OUTPUTS}
+    ${BISON_sql_parser_OUTPUTS}
+
     # common tools
     mizugaki/placeholder_map.cpp
     mizugaki/placeholder_entry.cpp
@@ -91,7 +132,9 @@ add_library(mizugaki
 )
 
 target_include_directories(mizugaki
-    PRIVATE .
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
+    PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
+    PRIVATE ${FLEX_INCLUDE_DIRS}
 )
 
 target_link_libraries(mizugaki
@@ -159,7 +202,9 @@ install(
 add_library(mizugaki-impl INTERFACE)
 
 target_include_directories(mizugaki-impl
-    INTERFACE .
+    INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}
+    INTERFACE ${CMAKE_CURRENT_BINARY_DIR}
+    INTERFACE ${FLEX_INCLUDE_DIRS}
 )
 
 target_link_libraries(mizugaki-impl

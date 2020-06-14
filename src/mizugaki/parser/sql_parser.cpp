@@ -1,0 +1,34 @@
+#include <mizugaki/parser/sql_parser.h>
+
+#include <sstream>
+
+#include <takatori/document/basic_document.h>
+
+#include <mizugaki/parser/sql_parser_generated.hpp>
+#include <mizugaki/parser/sql_driver.h>
+#include <mizugaki/parser/sql_scanner.h>
+
+namespace mizugaki::parser {
+
+using ::takatori::util::object_creator;
+using ::takatori::document::basic_document;
+
+sql_parser::sql_parser(object_creator creator) noexcept :
+    creator_ { creator }
+{}
+
+sql_parser::result_type sql_parser::operator()(std::string location, std::string contents) {
+    std::istringstream input { contents };
+    sql_scanner scanner { input };
+
+    auto document = creator_.create_shared<basic_document>(std::move(location), std::move(contents));
+    sql_driver driver { std::move(document), creator_ };
+
+    sql_parser_generated parser { scanner, driver };
+
+    parser.parse();
+    return std::move(driver.result());
+}
+
+} // namespace mizugaki::parser
+
