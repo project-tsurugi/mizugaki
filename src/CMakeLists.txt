@@ -101,6 +101,7 @@ add_library(mizugaki
     mizugaki/ast/statement/insert_statement.cpp
     mizugaki/ast/statement/update_statement.cpp
     mizugaki/ast/statement/delete_statement.cpp
+    mizugaki/ast/statement/empty_statement.cpp
     mizugaki/ast/statement/set_element.cpp
 
     # SQL parser

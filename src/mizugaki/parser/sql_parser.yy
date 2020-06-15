@@ -4,7 +4,7 @@
 %defines
 %define api.token.constructor true
 %define api.value.type variant
-// %define api.value.automove true
+%define api.value.automove true
 %define api.namespace { mizugaki::parser }
 %define api.parser.class { sql_parser_generated }
 %define api.token.prefix {}
@@ -19,11 +19,25 @@
 %code requires {
     #include <memory>
     #include <string>
+
+    #include <takatori/util/object_creator.h>
+
     #include <mizugaki/ast/node_region.h>
+    #include <mizugaki/ast/common/vector.h>
     #include <mizugaki/ast/common/chars.h>
+
+    #include <mizugaki/ast/statement/statement.h>
+    #include <mizugaki/ast/statement/empty_statement.h>
+
     #include <mizugaki/parser/sql_parser_result.h>
 
     namespace mizugaki::parser {
+
+    template<class T>
+    using node_ptr = ::takatori::util::unique_object_ptr<T>;
+
+    template<class T>
+    using node_vector = ast::common::vector<node_ptr<T>>;
 
     class sql_scanner;
     class sql_driver;
@@ -32,6 +46,7 @@
 }
 
 %code {
+
     #include <mizugaki/parser/sql_scanner.h>
     #include <mizugaki/parser/sql_driver.h>
 
@@ -42,10 +57,7 @@
     }
 
     void sql_parser_generated::error(location_type const& location, std::string const& message) {
-        driver.result() = {
-                location,
-                message,
-        };
+        driver.error(location, message);
     }
 
     } // namespace mizugaki::parser
@@ -550,10 +562,34 @@
 
 %token ERROR "error"
 
+%nterm <node_ptr<ast::statement::statement>> statement
+%nterm <node_vector<ast::statement::statement>> statement_list
+
 %start program
 
 %%
 
 program
-    : END_OF_FILE {}
+    : statement_list[L] END_OF_FILE
+        {
+            driver.success($L);
+        }
+    ;
+
+statement_list
+    : statement_list[L] statement[s]
+        {
+            $$ = $L; $$.emplace_back($s);
+        }
+    | %empty
+        {
+            $$ = driver.node_vector<ast::statement::statement>();
+        }
+    ;
+
+statement
+    : ";"
+        {
+            $$ = driver.node<ast::statement::empty_statement>(@$);
+        }
     ;

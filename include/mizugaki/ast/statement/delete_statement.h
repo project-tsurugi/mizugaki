@@ -15,7 +15,6 @@ namespace mizugaki::ast::statement {
  * @brief deletes rows on a table.
  * @note `14.6 <delete statement: positioned>`
  * @note `14.7 <delete statement: searched>`
- * @see delete_statement
  */
 class delete_statement final : public statement {
 

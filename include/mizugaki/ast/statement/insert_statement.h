@@ -16,7 +16,6 @@ namespace mizugaki::ast::statement {
 /**
  * @brief creates new rows in a table.
  * @note `14.8 <insert statement>`
- * @see insert_statement
  */
 class insert_statement final : public statement {
 

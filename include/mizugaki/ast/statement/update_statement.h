@@ -17,7 +17,6 @@ namespace mizugaki::ast::statement {
  * @brief update rows on a table.
  * @note `14.9 <update statement: positioned>`
  * @note `14.10 <update statement: searched>`
- * @see update_statement
  */
 class update_statement final : public statement {
 

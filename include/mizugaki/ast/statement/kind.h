@@ -13,6 +13,7 @@ class select_statement;
 class insert_statement;
 class update_statement;
 class delete_statement;
+class empty_statement;
 
 /**
  * @brief represents a kind of SQL statements.
@@ -44,13 +45,19 @@ enum class kind {
     delete_statement,
 
     // FIXME: more
+
+    /**
+     * @copydoc empty_statement
+     * @see empty_statement
+     */
+    empty_statement,
 };
 
 /// @brief set of statement kind.
 using kind_set = ::takatori::util::enum_set<
         kind,
         kind::select_statement,
-        kind::delete_statement>; // FIXME: impl
+        kind::empty_statement>;
 
 /**
  * @brief provides the implementation type of the kind.
@@ -77,6 +84,9 @@ template<> struct type_of<kind, kind::update_statement> : ::takatori::util::meta
 /// @brief provides implementation type of kind::delete_statement.
 template<> struct type_of<kind, kind::delete_statement> : ::takatori::util::meta_type<delete_statement> {};
 
+/// @brief provides implementation type of kind::empty_statement.
+template<> struct type_of<kind, kind::empty_statement> : ::takatori::util::meta_type<empty_statement> {};
+
 /**
  * @brief returns string representation of the value.
  * @param value the target value
@@ -89,6 +99,7 @@ inline constexpr std::string_view to_string_view(kind value) noexcept {
         case kind::insert_statement: return "insert_statement"sv;
         case kind::update_statement: return "update_statement"sv;
         case kind::delete_statement: return "delete_statement"sv;
+        case kind::empty_statement: return "empty_statement"sv;
     }
     std::abort();
 }
