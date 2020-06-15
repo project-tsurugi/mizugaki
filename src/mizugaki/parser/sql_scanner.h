@@ -3,6 +3,7 @@
 // manually include flex system header
 #if !defined(FLEX_SCANNER)
 
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage): Flex framework matter
 #define yyFlexLexer _generated_mizugaki__parser__sql_scanner_FlexLexer
 #include <FlexLexer.h>
 #undef yyFlexLexer
