@@ -16,8 +16,11 @@
 
 #include <takatori/document/basic_document.h>
 
+#include <yugawara/compiler.h>
 #include <yugawara/binding/factory.h>
 #include <yugawara/storage/configurable_provider.h>
+#include <yugawara/function/configurable_provider.h>
+#include <yugawara/aggregate/configurable_provider.h>
 
 #include <shakujo/common/core/type/Int.h>
 #include <shakujo/common/core/value/Int.h>
@@ -43,6 +46,10 @@ class shakujo_translator_test : public ::testing::Test {
 public:
     std::shared_ptr<::yugawara::storage::configurable_provider> storages
             = std::make_shared<::yugawara::storage::configurable_provider>();
+    std::shared_ptr<::yugawara::function::configurable_provider> functions
+            = std::make_shared<::yugawara::function::configurable_provider>();
+    std::shared_ptr<::yugawara::aggregate::configurable_provider> aggregates
+            = std::make_shared<::yugawara::aggregate::configurable_provider>();
 
     std::shared_ptr<::yugawara::storage::table> t0 = storages->add_table("T0", {
             "T0",
@@ -80,6 +87,17 @@ public:
     ::yugawara::binding::factory bindings { options.get_object_creator() };
 };
 
+void compile(shakujo_translator_test& test, relation::graph_type&& graph) {
+    ::yugawara::compiler_options options {
+            test.storages,
+    };
+    ::yugawara::compiler compiler {};
+    auto r = compiler(options, std::move(graph));
+    if (!r) {
+        throw std::runtime_error("fail");
+    }
+}
+
 TEST_F(shakujo_translator_test, plan) {
     auto s = ir.EmitStatement(ir.ScanExpression(ir.Name("T0")));
     auto r = translator(options, *s, documents, placeholders);
@@ -99,6 +117,8 @@ TEST_F(shakujo_translator_test, plan) {
     EXPECT_EQ(emit.columns()[0].name(), "C0");
     EXPECT_EQ(emit.columns()[1].name(), "C1");
     EXPECT_EQ(emit.columns()[2].name(), "C2");
+
+    compile(*this, std::move(graph));
 }
 
 TEST_F(shakujo_translator_test, statement) {
@@ -195,6 +215,29 @@ TEST_F(shakujo_translator_test, placeholder) {
     EXPECT_EQ(es[0], scalar::immediate(value::int4(0), type::int4()));
     EXPECT_EQ(es[1], scalar::immediate(value::int4(1), type::int4()));
     EXPECT_EQ(es[2], scalar::immediate(value::int4(2), type::int4()));
+}
+
+TEST_F(shakujo_translator_test, compile_group_by_key_only) {
+    auto s = ir.EmitStatement(
+            ir.ProjectionExpression(
+                    ir.GroupExpression(
+                            ir.ScanExpression(ir.Name("T0")),
+                            {
+                                    ir.VariableReference(ir.Name("C0")),
+                            }
+                    ),
+                    {
+                            ir.ProjectionExpressionColumn(
+                                    ir.VariableReference(ir.Name("C0"))),
+                    }
+            )
+    );
+    auto r = translator(options, *s, documents, placeholders);
+    ASSERT_EQ(r.kind(), result_kind::execution_plan);
+
+    auto ptr = r.release<result_kind::execution_plan>();
+    auto&& graph = *ptr;
+    compile(*this, std::move(graph));
 }
 
 } // namespace mizugaki::translator
