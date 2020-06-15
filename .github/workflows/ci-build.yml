@@ -6,6 +6,8 @@ jobs:
   Build:
     runs-on: [self-hosted, oltp]
     timeout-minutes: 30
+    env:
+      BISON_DIR: /opt/bison-3.6.2
 
     steps:
       - id: Begin
@@ -74,7 +76,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/.local -DCMAKE_PREFIX_PATH=${GITHUB_WORKSPACE}/.local ..
+          cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/.local -DCMAKE_PREFIX_PATH="${BISON_DIR};${GITHUB_WORKSPACE}/.local" ..
           cmake --build . --target all --clean-first -- -j8
 
       - id: CTest
