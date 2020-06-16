@@ -11,34 +11,34 @@ using ::takatori::util::object_creator;
 using ::takatori::util::unique_object_ptr;
 
 comparison_predicate::comparison_predicate(
-        operator_kind_type operator_kind,
         operand_type left,
-        operand_type right,
+        operator_kind_type operator_kind,
         std::optional<quantifier_type> quantifier,
+        operand_type right,
         region_type region) noexcept:
     super { region },
-    operator_kind_ { operator_kind },
     left_ { std::move(left) },
-    right_ { std::move(right) },
-    quantifier_ { std::move(quantifier) }
+    operator_kind_ { operator_kind },
+    quantifier_ { std::move(quantifier) },
+    right_ { std::move(right) }
 {}
 
 comparison_predicate::comparison_predicate(comparison_predicate const& other, object_creator creator) :
     comparison_predicate {
-            other.operator_kind_,
             clone_unique(other.left_, creator),
-            clone_unique(other.right_, creator),
+            other.operator_kind_,
             other.quantifier_,
+            clone_unique(other.right_, creator),
             other.region(),
     }
 {}
 
 comparison_predicate::comparison_predicate(comparison_predicate&& other, object_creator creator) :
     comparison_predicate {
-            other.operator_kind_,
             clone_unique(std::move(other.left_), creator),
-            clone_unique(std::move(other.right_), creator),
+            other.operator_kind_,
             std::move(other.quantifier_),
+            clone_unique(std::move(other.right_), creator),
             other.region(),
     }
 {}

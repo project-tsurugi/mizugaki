@@ -32,15 +32,15 @@ public:
 
     /**
      * @brief creates a new instance.
+     * @param is_only whether or not `ONLY` is specified
      * @param name the table or query name
      * @param correlation the correlation declaration
-     * @param is_only whether or not `ONLY` is specified
      * @param region the node region
      */
     explicit table_reference(
+            bool_type is_only,
             ::takatori::util::unique_object_ptr<name::name> name,
             std::optional<correlation_type> correlation = {},
-            bool_type is_only = { false },
             region_type region = {}) noexcept;
 
     /**
@@ -113,9 +113,9 @@ protected:
     [[nodiscard]] bool equals(expression const& other) const noexcept override;
 
 private:
+    bool_type is_only_;
     ::takatori::util::unique_object_ptr<name::name> name_;
     std::optional<correlation_type> correlation_;
-    bool_type is_only_;
 };
 
 } // namespace mizugaki::ast::table

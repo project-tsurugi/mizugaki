@@ -31,14 +31,14 @@ public:
 
     /**
      * @brief creates a new instance.
-     * @param operator_kind the binary operator
      * @param left the left term
+     * @param operator_kind the binary operator
      * @param right the right term
      * @param region the node region
      */
     explicit binary_expression(
-            operator_kind_type operator_kind,
             operand_type left,
+            operator_kind_type operator_kind,
             operand_type right,
             region_type region = {}) noexcept;
 
@@ -110,8 +110,8 @@ protected:
     [[nodiscard]] bool equals(expression const& other) const noexcept override;
 
 private:
-    operator_kind_type operator_kind_;
     operand_type left_;
+    operator_kind_type operator_kind_;
     operand_type right_;
 };
 

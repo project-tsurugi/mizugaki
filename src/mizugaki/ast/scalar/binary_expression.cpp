@@ -11,20 +11,20 @@ using ::takatori::util::object_creator;
 using ::takatori::util::unique_object_ptr;
 
 binary_expression::binary_expression(
-        operator_kind_type operator_kind,
         operand_type left,
+        operator_kind_type operator_kind,
         operand_type right,
         region_type region) noexcept:
     super { region },
-    operator_kind_ { operator_kind },
     left_ { std::move(left) },
+    operator_kind_ { operator_kind },
     right_ { std::move(right) }
 {}
 
 binary_expression::binary_expression(binary_expression const& other, object_creator creator) :
     binary_expression {
-            other.operator_kind_,
             clone_unique(other.left_, creator),
+            other.operator_kind_,
             clone_unique(other.right_, creator),
             other.region(),
     }
@@ -32,8 +32,8 @@ binary_expression::binary_expression(binary_expression const& other, object_crea
 
 binary_expression::binary_expression(binary_expression&& other, object_creator creator) :
     binary_expression {
-            other.operator_kind_,
             clone_unique(std::move(other.left_), creator),
+            other.operator_kind_,
             clone_unique(std::move(other.right_), creator),
             other.region(),
     }

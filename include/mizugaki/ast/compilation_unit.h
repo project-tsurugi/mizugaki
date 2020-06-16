@@ -62,6 +62,7 @@ public:
 
     /**
      * @brief compares two values.
+     * @details This only treats holding statements.
      * @param a the first value
      * @param b the second value
      * @return true if the both are equivalent
@@ -76,9 +77,7 @@ public:
      * @return true if the both are different
      * @return false otherwise
      */
-    friend bool operator!=(compilation_unit const& a, compilation_unit const& b) noexcept {
-        return !(a == b);
-    }
+    friend bool operator!=(compilation_unit const& a, compilation_unit const& b) noexcept;
 
 private:
     common::vector<::takatori::util::unique_object_ptr<statement::statement>> statements_;

@@ -13,30 +13,30 @@ using ::takatori::util::unique_object_ptr;
 using common::clone_vector;
 
 with_expression::with_expression(
+        bool_type is_recursive,
         common::vector<element_type> elements,
         unique_object_ptr<expression> body,
-        bool_type is_recursive,
         region_type region) noexcept :
     super { region },
+    is_recursive_ { is_recursive },
     elements_ { std::move(elements) },
-    body_ { std::move(body) },
-    is_recursive_ { is_recursive }
+    body_ { std::move(body) }
 {}
 
 with_expression::with_expression(with_expression const& other, object_creator creator) :
     with_expression {
+            other.is_recursive_,
             clone_vector(other.elements_, creator),
             clone_unique(other.body_, creator),
-            other.is_recursive_,
             other.region(),
     }
 {}
 
 with_expression::with_expression(with_expression&& other, object_creator creator) :
     with_expression {
+            other.is_recursive_,
             clone_vector(other.elements_, creator),
             clone_unique(std::move(other.body_), creator),
-            other.is_recursive_,
             other.region(),
     }
 {}

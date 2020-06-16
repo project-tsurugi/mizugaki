@@ -31,15 +31,15 @@ public:
 
     /**
      * @brief creates a new instance.
+     * @param is_recursive whether or not `RECURSIVE` is specified
      * @param elements the named query declarations
      * @param body the body expression
-     * @param is_recursive whether or not `RECURSIVE` is specified
      * @param region the node region
      */
     explicit with_expression(
+            bool_type is_recursive,
             common::vector<element_type> elements,
             ::takatori::util::unique_object_ptr<expression> body,
-            bool_type is_recursive = { false },
             region_type region = {}) noexcept;
 
     /**
@@ -111,9 +111,9 @@ protected:
     [[nodiscard]] bool equals(expression const& other) const noexcept override;
 
 private:
+    bool_type is_recursive_;
     common::vector<element_type> elements_;
     ::takatori::util::unique_object_ptr<expression> body_;
-    bool_type is_recursive_;
 };
 
 } // namespace mizugaki::ast::query

@@ -41,19 +41,19 @@ public:
 
     /**
      * @brief creates a new instance.
-     * @param operator_kind the binary operator
      * @param left the left term
-     * @param right the right term
+     * @param operator_kind the binary operator
      * @param quantifier the set quantifier
      * @param corresponding the corresponding clause
+     * @param right the right term
      * @param region the node region
      */
     explicit binary_expression(
-            operator_kind_type operator_kind,
             ::takatori::util::unique_object_ptr<expression> left,
+            operator_kind_type operator_kind,
+            std::optional<quantifier_type> quantifier,
+            std::optional<corresponding_type> corresponding,
             ::takatori::util::unique_object_ptr<expression> right,
-            std::optional<quantifier_type> quantifier = {},
-            std::optional<corresponding_type> corresponding = {},
             region_type region = {}) noexcept;
 
     /**
@@ -144,11 +144,11 @@ protected:
     [[nodiscard]] bool equals(expression const& other) const noexcept override;
 
 private:
-    operator_kind_type operator_kind_;
     ::takatori::util::unique_object_ptr<expression> left_;
-    ::takatori::util::unique_object_ptr<expression> right_;
+    operator_kind_type operator_kind_;
     std::optional<quantifier_type> quantifier_;
     std::optional<corresponding_type> corresponding_;
+    ::takatori::util::unique_object_ptr<expression> right_;
 };
 
 } // namespace mizugaki::ast::query

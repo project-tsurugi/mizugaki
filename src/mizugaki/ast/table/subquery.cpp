@@ -11,30 +11,30 @@ using ::takatori::util::object_creator;
 using ::takatori::util::unique_object_ptr;
 
 subquery::subquery(
+        bool_type is_lateral,
         unique_object_ptr<query::expression> body,
         correlation_type correlation,
-        bool_type is_lateral,
         region_type region) noexcept :
     super { region },
+    is_lateral_ { is_lateral },
     body_ { std::move(body) },
-    correlation_ { std::move(correlation) },
-    is_lateral_ { is_lateral }
+    correlation_ { std::move(correlation) }
 {}
 
 subquery::subquery(subquery const& other, object_creator creator) :
     subquery {
+            other.is_lateral_,
             clone_unique(other.body_, creator),
             decltype(correlation_) { other.correlation_, creator },
-            other.is_lateral_,
             other.region(),
     }
 {}
 
 subquery::subquery(subquery&& other, object_creator creator) :
     subquery {
+            other.is_lateral_,
             clone_unique(std::move(other.body_), creator),
             decltype(correlation_) { std::move(other.correlation_), creator },
-            other.is_lateral_,
             other.region(),
     }
 {}

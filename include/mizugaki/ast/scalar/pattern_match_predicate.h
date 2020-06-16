@@ -23,27 +23,27 @@ public:
     /// @brief the operator kind type.
     using operator_kind_type = common::regioned<pattern_match_operator>;
 
-    /// @brief existence of `NOT` type.
-    using not_type = common::regioned<bool>;
+    /// @brief truth type with element region information.
+    using bool_type = common::regioned<bool>;
 
     /// @brief the node kind of this.
     static constexpr node_kind_type tag = node_kind_type::pattern_match_predicate;
 
     /**
      * @brief creates a new instance.
-     * @param operator_kind the pattern match operator
      * @param match_value the match value
+     * @param is_not whether or not `NOT` is declared
+     * @param operator_kind the pattern match operator
      * @param pattern the pattern string
      * @param escape the escape character
-     * @param is_not whether or not `NOT` is declared
      * @param region the node region
      */
     explicit pattern_match_predicate(
-            operator_kind_type operator_kind,
             operand_type match_value,
+            bool_type is_not,
+            operator_kind_type operator_kind,
             operand_type pattern,
             operand_type escape = {},
-            not_type is_not = {},
             region_type region = {}) noexcept;
 
     /**
@@ -106,10 +106,10 @@ public:
      * @return true if `NOT` is declared
      * @return false otherwise
      */
-    [[nodiscard]] not_type& is_not() noexcept;
+    [[nodiscard]] bool_type& is_not() noexcept;
 
     /// @copydoc is_not()
-    [[nodiscard]] not_type const& is_not() const noexcept;
+    [[nodiscard]] bool_type const& is_not() const noexcept;
 
     /**
      * @brief compares two values.
@@ -133,11 +133,11 @@ protected:
     [[nodiscard]] bool equals(expression const& other) const noexcept override;
 
 private:
-    operator_kind_type operator_kind_;
     operand_type match_value_;
+    bool_type is_not_;
+    operator_kind_type operator_kind_;
     operand_type pattern_;
     operand_type escape_;
-    not_type is_not_;
 };
 
 } // namespace mizugaki::ast::scalar

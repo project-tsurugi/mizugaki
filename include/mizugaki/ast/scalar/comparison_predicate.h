@@ -34,17 +34,17 @@ public:
 
     /**
      * @brief creates a new instance.
-     * @param operator_kind the comparison operator
      * @param left the left term
-     * @param right the right term
+     * @param operator_kind the comparison operator
      * @param quantifier the quantifier
+     * @param right the right term
      * @param region the node region
      */
     explicit comparison_predicate(
-            operator_kind_type operator_kind,
             operand_type left,
+            operator_kind_type operator_kind,
+            std::optional<quantifier_type> quantifier,
             operand_type right,
-            std::optional<quantifier_type> quantifier = {},
             region_type region = {}) noexcept;
 
     /**
@@ -125,10 +125,10 @@ protected:
     [[nodiscard]] bool equals(expression const& other) const noexcept override;
 
 private:
-    operator_kind_type operator_kind_;
     operand_type left_;
-    operand_type right_;
+    operator_kind_type operator_kind_;
     std::optional<quantifier_type> quantifier_;
+    operand_type right_;
 };
 
 } // namespace mizugaki::ast::scalar

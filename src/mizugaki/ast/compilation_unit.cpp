@@ -47,4 +47,15 @@ maybe_shared_ptr<compilation_unit::document_type const> const& compilation_unit:
     return document_;
 }
 
+bool operator==(compilation_unit const& a, compilation_unit const& b) noexcept {
+    if (std::addressof(a) == std::addressof(b)) {
+        return true;
+    }
+    return eq(a.statements_, b.statements_);
+}
+
+bool operator!=(compilation_unit const& a, compilation_unit const& b) noexcept {
+    return !(a == b);
+}
+
 } // namespace mizugaki::ast

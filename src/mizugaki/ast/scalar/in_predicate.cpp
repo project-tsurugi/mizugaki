@@ -14,20 +14,20 @@ using common::clone_vector;
 
 in_predicate::in_predicate(
         operand_type left,
+        bool_type is_not,
         common::vector<operand_type> right,
-        not_type is_not,
         region_type region) noexcept :
     super { region },
     left_ { std::move(left) },
-    right_ { std::move(right) },
-    is_not_ { is_not }
+    is_not_ { is_not },
+    right_ { std::move(right) }
 {}
 
 in_predicate::in_predicate(in_predicate const& other, object_creator creator) :
     in_predicate {
             clone_unique(other.left_, creator),
-            clone_vector(other.right_, creator),
             other.is_not_,
+            clone_vector(other.right_, creator),
             other.region(),
     }
 {}
@@ -35,8 +35,8 @@ in_predicate::in_predicate(in_predicate const& other, object_creator creator) :
 in_predicate::in_predicate(in_predicate&& other, object_creator creator) :
     in_predicate {
             clone_unique(std::move(other.left_), creator),
-            clone_vector(std::move(other.right_), creator),
             other.is_not_,
+            clone_vector(std::move(other.right_), creator),
             other.region(),
     }
 {}
@@ -69,11 +69,11 @@ common::vector<expression::operand_type> const& in_predicate::right() const noex
     return right_;
 }
 
-in_predicate::not_type& in_predicate::is_not() noexcept {
+in_predicate::bool_type& in_predicate::is_not() noexcept {
     return is_not_;
 }
 
-in_predicate::not_type const& in_predicate::is_not() const noexcept {
+in_predicate::bool_type const& in_predicate::is_not() const noexcept {
     return is_not_;
 }
 

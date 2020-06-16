@@ -8,13 +8,13 @@ namespace mizugaki::ast::type {
 
 using node_kind_type = type::node_kind_type;
 using type_kind_type = datetime::type_kind_type;
-using enable_type = datetime::enable_type;
+using bool_type = datetime::bool_type;
 
 using ::takatori::util::object_creator;
 
 datetime::datetime(
         type_kind_type type_kind,
-        std::optional<enable_type> has_time_zone,
+        std::optional<bool_type> has_time_zone,
         region_type region) :
     super { region },
     type_kind_ { type_kind },
@@ -59,11 +59,11 @@ type_kind_type const& datetime::type_kind() const noexcept {
     return type_kind_;
 }
 
-std::optional<enable_type>& datetime::has_time_zone() noexcept {
+std::optional<bool_type>& datetime::has_time_zone() noexcept {
     return has_time_zone_;
 }
 
-std::optional<enable_type> const& datetime::has_time_zone() const noexcept {
+std::optional<bool_type> const& datetime::has_time_zone() const noexcept {
     return has_time_zone_;
 }
 

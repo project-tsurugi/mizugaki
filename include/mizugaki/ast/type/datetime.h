@@ -20,8 +20,8 @@ public:
     /// @brief the type kind type.
     using type_kind_type = common::regioned<node_kind_type>;
 
-    /// @brief regioned bool type.
-    using enable_type = common::regioned<bool>;
+    /// @brief truth type with element region information.
+    using bool_type = common::regioned<bool>;
 
     /// @brief the available node kind of this.
     static constexpr kind_set tags {
@@ -39,7 +39,7 @@ public:
      */
     explicit datetime(
             type_kind_type type_kind,
-            std::optional<enable_type> has_time_zone,
+            std::optional<bool_type> has_time_zone,
             region_type region = {});
 
     /**
@@ -76,10 +76,10 @@ public:
      * @return false this type does not use time zone
      * @return empty if time zone information is not provided
      */
-    [[nodiscard]] std::optional<enable_type>& has_time_zone() noexcept;
+    [[nodiscard]] std::optional<bool_type>& has_time_zone() noexcept;
 
     /// @copydoc has_time_zone()
-    [[nodiscard]] std::optional<enable_type> const& has_time_zone() const noexcept;
+    [[nodiscard]] std::optional<bool_type> const& has_time_zone() const noexcept;
 
     /**
      * @brief compares two values.
@@ -104,7 +104,7 @@ protected:
 
 private:
     type_kind_type type_kind_;
-    std::optional<enable_type> has_time_zone_;
+    std::optional<bool_type> has_time_zone_;
 };
 
 } // namespace mizugaki::ast::type

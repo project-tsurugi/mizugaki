@@ -13,15 +13,15 @@ using ::takatori::util::unique_object_ptr;
 using common::clone_vector;
 
 join::join(
-        operator_kind_type operator_kind,
         unique_object_ptr<table::expression> left,
+        operator_kind_type operator_kind,
         unique_object_ptr<table::expression> right,
         unique_object_ptr<scalar::expression> condition,
         common::vector<unique_object_ptr<name::simple>> named_columns,
         element::region_type region) noexcept :
     super { region },
-    operator_kind_ { operator_kind },
     left_ { std::move(left) },
+    operator_kind_ { operator_kind },
     right_ { std::move(right) },
     condition_ { std::move(condition) },
     named_columns_ { std::move(named_columns) }
@@ -29,8 +29,8 @@ join::join(
 
 join::join(join const& other, object_creator creator) :
     join {
-            other.operator_kind_,
             clone_unique(other.left_, creator),
+            other.operator_kind_,
             clone_unique(other.right_, creator),
             clone_unique(other.condition_, creator),
             clone_vector(other.named_columns_, creator),
@@ -40,8 +40,8 @@ join::join(join const& other, object_creator creator) :
 
 join::join(join&& other, object_creator creator) :
     join {
-            other.operator_kind_,
             clone_unique(std::move(other.left_), creator),
+            other.operator_kind_,
             clone_unique(std::move(other.right_), creator),
             clone_unique(std::move(other.condition_), creator),
             clone_vector(std::move(other.named_columns_), creator),

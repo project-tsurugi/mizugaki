@@ -31,15 +31,15 @@ public:
 
     /**
      * @brief creates a new instance.
+     * @param is_lateral whether or not `LATERAL` is specified
      * @param body the query expression
      * @param correlation the correlation declaration
-     * @param is_lateral whether or not `LATERAL` is specified
      * @param region the node region
      */
     explicit subquery(
+            bool_type is_lateral,
             ::takatori::util::unique_object_ptr<query::expression> body,
             correlation_type correlation,
-            bool_type is_lateral = { false },
             region_type region = {}) noexcept;
 
     /**
@@ -118,9 +118,9 @@ protected:
     [[nodiscard]] bool equals(expression const& other) const noexcept override;
 
 private:
+    bool_type is_lateral_;
     ::takatori::util::unique_object_ptr<query::expression> body_;
     correlation_type correlation_;
-    bool_type is_lateral_;
 };
 
 } // namespace mizugaki::ast::table

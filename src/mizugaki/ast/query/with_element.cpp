@@ -12,20 +12,20 @@ using common::clone_vector;
 
 with_element::with_element(
         unique_object_ptr<name::simple> name,
-        unique_object_ptr<class expression> expression,
         common::vector<unique_object_ptr<name::simple>> column_names,
+        unique_object_ptr<class expression> expression,
         region_type region) noexcept :
     element { region },
     name_ { std::move(name) },
-    expression_ { std::move(expression) },
-    column_names_ { std::move(column_names) }
+    column_names_ { std::move(column_names) },
+    expression_ { std::move(expression) }
 {}
 
 with_element::with_element(with_element const& other, object_creator creator) :
     with_element {
             clone_unique(*other.name_, creator),
-            clone_unique(*other.expression_, creator),
             clone_vector(*other.column_names_, creator),
+            clone_unique(*other.expression_, creator),
             other.region(),
     }
 {}
@@ -33,8 +33,8 @@ with_element::with_element(with_element const& other, object_creator creator) :
 with_element::with_element(with_element&& other, object_creator creator) :
     with_element {
             clone_unique(std::move(*other.name_), creator),
-            clone_unique(std::move(*other.expression_), creator),
             clone_vector(std::move(*other.column_names_), creator),
+            clone_unique(std::move(*other.expression_), creator),
             other.region(),
     }
 {}

@@ -20,8 +20,8 @@ class between_predicate final : public expression {
     using super = expression;
 
 public:
-    /// @brief existence of `NOT` type.
-    using not_type = common::regioned<bool>;
+    /// @brief truth type with element region information.
+    using bool_type = common::regioned<bool>;
 
     /// @brief the operator kind type.
     using operator_kind_type = common::regioned<between_operator>;
@@ -33,17 +33,17 @@ public:
      * @brief creates a new instance.
      * @param target the comparison target
      * @param left the left edge of the comparison range
-     * @param right the right comparing term
+     * @param operator_kind the between operator kind
      * @param is_not whether or not this declared as `NOT`
-     * @param operator_kind
+     * @param right the right comparing term
      * @param region the node region
      */
     explicit between_predicate(
             operand_type target,
             operand_type left,
+            bool_type is_not,
+            std::optional<operator_kind_type> operator_kind,
             operand_type right,
-            std::optional<operator_kind_type> operator_kind = {},
-            not_type is_not = {},
             region_type region = {}) noexcept;
 
     /**
@@ -106,10 +106,10 @@ public:
      * @return true if `NOT` is declared
      * @return false otherwise
      */
-    [[nodiscard]] not_type& is_not() noexcept;
+    [[nodiscard]] bool_type& is_not() noexcept;
 
     /// @copydoc is_not()
-    [[nodiscard]] not_type const& is_not() const noexcept;
+    [[nodiscard]] bool_type const& is_not() const noexcept;
 
     /**
      * @brief compares two values.
@@ -135,9 +135,9 @@ protected:
 private:
     operand_type target_;
     operand_type left_;
-    operand_type right_;
+    bool_type is_not_;
     std::optional<operator_kind_type> operator_kind_;
-    not_type is_not_;
+    operand_type right_;
 };
 
 } // namespace mizugaki::ast::scalar

@@ -20,8 +20,8 @@ class in_predicate final : public expression {
     using super = expression;
 
 public:
-    /// @brief existence of `NOT` type.
-    using not_type = common::regioned<bool>;
+    /// @brief truth type with element region information.
+    using bool_type = common::regioned<bool>;
 
     /// @brief the node kind of this.
     static constexpr node_kind_type tag = node_kind_type::in_predicate;
@@ -29,14 +29,14 @@ public:
     /**
      * @brief creates a new instance.
      * @param left the left term
-     * @param right the right term as (row) expression list
      * @param is_not whether or not `NOT` is declared
+     * @param right the right term as (row) expression list
      * @param region the node region
      */
     explicit in_predicate(
             operand_type left,
+            bool_type is_not,
             common::vector<operand_type> right,
-            not_type is_not = {},
             region_type region = {}) noexcept;
 
     /**
@@ -81,10 +81,10 @@ public:
      * @return true if `NOT` is declared
      * @return false otherwise
      */
-    [[nodiscard]] not_type& is_not() noexcept;
+    [[nodiscard]] bool_type& is_not() noexcept;
 
     /// @copydoc is_not()
-    [[nodiscard]] not_type const& is_not() const noexcept;
+    [[nodiscard]] bool_type const& is_not() const noexcept;
 
     /**
      * @brief compares two values.
@@ -109,8 +109,8 @@ protected:
 
 private:
     operand_type left_;
+    bool_type is_not_;
     common::vector<operand_type> right_;
-    not_type is_not_;
 };
 
 } // namespace mizugaki::ast::scalar

@@ -20,14 +20,14 @@ public:
     /**
      * @brief creates a new instance.
      * @param name the query name
-     * @param expression the query expression
      * @param column_names the correlation column names
+     * @param expression the query expression
      * @param region the element region
      */
     explicit with_element(
             ::takatori::util::unique_object_ptr<name::simple> name,
+            common::vector<::takatori::util::unique_object_ptr<name::simple>> column_names,
             ::takatori::util::unique_object_ptr<class expression> expression,
-            common::vector<::takatori::util::unique_object_ptr<name::simple>> column_names = {},
             // FIXME: search clause
             region_type region = {}) noexcept;
 
@@ -93,8 +93,8 @@ public:
 
 private:
     common::clone_wrapper<::takatori::util::unique_object_ptr<name::simple>> name_;
-    common::clone_wrapper<::takatori::util::unique_object_ptr<class expression>> expression_;
     common::clone_wrapper<common::vector<::takatori::util::unique_object_ptr<name::simple>>> column_names_;
+    common::clone_wrapper<::takatori::util::unique_object_ptr<class expression>> expression_;
 };
 
 } // namespace mizugaki::ast::query

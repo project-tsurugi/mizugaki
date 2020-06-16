@@ -30,8 +30,8 @@ public:
 
     /**
      * @brief creates a new instance.
-     * @param operator_kind the join type
      * @param left the left operand
+     * @param operator_kind the join type
      * @param right the right operand
      * @param condition the join condition (`ON`)
      * @param named_columns the join columns (`USING`)
@@ -40,8 +40,8 @@ public:
      *      `operator_kind` is ony of `inner`, `left_outer`, `right_outer`, or `full_outer`.
      */
     explicit join(
-            operator_kind_type operator_kind,
             ::takatori::util::unique_object_ptr<table::expression> left,
+            operator_kind_type operator_kind,
             ::takatori::util::unique_object_ptr<table::expression> right,
             ::takatori::util::unique_object_ptr<scalar::expression> condition = {},
             common::vector<::takatori::util::unique_object_ptr<name::simple>> named_columns = {},
@@ -135,8 +135,8 @@ protected:
     [[nodiscard]] bool equals(expression const& other) const noexcept override;
 
 private:
-    operator_kind_type operator_kind_;
     ::takatori::util::unique_object_ptr<table::expression> left_;
+    operator_kind_type operator_kind_;
     ::takatori::util::unique_object_ptr<table::expression> right_;
     ::takatori::util::unique_object_ptr<scalar::expression> condition_;
     common::vector<::takatori::util::unique_object_ptr<name::simple>> named_columns_;

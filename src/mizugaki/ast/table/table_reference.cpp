@@ -15,30 +15,30 @@ using ::takatori::util::unique_object_ptr;
 using common::clone_optional;
 
 table_reference::table_reference(
+        bool_type is_only,
         unique_object_ptr<name::name> name,
         std::optional<correlation_type> correlation,
-        bool_type is_only,
         region_type region) noexcept:
     super { region },
+    is_only_ { is_only },
     name_ { std::move(name) },
-    correlation_ { std::move(correlation) },
-    is_only_ { is_only }
+    correlation_ { std::move(correlation) }
 {}
 
 table_reference::table_reference(table_reference const& other, object_creator creator) :
     table_reference {
+            other.is_only_,
             clone_unique(other.name_, creator),
             clone_optional(other.correlation_, creator),
-            other.is_only_,
             other.region(),
     }
 {}
 
 table_reference::table_reference(table_reference&& other, object_creator creator) :
     table_reference {
+            other.is_only_,
             clone_unique(std::move(other.name_), creator),
             clone_optional(std::move(other.correlation_), creator),
-            other.is_only_,
             other.region(),
     }
 {}

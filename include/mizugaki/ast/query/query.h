@@ -36,6 +36,7 @@ public:
 
     /**
      * @brief creates a new instance.
+     * @param quantifier the set quantifier
      * @param elements the select elements
      * @param from the from clause
      * @param where the where clause
@@ -43,10 +44,10 @@ public:
      * @param having the having clause
      * @param order_by the order by clause
      * @param limit the limit clause
-     * @param quantifier the set quantifier
      * @param region the node region
      */
     explicit query(
+            std::optional<quantifier_type> quantifier,
             common::vector<::takatori::util::unique_object_ptr<select_element>> elements,
             common::vector<::takatori::util::unique_object_ptr<table::expression>> from,
             ::takatori::util::unique_object_ptr<scalar::expression> where = {},
@@ -54,7 +55,6 @@ public:
             ::takatori::util::unique_object_ptr<scalar::expression> having = {},
             common::vector<common::sort_element> order_by = {},
             ::takatori::util::unique_object_ptr<scalar::expression> limit = {},
-            std::optional<quantifier_type> quantifier = {}, 
             region_type region = {}) noexcept;
 
     /**
@@ -182,6 +182,7 @@ protected:
     [[nodiscard]] bool equals(expression const& other) const noexcept override;
 
 private:
+    std::optional<quantifier_type> quantifier_;
     common::vector<::takatori::util::unique_object_ptr<select_element>> elements_;
     common::vector<::takatori::util::unique_object_ptr<table::expression>> from_;
     ::takatori::util::unique_object_ptr<scalar::expression> where_;
@@ -189,7 +190,6 @@ private:
     ::takatori::util::unique_object_ptr<scalar::expression> having_;
     common::vector<common::sort_element> order_by_;
     ::takatori::util::unique_object_ptr<scalar::expression> limit_;
-    std::optional<quantifier_type> quantifier_;
 };
 
 } // namespace mizugaki::ast::query
