@@ -87,7 +87,7 @@ bool operator!=(qualified const& a, qualified const& b) noexcept {
 
 bool qualified::equals(name const& other) const noexcept {
     return other.node_kind() == tag
-            && *this == unsafe_downcast<simple>(other);
+            && *this == unsafe_downcast<type_of_t<tag>>(other);
 }
 
 } // namespace mizugaki::ast::name

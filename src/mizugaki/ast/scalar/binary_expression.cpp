@@ -90,7 +90,7 @@ bool operator!=(binary_expression const& a, binary_expression const& b) noexcept
 
 bool binary_expression::equals(expression const& other) const noexcept {
     return other.node_kind() == tag
-            && *this == unsafe_downcast<binary_expression>(other);
+            && *this == unsafe_downcast<type_of_t<tag>>(other);
 }
 
 } // namespace mizugaki::ast::scalar

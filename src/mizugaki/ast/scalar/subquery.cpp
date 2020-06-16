@@ -11,22 +11,22 @@ using ::takatori::util::object_creator;
 using ::takatori::util::unique_object_ptr;
 
 subquery::subquery(
-        unique_object_ptr<query::expression> body,
+        unique_object_ptr<query::expression> expression,
         region_type region) noexcept :
     super { region },
-    body_ { std::move(body) }
+    expression_ { std::move(expression) }
 {}
 
 subquery::subquery(subquery const& other, object_creator creator) :
     subquery {
-            clone_unique(other.body_, creator),
+            clone_unique(other.expression_, creator),
             other.region(),
     }
 {}
 
 subquery::subquery(subquery&& other, object_creator creator) :
     subquery {
-            clone_unique(std::move(other.body_), creator),
+            clone_unique(std::move(other.expression_), creator),
             other.region(),
     }
 {}
@@ -43,36 +43,28 @@ expression::node_kind_type subquery::node_kind() const noexcept {
     return tag;
 }
 
-unique_object_ptr<query::expression>& subquery::body() noexcept {
-    return body_;
+unique_object_ptr<query::expression>& subquery::expression() noexcept {
+    return expression_;
 }
 
-unique_object_ptr<query::expression> const& subquery::body() const noexcept {
-    return body_;
-}
-
-unique_object_ptr<query::expression>& subquery::operator*() noexcept {
-    return body();
-}
-
-unique_object_ptr<query::expression> const& subquery::operator*() const noexcept {
-    return body();
+unique_object_ptr<query::expression> const& subquery::expression() const noexcept {
+    return expression_;
 }
 
 bool operator==(subquery const& a, subquery const& b) noexcept {
     if (std::addressof(a) == std::addressof(b)) {
         return false;
     }
-    return eq(a.body_, b.body_);
+    return eq(a.expression_, b.expression_);
 }
 
 bool operator!=(subquery const& a, subquery const& b) noexcept {
     return !(a == b);
 }
 
-bool subquery::equals(expression const& other) const noexcept {
+bool subquery::equals(scalar::expression const& other) const noexcept {
     return other.node_kind() == tag
-            && *this == unsafe_downcast<subquery>(other);
+            && *this == unsafe_downcast<type_of_t<tag>>(other);
 }
 
 } // namespace mizugaki::ast::scalar

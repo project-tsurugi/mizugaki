@@ -18,6 +18,12 @@ namespace mizugaki::ast::query {
 class with_element : public element {
 public:
     /**
+     * @brief creates a new invalid instance.
+     * @note this is only used in parser generator.
+     */
+    explicit with_element() = default;
+
+    /**
      * @brief creates a new instance.
      * @param name the query name
      * @param column_names the correlation column names
@@ -92,9 +98,9 @@ public:
     friend bool operator!=(with_element const& a, with_element const& b) noexcept;
 
 private:
-    common::clone_wrapper<::takatori::util::unique_object_ptr<name::simple>> name_;
-    common::clone_wrapper<common::vector<::takatori::util::unique_object_ptr<name::simple>>> column_names_;
-    common::clone_wrapper<::takatori::util::unique_object_ptr<class expression>> expression_;
+    common::clone_wrapper<::takatori::util::unique_object_ptr<name::simple>> name_ {};
+    common::clone_wrapper<common::vector<::takatori::util::unique_object_ptr<name::simple>>> column_names_ {};
+    common::clone_wrapper<::takatori::util::unique_object_ptr<class expression>> expression_ {};
 };
 
 } // namespace mizugaki::ast::query

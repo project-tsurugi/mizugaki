@@ -92,7 +92,7 @@ bool operator!=(insert_statement const& a, insert_statement const& b) noexcept {
 
 bool insert_statement::equals(statement const& other) const noexcept {
     return other.node_kind() == tag
-            && *this == unsafe_downcast<insert_statement>(other);
+            && *this == unsafe_downcast<type_of_t<tag>>(other);
 }
 
 } // namespace mizugaki::ast::statement

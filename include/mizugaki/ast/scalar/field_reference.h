@@ -28,14 +28,14 @@ public:
 
     /**
      * @brief creates a new instance.
-     * @param operator_kind the reference operator kind
      * @param value the field owner expression
+     * @param operator_kind the reference operator kind
      * @param name the field name
      * @param region the node region
      */
     explicit field_reference(
-            operator_kind_type operator_kind,
             expression::operand_type value,
+            operator_kind_type operator_kind,
             ::takatori::util::unique_object_ptr<name::simple> name,
             region_type region = {}) noexcept;
 
@@ -107,8 +107,8 @@ protected:
     [[nodiscard]] bool equals(expression const& other) const noexcept override;
 
 private:
-    operator_kind_type operator_kind_;
     operand_type value_;
+    operator_kind_type operator_kind_;
     ::takatori::util::unique_object_ptr<name::simple> name_;
 };
 

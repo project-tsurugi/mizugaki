@@ -92,7 +92,7 @@ bool operator!=(in_predicate const& a, in_predicate const& b) noexcept {
 
 bool in_predicate::equals(expression const& other) const noexcept {
     return other.node_kind() == tag
-            && *this == unsafe_downcast<in_predicate>(other);
+            && *this == unsafe_downcast<type_of_t<tag>>(other);
 }
 
 } // namespace mizugaki::ast::scalar

@@ -12,7 +12,6 @@ namespace mizugaki::ast::query {
 
 class select_column;
 class select_asterisk;
-class select_all_fields;
 
 /**
  * @brief represents a kind of select element.
@@ -30,19 +29,13 @@ enum class select_element_kind {
      * @see select_asterisk
      */
     asterisk,
-
-    /**
-     * @copydoc select_all_fields
-     * @see select_all_fields
-     */
-    all_fields,
 };
 
 /// @brief set of select element kind.
 using select_element_kind_set = ::takatori::util::enum_set<
         select_element_kind,
         select_element_kind::column,
-        select_element_kind::all_fields>;
+        select_element_kind::asterisk>;
 
 template<class K, K Kind> struct type_of;
 
@@ -53,9 +46,6 @@ template<> struct type_of<select_element_kind, select_element_kind::column> : ::
 
 /// @brief provides implementation type of select_element_kind::asterisk.
 template<> struct type_of<select_element_kind, select_element_kind::asterisk> : ::takatori::util::meta_type<select_asterisk> {};
-
-/// @brief provides implementation type of select_element_kind::all_fields.
-template<> struct type_of<select_element_kind, select_element_kind::all_fields> : ::takatori::util::meta_type<select_all_fields> {};
 
 /**
  * @brief returns string representation of the value.
@@ -68,7 +58,6 @@ inline constexpr std::string_view to_string_view(select_element_kind value) noex
     switch (value) {
         case kind::column: return "column"sv;
         case kind::asterisk: return "asterisk"sv;
-        case kind::all_fields: return "all_fields"sv;
     }
     std::abort();
 }

@@ -8,10 +8,12 @@ namespace mizugaki::ast::query {
 
 using ::takatori::util::clone_unique;
 using ::takatori::util::object_creator;
+using ::takatori::util::rvalue_ptr;
 using ::takatori::util::unique_object_ptr;
 
 using common::clone_optional;
 using common::clone_vector;
+using common::to_vector;
 
 query::query(
         std::optional<quantifier_type> quantifier,
@@ -32,6 +34,29 @@ query::query(
     having_ { std::move(having) },
     order_by_ { std::move(order_by) },
     limit_ { std::move(limit) }
+{}
+
+query::query(
+        std::optional<quantifier_type> quantifier,
+        common::rvalue_list<select_element> elements,
+        common::rvalue_list<table::expression> from,
+        rvalue_ptr<scalar::expression> where,
+        std::optional<group_by_clause> group_by,
+        rvalue_ptr<scalar::expression> having,
+        std::initializer_list<common::sort_element> order_by,
+        rvalue_ptr<scalar::expression> limit,
+        element::region_type region) noexcept :
+    query {
+            std::move(quantifier),
+            to_vector(elements),
+            to_vector(from),
+            clone_unique(where),
+            std::move(group_by),
+            clone_unique(having),
+            decltype(order_by_) { order_by },
+            clone_unique(limit),
+            region,
+    }
 {}
 
 query::query(query const& other, object_creator creator) :

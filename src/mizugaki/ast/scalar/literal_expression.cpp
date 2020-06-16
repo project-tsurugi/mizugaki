@@ -17,6 +17,15 @@ literal_expression::literal_expression(
     value_ { std::move(value) }
 {}
 
+literal_expression::literal_expression(
+        literal::literal&& value,
+        region_type region) noexcept :
+    literal_expression {
+            clone_unique(std::move(value)),
+            region,
+    }
+{}
+
 literal_expression::literal_expression(literal_expression const& other, object_creator creator) :
     literal_expression {
             clone_unique(other.value_, creator),
@@ -64,7 +73,7 @@ bool operator!=(literal_expression const& a, literal_expression const& b) noexce
 
 bool literal_expression::equals(expression const& other) const noexcept {
     return other.node_kind() == tag
-            && *this == unsafe_downcast<literal_expression>(other);
+            && *this == unsafe_downcast<type_of_t<tag>>(other);
 }
 
 } // namespace mizugaki::ast::scalar

@@ -6,15 +6,8 @@ sql_parser_result::sql_parser_result(value_type value) noexcept :
     value_ { std::move(value) }
 {}
 
-sql_parser_result::sql_parser_result(sql_parser_result::error_type error) noexcept :
-    error_ { std::move(error) }
-{}
-
-sql_parser_result::sql_parser_result(location_type location, message_type message) noexcept :
-    error_ {
-            location,
-            std::move(message),
-    }
+sql_parser_result::sql_parser_result(sql_parser_result::diagnostic_type diagnostic) noexcept :
+    diagnostic_ { std::move(diagnostic) }
 {}
 
 bool sql_parser_result::has_value() const noexcept {
@@ -41,16 +34,16 @@ sql_parser_result::value_type const& sql_parser_result::operator*() const noexce
     return value();
 }
 
-bool sql_parser_result::has_error() const noexcept {
-    return !error_.second.empty();
+bool sql_parser_result::has_diagnostic() const noexcept {
+    return static_cast<bool>(diagnostic_);
 }
 
-sql_parser_result::error_type& sql_parser_result::error() noexcept {
-    return error_;
+sql_parser_result::diagnostic_type& sql_parser_result::diagnostic() noexcept {
+    return diagnostic_;
 }
 
-sql_parser_result::error_type const& sql_parser_result::error() const noexcept {
-    return error_;
+sql_parser_result::diagnostic_type const& sql_parser_result::diagnostic() const noexcept {
+    return diagnostic_;
 }
 
 } // namespace mizugaki::parser

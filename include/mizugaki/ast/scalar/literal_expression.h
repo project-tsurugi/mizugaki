@@ -33,6 +33,16 @@ public:
 
     /**
      * @brief creates a new instance.
+     * @param value the literal value
+     * @param region the node region
+     * @attention this will take a copy of argument
+     */
+    explicit literal_expression(
+            literal::literal&& value,
+            region_type region = {}) noexcept;
+
+    /**
+     * @brief creates a new instance.
      * @param other the copy source
      * @param creator the object creator
      */

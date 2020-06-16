@@ -21,7 +21,7 @@ space [[:space:]]+
 /* <regular identifier> FIXME: more characters */
 identifier_start [A-Za-z]
 identifier_part [A-Za-z_0-9]
-identifier_body {identifier_start}{identifier_part}+
+identifier_body {identifier_start}{identifier_part}*
 identifier {identifier_body}
 
 /* <delimited identifier> */
@@ -57,6 +57,10 @@ decimal {unsigned_integer}{period}{unsigned_integer}
 approximate_numeric_literal {mantissa}"E"{exponent}
 mantissa ({unsigned_integer}|{decimal})
 exponent {signed_integer}
+
+/* special phrases */
+union_join "UNION"{space}+"JOIN"
+dot_asterisk "."{space}*"*"
 
 %x bracketed_comment
 %x simple_comment
@@ -96,6 +100,10 @@ exponent {signed_integer}
     }
     . {}
 }
+
+{union_join} { return parser_type::make_UNION_JOIN(location()); }
+
+{dot_asterisk} { return parser_type::make_DOT_ASTERISK(location()); }
 
 "<>" { return parser_type::make_NOT_EQUALS_OPERATOR(location()); }
 ">=" { return parser_type::make_GREATER_THAN_OR_EQUALS_OPERATOR(location()); }

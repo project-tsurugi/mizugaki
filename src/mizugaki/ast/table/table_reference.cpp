@@ -25,6 +25,19 @@ table_reference::table_reference(
     correlation_ { std::move(correlation) }
 {}
 
+table_reference::table_reference(
+        name::name&& name,
+        std::optional<correlation_type> correlation,
+        bool_type is_only,
+        region_type region) noexcept :
+    table_reference {
+            is_only,
+            clone_unique(std::move(name)),
+            std::move(correlation),
+            region,
+    }
+{}
+
 table_reference::table_reference(table_reference const& other, object_creator creator) :
     table_reference {
             other.is_only_,
@@ -94,7 +107,7 @@ bool operator!=(table_reference const& a, table_reference const& b) noexcept {
 
 bool table_reference::equals(expression const& other) const noexcept {
     return other.node_kind() == tag
-            && *this == unsafe_downcast<table_reference>(other);
+            && *this == unsafe_downcast<type_of_t<tag>>(other);
 }
 
 } // namespace mizugaki::ast::table

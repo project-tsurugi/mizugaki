@@ -32,13 +32,13 @@ public:
     /**
      * @brief creates a new instance.
      * @param is_lateral whether or not `LATERAL` is specified
-     * @param body the query expression
+     * @param expression the query expression
      * @param correlation the correlation declaration
      * @param region the node region
      */
     explicit subquery(
             bool_type is_lateral,
-            ::takatori::util::unique_object_ptr<query::expression> body,
+            ::takatori::util::unique_object_ptr<query::expression> expression,
             correlation_type correlation,
             region_type region = {}) noexcept;
 
@@ -65,16 +65,10 @@ public:
      * @brief returns the query expression.
      * @return the query expression
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<query::expression>& body() noexcept;
+    [[nodiscard]] ::takatori::util::unique_object_ptr<query::expression>& expression() noexcept;
 
-    /// @copydoc body()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<query::expression> const& body() const noexcept;
-
-    /// @copydoc body()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<query::expression>& operator*() noexcept;
-
-    /// @copydoc body()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<query::expression> const& operator*() const noexcept;
+    /// @copydoc expression()
+    [[nodiscard]] ::takatori::util::unique_object_ptr<query::expression> const& expression() const noexcept;
 
     /**
      * @brief returns the correlation declaration.
@@ -115,11 +109,11 @@ public:
     friend bool operator!=(subquery const& a, subquery const& b) noexcept;
 
 protected:
-    [[nodiscard]] bool equals(expression const& other) const noexcept override;
+    [[nodiscard]] bool equals(table::expression const& other) const noexcept override;
 
 private:
     bool_type is_lateral_;
-    ::takatori::util::unique_object_ptr<query::expression> body_;
+    ::takatori::util::unique_object_ptr<query::expression> expression_;
     correlation_type correlation_;
 };
 

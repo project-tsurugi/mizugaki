@@ -3,8 +3,10 @@
 #include <optional>
 
 #include <takatori/util/object_creator.h>
+#include <takatori/util/rvalue_ptr.h>
 
 #include <mizugaki/ast/common/regioned.h>
+#include <mizugaki/ast/common/rvalue_list.h>
 #include <mizugaki/ast/common/vector.h>
 #include <mizugaki/ast/scalar/expression.h>
 #include <mizugaki/ast/scalar/set_quantifier.h>
@@ -55,6 +57,30 @@ public:
             ::takatori::util::unique_object_ptr<scalar::expression> having = {},
             common::vector<common::sort_element> order_by = {},
             ::takatori::util::unique_object_ptr<scalar::expression> limit = {},
+            region_type region = {}) noexcept;
+
+    /**
+     * @brief creates a new instance.
+     * @param quantifier the set quantifier
+     * @param elements the select elements
+     * @param from the from clause
+     * @param where the where clause
+     * @param group_by the group by clause
+     * @param having the having clause
+     * @param order_by the order by clause
+     * @param limit the limit clause
+     * @param region the node region
+     * @attention this may take copy of elements
+     */
+    query(
+            std::optional<quantifier_type> quantifier,
+            common::rvalue_list<select_element> elements,
+            common::rvalue_list<table::expression> from,
+            ::takatori::util::rvalue_ptr<scalar::expression> where = {},
+            std::optional<group_by_clause> group_by = {},
+            ::takatori::util::rvalue_ptr<scalar::expression> having = {},
+            std::initializer_list<common::sort_element> order_by = {},
+            ::takatori::util::rvalue_ptr<scalar::expression> limit = {},
             region_type region = {}) noexcept;
 
     /**

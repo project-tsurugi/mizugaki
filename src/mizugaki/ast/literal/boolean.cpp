@@ -61,7 +61,7 @@ bool operator!=(boolean const& a, boolean const& b) noexcept {
 
 bool boolean::equals(literal const& other) const noexcept {
     return other.node_kind() == tag
-            && *this == unsafe_downcast<boolean>(other);
+            && *this == unsafe_downcast<type_of_t<tag>>(other);
 }
 
 } // namespace mizugaki::ast::literal

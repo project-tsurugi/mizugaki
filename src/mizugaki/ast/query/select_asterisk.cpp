@@ -11,10 +11,17 @@ using ::takatori::util::object_creator;
 using ::takatori::util::unique_object_ptr;
 
 select_asterisk::select_asterisk(
-        unique_object_ptr<name::name> qualifier,
+        unique_object_ptr<scalar::expression> qualifier,
         region_type region) noexcept :
     super { region },
     qualifier_ { std::move(qualifier) }
+{}
+
+select_asterisk::select_asterisk(scalar::expression&& qualifier, element::region_type region) noexcept :
+    select_asterisk {
+            clone_unique(qualifier),
+            region,
+    }
 {}
 
 select_asterisk::select_asterisk(select_asterisk const& other, object_creator creator) :
@@ -43,11 +50,11 @@ select_element::node_kind_type select_asterisk::node_kind() const noexcept {
     return tag;
 }
 
-unique_object_ptr<name::name>& select_asterisk::qualifier() noexcept {
+unique_object_ptr<scalar::expression>& select_asterisk::qualifier() noexcept {
     return qualifier_;
 }
 
-unique_object_ptr<name::name> const& select_asterisk::qualifier() const noexcept {
+unique_object_ptr<scalar::expression> const& select_asterisk::qualifier() const noexcept {
     return qualifier_;
 }
 

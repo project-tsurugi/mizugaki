@@ -12,19 +12,19 @@ using ::takatori::util::unique_object_ptr;
 
 subquery::subquery(
         bool_type is_lateral,
-        unique_object_ptr<query::expression> body,
+        unique_object_ptr<query::expression> expression,
         correlation_type correlation,
         region_type region) noexcept :
     super { region },
     is_lateral_ { is_lateral },
-    body_ { std::move(body) },
+    expression_ { std::move(expression) },
     correlation_ { std::move(correlation) }
 {}
 
 subquery::subquery(subquery const& other, object_creator creator) :
     subquery {
             other.is_lateral_,
-            clone_unique(other.body_, creator),
+            clone_unique(other.expression_, creator),
             decltype(correlation_) { other.correlation_, creator },
             other.region(),
     }
@@ -33,7 +33,7 @@ subquery::subquery(subquery const& other, object_creator creator) :
 subquery::subquery(subquery&& other, object_creator creator) :
     subquery {
             other.is_lateral_,
-            clone_unique(std::move(other.body_), creator),
+            clone_unique(std::move(other.expression_), creator),
             decltype(correlation_) { std::move(other.correlation_), creator },
             other.region(),
     }
@@ -51,20 +51,12 @@ expression::node_kind_type subquery::node_kind() const noexcept {
     return tag;
 }
 
-unique_object_ptr<query::expression>& subquery::body() noexcept {
-    return body_;
+unique_object_ptr<query::expression>& subquery::expression() noexcept {
+    return expression_;
 }
 
-unique_object_ptr<query::expression> const& subquery::body() const noexcept {
-    return body_;
-}
-
-unique_object_ptr<query::expression>& subquery::operator*() noexcept {
-    return body();
-}
-
-unique_object_ptr<query::expression> const& subquery::operator*() const noexcept {
-    return body();
+unique_object_ptr<query::expression> const& subquery::expression() const noexcept {
+    return expression_;
 }
 
 subquery::correlation_type& subquery::correlation() noexcept {
@@ -87,7 +79,7 @@ bool operator==(subquery const& a, subquery const& b) noexcept {
     if (std::addressof(a) == std::addressof(b)) {
         return true;
     }
-    return eq(a.body_, b.body_)
+    return eq(a.expression_, b.expression_)
             && eq(a.correlation_, b.correlation_)
             && eq(a.is_lateral_, b.is_lateral_);
 }
@@ -96,9 +88,9 @@ bool operator!=(subquery const& a, subquery const& b) noexcept {
     return !(a == b);
 }
 
-bool subquery::equals(expression const& other) const noexcept {
+bool subquery::equals(table::expression const& other) const noexcept {
     return other.node_kind() == tag
-            && *this == unsafe_downcast<subquery>(other);
+            && *this == unsafe_downcast<type_of_t<tag>>(other);
 }
 
 } // namespace mizugaki::ast::table

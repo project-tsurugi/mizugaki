@@ -45,6 +45,20 @@ public:
 
     /**
      * @brief creates a new instance.
+     * @param name the table or query name
+     * @param correlation the correlation declaration
+     * @param is_only whether or not `ONLY` is specified
+     * @param region the node region
+     * @attention this may take copy of elements
+     */
+    table_reference( // NOLINT: implicit conversion
+            name::name&& name,
+            std::optional<correlation_type> correlation = {},
+            bool_type is_only = false,
+            region_type region = {}) noexcept;
+
+    /**
+     * @brief creates a new instance.
      * @param other the copy source
      * @param creator the object creator
      */

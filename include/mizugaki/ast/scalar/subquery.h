@@ -24,11 +24,11 @@ public:
 
     /**
      * @brief creates a new instance.
-     * @param body the query expression
+     * @param expression the query expression
      * @param region the node region
      */
     explicit subquery(
-            ::takatori::util::unique_object_ptr<query::expression> body,
+            ::takatori::util::unique_object_ptr<query::expression> expression,
             region_type region = {}) noexcept;
 
     /**
@@ -54,16 +54,10 @@ public:
      * @brief returns the query expression.
      * @return the query expression
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<query::expression>& body() noexcept;
+    [[nodiscard]] ::takatori::util::unique_object_ptr<query::expression>& expression() noexcept;
 
-    /// @copydoc body()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<query::expression> const& body() const noexcept;
-
-    /// @copydoc body()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<query::expression>& operator*() noexcept;
-
-    /// @copydoc body()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<query::expression> const& operator*() const noexcept;
+    /// @copydoc expression()
+    [[nodiscard]] ::takatori::util::unique_object_ptr<query::expression> const& expression() const noexcept;
 
     /**
      * @brief compares two values.
@@ -84,10 +78,10 @@ public:
     friend bool operator!=(subquery const& a, subquery const& b) noexcept;
 
 protected:
-    [[nodiscard]] bool equals(expression const& other) const noexcept override;
+    [[nodiscard]] bool equals(scalar::expression const& other) const noexcept override;
 
 private:
-    ::takatori::util::unique_object_ptr<query::expression> body_;
+    ::takatori::util::unique_object_ptr<query::expression> expression_;
 };
 
 } // namespace mizugaki::ast::scalar

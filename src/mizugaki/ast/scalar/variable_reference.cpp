@@ -17,6 +17,15 @@ variable_reference::variable_reference(
     name_ { std::move(name) }
 {}
 
+variable_reference::variable_reference(
+        name::name&& name,
+        region_type region) noexcept :
+    variable_reference {
+            clone_unique(std::move(name)),
+            region,
+    }
+{}
+
 variable_reference::variable_reference(variable_reference const& other, object_creator creator) :
     variable_reference {
             clone_unique(other.name_, creator),
@@ -64,7 +73,7 @@ bool operator!=(variable_reference const& a, variable_reference const& b) noexce
 
 bool variable_reference::equals(expression const& other) const noexcept {
     return other.node_kind() == tag
-            && *this == unsafe_downcast<variable_reference>(other);
+            && *this == unsafe_downcast<type_of_t<tag>>(other);
 }
 
 } // namespace mizugaki::ast::scalar

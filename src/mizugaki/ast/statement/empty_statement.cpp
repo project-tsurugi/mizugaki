@@ -45,7 +45,7 @@ bool operator!=(empty_statement const& a, empty_statement const& b) noexcept {
 
 bool empty_statement::equals(statement const& other) const noexcept {
     return other.node_kind() == tag
-            && *this == unsafe_downcast<empty_statement>(other);
+            && *this == unsafe_downcast<type_of_t<tag>>(other);
 }
 
 } // namespace mizugaki::ast::statement

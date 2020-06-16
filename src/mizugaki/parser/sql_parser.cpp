@@ -17,6 +17,11 @@ sql_parser::sql_parser(object_creator creator) noexcept :
     creator_ { creator }
 {}
 
+sql_parser& sql_parser::set_debug(int level) noexcept {
+    debug_ = level;
+    return *this;
+}
+
 sql_parser::result_type sql_parser::operator()(std::string location, std::string contents) {
     std::istringstream input { contents };
     sql_scanner scanner { input };
@@ -25,6 +30,11 @@ sql_parser::result_type sql_parser::operator()(std::string location, std::string
     sql_driver driver { std::move(document), creator_ };
 
     sql_parser_generated parser { scanner, driver };
+
+#if YYDEBUG
+    parser.set_debug_level(static_cast<sql_parser_generated::debug_level_type>(debug_));
+    parser.set_debug_stream(std::cout);
+#endif // YYDEBUG
 
     parser.parse();
     return std::move(driver.result());

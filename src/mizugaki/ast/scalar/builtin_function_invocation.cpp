@@ -77,7 +77,7 @@ bool operator!=(builtin_function_invocation const& a, builtin_function_invocatio
 
 bool builtin_function_invocation::equals(expression const& other) const noexcept {
     return other.node_kind() == tag
-            && *this == unsafe_downcast<builtin_function_invocation>(other);
+            && *this == unsafe_downcast<type_of_t<tag>>(other);
 }
 
 } // namespace mizugaki::ast::scalar

@@ -14,7 +14,7 @@ class qualified final : public name {
 
 public:
     /// @brief the node kind of this.
-    static constexpr node_kind_type tag = node_kind_type::simple;
+    static constexpr node_kind_type tag = node_kind_type::qualified;
 
     /**
      * @brief creates a new instance.

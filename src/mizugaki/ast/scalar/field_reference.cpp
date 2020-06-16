@@ -13,20 +13,20 @@ using ::takatori::util::object_creator;
 using ::takatori::util::unique_object_ptr;
 
 field_reference::field_reference(
-        operator_kind_type operator_kind,
         operand_type value,
+        operator_kind_type operator_kind,
         unique_object_ptr<name::simple> name,
         element::region_type region) noexcept:
     super { region },
-    operator_kind_ { operator_kind },
     value_ { std::move(value) },
+    operator_kind_ { operator_kind },
     name_ { std::move(name) }
 {}
 
 field_reference::field_reference(field_reference const& other, object_creator creator) :
     field_reference {
-            other.operator_kind_,
             clone_unique(other.value_, creator),
+            other.operator_kind_,
             clone_unique(other.name_, creator),
             other.region(),
     }
@@ -34,8 +34,8 @@ field_reference::field_reference(field_reference const& other, object_creator cr
 
 field_reference::field_reference(field_reference&& other, object_creator creator) :
     field_reference {
-            other.operator_kind_,
             clone_unique(std::move(other.value_), creator),
+            other.operator_kind_,
             clone_unique(std::move(other.name_), creator),
             other.region(),
     }
@@ -92,7 +92,7 @@ bool operator!=(field_reference const& a, field_reference const& b) noexcept {
 
 bool field_reference::equals(expression const& other) const noexcept {
     return other.node_kind() == tag
-            && *this == unsafe_downcast<field_reference>(other);
+            && *this == unsafe_downcast<type_of_t<tag>>(other);
 }
 
 } // namespace mizugaki::ast::scalar

@@ -57,6 +57,7 @@ public:
      */
     clone_wrapper& operator=(clone_wrapper const& other) {
         element_ = other.clone();
+        return *this;
     }
 
     /**
@@ -164,7 +165,12 @@ public:
      * @param other the move source
      * @return this
      */
-    clone_wrapper& operator=(clone_wrapper&& other) noexcept(std::is_nothrow_move_assignable_v<target_type>) = default;
+    clone_wrapper& operator=(clone_wrapper&& other) noexcept {
+        // NOTE: force propagate allocator
+        std::destroy_at(&element_);
+        new (&element_) decltype(element_)(std::move(other.element_));
+        return *this;
+    }
 
     /**
      * @brief returns the holding element.

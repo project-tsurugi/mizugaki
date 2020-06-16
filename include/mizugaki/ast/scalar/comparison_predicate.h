@@ -49,6 +49,20 @@ public:
 
     /**
      * @brief creates a new instance.
+     * @param left the left term
+     * @param operator_kind the comparison operator
+     * @param right the right term
+     * @param region the node region
+     * @attention this will take copy of arguments
+     */
+    explicit comparison_predicate(
+            expression&& left,
+            comparison_operator operator_kind,
+            expression&& right,
+            region_type region = {}) noexcept;
+
+    /**
+     * @brief creates a new instance.
      * @param other the copy source
      * @param creator the object creator
      */

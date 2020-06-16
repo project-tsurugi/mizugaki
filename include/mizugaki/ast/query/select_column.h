@@ -1,6 +1,7 @@
 #pragma once
 
 #include <takatori/util/object_creator.h>
+#include <takatori/util/rvalue_ptr.h>
 
 #include <mizugaki/ast/element.h>
 #include <mizugaki/ast/name/simple.h>
@@ -28,9 +29,21 @@ public:
      * @param name the optional column name
      * @param region the element region
      */
-    select_column( // NOLINT: conversion constructor
+    explicit select_column(
             ::takatori::util::unique_object_ptr<scalar::expression> value,
             ::takatori::util::unique_object_ptr<name::simple> name = {},
+            region_type region = {}) noexcept;
+
+    /**
+     * @brief creates a new instance.
+     * @param value the column value
+     * @param name the optional column name
+     * @param region the element region
+     * @attention this will take copy of arguments
+     */
+    explicit select_column(
+            scalar::expression&& value,
+            ::takatori::util::rvalue_ptr<name::simple> name = {},
             region_type region = {}) noexcept;
 
     /**

@@ -10,7 +10,7 @@
 namespace mizugaki::ast::table {
 
 class table_reference;
-class unnest; // FIXME: impl
+class unnest;
 class join;
 class subquery;
 

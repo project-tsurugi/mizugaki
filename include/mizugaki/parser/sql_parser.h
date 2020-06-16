@@ -23,6 +23,14 @@ public:
     explicit sql_parser(::takatori::util::object_creator creator = {}) noexcept;
 
     /**
+     * @brief sets the debug level.
+     * @param level the debug level
+     * @return this
+     * @note this feature is only available for debug configurations
+     */
+    sql_parser& set_debug(int level) noexcept;
+
+    /**
      * @brief parses the contents.
      * @param location the content location
      * @param contents the target contents
@@ -32,6 +40,7 @@ public:
 
 private:
     ::takatori::util::object_creator creator_;
+    int debug_ {};
 };
 
 } // namespace mizugaki::parser

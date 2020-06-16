@@ -117,7 +117,7 @@ bool operator!=(between_predicate const& a, between_predicate const& b) noexcept
 
 bool between_predicate::equals(expression const& other) const noexcept {
     return other.node_kind() == tag
-            && *this == unsafe_downcast<between_predicate>(other);
+            && *this == unsafe_downcast<type_of_t<tag>>(other);
 }
 
 } // namespace mizugaki::ast::scalar

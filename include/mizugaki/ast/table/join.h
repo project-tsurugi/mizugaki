@@ -3,13 +3,13 @@
 #include <takatori/util/object_creator.h>
 
 #include <mizugaki/ast/common/regioned.h>
-#include <mizugaki/ast/common/vector.h>
 #include <mizugaki/ast/name/simple.h>
 #include <mizugaki/ast/scalar/expression.h>
 #include <mizugaki/ast/query/expression.h>
 
 #include "expression.h"
 #include "join_type.h"
+#include "join_specification.h"
 
 namespace mizugaki::ast::table {
 
@@ -23,7 +23,7 @@ class join final : public expression {
 
 public:
     /// @brief the join type.
-    using operator_kind_type = join_type;
+    using operator_kind_type = common::regioned<join_type>;
 
     /// @brief the node kind of this.
     static constexpr node_kind_type tag = node_kind_type::join;
@@ -33,18 +33,14 @@ public:
      * @param left the left operand
      * @param operator_kind the join type
      * @param right the right operand
-     * @param condition the join condition (`ON`)
-     * @param named_columns the join columns (`USING`)
+     * @param specification the join specification (`ON`, `USING` or nothing)
      * @param region the node region
-     * @note `condition` and `named_columns` are exclusive, and they can be present only if
-     *      `operator_kind` is ony of `inner`, `left_outer`, `right_outer`, or `full_outer`.
      */
     explicit join(
             ::takatori::util::unique_object_ptr<table::expression> left,
             operator_kind_type operator_kind,
             ::takatori::util::unique_object_ptr<table::expression> right,
-            ::takatori::util::unique_object_ptr<scalar::expression> condition = {},
-            common::vector<::takatori::util::unique_object_ptr<name::simple>> named_columns = {},
+            ::takatori::util::unique_object_ptr<join_specification> specification = {},
             region_type region = {}) noexcept;
 
     /**
@@ -94,24 +90,14 @@ public:
     [[nodiscard]] ::takatori::util::unique_object_ptr<table::expression> const& right() const noexcept;
 
     /**
-     * @brief returns the join condition (`ON`).
-     * @return the join condition expression
+     * @brief returns the join specification.
+     * @return the join specification
      * @return empty if it is not declared
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<scalar::expression>& condition() noexcept;
+    [[nodiscard]] ::takatori::util::unique_object_ptr<join_specification>& specification() noexcept;
 
-    /// @copydoc condition()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<scalar::expression> const& condition() const noexcept;
-
-    /**
-     * @brief returns the join columns (`USING`).
-     * @return the join columns
-     * @return empty if they are not declared
-     */
-    [[nodiscard]] common::vector<::takatori::util::unique_object_ptr<name::simple>>& named_columns() noexcept;
-
-    /// @copydoc named_columns()
-    [[nodiscard]] common::vector<::takatori::util::unique_object_ptr<name::simple>> const& named_columns() const noexcept;
+    /// @copydoc specification()
+    [[nodiscard]] ::takatori::util::unique_object_ptr<join_specification> const& specification() const noexcept;
 
     /**
      * @brief compares two values.
@@ -138,8 +124,7 @@ private:
     ::takatori::util::unique_object_ptr<table::expression> left_;
     operator_kind_type operator_kind_;
     ::takatori::util::unique_object_ptr<table::expression> right_;
-    ::takatori::util::unique_object_ptr<scalar::expression> condition_;
-    common::vector<::takatori::util::unique_object_ptr<name::simple>> named_columns_;
+    ::takatori::util::unique_object_ptr<join_specification> specification_;
 };
 
 } // namespace mizugaki::ast::table

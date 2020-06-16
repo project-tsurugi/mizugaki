@@ -39,9 +39,10 @@ void sql_driver::success(ast::common::vector<node_ptr<ast::statement::statement>
 }
 
 void sql_driver::error(sql_driver::location_type location, sql_parser_result::message_type message) {
-    result_ = {
-            location,
+    result_ = sql_parser_diagnostic {
             std::move(message),
+            document_,
+            location,
     };
 }
 

@@ -1,7 +1,8 @@
 #pragma once
 
-#include <ostream>
+#include <algorithm>
 #include <functional>
+#include <ostream>
 
 #include <takatori/util/detect.h>
 
@@ -17,6 +18,9 @@ struct node_region {
 
     /// @brief the position type.
     using position_type = std::size_t;
+
+    /// @brief represents an invalid position.
+    static constexpr position_type npos = static_cast<position_type>(-1);
 
     /// @brief the beginning position (inclusive, 0-origin).
     position_type begin {}; // NOLINT(misc-non-private-member-variables-in-classes): for parser generator's convention
@@ -38,6 +42,46 @@ struct node_region {
         begin { first },
         end { last }
     {}
+
+    /**
+     * @brief returns the sub region.
+     * @details the sub region must be included into the original region.
+     * @param offset offset from the beginning position
+     * @param length the sub region length
+     * @return the sub region
+     */
+    [[nodiscard]] constexpr node_region operator()(position_type offset, position_type length = npos) noexcept {
+        auto nbegin = begin + offset;
+        auto nend = (length == npos) ? end : nbegin + length;
+        return {
+                std::min({ nbegin, nend, end }),
+                std::min({ nend, end }),
+        };
+    }
+
+    /**
+     * @brief returns the beginning position of this region.
+     * @return the beginning position (inclusive)
+     */
+    [[nodiscard]] constexpr position_type first() const noexcept {
+        return begin;
+    }
+
+    /**
+     * @brief returns the ending position of this region.
+     * @return the ending position (exclusive)
+     */
+    [[nodiscard]] constexpr position_type last() const noexcept {
+        return end;
+    }
+
+    /**
+     * @brief returns the size of this region.
+     * @return the number of position in this region
+     */
+    [[nodiscard]] constexpr position_type size() const noexcept {
+        return end - begin;
+    }
 };
 
 /**

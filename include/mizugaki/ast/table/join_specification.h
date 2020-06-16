@@ -1,22 +1,24 @@
 #pragma once
 
 #include <mizugaki/ast/node.h>
+#include <takatori/util/object_creator.h>
 
-#include "kind.h"
+#include "join_specification_kind.h"
 
-namespace mizugaki::ast::literal {
+namespace mizugaki::ast::table {
 
 /**
- * @brief an abstract super interface of literal models.
+ * @brief columns specifications of queries.
+ * @note `7.7 <joined table>` - `<join specification>`
  */
-class literal : public node {
+class join_specification : public node {
 public:
     /// @brief the node kind type.
-    using node_kind_type = kind;
+    using node_kind_type = join_specification_kind;
 
     using node::node;
-    [[nodiscard]] literal* clone(::takatori::util::object_creator creator) const& override = 0;
-    [[nodiscard]] literal* clone(::takatori::util::object_creator creator) && override = 0;
+    [[nodiscard]] join_specification* clone(::takatori::util::object_creator creator) const& override = 0;
+    [[nodiscard]] join_specification* clone(::takatori::util::object_creator creator) && override = 0;
 
     /**
      * @brief returns the kind of this name.
@@ -31,8 +33,8 @@ public:
      * @return true if the both are equivalent
      * @return false otherwise
      */
-    friend bool operator==(literal const& a, literal const& b) noexcept;
-
+    friend bool operator==(join_specification const& a, join_specification const& b) noexcept;
+    
     /**
      * @brief compares two values.
      * @param a the first value
@@ -40,8 +42,8 @@ public:
      * @return true if the both are different
      * @return false otherwise
      */
-    friend bool operator!=(literal const& a, literal const& b) noexcept;
-
+    friend bool operator!=(join_specification const& a, join_specification const& b) noexcept;
+    
 protected:
     /**
      * @brief compares to the given value.
@@ -49,7 +51,7 @@ protected:
      * @return true if this and the value are equivalent
      * @return false otherwise
      */
-    [[nodiscard]] virtual bool equals(literal const& other) const noexcept = 0;
+    [[nodiscard]] virtual bool equals(join_specification const& other) const noexcept = 0;
 };
 
-} // namespace mizugaki::ast::literal
+} // namespace mizugaki::ast::table

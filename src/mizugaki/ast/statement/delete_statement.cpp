@@ -77,7 +77,7 @@ bool operator!=(delete_statement const& a, delete_statement const& b) noexcept {
 
 bool delete_statement::equals(statement const& other) const noexcept {
     return other.node_kind() == tag
-            && *this == unsafe_downcast<delete_statement>(other);
+            && *this == unsafe_downcast<type_of_t<tag>>(other);
 }
 
 } // namespace mizugaki::ast::statement

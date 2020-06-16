@@ -15,7 +15,7 @@ public:
     // FIXME: impl using qualifier_type = common::interval_qualifier;
 
     /// @brief the node kind of this.
-    static constexpr node_kind_type tag = node_kind_type::boolean;
+    static constexpr node_kind_type tag = node_kind_type::interval;
 
     /**
      * @brief creates a new instance.

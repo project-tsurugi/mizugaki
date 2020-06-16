@@ -76,7 +76,7 @@ bool operator!=(value_constructor const& a, value_constructor const& b) noexcept
 
 bool value_constructor::equals(expression const& other) const noexcept {
     return other.node_kind() == tag
-            && *this == unsafe_downcast<value_constructor>(other);
+            && *this == unsafe_downcast<type_of_t<tag>>(other);
 }
 
 } // namespace mizugaki::ast::scalar

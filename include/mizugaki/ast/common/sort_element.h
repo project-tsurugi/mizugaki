@@ -23,6 +23,12 @@ public:
     using direction_type = regioned<ordering_specification>;
 
     /**
+     * @brief creates a new empty instance.
+     * @note this is used in parser generator.
+     */
+    explicit sort_element() = default;
+
+    /**
      * @brief creates a new instance.
      * @param key the sort key
      * @param collation the optional collation name
@@ -97,9 +103,9 @@ public:
     friend bool operator!=(sort_element const& a, sort_element const& b) noexcept;
 
 private:
-    common::clone_wrapper<::takatori::util::unique_object_ptr<scalar::expression>> key_;
-    common::clone_wrapper<::takatori::util::unique_object_ptr<name::name>> collation_;
-    std::optional<direction_type> direction_;
+    common::clone_wrapper<::takatori::util::unique_object_ptr<scalar::expression>> key_ {};
+    common::clone_wrapper<::takatori::util::unique_object_ptr<name::name>> collation_ {};
+    std::optional<direction_type> direction_ {};
 };
 
 } // namespace mizugaki::ast::common

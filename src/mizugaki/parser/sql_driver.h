@@ -53,6 +53,13 @@ public:
         return result;
     }
 
+    template<class T>
+    [[nodiscard]] ast::common::vector<T> element_vector(std::size_t capacity = 0) {
+        ast::common::vector<T> result { creator_.allocator() };
+        result.reserve(capacity);
+        return result;
+    }
+
 private:
     ::takatori::util::maybe_shared_ptr<document_type const> document_;
     ::takatori::util::object_creator creator_;

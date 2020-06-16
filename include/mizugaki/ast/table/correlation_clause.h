@@ -16,6 +16,12 @@ namespace mizugaki::ast::table {
 class correlation_clause : public element {
 public:
     /**
+     * @brief creates a new empty instance.
+     * @note this is used in parser generator.
+     */
+    explicit correlation_clause() = default;
+
+    /**
      * @brief creates a new instance.
      * @param correlation_name the correlation name
      * @param column_names the correlation column names
@@ -78,8 +84,8 @@ public:
     friend bool operator!=(correlation_clause const& a, correlation_clause const& b) noexcept;
 
 private:
-    common::clone_wrapper<::takatori::util::unique_object_ptr<name::simple>> correlation_name_;
-    common::clone_wrapper<common::vector<::takatori::util::unique_object_ptr<name::simple>>> column_names_;
+    common::clone_wrapper<::takatori::util::unique_object_ptr<name::simple>> correlation_name_ {};
+    common::clone_wrapper<common::vector<::takatori::util::unique_object_ptr<name::simple>>> column_names_ {};
 };
 
 } // namespace mizugaki::ast::table

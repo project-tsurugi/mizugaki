@@ -23,6 +23,20 @@ comparison_predicate::comparison_predicate(
     right_ { std::move(right) }
 {}
 
+comparison_predicate::comparison_predicate(
+        expression&& left,
+        comparison_operator operator_kind,
+        expression&& right,
+        region_type region) noexcept :
+    comparison_predicate {
+            clone_unique(std::move(left)),
+            operator_kind,
+            std::nullopt,
+            clone_unique(std::move(right)),
+            region,
+    }
+{}
+
 comparison_predicate::comparison_predicate(comparison_predicate const& other, object_creator creator) :
     comparison_predicate {
             clone_unique(other.left_, creator),
@@ -103,7 +117,7 @@ bool operator!=(comparison_predicate const& a, comparison_predicate const& b) no
 
 bool comparison_predicate::equals(expression const& other) const noexcept {
     return other.node_kind() == tag
-            && *this == unsafe_downcast<comparison_predicate>(other);
+            && *this == unsafe_downcast<type_of_t<tag>>(other);
 }
 
 } // namespace mizugaki::ast::scalar

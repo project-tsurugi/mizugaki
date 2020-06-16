@@ -21,6 +21,17 @@ select_statement::select_statement(
     targets_ { std::move(targets) }
 {}
 
+select_statement::select_statement(
+        query::expression&& expression,
+        std::initializer_list<target_element> targets,
+        region_type region) noexcept :
+    select_statement {
+            clone_unique(std::move(expression)),
+            decltype(targets_) { targets },
+            region,
+    }
+{}
+
 select_statement::select_statement(select_statement const& other, object_creator creator) :
     select_statement {
             clone_unique(other.expression_, creator),
@@ -79,7 +90,7 @@ bool operator!=(select_statement const& a, select_statement const& b) noexcept {
 
 bool select_statement::equals(statement const& other) const noexcept {
     return other.node_kind() == tag
-            && *this == unsafe_downcast<select_statement>(other);
+            && *this == unsafe_downcast<type_of_t<tag>>(other);
 }
 
 } // namespace mizugaki::ast::statement

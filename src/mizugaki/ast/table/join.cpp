@@ -10,21 +10,17 @@ using ::takatori::util::clone_unique;
 using ::takatori::util::object_creator;
 using ::takatori::util::unique_object_ptr;
 
-using common::clone_vector;
-
 join::join(
         unique_object_ptr<table::expression> left,
         operator_kind_type operator_kind,
         unique_object_ptr<table::expression> right,
-        unique_object_ptr<scalar::expression> condition,
-        common::vector<unique_object_ptr<name::simple>> named_columns,
+        ::takatori::util::unique_object_ptr<join_specification> specification,
         element::region_type region) noexcept :
     super { region },
     left_ { std::move(left) },
     operator_kind_ { operator_kind },
     right_ { std::move(right) },
-    condition_ { std::move(condition) },
-    named_columns_ { std::move(named_columns) }
+    specification_ { std::move(specification) }
 {}
 
 join::join(join const& other, object_creator creator) :
@@ -32,8 +28,7 @@ join::join(join const& other, object_creator creator) :
             clone_unique(other.left_, creator),
             other.operator_kind_,
             clone_unique(other.right_, creator),
-            clone_unique(other.condition_, creator),
-            clone_vector(other.named_columns_, creator),
+            clone_unique(other.specification_, creator),
             other.region(),
     }
 {}
@@ -43,8 +38,7 @@ join::join(join&& other, object_creator creator) :
             clone_unique(std::move(other.left_), creator),
             other.operator_kind_,
             clone_unique(std::move(other.right_), creator),
-            clone_unique(std::move(other.condition_), creator),
-            clone_vector(std::move(other.named_columns_), creator),
+            clone_unique(std::move(other.specification_), creator),
             other.region(),
     }
 {}
@@ -85,20 +79,12 @@ unique_object_ptr<table::expression> const& join::right() const noexcept {
     return right_;
 }
 
-unique_object_ptr<scalar::expression>& join::condition() noexcept {
-    return condition_;
+unique_object_ptr<join_specification>& join::specification() noexcept {
+    return specification_;
 }
 
-unique_object_ptr<scalar::expression> const& join::condition() const noexcept {
-    return condition_;
-}
-
-common::vector<unique_object_ptr<name::simple>>& join::named_columns() noexcept {
-    return named_columns_;
-}
-
-common::vector<unique_object_ptr<name::simple>> const& join::named_columns() const noexcept {
-    return named_columns_;
+unique_object_ptr<join_specification> const& join::specification() const noexcept {
+    return specification_;
 }
 
 bool operator==(join const& a, join const& b) noexcept {
@@ -108,8 +94,7 @@ bool operator==(join const& a, join const& b) noexcept {
     return eq(a.operator_kind_, b.operator_kind_)
             && eq(a.left_, b.left_)
             && eq(a.right_, b.right_)
-            && eq(a.condition_, b.condition_)
-            && eq(a.named_columns_, b.named_columns_);
+            && eq(a.specification_, b.specification_);
 }
 
 bool operator!=(join const& a, join const& b) noexcept {
@@ -118,7 +103,7 @@ bool operator!=(join const& a, join const& b) noexcept {
 
 bool join::equals(expression const& other) const noexcept {
     return other.node_kind() == tag
-            && *this == unsafe_downcast<join>(other);
+            && *this == unsafe_downcast<type_of_t<tag>>(other);
 }
 
 } // namespace mizugaki::ast::table

@@ -33,7 +33,19 @@ public:
      */
     explicit select_statement(
             ::takatori::util::unique_object_ptr<query::expression> expression,
-            common::vector<target_element> targets,
+            common::vector<target_element> targets = {},
+            region_type region = {}) noexcept;
+
+    /**
+     * @brief creates a new instance.
+     * @param expression the query expression
+     * @param targets the optional target outputs
+     * @param region the node region
+     * @attention this may take copy of elements
+     */
+    explicit select_statement(
+            query::expression&& expression,
+            std::initializer_list<target_element> targets = {},
             region_type region = {}) noexcept;
 
     /**

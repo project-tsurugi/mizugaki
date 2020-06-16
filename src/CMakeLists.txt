@@ -3,14 +3,14 @@ set(FLEX_FLAGS_RELEASE "-Cfe")
 set(FLEX_FLAGS_RELWITHDEBINFO "-Cfe")
 set(FLEX_FLAGS_MINSIZEREL "-Ce")
 
-set(BISON_FLAGS_DEBUG "-Wall -Werror")
-set(BISON_FLAGS_RELEASE "-Wall -Werror")
-set(BISON_FLAGS_RELWITHDEBINFO "-Wall -Werror")
-set(BISON_FLAGS_MINSIZEREL "-Wall -Werror")
+set(BISON_FLAGS_DEBUG "-Dparse.assert -Dparse.trace")
+set(BISON_FLAGS_RELEASE "")
+set(BISON_FLAGS_RELWITHDEBINFO "")
+set(BISON_FLAGS_MINSIZEREL "")
 
 string(TOUPPER ${CMAKE_BUILD_TYPE} UPPER_CMAKE_BUILD_TYPE)
 set(FLEX_FLAGS "${FLEX_FLAGS_${UPPER_CMAKE_BUILD_TYPE}}")
-set(BISON_FLAGS "${BISON_FLAGS_${UPPER_CMAKE_BUILD_TYPE}}")
+set(BISON_FLAGS "-Wall -Werror -Wno-error=conflicts-sr -ra ${BISON_FLAGS_${UPPER_CMAKE_BUILD_TYPE}}")
 
 FILE(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mizugaki/parser)
 
@@ -24,6 +24,7 @@ BISON_TARGET(sql_parser
     mizugaki/parser/sql_parser.yy
     ${CMAKE_CURRENT_BINARY_DIR}/mizugaki/parser/sql_parser_generated.cpp
     COMPILE_FLAGS "${BISON_FLAGS}"
+    VERBOSE REPORT_FILE ${CMAKE_CURRENT_BINARY_DIR}/mizugaki/parser/sql_parser_report.log
 )
 
 ADD_FLEX_BISON_DEPENDENCY(
@@ -86,7 +87,11 @@ add_library(mizugaki
     mizugaki/ast/table/expression.cpp
     mizugaki/ast/table/table_reference.cpp
     mizugaki/ast/table/join.cpp
+    mizugaki/ast/table/unnest.cpp
     mizugaki/ast/table/subquery.cpp
+    mizugaki/ast/table/join_specification.cpp
+    mizugaki/ast/table/join_condition.cpp
+    mizugaki/ast/table/join_columns.cpp
     mizugaki/ast/table/correlation_clause.cpp
 
     mizugaki/ast/query/expression.cpp
@@ -98,7 +103,6 @@ add_library(mizugaki
     mizugaki/ast/query/select_element.cpp
     mizugaki/ast/query/select_column.cpp
     mizugaki/ast/query/select_asterisk.cpp
-    mizugaki/ast/query/select_all_fields.cpp
     mizugaki/ast/query/group_by_clause.cpp
     mizugaki/ast/query/grouping_element.cpp
     mizugaki/ast/query/grouping_column.cpp

@@ -7,6 +7,8 @@
 #include <mizugaki/ast/compilation_unit.h>
 #include <mizugaki/ast/node_region.h>
 
+#include "sql_parser_diagnostic.h"
+
 namespace mizugaki::parser {
 
 /**
@@ -20,11 +22,11 @@ public:
     /// @brief the location type.
     using location_type = ast::node_region;
 
-    /// @brief the diagnostic message type.
-    using message_type = std::string;
+    /// @brief the diagnostic type.
+    using diagnostic_type = sql_parser_diagnostic;
 
-    /// @brief the erroneous information type.
-    using error_type = std::pair<location_type, message_type>;
+    /// @brief the diagnostic message type.
+    using message_type = diagnostic_type::message_type;
 
     /**
      * @brief creates a new empty instance.
@@ -39,16 +41,9 @@ public:
 
     /**
      * @brief creates a new instance which represents erroneous information.
-     * @param error erroneous information
+     * @param diagnostic erroneous information
      */
-    sql_parser_result(error_type error) noexcept; // NOLINT: implicit conversion
-
-    /**
-     * @brief creates a new instance which represents erroneous information.
-     * @param location the error location
-     * @param message the error message
-     */
-    sql_parser_result(location_type location, message_type message) noexcept;
+    sql_parser_result(diagnostic_type diagnostic) noexcept; // NOLINT: implicit conversion
 
     /**
      * @brief returns whether or not this is a valid result.
@@ -63,7 +58,7 @@ public:
     /**
      * @brief returns the value result.
      * @return the valid result if it exists
-     * @return empty if error was occurred
+     * @return empty if diagnostic was occurred
      * @see has_value()
      */
     [[nodiscard]] value_type& value() noexcept;
@@ -78,26 +73,26 @@ public:
     [[nodiscard]] value_type const& operator*() const noexcept;
 
     /**
-     * @brief returns whether or not this object holds an erroneous information.
-     * @return true if this object holds an erroneous information
+     * @brief returns whether or not this object holds an diagnostic information.
+     * @return true if this object holds an diagnostic information
      * @return false otherwise
      */
-    [[nodiscard]] bool has_error() const noexcept;
+    [[nodiscard]] bool has_diagnostic() const noexcept;
 
     /**
-     * @brief returns the holding erroneous information.
+     * @brief returns the holding diagnostic information.
      * @return the normal value
-     * @see has_error()
+     * @see has_diagnostic()
      * @warning undefined behavior if this object does not hold erroneous information
      */
-    [[nodiscard]] error_type& error() noexcept;
+    [[nodiscard]] diagnostic_type& diagnostic() noexcept;
 
-    /// @copydoc error()
-    [[nodiscard]] error_type const& error() const noexcept;
+    /// @copydoc diagnostic()
+    [[nodiscard]] diagnostic_type const& diagnostic() const noexcept;
 
 private:
     value_type value_ {};
-    error_type error_ {};
+    diagnostic_type diagnostic_ {};
 };
 
 } // namespace mizugaki::parser

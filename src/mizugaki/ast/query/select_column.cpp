@@ -8,6 +8,7 @@ namespace mizugaki::ast::query {
 
 using ::takatori::util::clone_unique;
 using ::takatori::util::object_creator;
+using ::takatori::util::rvalue_ptr;
 using ::takatori::util::unique_object_ptr;
 
 select_column::select_column(
@@ -17,6 +18,17 @@ select_column::select_column(
     super { region },
     value_ { std::move(value) },
     name_ { std::move(name) }
+{}
+
+select_column::select_column(
+        scalar::expression&& value,
+        rvalue_ptr<name::simple> name,
+        region_type region) noexcept :
+    select_column {
+            clone_unique(std::move(value)),
+            clone_unique(name),
+            region,
+    }
 {}
 
 select_column::select_column(select_column const& other, object_creator creator) :

@@ -92,7 +92,7 @@ bool operator!=(static_method_invocation const& a, static_method_invocation cons
 
 bool static_method_invocation::equals(expression const& other) const noexcept {
     return other.node_kind() == tag
-            && *this == unsafe_downcast<static_method_invocation>(other);
+            && *this == unsafe_downcast<type_of_t<tag>>(other);
 }
 
 } // namespace mizugaki::ast::scalar

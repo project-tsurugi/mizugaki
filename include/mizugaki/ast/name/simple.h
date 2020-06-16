@@ -24,6 +24,16 @@ public:
 
     /**
      * @brief creates a new instance.
+     * @tparam T the identifier source type
+     * @param identifier the name identifier
+     */
+    template<class T>
+    simple(T const& identifier) noexcept // NOLINT
+        : identifier_ { identifier }
+    {}
+
+    /**
+     * @brief creates a new instance.
      * @param other the copy source
      * @param creator the object creator
      */
