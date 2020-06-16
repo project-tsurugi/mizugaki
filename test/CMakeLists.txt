@@ -24,11 +24,13 @@ function (add_test_executable source_file)
     )
 endfunction (add_test_executable)
 
-
-## AST
+# AST
 add_test_executable(mizugaki/ast/node_region_test.cpp)
 
-## shakujo IR translator
+# SQL parser
+add_test_executable(mizugaki/parser/sql_parser_test.cpp)
+
+# shakujo IR translator
 add_test_executable(mizugaki/translator/shakujo_translator_test.cpp)
 add_test_executable(mizugaki/translator/details/type_info_translator_test.cpp)
 add_test_executable(mizugaki/translator/details/value_info_translator_test.cpp)

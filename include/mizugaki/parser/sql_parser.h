@@ -20,7 +20,7 @@ public:
      * @brief creates a new instance.
      * @param creator the object creator for building syntactic models
      */
-    explicit sql_parser(::takatori::util::object_creator creator) noexcept;
+    explicit sql_parser(::takatori::util::object_creator creator = {}) noexcept;
 
     /**
      * @brief parses the contents.

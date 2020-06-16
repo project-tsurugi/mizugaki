@@ -36,9 +36,12 @@ public:
     /**
      * @brief creates a new instance
      * @param statements the top level statements
+     * @param comments the comment regions
      * @attention this will take copies of elements
      */
-    compilation_unit(common::rvalue_list<statement::statement> statements) noexcept;
+    compilation_unit(
+            common::rvalue_list<statement::statement> statements,
+            std::initializer_list<region_type> comments = {}) noexcept;
 
     /**
      * @brief creates a new instance.

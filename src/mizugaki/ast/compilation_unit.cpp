@@ -19,9 +19,12 @@ compilation_unit::compilation_unit(
     document_ { std::move(document) }
 {}
 
-compilation_unit::compilation_unit(common::rvalue_list<statement::statement> statements) noexcept :
+compilation_unit::compilation_unit(
+        common::rvalue_list<statement::statement> statements,
+        std::initializer_list<region_type> comments) noexcept :
     compilation_unit {
             common::to_vector(statements),
+            decltype(comments_) { comments },
     }
 {}
 
