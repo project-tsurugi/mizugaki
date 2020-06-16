@@ -1,5 +1,7 @@
 #include <mizugaki/ast/query/corresponding_clause.h>
 
+#include <mizugaki/ast/compare_utils.h>
+
 namespace mizugaki::ast::query {
 
 using ::takatori::util::object_creator;
@@ -34,6 +36,17 @@ common::vector<unique_object_ptr<name::simple>>& corresponding_clause::column_na
 
 common::vector<unique_object_ptr<name::simple>> const& corresponding_clause::column_names() const noexcept {
     return *column_names_;
+}
+
+bool operator==(corresponding_clause const& a, corresponding_clause const& b) noexcept {
+    if (std::addressof(a) == std::addressof(b)) {
+        return false;
+    }
+    return eq(*a.column_names_, *b.column_names_);
+}
+
+bool operator!=(corresponding_clause const& a, corresponding_clause const& b) noexcept {
+    return !(a == b);
 }
 
 } // namespace mizugaki::ast::query

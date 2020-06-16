@@ -40,6 +40,27 @@ public:
     [[nodiscard]] empty_statement* clone(::takatori::util::object_creator creator) && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
+
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are equivalent
+     * @return false otherwise
+     */
+    friend bool operator==(empty_statement const& a, empty_statement const& b) noexcept;
+    
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are different
+     * @return false otherwise
+     */
+    friend bool operator!=(empty_statement const& a, empty_statement const& b) noexcept;
+    
+protected:
+    [[nodiscard]] bool equals(statement const& other) const noexcept override;
 };
 
 } // namespace mizugaki::ast::statement

@@ -58,6 +58,27 @@ public:
     /// @copydoc value()
     [[nodiscard]] value_type value() const noexcept;
 
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are equivalent
+     * @return false otherwise
+     */
+    friend bool operator==(boolean const& a, boolean const& b) noexcept;
+
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are different
+     * @return false otherwise
+     */
+    friend bool operator!=(boolean const& a, boolean const& b) noexcept;
+
+protected:
+    [[nodiscard]] bool equals(literal const& other) const noexcept override;
+
 private:
     value_type value_;
 };

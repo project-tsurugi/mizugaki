@@ -1,5 +1,7 @@
 #include <mizugaki/ast/statement/set_element.h>
 
+#include <mizugaki/ast/compare_utils.h>
+
 namespace mizugaki::ast::statement {
 
 using ::takatori::util::clone_unique;
@@ -45,6 +47,18 @@ unique_object_ptr<scalar::expression>& set_element::value() noexcept {
 
 unique_object_ptr<scalar::expression> const& set_element::value() const noexcept {
     return *value_;
+}
+
+bool operator==(set_element const& a, set_element const& b) noexcept {
+    if (std::addressof(a) == std::addressof(b)) {
+        return false;
+    }
+    return eq(*a.target_, *b.target_)
+            && eq(*a.value_, *b.value_);
+}
+
+bool operator!=(set_element const& a, set_element const& b) noexcept {
+    return !(a == b);
 }
 
 } // namespace mizugaki::ast::statement

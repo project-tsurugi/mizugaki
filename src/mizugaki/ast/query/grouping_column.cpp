@@ -2,6 +2,8 @@
 
 #include <takatori/util/clonable.h>
 
+#include <mizugaki/ast/compare_utils.h>
+
 namespace mizugaki::ast::query {
 
 using ::takatori::util::clone_unique;
@@ -59,6 +61,23 @@ unique_object_ptr<name::name>& grouping_column::collation() noexcept {
 
 unique_object_ptr<name::name> const& grouping_column::collation() const noexcept {
     return collation_;
+}
+
+bool operator==(grouping_column const& a, grouping_column const& b) noexcept {
+    if (std::addressof(a) == std::addressof(b)) {
+        return false;
+    }
+    return eq(a.column_, b.column_)
+            && eq(a.collation_, b.collation_);
+}
+
+bool operator!=(grouping_column const& a, grouping_column const& b) noexcept {
+    return !(a == b);
+}
+
+bool grouping_column::equals(grouping_element const& other) const noexcept {
+    return other.node_kind() == tag
+            && *this == unsafe_downcast<type_of_t<tag>>(other);
 }
 
 } // namespace mizugaki::ast::query

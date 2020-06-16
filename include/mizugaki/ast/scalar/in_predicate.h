@@ -29,7 +29,7 @@ public:
     /**
      * @brief creates a new instance.
      * @param left the left term
-     * @param right the right term as expression list
+     * @param right the right term as (row) expression list
      * @param is_not whether or not `NOT` is declared
      * @param region the node region
      */
@@ -85,6 +85,27 @@ public:
 
     /// @copydoc is_not()
     [[nodiscard]] not_type const& is_not() const noexcept;
+
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are equivalent
+     * @return false otherwise
+     */
+    friend bool operator==(in_predicate const& a, in_predicate const& b) noexcept;
+
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are different
+     * @return false otherwise
+     */
+    friend bool operator!=(in_predicate const& a, in_predicate const& b) noexcept;
+
+protected:
+    [[nodiscard]] bool equals(expression const& other) const noexcept override;
 
 private:
     operand_type left_;

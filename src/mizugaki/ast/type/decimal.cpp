@@ -1,5 +1,7 @@
 #include <mizugaki/ast/type/decimal.h>
 
+#include <mizugaki/ast/compare_utils.h>
+
 #include "utils.h"
 
 namespace mizugaki::ast::type {
@@ -80,6 +82,24 @@ std::optional<scale_type>& decimal::scale() noexcept {
 
 std::optional<scale_type> const& decimal::scale() const noexcept {
     return scale_;
+}
+
+bool operator==(decimal const& a, decimal const& b) noexcept {
+    if (std::addressof(a) == std::addressof(b)) {
+        return true;
+    }
+    return eq(a.type_kind_, b.type_kind_)
+            && eq(a.precision_, b.precision_)
+            && eq(a.scale_, b.scale_);
+}
+
+bool operator!=(decimal const& a, decimal const& b) noexcept {
+    return !(a == b);
+}
+
+bool decimal::equals(type const& other) const noexcept {
+    return tags.contains(other.node_kind())
+            && *this == unsafe_downcast<decimal>(other);
 }
 
 } // namespace mizugaki::ast::type

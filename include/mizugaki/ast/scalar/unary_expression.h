@@ -76,6 +76,27 @@ public:
     /// @copydoc operand()
     [[nodiscard]] operand_type const& operand() const noexcept;
 
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are equivalent
+     * @return false otherwise
+     */
+    friend bool operator==(unary_expression const& a, unary_expression const& b) noexcept;
+
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are different
+     * @return false otherwise
+     */
+    friend bool operator!=(unary_expression const& a, unary_expression const& b) noexcept;
+
+protected:
+    [[nodiscard]] bool equals(expression const& other) const noexcept override;
+
 private:
     operator_kind_type operator_kind_;
     operand_type operand_;

@@ -73,6 +73,28 @@ public:
 
     /// @brief expression()
     [[nodiscard]] ::takatori::util::unique_object_ptr<scalar::expression> const& condition() const noexcept;
+    
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are equivalent
+     * @return false otherwise
+     */
+    friend bool operator==(delete_statement const& a, delete_statement const& b) noexcept;
+    
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are different
+     * @return false otherwise
+     */
+    friend bool operator!=(delete_statement const& a, delete_statement const& b) noexcept;
+    
+
+protected:
+    [[nodiscard]] bool equals(statement const& other) const noexcept override;
 
 private:
     ::takatori::util::unique_object_ptr<name::name> table_name_;

@@ -113,6 +113,27 @@ public:
     /// @copydoc named_columns()
     [[nodiscard]] common::vector<::takatori::util::unique_object_ptr<name::simple>> const& named_columns() const noexcept;
 
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are equivalent
+     * @return false otherwise
+     */
+    friend bool operator==(join const& a, join const& b) noexcept;
+
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are different
+     * @return false otherwise
+     */
+    friend bool operator!=(join const& a, join const& b) noexcept;
+
+protected:
+    [[nodiscard]] bool equals(expression const& other) const noexcept override;
+
 private:
     operator_kind_type operator_kind_;
     ::takatori::util::unique_object_ptr<table::expression> left_;

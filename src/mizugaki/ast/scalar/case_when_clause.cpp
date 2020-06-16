@@ -2,6 +2,8 @@
 
 #include <takatori/util/clonable.h>
 
+#include <mizugaki/ast/compare_utils.h>
+
 namespace mizugaki::ast::scalar {
 
 using ::takatori::util::clone_unique;
@@ -47,6 +49,18 @@ expression::operand_type& case_when_clause::result() noexcept {
 
 expression::operand_type const& case_when_clause::result() const noexcept {
     return *result_;
+}
+
+bool operator==(case_when_clause const& a, case_when_clause const& b) noexcept {
+    if (std::addressof(a) == std::addressof(b)) {
+        return false;
+    }
+    return eq(*a.when_, *b.when_)
+            && eq(*a.result_, *b.result_);
+}
+
+bool operator!=(case_when_clause const& a, case_when_clause const& b) noexcept {
+    return !(a == b);
 }
 
 } // namespace mizugaki::ast::scalar

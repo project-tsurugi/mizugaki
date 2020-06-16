@@ -1,5 +1,7 @@
 #include <mizugaki/ast/literal/string.h> // NOLINT
 
+#include <mizugaki/ast/compare_utils.h>
+
 #include "utils.h"
 
 namespace mizugaki::ast::literal {
@@ -76,6 +78,21 @@ concatenations_type& string::concatenations() noexcept {
 
 concatenations_type const& string::concatenations() const noexcept {
     return concatenations_;
+}
+
+bool operator==(string const& a, string const& b) noexcept {
+    return eq(a.value_kind_, b.value_kind_)
+            && eq(a.value_, b.value_)
+            && eq(a.concatenations_, b.concatenations_);
+}
+
+bool operator!=(string const& a, string const& b) noexcept {
+    return !(a == b);
+}
+
+bool string::equals(literal const& other) const noexcept {
+    return tags.contains(other.node_kind())
+            && *this == unsafe_downcast<string>(other);
 }
 
 } // namespace mizugaki::ast::literal

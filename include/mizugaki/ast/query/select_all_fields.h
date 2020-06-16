@@ -58,6 +58,27 @@ public:
     /// @copydoc value()
     [[nodiscard]] ::takatori::util::unique_object_ptr<scalar::expression> const& value() const noexcept;
 
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are equivalent
+     * @return false otherwise
+     */
+    friend bool operator==(select_all_fields const& a, select_all_fields const& b) noexcept;
+
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are different
+     * @return false otherwise
+     */
+    friend bool operator!=(select_all_fields const& a, select_all_fields const& b) noexcept;
+
+protected:
+    [[nodiscard]] bool equals(select_element const& other) const noexcept override;
+
 private:
     ::takatori::util::unique_object_ptr<scalar::expression> value_;
 };

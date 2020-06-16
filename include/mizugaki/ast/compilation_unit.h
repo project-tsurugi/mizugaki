@@ -60,6 +60,26 @@ public:
     /// @copydoc document()
     [[nodiscard]] ::takatori::util::maybe_shared_ptr<document_type const> const& document() const noexcept;
 
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are equivalent
+     * @return false otherwise
+     */
+    friend bool operator==(compilation_unit const& a, compilation_unit const& b) noexcept;
+
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are different
+     * @return false otherwise
+     */
+    friend bool operator!=(compilation_unit const& a, compilation_unit const& b) noexcept {
+        return !(a == b);
+    }
+
 private:
     common::vector<::takatori::util::unique_object_ptr<statement::statement>> statements_;
     ::takatori::util::maybe_shared_ptr<document_type const> document_;

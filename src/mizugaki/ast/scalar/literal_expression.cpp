@@ -2,6 +2,8 @@
 
 #include <takatori/util/clonable.h>
 
+#include <mizugaki/ast/compare_utils.h>
+
 namespace mizugaki::ast::scalar {
 
 using ::takatori::util::clone_unique;
@@ -47,6 +49,22 @@ unique_object_ptr<literal::literal>& literal_expression::value() noexcept {
 
 unique_object_ptr<literal::literal> const& literal_expression::value() const noexcept {
     return value_;
+}
+
+bool operator==(literal_expression const& a, literal_expression const& b) noexcept {
+    if (std::addressof(a) == std::addressof(b)) {
+        return false;
+    }
+    return eq(a.value_, b.value_);
+}
+
+bool operator!=(literal_expression const& a, literal_expression const& b) noexcept {
+    return !(a == b);
+}
+
+bool literal_expression::equals(expression const& other) const noexcept {
+    return other.node_kind() == tag
+            && *this == unsafe_downcast<literal_expression>(other);
 }
 
 } // namespace mizugaki::ast::scalar

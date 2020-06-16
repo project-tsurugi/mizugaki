@@ -2,6 +2,8 @@
 
 #include <takatori/util/clonable.h>
 
+#include <mizugaki/ast/compare_utils.h>
+
 namespace mizugaki::ast::query {
 
 using ::takatori::util::clone_unique;
@@ -73,6 +75,24 @@ with_expression::bool_type& with_expression::is_recursive() noexcept {
 
 with_expression::bool_type const& with_expression::is_recursive() const noexcept {
     return is_recursive_;
+}
+
+bool operator==(with_expression const& a, with_expression const& b) noexcept {
+    if (std::addressof(a) == std::addressof(b)) {
+        return false;
+    }
+    return eq(a.elements_, b.elements_)
+            && eq(a.body_, b.body_)
+            && eq(a.is_recursive_, b.is_recursive_);
+}
+
+bool operator!=(with_expression const& a, with_expression const& b) noexcept {
+    return !(a == b);
+}
+
+bool with_expression::equals(expression const& other) const noexcept {
+    return other.node_kind() == tag
+            && *this == unsafe_downcast<type_of_t<tag>>(other);
 }
 
 } // namespace mizugaki::ast::query

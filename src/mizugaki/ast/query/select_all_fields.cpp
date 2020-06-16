@@ -2,6 +2,8 @@
 
 #include <takatori/util/clonable.h>
 
+#include <mizugaki/ast/compare_utils.h>
+
 namespace mizugaki::ast::query {
 
 using ::takatori::util::clone_unique;
@@ -47,6 +49,22 @@ unique_object_ptr<scalar::expression>& select_all_fields::value() noexcept {
 
 unique_object_ptr<scalar::expression> const& select_all_fields::value() const noexcept {
     return value_;
+}
+
+bool operator==(select_all_fields const& a, select_all_fields const& b) noexcept {
+    if (std::addressof(a) == std::addressof(b)) {
+        return false;
+    }
+    return eq(a.value_, b.value_);
+}
+
+bool operator!=(select_all_fields const& a, select_all_fields const& b) noexcept {
+    return !(a == b);
+}
+
+bool select_all_fields::equals(select_element const& other) const noexcept {
+    return other.node_kind() == tag
+            && *this == unsafe_downcast<type_of_t<tag>>(other);
 }
 
 } // namespace mizugaki::ast::query

@@ -60,6 +60,27 @@ public:
     /// @brief name()
     [[nodiscard]] ::takatori::util::unique_object_ptr<name::name> const& name() const noexcept;
 
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are equivalent
+     * @return false otherwise
+     */
+    friend bool operator==(table_reference const& a, table_reference const& b) noexcept;
+
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are different
+     * @return false otherwise
+     */
+    friend bool operator!=(table_reference const& a, table_reference const& b) noexcept;
+
+protected:
+    [[nodiscard]] bool equals(expression const& other) const noexcept override;
+
 private:
     ::takatori::util::unique_object_ptr<name::name> name_;
 };

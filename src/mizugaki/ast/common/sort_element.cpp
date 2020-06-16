@@ -1,5 +1,7 @@
 #include <mizugaki/ast/common/sort_element.h>
 
+#include <mizugaki/ast/compare_utils.h>
+
 namespace mizugaki::ast::common {
 
 using ::takatori::util::clone_unique;
@@ -57,6 +59,19 @@ std::optional<sort_element::direction_type>& sort_element::direction() noexcept 
 
 std::optional<sort_element::direction_type> const& sort_element::direction() const noexcept {
     return direction_;
+}
+
+bool operator==(sort_element const& a, sort_element const& b) noexcept {
+    if (std::addressof(a) == std::addressof(b)) {
+        return false;
+    }
+    return eq(*a.key_, *b.key_)
+        && eq(*a.collation_, *b.collation_)
+        && eq(a.direction_, b.direction_);
+}
+
+bool operator!=(sort_element const& a, sort_element const& b) noexcept {
+    return !(a == b);
 }
 
 } // namespace mizugaki::ast::common

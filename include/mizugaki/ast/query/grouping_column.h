@@ -72,6 +72,27 @@ public:
     /// @copydoc collation()
     [[nodiscard]] ::takatori::util::unique_object_ptr<name::name> const& collation() const noexcept;
 
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are equivalent
+     * @return false otherwise
+     */
+    friend bool operator==(grouping_column const& a, grouping_column const& b) noexcept;
+
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are different
+     * @return false otherwise
+     */
+    friend bool operator!=(grouping_column const& a, grouping_column const& b) noexcept;
+
+protected:
+    [[nodiscard]] bool equals(grouping_element const& other) const noexcept override;
+
 private:
     ::takatori::util::unique_object_ptr<scalar::expression> column_;
     ::takatori::util::unique_object_ptr<name::name> collation_;

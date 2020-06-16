@@ -1,5 +1,7 @@
 #include <mizugaki/ast/literal/boolean.h>
 
+#include <mizugaki/ast/compare_utils.h>
+
 namespace mizugaki::ast::literal {
 
 using node_kind_type = literal::node_kind_type;
@@ -44,6 +46,22 @@ value_type& boolean::value() noexcept {
 
 value_type boolean::value() const noexcept {
     return value_;
+}
+
+bool operator==(boolean const& a, boolean const& b) noexcept {
+    if (std::addressof(a) == std::addressof(b)) {
+        return true;
+    }
+    return eq(a.value_, b.value_);
+}
+
+bool operator!=(boolean const& a, boolean const& b) noexcept {
+    return !(a == b);
+}
+
+bool boolean::equals(literal const& other) const noexcept {
+    return other.node_kind() == tag
+            && *this == unsafe_downcast<boolean>(other);
 }
 
 } // namespace mizugaki::ast::literal

@@ -89,6 +89,27 @@ public:
     /// @copydoc arguments()
     [[nodiscard]] common::vector<operand_type> const& arguments() const noexcept;
 
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are equivalent
+     * @return false otherwise
+     */
+    friend bool operator==(builtin_set_function_invocation const& a, builtin_set_function_invocation const& b) noexcept;
+
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are different
+     * @return false otherwise
+     */
+    friend bool operator!=(builtin_set_function_invocation const& a, builtin_set_function_invocation const& b) noexcept;
+
+protected:
+    [[nodiscard]] bool equals(expression const& other) const noexcept override;
+
 private:
     function_type function_;
     std::optional<quantifier_type> quantifier_;

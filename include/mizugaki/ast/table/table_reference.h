@@ -91,6 +91,27 @@ public:
     /// @copydoc is_only()
     [[nodiscard]] bool_type const& is_only() const noexcept;
 
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are equivalent
+     * @return false otherwise
+     */
+    friend bool operator==(table_reference const& a, table_reference const& b) noexcept;
+
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are different
+     * @return false otherwise
+     */
+    friend bool operator!=(table_reference const& a, table_reference const& b) noexcept;
+
+protected:
+    [[nodiscard]] bool equals(expression const& other) const noexcept override;
+
 private:
     ::takatori::util::unique_object_ptr<name::name> name_;
     std::optional<correlation_type> correlation_;

@@ -2,6 +2,8 @@
 
 #include <takatori/util/clonable.h>
 
+#include <mizugaki/ast/compare_utils.h>
+
 namespace mizugaki::ast::table {
 
 using ::takatori::util::clone_unique;
@@ -49,6 +51,18 @@ common::vector<unique_object_ptr<name::simple>>& correlation_clause::column_name
 
 common::vector<unique_object_ptr<name::simple>> const& correlation_clause::column_names() const noexcept {
     return *column_names_;
+}
+
+bool operator==(correlation_clause const& a, correlation_clause const& b) noexcept {
+    if (std::addressof(a) == std::addressof(b)) {
+        return true;
+    }
+    return eq(*a.correlation_name_, *b.correlation_name_)
+            && eq(*a.column_names_, *b.column_names_);
+}
+
+bool operator!=(correlation_clause const& a, correlation_clause const& b) noexcept {
+    return !(a == b);
 }
 
 } // namespace mizugaki::ast::table

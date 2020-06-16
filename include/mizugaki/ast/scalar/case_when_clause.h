@@ -58,6 +58,24 @@ public:
 
     /// @copydoc result()
     [[nodiscard]] operand_type const& result() const noexcept;
+    
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are equivalent
+     * @return false otherwise
+     */
+    friend bool operator==(case_when_clause const& a, case_when_clause const& b) noexcept;
+    
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are different
+     * @return false otherwise
+     */
+    friend bool operator!=(case_when_clause const& a, case_when_clause const& b) noexcept;
 
 private:
     common::clone_wrapper<::takatori::util::unique_object_ptr<expression>> when_;

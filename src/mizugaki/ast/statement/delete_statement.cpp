@@ -2,6 +2,8 @@
 
 #include <takatori/util/clonable.h>
 
+#include <mizugaki/ast/compare_utils.h>
+
 namespace mizugaki::ast::statement {
 
 using ::takatori::util::clone_unique;
@@ -59,6 +61,23 @@ unique_object_ptr<scalar::expression>& delete_statement::condition() noexcept {
 
 unique_object_ptr<scalar::expression> const& delete_statement::condition() const noexcept {
     return condition_;
+}
+
+bool operator==(delete_statement const& a, delete_statement const& b) noexcept {
+    if (std::addressof(a) == std::addressof(b)) {
+        return true;
+    }
+    return eq(a.table_name_, b.table_name_)
+        && eq(a.condition_, b.condition_);
+}
+
+bool operator!=(delete_statement const& a, delete_statement const& b) noexcept {
+    return !(a == b);
+}
+
+bool delete_statement::equals(statement const& other) const noexcept {
+    return other.node_kind() == tag
+            && *this == unsafe_downcast<delete_statement>(other);
 }
 
 } // namespace mizugaki::ast::statement

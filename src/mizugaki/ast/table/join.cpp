@@ -2,6 +2,8 @@
 
 #include <takatori/util/clonable.h>
 
+#include <mizugaki/ast/compare_utils.h>
+
 namespace mizugaki::ast::table {
 
 using ::takatori::util::clone_unique;
@@ -97,6 +99,26 @@ common::vector<unique_object_ptr<name::simple>>& join::named_columns() noexcept 
 
 common::vector<unique_object_ptr<name::simple>> const& join::named_columns() const noexcept {
     return named_columns_;
+}
+
+bool operator==(join const& a, join const& b) noexcept {
+    if (std::addressof(a) == std::addressof(b)) {
+        return true;
+    }
+    return eq(a.operator_kind_, b.operator_kind_)
+            && eq(a.left_, b.left_)
+            && eq(a.right_, b.right_)
+            && eq(a.condition_, b.condition_)
+            && eq(a.named_columns_, b.named_columns_);
+}
+
+bool operator!=(join const& a, join const& b) noexcept {
+    return !(a == b);
+}
+
+bool join::equals(expression const& other) const noexcept {
+    return other.node_kind() == tag
+            && *this == unsafe_downcast<join>(other);
 }
 
 } // namespace mizugaki::ast::table

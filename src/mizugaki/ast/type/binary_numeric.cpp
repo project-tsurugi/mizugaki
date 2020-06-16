@@ -1,5 +1,7 @@
 #include <mizugaki/ast/type/binary_numeric.h>
 
+#include <mizugaki/ast/compare_utils.h>
+
 #include "utils.h"
 
 namespace mizugaki::ast::type {
@@ -67,6 +69,23 @@ std::optional<precision_type>& binary_numeric::precision() noexcept {
 
 std::optional<precision_type> const& binary_numeric::precision() const noexcept {
     return precision_;
+}
+
+bool operator==(binary_numeric const& a, binary_numeric const& b) noexcept {
+    if (std::addressof(a) == std::addressof(b)) {
+        return true;
+    }
+    return eq(a.type_kind_, b.type_kind_)
+        && eq(a.precision_, b.precision_);
+}
+
+bool operator!=(binary_numeric const& a, binary_numeric const& b) noexcept {
+    return !(a == b);
+}
+
+bool binary_numeric::equals(type const& other) const noexcept {
+    return tags.contains(other.node_kind())
+            && *this == unsafe_downcast<binary_numeric>(other);
 }
 
 } // namespace mizugaki::ast::type

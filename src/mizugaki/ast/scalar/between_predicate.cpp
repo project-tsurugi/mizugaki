@@ -2,6 +2,8 @@
 
 #include <takatori/util/clonable.h>
 
+#include <mizugaki/ast/compare_utils.h>
+
 namespace mizugaki::ast::scalar {
 
 using operator_kind_type = between_predicate::operator_kind_type;
@@ -96,6 +98,26 @@ between_predicate::not_type& between_predicate::is_not() noexcept {
 
 between_predicate::not_type const& between_predicate::is_not() const noexcept {
     return is_not_;
+}
+
+bool operator==(between_predicate const& a, between_predicate const& b) noexcept {
+    if (std::addressof(a) == std::addressof(b)) {
+        return false;
+    }
+    return eq(a.target_, b.target_)
+            && eq(a.left_, b.left_)
+            && eq(a.right_, b.right_)
+            && eq(a.operator_kind_, b.operator_kind_)
+            && eq(a.is_not_, b.is_not_);
+}
+
+bool operator!=(between_predicate const& a, between_predicate const& b) noexcept {
+    return !(a == b);
+}
+
+bool between_predicate::equals(expression const& other) const noexcept {
+    return other.node_kind() == tag
+            && *this == unsafe_downcast<between_predicate>(other);
 }
 
 } // namespace mizugaki::ast::scalar

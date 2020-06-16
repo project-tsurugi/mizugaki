@@ -81,6 +81,27 @@ public:
     /// @copydoc has_time_zone()
     [[nodiscard]] std::optional<enable_type> const& has_time_zone() const noexcept;
 
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are equivalent
+     * @return false otherwise
+     */
+    friend bool operator==(datetime const& a, datetime const& b) noexcept;
+
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are different
+     * @return false otherwise
+     */
+    friend bool operator!=(datetime const& a, datetime const& b) noexcept;
+
+protected:
+    [[nodiscard]] bool equals(type const& other) const noexcept override;
+
 private:
     type_kind_type type_kind_;
     std::optional<enable_type> has_time_zone_;

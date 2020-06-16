@@ -2,6 +2,8 @@
 
 #include <takatori/util/clonable.h>
 
+#include <mizugaki/ast/compare_utils.h>
+
 namespace mizugaki::ast::scalar {
 
 using operator_kind_type = field_reference::operator_kind_type;
@@ -73,6 +75,24 @@ unique_object_ptr<name::simple>& field_reference::name() noexcept {
 
 unique_object_ptr<name::simple> const& field_reference::name() const noexcept {
     return name_;
+}
+
+bool operator==(field_reference const& a, field_reference const& b) noexcept {
+    if (std::addressof(a) == std::addressof(b)) {
+        return false;
+    }
+    return eq(a.operator_kind_, b.operator_kind_)
+            && eq(a.value_, b.value_)
+            && eq(a.name_, b.name_);
+}
+
+bool operator!=(field_reference const& a, field_reference const& b) noexcept {
+    return !(a == b);
+}
+
+bool field_reference::equals(expression const& other) const noexcept {
+    return other.node_kind() == tag
+            && *this == unsafe_downcast<field_reference>(other);
 }
 
 } // namespace mizugaki::ast::scalar

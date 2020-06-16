@@ -1,5 +1,7 @@
 #include <mizugaki/ast/type/datetime.h>
 
+#include <mizugaki/ast/compare_utils.h>
+
 #include "utils.h"
 
 namespace mizugaki::ast::type {
@@ -63,6 +65,23 @@ std::optional<enable_type>& datetime::has_time_zone() noexcept {
 
 std::optional<enable_type> const& datetime::has_time_zone() const noexcept {
     return has_time_zone_;
+}
+
+bool operator==(datetime const& a, datetime const& b) noexcept {
+    if (std::addressof(a) == std::addressof(b)) {
+        return true;
+    }
+    return eq(a.type_kind_, b.type_kind_)
+            && eq(a.has_time_zone_, b.has_time_zone_);
+}
+
+bool operator!=(datetime const& a, datetime const& b) noexcept {
+    return !(a == b);
+}
+
+bool datetime::equals(type const& other) const noexcept {
+    return tags.contains(other.node_kind())
+            && *this == unsafe_downcast<datetime>(other);
 }
 
 } // namespace mizugaki::ast::type

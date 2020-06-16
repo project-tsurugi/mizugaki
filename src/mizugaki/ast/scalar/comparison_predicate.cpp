@@ -2,6 +2,8 @@
 
 #include <takatori/util/clonable.h>
 
+#include <mizugaki/ast/compare_utils.h>
+
 namespace mizugaki::ast::scalar {
 
 using ::takatori::util::clone_unique;
@@ -83,6 +85,25 @@ std::optional<comparison_predicate::quantifier_type>& comparison_predicate::quan
 
 std::optional<comparison_predicate::quantifier_type> const& comparison_predicate::quantifier() const noexcept {
     return quantifier_;
+}
+
+bool operator==(comparison_predicate const& a, comparison_predicate const& b) noexcept {
+    if (std::addressof(a) == std::addressof(b)) {
+        return false;
+    }
+    return eq(a.operator_kind_, b.operator_kind_)
+            && eq(a.left_, b.left_)
+            && eq(a.right_, b.right_)
+            && eq(a.quantifier_, b.quantifier_);
+}
+
+bool operator!=(comparison_predicate const& a, comparison_predicate const& b) noexcept {
+    return !(a == b);
+}
+
+bool comparison_predicate::equals(expression const& other) const noexcept {
+    return other.node_kind() == tag
+            && *this == unsafe_downcast<comparison_predicate>(other);
 }
 
 } // namespace mizugaki::ast::scalar

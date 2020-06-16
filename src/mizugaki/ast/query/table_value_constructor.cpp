@@ -1,5 +1,7 @@
 #include <mizugaki/ast/query/table_value_constructor.h>
 
+#include <mizugaki/ast/compare_utils.h>
+
 namespace mizugaki::ast::query {
 
 using ::takatori::util::object_creator;
@@ -46,6 +48,22 @@ common::vector<unique_object_ptr<scalar::expression>>& table_value_constructor::
 
 common::vector<unique_object_ptr<scalar::expression>> const& table_value_constructor::elements() const noexcept {
     return elements_;
+}
+
+bool operator==(table_value_constructor const& a, table_value_constructor const& b) noexcept {
+    if (std::addressof(a) == std::addressof(b)) {
+        return false;
+    }
+    return eq(a.elements_, b.elements_);
+}
+
+bool operator!=(table_value_constructor const& a, table_value_constructor const& b) noexcept {
+    return !(a == b);
+}
+
+bool table_value_constructor::equals(expression const& other) const noexcept {
+    return other.node_kind() == tag
+            && *this == unsafe_downcast<type_of_t<tag>>(other);
 }
 
 } // namespace mizugaki::ast::query

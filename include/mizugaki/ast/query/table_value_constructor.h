@@ -58,6 +58,27 @@ public:
     /// @brief elements()
     [[nodiscard]] common::vector<::takatori::util::unique_object_ptr<scalar::expression>> const& elements() const noexcept;
 
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are equivalent
+     * @return false otherwise
+     */
+    friend bool operator==(table_value_constructor const& a, table_value_constructor const& b) noexcept;
+
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are different
+     * @return false otherwise
+     */
+    friend bool operator!=(table_value_constructor const& a, table_value_constructor const& b) noexcept;
+
+protected:
+    [[nodiscard]] bool equals(expression const& other) const noexcept override;
+
 private:
     common::vector<::takatori::util::unique_object_ptr<scalar::expression>> elements_;
 };

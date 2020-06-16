@@ -52,6 +52,24 @@ public:
     /// @copydoc elements()
     [[nodiscard]] common::vector<::takatori::util::unique_object_ptr<element_type>> const& elements() const noexcept;
 
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are equivalent
+     * @return false otherwise
+     */
+    friend bool operator==(group_by_clause const& a, group_by_clause const& b) noexcept;
+
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are different
+     * @return false otherwise
+     */
+    friend bool operator!=(group_by_clause const& a, group_by_clause const& b) noexcept;
+
 private:
     common::clone_wrapper<common::vector<::takatori::util::unique_object_ptr<element_type>>> elements_;
 };

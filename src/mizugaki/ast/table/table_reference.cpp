@@ -4,6 +4,8 @@
 
 #include <takatori/util/clonable.h>
 
+#include <mizugaki/ast/compare_utils.h>
+
 namespace mizugaki::ast::table {
 
 using ::takatori::util::clone_unique;
@@ -75,6 +77,24 @@ table_reference::bool_type& table_reference::is_only() noexcept {
 
 table_reference::bool_type const& table_reference::is_only() const noexcept {
     return is_only_;
+}
+
+bool operator==(table_reference const& a, table_reference const& b) noexcept {
+    if (std::addressof(a) == std::addressof(b)) {
+        return true;
+    }
+    return eq(a.name_, b.name_)
+            && eq(a.correlation_, b.correlation_)
+            && eq(a.is_only_, a.is_only_);
+}
+
+bool operator!=(table_reference const& a, table_reference const& b) noexcept {
+    return !(a == b);
+}
+
+bool table_reference::equals(expression const& other) const noexcept {
+    return other.node_kind() == tag
+            && *this == unsafe_downcast<table_reference>(other);
 }
 
 } // namespace mizugaki::ast::table

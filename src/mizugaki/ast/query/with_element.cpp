@@ -1,5 +1,7 @@
 #include <mizugaki/ast/query/with_element.h>
 
+#include <mizugaki/ast/compare_utils.h>
+
 namespace mizugaki::ast::query {
 
 using ::takatori::util::clone_unique;
@@ -59,6 +61,19 @@ common::vector<unique_object_ptr<name::simple>>& with_element::column_names() no
 
 common::vector<unique_object_ptr<name::simple>> const& with_element::column_names() const noexcept {
     return *column_names_;
+}
+
+bool operator==(with_element const& a, with_element const& b) noexcept {
+    if (std::addressof(a) == std::addressof(b)) {
+        return false;
+    }
+    return eq(*a.name_, *b.name_)
+            && eq(*a.expression_, *b.expression_)
+            && eq(*a.column_names_, *b.column_names_);
+}
+
+bool operator!=(with_element const& a, with_element const& b) noexcept {
+    return !(a == b);
 }
 
 } // namespace mizugaki::ast::query

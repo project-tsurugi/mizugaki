@@ -78,6 +78,24 @@ public:
     /// @copydoc direction()
     [[nodiscard]] std::optional<direction_type> const& direction() const noexcept;
 
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are equivalent
+     * @return false otherwise
+     */
+    friend bool operator==(sort_element const& a, sort_element const& b) noexcept;
+
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are different
+     * @return false otherwise
+     */
+    friend bool operator!=(sort_element const& a, sort_element const& b) noexcept;
+
 private:
     common::clone_wrapper<::takatori::util::unique_object_ptr<scalar::expression>> key_;
     common::clone_wrapper<::takatori::util::unique_object_ptr<name::name>> collation_;

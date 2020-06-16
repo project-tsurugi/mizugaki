@@ -71,6 +71,27 @@ public:
     /// @copydoc name()
     [[nodiscard]] ::takatori::util::unique_object_ptr<name::simple> const& name() const noexcept;
 
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are equivalent
+     * @return false otherwise
+     */
+    friend bool operator==(select_column const& a, select_column const& b) noexcept;
+
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are different
+     * @return false otherwise
+     */
+    friend bool operator!=(select_column const& a, select_column const& b) noexcept;
+
+protected:
+    [[nodiscard]] bool equals(select_element const& other) const noexcept override;
+
 private:
     ::takatori::util::unique_object_ptr<scalar::expression> value_;
     ::takatori::util::unique_object_ptr<name::simple> name_;

@@ -2,6 +2,8 @@
 
 #include <takatori/util/clonable.h>
 
+#include <mizugaki/ast/compare_utils.h>
+
 namespace mizugaki::ast::scalar {
 
 using ::takatori::util::clone_unique;
@@ -55,6 +57,22 @@ unique_object_ptr<query::expression>& subquery::operator*() noexcept {
 
 unique_object_ptr<query::expression> const& subquery::operator*() const noexcept {
     return body();
+}
+
+bool operator==(subquery const& a, subquery const& b) noexcept {
+    if (std::addressof(a) == std::addressof(b)) {
+        return false;
+    }
+    return eq(a.body_, b.body_);
+}
+
+bool operator!=(subquery const& a, subquery const& b) noexcept {
+    return !(a == b);
+}
+
+bool subquery::equals(expression const& other) const noexcept {
+    return other.node_kind() == tag
+            && *this == unsafe_downcast<subquery>(other);
 }
 
 } // namespace mizugaki::ast::scalar

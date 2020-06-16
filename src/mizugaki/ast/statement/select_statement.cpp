@@ -2,6 +2,8 @@
 
 #include <takatori/util/clonable.h>
 
+#include <mizugaki/ast/compare_utils.h>
+
 namespace mizugaki::ast::statement {
 
 using ::takatori::util::clone_unique;
@@ -61,6 +63,23 @@ common::vector<target_element>& select_statement::targets() noexcept {
 
 common::vector<target_element> const& select_statement::targets() const noexcept {
     return targets_;
+}
+
+bool operator==(select_statement const& a, select_statement const& b) noexcept {
+    if (std::addressof(a) == std::addressof(b)) {
+        return true;
+    }
+    return eq(a.expression_, b.expression_)
+            && eq(a.targets_, b.targets_);
+}
+
+bool operator!=(select_statement const& a, select_statement const& b) noexcept {
+    return !(a == b);
+}
+
+bool select_statement::equals(statement const& other) const noexcept {
+    return other.node_kind() == tag
+            && *this == unsafe_downcast<select_statement>(other);
 }
 
 } // namespace mizugaki::ast::statement

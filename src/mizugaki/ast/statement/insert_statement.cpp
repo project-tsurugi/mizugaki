@@ -2,6 +2,8 @@
 
 #include <takatori/util/clonable.h>
 
+#include <mizugaki/ast/compare_utils.h>
+
 namespace mizugaki::ast::statement {
 
 using ::takatori::util::clone_unique;
@@ -73,6 +75,24 @@ unique_object_ptr<query::expression>& insert_statement::expression() noexcept {
 
 unique_object_ptr<query::expression> const& insert_statement::expression() const noexcept {
     return expression_;
+}
+
+bool operator==(insert_statement const& a, insert_statement const& b) noexcept {
+    if (std::addressof(a) == std::addressof(b)) {
+        return true;
+    }
+    return eq(a.table_name_, b.table_name_)
+        && eq(a.columns_, b.columns_)
+        && eq(a.expression_, b.expression_);
+}
+
+bool operator!=(insert_statement const& a, insert_statement const& b) noexcept {
+    return !(a == b);
+}
+
+bool insert_statement::equals(statement const& other) const noexcept {
+    return other.node_kind() == tag
+            && *this == unsafe_downcast<insert_statement>(other);
 }
 
 } // namespace mizugaki::ast::statement

@@ -59,6 +59,27 @@ public:
     /// @copydoc identifier()
     [[nodiscard]] identifier_type const& identifier() const noexcept;
 
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are equivalent
+     * @return false otherwise
+     */
+    friend bool operator==(simple const& a, simple const& b) noexcept;
+
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are different
+     * @return false otherwise
+     */
+    friend bool operator!=(simple const& a, simple const& b) noexcept;
+
+protected:
+    [[nodiscard]] bool equals(name const& other) const noexcept override;
+
 private:
     identifier_type identifier_;
 };

@@ -73,6 +73,27 @@ public:
     /// @copydoc last()
     [[nodiscard]] ::takatori::util::unique_object_ptr<simple> const& last() const noexcept;
 
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are equivalent
+     * @return false otherwise
+     */
+    friend bool operator==(qualified const& a, qualified const& b) noexcept;
+
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are different
+     * @return false otherwise
+     */
+    friend bool operator!=(qualified const& a, qualified const& b) noexcept;
+
+protected:
+    [[nodiscard]] bool equals(name const& other) const noexcept override;
+
 private:
     ::takatori::util::unique_object_ptr<name> qualifier_;
     ::takatori::util::unique_object_ptr<simple> last_;

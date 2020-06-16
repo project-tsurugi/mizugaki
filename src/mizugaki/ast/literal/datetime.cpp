@@ -1,5 +1,7 @@
 #include <mizugaki/ast/literal/datetime.h>
 
+#include <mizugaki/ast/compare_utils.h>
+
 #include "utils.h"
 
 namespace mizugaki::ast::literal {
@@ -62,6 +64,21 @@ value_type& datetime::value() noexcept {
 
 value_type const& datetime::value() const noexcept {
     return value_;
+}
+
+bool operator==(datetime const& a, datetime const& b) noexcept {
+    return eq(a.value_kind_, b.value_kind_)
+            && eq(a.value_, b.value_);
+}
+
+bool operator!=(datetime const& a, datetime const& b) noexcept {
+    return !(a == b);
+}
+
+bool datetime::equals(literal const& other) const noexcept {
+    return tags.contains(other.node_kind())
+            && *this == unsafe_downcast<datetime>(other);
+
 }
 
 } // namespace mizugaki::ast::literal

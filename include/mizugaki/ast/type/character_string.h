@@ -93,6 +93,27 @@ public:
     /// @copydoc length()
     [[nodiscard]] std::optional<length_type> const& length() const noexcept;
 
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are equivalent
+     * @return false otherwise
+     */
+    friend bool operator==(character_string const& a, character_string const& b) noexcept;
+
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are different
+     * @return false otherwise
+     */
+    friend bool operator!=(character_string const& a, character_string const& b) noexcept;
+
+protected:
+    [[nodiscard]] bool equals(type const& other) const noexcept override;
+
 private:
     type_kind_type type_kind_;
     std::optional<length_type> length_;

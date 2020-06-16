@@ -62,6 +62,35 @@ public:
     [[nodiscard]] node_kind_type node_kind() const noexcept override {
         return tag;
     }
+
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are equivalent
+     * @return false otherwise
+     */
+    friend bool operator==(special const& a, special const& b) noexcept {
+        (void) a;
+        (void) b;
+        return true;
+    }
+
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are different
+     * @return false otherwise
+     */
+    friend bool operator!=(special const& a, special const& b) noexcept {
+        return !(a == b);
+    }
+
+protected:
+    [[nodiscard]] bool equals(literal const& other) const noexcept override {
+        return other.node_kind() == tag;
+    }
 };
 
 } // namespace mizugaki::ast::literal

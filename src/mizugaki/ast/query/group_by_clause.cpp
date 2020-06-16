@@ -1,5 +1,7 @@
 #include <mizugaki/ast/query/group_by_clause.h>
 
+#include <mizugaki/ast/compare_utils.h>
+
 namespace mizugaki::ast::query {
 
 using ::takatori::util::object_creator;
@@ -34,6 +36,17 @@ common::vector<unique_object_ptr<group_by_clause::element_type>>& group_by_claus
 
 common::vector<unique_object_ptr<group_by_clause::element_type>> const& group_by_clause::elements() const noexcept {
     return *elements_;
+}
+
+bool operator==(group_by_clause const& a, group_by_clause const& b) noexcept {
+    if (std::addressof(a) == std::addressof(b)) {
+        return false;
+    }
+    return eq(*a.elements_, *b.elements_);
+}
+
+bool operator!=(group_by_clause const& a, group_by_clause const& b) noexcept {
+    return !(a == b);
 }
 
 } // namespace mizugaki::ast::query

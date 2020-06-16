@@ -61,6 +61,24 @@ public:
     /// @copydoc indicator()
     [[nodiscard]] ::takatori::util::unique_object_ptr<name::simple> const& indicator() const noexcept;
 
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are equivalent
+     * @return false otherwise
+     */
+    friend bool operator==(target_element const& a, target_element const& b) noexcept;
+
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are different
+     * @return false otherwise
+     */
+    friend bool operator!=(target_element const& a, target_element const& b) noexcept;
+
 private:
     clone_wrapper<::takatori::util::unique_object_ptr<name::name>> target_;
     clone_wrapper<::takatori::util::unique_object_ptr<name::simple>> indicator_;

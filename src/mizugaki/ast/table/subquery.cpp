@@ -2,6 +2,8 @@
 
 #include <takatori/util/clonable.h>
 
+#include <mizugaki/ast/compare_utils.h>
+
 namespace mizugaki::ast::table {
 
 using ::takatori::util::clone_unique;
@@ -79,6 +81,24 @@ subquery::bool_type& subquery::is_lateral() noexcept {
 
 subquery::bool_type const& subquery::is_lateral() const noexcept {
     return is_lateral_;
+}
+
+bool operator==(subquery const& a, subquery const& b) noexcept {
+    if (std::addressof(a) == std::addressof(b)) {
+        return true;
+    }
+    return eq(a.body_, b.body_)
+            && eq(a.correlation_, b.correlation_)
+            && eq(a.is_lateral_, b.is_lateral_);
+}
+
+bool operator!=(subquery const& a, subquery const& b) noexcept {
+    return !(a == b);
+}
+
+bool subquery::equals(expression const& other) const noexcept {
+    return other.node_kind() == tag
+            && *this == unsafe_downcast<subquery>(other);
 }
 
 } // namespace mizugaki::ast::table

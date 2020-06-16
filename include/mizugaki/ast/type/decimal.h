@@ -108,6 +108,27 @@ public:
     /// @copydoc scale()
     [[nodiscard]] std::optional<scale_type> const& scale() const noexcept;
 
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are equivalent
+     * @return false otherwise
+     */
+    friend bool operator==(decimal const& a, decimal const& b) noexcept;
+
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are different
+     * @return false otherwise
+     */
+    friend bool operator!=(decimal const& a, decimal const& b) noexcept;
+
+protected:
+    [[nodiscard]] bool equals(type const& other) const noexcept override;
+
 private:
     type_kind_type type_kind_;
     std::optional<precision_type> precision_;

@@ -1,5 +1,7 @@
 #include <mizugaki/ast/type/interval.h>
 
+#include <mizugaki/ast/compare_utils.h>
+
 namespace mizugaki::ast::type {
 
 using node_kind_type = type::node_kind_type;
@@ -28,6 +30,21 @@ interval* interval::clone(object_creator creator) && {
 
 node_kind_type interval::node_kind() const noexcept {
     return tag;
+}
+
+bool operator==(interval const& a, interval const& b) noexcept {
+    (void) a;
+    (void) b;
+    return true;
+}
+
+bool operator!=(interval const& a, interval const& b) noexcept {
+    return !(a == b);
+}
+
+bool interval::equals(type const& other) const noexcept {
+    return other.node_kind() == tag
+            && *this == unsafe_downcast<interval>(other);
 }
 
 } // namespace mizugaki::ast::type

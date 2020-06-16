@@ -1,5 +1,7 @@
 #include <mizugaki/ast/compilation_unit.h>
 
+#include <mizugaki/ast/compare_utils.h>
+
 namespace mizugaki::ast {
 
 using ::takatori::util::maybe_shared_ptr;

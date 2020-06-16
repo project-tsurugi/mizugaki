@@ -86,6 +86,27 @@ public:
     /// @copydoc default_result()
     [[nodiscard]] operand_type const& default_result() const noexcept;
 
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are equivalent
+     * @return false otherwise
+     */
+    friend bool operator==(case_expression const& a, case_expression const& b) noexcept;
+
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are different
+     * @return false otherwise
+     */
+    friend bool operator!=(case_expression const& a, case_expression const& b) noexcept;
+
+protected:
+    [[nodiscard]] bool equals(expression const& other) const noexcept override;
+
 private:
     operand_type operand_;
     common::vector<when_clause> when_clauses_;

@@ -82,6 +82,27 @@ public:
     /// @copydoc arguments()
     [[nodiscard]] common::vector<operand_type> const& arguments() const noexcept;
 
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are equivalent
+     * @return false otherwise
+     */
+    friend bool operator==(static_method_invocation const& a, static_method_invocation const& b) noexcept;
+
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are different
+     * @return false otherwise
+     */
+    friend bool operator!=(static_method_invocation const& a, static_method_invocation const& b) noexcept;
+
+protected:
+    [[nodiscard]] bool equals(expression const& other) const noexcept override;
+
 private:
     ::takatori::util::unique_object_ptr<type::type> type_;
     ::takatori::util::unique_object_ptr<name::simple> name_;

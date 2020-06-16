@@ -2,6 +2,8 @@
 
 #include <takatori/util/clonable.h>
 
+#include <mizugaki/ast/compare_utils.h>
+
 namespace mizugaki::ast::query {
 
 using ::takatori::util::clone_unique;
@@ -47,6 +49,22 @@ unique_object_ptr<name::name>& select_asterisk::qualifier() noexcept {
 
 unique_object_ptr<name::name> const& select_asterisk::qualifier() const noexcept {
     return qualifier_;
+}
+
+bool operator==(select_asterisk const& a, select_asterisk const& b) noexcept {
+    if (std::addressof(a) == std::addressof(b)) {
+        return false;
+    }
+    return eq(a.qualifier_, b.qualifier_);
+}
+
+bool operator!=(select_asterisk const& a, select_asterisk const& b) noexcept {
+    return !(a == b);
+}
+
+bool select_asterisk::equals(select_element const& other) const noexcept {
+    return other.node_kind() == tag
+            && *this == unsafe_downcast<type_of_t<tag>>(other);
 }
 
 } // namespace mizugaki::ast::query

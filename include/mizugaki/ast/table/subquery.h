@@ -96,6 +96,27 @@ public:
     /// @copydoc is_lateral()
     [[nodiscard]] bool_type const& is_lateral() const noexcept;
 
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are equivalent
+     * @return false otherwise
+     */
+    friend bool operator==(subquery const& a, subquery const& b) noexcept;
+
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are different
+     * @return false otherwise
+     */
+    friend bool operator!=(subquery const& a, subquery const& b) noexcept;
+
+protected:
+    [[nodiscard]] bool equals(expression const& other) const noexcept override;
+
 private:
     ::takatori::util::unique_object_ptr<query::expression> body_;
     correlation_type correlation_;

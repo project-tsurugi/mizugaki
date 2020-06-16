@@ -1,5 +1,7 @@
 #include <mizugaki/ast/scalar/builtin_function_invocation.h>
 
+#include <mizugaki/ast/compare_utils.h>
+
 namespace mizugaki::ast::scalar {
 
 using ::takatori::util::object_creator;
@@ -59,6 +61,23 @@ common::vector<expression::operand_type>& builtin_function_invocation::arguments
 
 common::vector<expression::operand_type> const& builtin_function_invocation::arguments() const noexcept {
     return arguments_;
+}
+
+bool operator==(builtin_function_invocation const& a, builtin_function_invocation const& b) noexcept {
+    if (std::addressof(a) == std::addressof(b)) {
+        return false;
+    }
+    return eq(a.function_, b.function_)
+            && eq(a.arguments_, b.arguments_);
+}
+
+bool operator!=(builtin_function_invocation const& a, builtin_function_invocation const& b) noexcept {
+    return !(a == b);
+}
+
+bool builtin_function_invocation::equals(expression const& other) const noexcept {
+    return other.node_kind() == tag
+            && *this == unsafe_downcast<builtin_function_invocation>(other);
 }
 
 } // namespace mizugaki::ast::scalar

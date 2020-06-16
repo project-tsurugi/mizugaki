@@ -1,5 +1,7 @@
 #include <mizugaki/ast/type/simple.h>
 
+#include <mizugaki/ast/compare_utils.h>
+
 #include "utils.h"
 
 namespace mizugaki::ast::type {
@@ -40,6 +42,22 @@ simple* simple::clone(object_creator creator) && {
 
 node_kind_type simple::node_kind() const noexcept {
     return type_kind_;
+}
+
+bool operator==(simple const& a, simple const& b) noexcept {
+    if (std::addressof(a) == std::addressof(b)) {
+        return true;
+    }
+    return eq(a.type_kind_, b.type_kind_);
+}
+
+bool operator!=(simple const& a, simple const& b) noexcept {
+    return !(a == b);
+}
+
+bool simple::equals(type const& other) const noexcept {
+    return tags.contains(other.node_kind())
+            && *this == unsafe_downcast<simple>(other);
 }
 
 } // namespace mizugaki::ast::type

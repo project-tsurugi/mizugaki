@@ -73,6 +73,24 @@ public:
     /// @copydoc column_names()
     [[nodiscard]] common::vector<::takatori::util::unique_object_ptr<name::simple>> const& column_names() const noexcept;
 
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are equivalent
+     * @return false otherwise
+     */
+    friend bool operator==(with_element const& a, with_element const& b) noexcept;
+
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are different
+     * @return false otherwise
+     */
+    friend bool operator!=(with_element const& a, with_element const& b) noexcept;
+
 private:
     common::clone_wrapper<::takatori::util::unique_object_ptr<name::simple>> name_;
     common::clone_wrapper<::takatori::util::unique_object_ptr<class expression>> expression_;

@@ -2,6 +2,8 @@
 
 #include <mizugaki/ast/common/optional.h>
 
+#include <mizugaki/ast/compare_utils.h>
+
 namespace mizugaki::ast::query {
 
 using ::takatori::util::clone_unique;
@@ -134,6 +136,29 @@ std::optional<query::quantifier_type>& query::quantifier() noexcept {
 
 std::optional<query::quantifier_type> const& query::quantifier() const noexcept {
     return quantifier_;
+}
+
+bool operator==(query const& a, query const& b) noexcept {
+    if (std::addressof(a) == std::addressof(b)) {
+        return false;
+    }
+    return eq(a.elements_, b.elements_)
+            && eq(a.from_, b.from_)
+            && eq(a.where_, b.where_)
+            && eq(a.group_by_, b.group_by_)
+            && eq(a.having_, b.having_)
+            && eq(a.order_by_, b.order_by_)
+            && eq(a.limit_, b.limit_)
+            && eq(a.quantifier_, b.quantifier_);
+}
+
+bool operator!=(query const& a, query const& b) noexcept {
+    return !(a == b);
+}
+
+bool query::equals(expression const& other) const noexcept {
+    return other.node_kind() == tag
+            && *this == unsafe_downcast<type_of_t<tag>>(other);
 }
 
 } // namespace mizugaki::ast::query

@@ -1,5 +1,7 @@
 #include <mizugaki/ast/type/bit_string.h>
 
+#include <mizugaki/ast/compare_utils.h>
+
 #include "utils.h"
 
 namespace mizugaki::ast::type {
@@ -67,6 +69,23 @@ std::optional<length_type>& bit_string::length() noexcept {
 
 std::optional<length_type> const& bit_string::length() const noexcept {
     return length_;
+}
+
+bool operator==(bit_string const& a, bit_string const& b) noexcept {
+    if (std::addressof(a) == std::addressof(b)) {
+        return true;
+    }
+    return eq(a.type_kind_, b.type_kind_)
+            && eq(a.length_, b.length_);
+}
+
+bool operator!=(bit_string const& a, bit_string const& b) noexcept {
+    return !(a == b);
+}
+
+bool bit_string::equals(type const& other) const noexcept {
+    return tags.contains(other.node_kind())
+            && *this == unsafe_downcast<bit_string>(other);
 }
 
 } // namespace mizugaki::ast::type

@@ -60,6 +60,27 @@ public:
     /// @copydoc qualifier()
     [[nodiscard]] ::takatori::util::unique_object_ptr<name::name> const& qualifier() const noexcept;
 
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are equivalent
+     * @return false otherwise
+     */
+    friend bool operator==(select_asterisk const& a, select_asterisk const& b) noexcept;
+
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are different
+     * @return false otherwise
+     */
+    friend bool operator!=(select_asterisk const& a, select_asterisk const& b) noexcept;
+
+protected:
+    [[nodiscard]] bool equals(select_element const& other) const noexcept override;
+
 private:
     ::takatori::util::unique_object_ptr<name::name> qualifier_;
 };

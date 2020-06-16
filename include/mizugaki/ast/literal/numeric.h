@@ -94,6 +94,27 @@ public:
     /// @copydoc unsigned_value()
     [[nodiscard]] value_type const& unsigned_value() const noexcept;
 
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are equivalent
+     * @return false otherwise
+     */
+    friend bool operator==(numeric const& a, numeric const& b) noexcept;
+
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are different
+     * @return false otherwise
+     */
+    friend bool operator!=(numeric const& a, numeric const& b) noexcept;
+
+protected:
+    [[nodiscard]] bool equals(literal const& other) const noexcept override;
+
 private:
     value_kind_type value_kind_;
     std::optional<sign_type> sign_;

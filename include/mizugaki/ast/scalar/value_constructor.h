@@ -20,19 +20,19 @@ class value_constructor final : public expression {
 
 public:
     /// @brief the constructor kind type.
-    using constructor_kind_type = common::regioned<value_constructor_kind>;
+    using operator_kind_type = common::regioned<value_constructor_kind>;
 
     /// @brief the node kind of this.
     static constexpr node_kind_type tag = node_kind_type::value_constructor;
 
     /**
      * @brief creates a new instance.
-     * @param constructor_kind the construction target kind
+     * @param operator_kind the construction target kind
      * @param elements the row value elements
      * @param region the node region
      */
     explicit value_constructor(
-            constructor_kind_type constructor_kind,
+            operator_kind_type operator_kind,
             common::vector<operand_type> elements,
             region_type region = {}) noexcept;
 
@@ -59,10 +59,10 @@ public:
      * @brief returns the constructor kind.
      * @return the constructor kind
      */
-    [[nodiscard]] constructor_kind_type& constructor_kind() noexcept;
+    [[nodiscard]] operator_kind_type& operator_kind() noexcept;
 
-    /// @copydoc constructor_kind()
-    [[nodiscard]] constructor_kind_type const& constructor_kind() const noexcept;
+    /// @copydoc operator_kind()
+    [[nodiscard]] operator_kind_type const& operator_kind() const noexcept;
 
     /**
      * @brief returns the row value elements.
@@ -73,8 +73,29 @@ public:
     /// @copydoc elements()
     [[nodiscard]] common::vector<operand_type> const& elements() const noexcept;
 
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are equivalent
+     * @return false otherwise
+     */
+    friend bool operator==(value_constructor const& a, value_constructor const& b) noexcept;
+
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are different
+     * @return false otherwise
+     */
+    friend bool operator!=(value_constructor const& a, value_constructor const& b) noexcept;
+
+protected:
+    [[nodiscard]] bool equals(expression const& other) const noexcept override;
+
 private:
-    constructor_kind_type constructor_kind_;
+    operator_kind_type operator_kind_;
     common::vector<operand_type> elements_;
 };
 

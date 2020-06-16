@@ -1,5 +1,7 @@
 #include <mizugaki/ast/literal/interval.h>
 
+#include <mizugaki/ast/compare_utils.h>
+
 namespace mizugaki::ast::literal {
 
 using node_kind_type = literal::node_kind_type;
@@ -46,6 +48,19 @@ value_type& interval::value() noexcept {
 
 value_type const& interval::value() const noexcept {
     return value_;
+}
+
+bool operator==(interval const& a, interval const& b) noexcept {
+    return eq(a.value_, b.value_);
+}
+
+bool operator!=(interval const& a, interval const& b) noexcept {
+    return !(a == b);
+}
+
+bool interval::equals(literal const& other) const noexcept {
+    return other.node_kind() == tag
+            && *this == unsafe_downcast<interval>(other);
 }
 
 } // namespace mizugaki::ast::literal

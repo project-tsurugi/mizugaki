@@ -160,6 +160,27 @@ public:
     /// @copydoc quantifier()
     [[nodiscard]] std::optional<quantifier_type> const& quantifier() const noexcept;
 
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are equivalent
+     * @return false otherwise
+     */
+    friend bool operator==(query const& a, query const& b) noexcept;
+
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are different
+     * @return false otherwise
+     */
+    friend bool operator!=(query const& a, query const& b) noexcept;
+
+protected:
+    [[nodiscard]] bool equals(expression const& other) const noexcept override;
+
 private:
     common::vector<::takatori::util::unique_object_ptr<select_element>> elements_;
     common::vector<::takatori::util::unique_object_ptr<table::expression>> from_;

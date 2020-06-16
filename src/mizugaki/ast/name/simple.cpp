@@ -1,5 +1,7 @@
 #include <mizugaki/ast/name/simple.h>
 
+#include <mizugaki/ast/compare_utils.h>
+
 namespace mizugaki::ast::name {
 
 using ::takatori::util::object_creator;
@@ -50,6 +52,22 @@ name::identifier_type& simple::identifier() noexcept {
 
 name::identifier_type const& simple::identifier() const noexcept {
     return identifier_;
+}
+
+bool operator==(simple const& a, simple const& b) noexcept {
+    if (std::addressof(a) == std::addressof(b)) {
+        return true;
+    }
+    return eq(a.identifier_, b.identifier_);
+}
+
+bool operator!=(simple const& a, simple const& b) noexcept {
+    return !(a == b);
+}
+
+bool simple::equals(name const& other) const noexcept {
+    return other.node_kind() == tag
+            && *this == unsafe_downcast<simple>(other);
 }
 
 } // namespace mizugaki::ast::name

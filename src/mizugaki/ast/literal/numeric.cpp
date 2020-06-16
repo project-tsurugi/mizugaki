@@ -1,5 +1,7 @@
 #include <mizugaki/ast/literal/numeric.h>
 
+#include <mizugaki/ast/compare_utils.h>
+
 #include "utils.h"
 
 namespace mizugaki::ast::literal {
@@ -75,6 +77,20 @@ value_type& numeric::unsigned_value() noexcept {
 
 value_type const& numeric::unsigned_value() const noexcept {
     return unsigned_value_;
+}
+
+bool operator==(numeric const& a, numeric const& b) noexcept {
+    return eq(a.value_kind_, b.value_kind_)
+            && eq(a.unsigned_value_, b.unsigned_value_);
+}
+
+bool operator!=(numeric const& a, numeric const& b) noexcept {
+    return !(a == b);
+}
+
+bool numeric::equals(literal const& other) const noexcept {
+    return tags.contains(other.node_kind())
+            && *this == unsafe_downcast<numeric>(other);
 }
 
 } // namespace mizugaki::ast::literal

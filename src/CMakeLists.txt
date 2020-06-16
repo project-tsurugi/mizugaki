@@ -40,15 +40,18 @@ add_library(mizugaki
     mizugaki/ast/common/sort_element.cpp
     mizugaki/ast/common/target_element.cpp
 
+    mizugaki/ast/name/name.cpp
     mizugaki/ast/name/simple.cpp
     mizugaki/ast/name/qualified.cpp
 
+    mizugaki/ast/literal/literal.cpp
     mizugaki/ast/literal/boolean.cpp
     mizugaki/ast/literal/numeric.cpp
     mizugaki/ast/literal/string.cpp
     mizugaki/ast/literal/datetime.cpp
     mizugaki/ast/literal/interval.cpp
 
+    mizugaki/ast/type/type.cpp
     mizugaki/ast/type/simple.cpp
     mizugaki/ast/type/character_string.cpp
     mizugaki/ast/type/bit_string.cpp
@@ -57,6 +60,7 @@ add_library(mizugaki
     mizugaki/ast/type/datetime.cpp
     mizugaki/ast/type/interval.cpp
 
+    mizugaki/ast/scalar/expression.cpp
     mizugaki/ast/scalar/literal_expression.cpp
     mizugaki/ast/scalar/variable_reference.cpp
     mizugaki/ast/scalar/field_reference.cpp
@@ -79,24 +83,29 @@ add_library(mizugaki
     mizugaki/ast/scalar/static_method_invocation.cpp
     mizugaki/ast/scalar/subquery.cpp
 
+    mizugaki/ast/table/expression.cpp
     mizugaki/ast/table/table_reference.cpp
     mizugaki/ast/table/join.cpp
     mizugaki/ast/table/subquery.cpp
     mizugaki/ast/table/correlation_clause.cpp
 
+    mizugaki/ast/query/expression.cpp
     mizugaki/ast/query/query.cpp
     mizugaki/ast/query/table_reference.cpp
     mizugaki/ast/query/table_value_constructor.cpp
     mizugaki/ast/query/binary_expression.cpp
     mizugaki/ast/query/with_expression.cpp
+    mizugaki/ast/query/select_element.cpp
     mizugaki/ast/query/select_column.cpp
     mizugaki/ast/query/select_asterisk.cpp
     mizugaki/ast/query/select_all_fields.cpp
     mizugaki/ast/query/group_by_clause.cpp
+    mizugaki/ast/query/grouping_element.cpp
     mizugaki/ast/query/grouping_column.cpp
     mizugaki/ast/query/corresponding_clause.cpp
     mizugaki/ast/query/with_element.cpp
 
+    mizugaki/ast/statement/statement.cpp
     mizugaki/ast/statement/select_statement.cpp
     mizugaki/ast/statement/insert_statement.cpp
     mizugaki/ast/statement/update_statement.cpp

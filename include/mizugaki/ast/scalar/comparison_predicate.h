@@ -103,6 +103,27 @@ public:
     /// @copydoc quantifier()
     [[nodiscard]] std::optional<quantifier_type> const& quantifier() const noexcept;
 
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are equivalent
+     * @return false otherwise
+     */
+    friend bool operator==(comparison_predicate const& a, comparison_predicate const& b) noexcept;
+
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are different
+     * @return false otherwise
+     */
+    friend bool operator!=(comparison_predicate const& a, comparison_predicate const& b) noexcept;
+
+protected:
+    [[nodiscard]] bool equals(expression const& other) const noexcept override;
+
 private:
     operator_kind_type operator_kind_;
     operand_type left_;

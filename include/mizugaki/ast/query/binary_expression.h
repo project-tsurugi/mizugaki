@@ -122,6 +122,27 @@ public:
     /// @copydoc corresponding()
     [[nodiscard]] std::optional<corresponding_type> const& corresponding() const noexcept;
 
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are equivalent
+     * @return false otherwise
+     */
+    friend bool operator==(binary_expression const& a, binary_expression const& b) noexcept;
+
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are different
+     * @return false otherwise
+     */
+    friend bool operator!=(binary_expression const& a, binary_expression const& b) noexcept;
+
+protected:
+    [[nodiscard]] bool equals(expression const& other) const noexcept override;
+
 private:
     operator_kind_type operator_kind_;
     ::takatori::util::unique_object_ptr<expression> left_;

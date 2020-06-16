@@ -1,5 +1,7 @@
 #include <mizugaki/ast/common/target_element.h>
 
+#include <mizugaki/ast/compare_utils.h>
+
 namespace mizugaki::ast::common {
 
 using ::takatori::util::clone_unique;
@@ -45,6 +47,18 @@ unique_object_ptr<name::simple>& target_element::indicator() noexcept {
 
 unique_object_ptr<name::simple> const& target_element::indicator() const noexcept {
     return *indicator_;
+}
+
+bool operator==(target_element const& a, target_element const& b) noexcept {
+    if (std::addressof(a) == std::addressof(b)) {
+        return false;
+    }
+    return eq(*a.target_, *b.target_)
+            && eq(*a.indicator_, *b.indicator_);
+}
+
+bool operator!=(target_element const& a, target_element const& b) noexcept {
+    return !(a == b);
 }
 
 } // namespace mizugaki::ast::common

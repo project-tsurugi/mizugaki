@@ -2,6 +2,8 @@
 
 #include <takatori/util/clonable.h>
 
+#include <mizugaki/ast/compare_utils.h>
+
 namespace mizugaki::ast::scalar {
 
 using ::takatori::util::clone_unique;
@@ -73,6 +75,24 @@ in_predicate::not_type& in_predicate::is_not() noexcept {
 
 in_predicate::not_type const& in_predicate::is_not() const noexcept {
     return is_not_;
+}
+
+bool operator==(in_predicate const& a, in_predicate const& b) noexcept {
+    if (std::addressof(a) == std::addressof(b)) {
+        return false;
+    }
+    return eq(a.left_, b.left_)
+            && eq(a.right_, b.right_)
+            && eq(a.is_not_, b.is_not_);
+}
+
+bool operator!=(in_predicate const& a, in_predicate const& b) noexcept {
+    return !(a == b);
+}
+
+bool in_predicate::equals(expression const& other) const noexcept {
+    return other.node_kind() == tag
+            && *this == unsafe_downcast<in_predicate>(other);
 }
 
 } // namespace mizugaki::ast::scalar

@@ -89,6 +89,27 @@ public:
     /// @copydoc is_recursive()
     [[nodiscard]] bool_type const& is_recursive() const noexcept;
 
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are equivalent
+     * @return false otherwise
+     */
+    friend bool operator==(with_expression const& a, with_expression const& b) noexcept;
+
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are different
+     * @return false otherwise
+     */
+    friend bool operator!=(with_expression const& a, with_expression const& b) noexcept;
+
+protected:
+    [[nodiscard]] bool equals(expression const& other) const noexcept override;
+
 private:
     common::vector<element_type> elements_;
     ::takatori::util::unique_object_ptr<expression> body_;

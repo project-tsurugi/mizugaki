@@ -63,6 +63,27 @@ public:
     // FIXME: impl std::optional<qualifier_type> start()
     // FIXME: impl std::optional<qualifier_type> end()
 
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are equivalent
+     * @return false otherwise
+     */
+    friend bool operator==(interval const& a, interval const& b) noexcept;
+
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are different
+     * @return false otherwise
+     */
+    friend bool operator!=(interval const& a, interval const& b) noexcept;
+
+protected:
+    [[nodiscard]] bool equals(literal const& other) const noexcept override;
+
 private:
     value_type value_;
 };

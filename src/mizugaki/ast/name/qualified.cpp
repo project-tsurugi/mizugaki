@@ -2,6 +2,9 @@
 
 #include <takatori/util/clonable.h>
 
+#include <mizugaki/ast/compare_utils.h>
+#include <mizugaki/ast/name/simple.h>
+
 namespace mizugaki::ast::name {
 
 using ::takatori::util::clone_unique;
@@ -68,6 +71,23 @@ unique_object_ptr<simple>& qualified::last() noexcept {
 
 unique_object_ptr<simple> const& qualified::last() const noexcept {
     return last_;
+}
+
+bool operator==(qualified const& a, qualified const& b) noexcept {
+    if (std::addressof(a) == std::addressof(b)) {
+        return true;
+    }
+    return eq(a.last_, b.last_)
+        && eq(a.qualifier_, b.qualifier_);
+}
+
+bool operator!=(qualified const& a, qualified const& b) noexcept {
+    return !(a == b);
+}
+
+bool qualified::equals(name const& other) const noexcept {
+    return other.node_kind() == tag
+            && *this == unsafe_downcast<simple>(other);
 }
 
 } // namespace mizugaki::ast::name

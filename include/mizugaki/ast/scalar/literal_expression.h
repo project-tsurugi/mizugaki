@@ -59,6 +59,27 @@ public:
     /// @brief value()
     [[nodiscard]] ::takatori::util::unique_object_ptr<literal::literal> const& value() const noexcept;
 
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are equivalent
+     * @return false otherwise
+     */
+    friend bool operator==(literal_expression const& a, literal_expression const& b) noexcept;
+
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are different
+     * @return false otherwise
+     */
+    friend bool operator!=(literal_expression const& a, literal_expression const& b) noexcept;
+
+protected:
+    [[nodiscard]] bool equals(expression const& other) const noexcept override;
+
 private:
     ::takatori::util::unique_object_ptr<literal::literal> value_;
 };

@@ -85,6 +85,27 @@ public:
     /// @brief name()
     [[nodiscard]] ::takatori::util::unique_object_ptr<name::simple> const& name() const noexcept;
 
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are equivalent
+     * @return false otherwise
+     */
+    friend bool operator==(field_reference const& a, field_reference const& b) noexcept;
+
+    /**
+     * @brief compares two values.
+     * @param a the first value
+     * @param b the second value
+     * @return true if the both are different
+     * @return false otherwise
+     */
+    friend bool operator!=(field_reference const& a, field_reference const& b) noexcept;
+
+protected:
+    [[nodiscard]] bool equals(expression const& other) const noexcept override;
+
 private:
     operator_kind_type operator_kind_;
     operand_type value_;
