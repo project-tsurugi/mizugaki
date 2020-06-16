@@ -21,10 +21,7 @@ public:
 
     explicit sql_driver(
             ::takatori::util::maybe_shared_ptr<document_type const> document,
-            ::takatori::util::object_creator creator) noexcept :
-        document_ { std::move(document) },
-        creator_ { creator }
-    {}
+            ::takatori::util::object_creator creator) noexcept;
 
     [[nodiscard]] ::takatori::util::maybe_shared_ptr<document_type const> const& document() const noexcept;
 
@@ -39,6 +36,10 @@ public:
     void error(location_type location, result_type::message_type message);
 
     void add_comment(location_type location);
+
+    [[nodiscard]] ast::common::vector<location_type>& comments() noexcept;
+
+    [[nodiscard]] ast::common::vector<location_type> const& comments() const noexcept;
 
     template<class T, class... Args>
     [[nodiscard]] node_ptr<T> node(Args&&... args) {
@@ -55,8 +56,8 @@ public:
 private:
     ::takatori::util::maybe_shared_ptr<document_type const> document_;
     ::takatori::util::object_creator creator_;
-
-    result_type result_;
+    ast::common::vector<location_type> comments_;
+    result_type result_ {};
 };
 
 } // namespace sandbox

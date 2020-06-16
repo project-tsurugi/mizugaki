@@ -12,14 +12,23 @@ using common::clone_vector;
 
 compilation_unit::compilation_unit(
         common::vector<unique_object_ptr<statement::statement>> statements,
+        common::vector<region_type> comments,
         maybe_shared_ptr<document_type const> document) noexcept :
     statements_ { std::move(statements) },
+    comments_ { std::move(comments) },
     document_ { std::move(document) }
+{}
+
+compilation_unit::compilation_unit(common::rvalue_list<statement::statement> statements) noexcept :
+    compilation_unit {
+            common::to_vector(statements),
+    }
 {}
 
 compilation_unit::compilation_unit(compilation_unit const& other, object_creator creator) :
     compilation_unit {
             clone_vector(other.statements_, creator),
+            { other.comments_, creator.allocator() },
             other.document_,
     }
 {}
@@ -27,6 +36,7 @@ compilation_unit::compilation_unit(compilation_unit const& other, object_creator
 compilation_unit::compilation_unit(compilation_unit&& other, object_creator creator) :
     compilation_unit {
             clone_vector(std::move(other.statements_), creator),
+            { std::move(other.comments_), creator.allocator() },
             other.document_,
     }
 {}
@@ -37,6 +47,14 @@ common::vector<unique_object_ptr<statement::statement>>& compilation_unit::state
 
 common::vector<unique_object_ptr<statement::statement>> const& compilation_unit::statements() const noexcept {
     return statements_;
+}
+
+common::vector<compilation_unit::region_type>& compilation_unit::comments() noexcept {
+    return comments_;
+}
+
+common::vector<compilation_unit::region_type> const& compilation_unit::comments() const noexcept {
+    return comments_;
 }
 
 maybe_shared_ptr<compilation_unit::document_type const>& compilation_unit::document() noexcept {

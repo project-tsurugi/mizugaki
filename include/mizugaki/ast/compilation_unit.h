@@ -2,9 +2,10 @@
 
 #include <takatori/document/document.h>
 
-#include <takatori/util/object_creator.h>
 #include <takatori/util/maybe_shared_ptr.h>
+#include <takatori/util/object_creator.h>
 
+#include <mizugaki/ast/common/rvalue_list.h>
 #include <mizugaki/ast/common/vector.h>
 #include <mizugaki/ast/statement/statement.h>
 
@@ -18,14 +19,26 @@ public:
     /// @brief the source document type.
     using document_type = ::takatori::document::document;
 
+    /// @brief the region type of element.
+    using region_type = node_region;
+
     /**
      * @brief creates a new instance
      * @param statements the top level statements
+     * @param comments the comment regions
      * @param document the source document
      */
     explicit compilation_unit(
             common::vector<::takatori::util::unique_object_ptr<statement::statement>> statements,
+            common::vector<region_type> comments = {},
             ::takatori::util::maybe_shared_ptr<document_type const> document = {}) noexcept;
+
+    /**
+     * @brief creates a new instance
+     * @param statements the top level statements
+     * @attention this will take copies of elements
+     */
+    compilation_unit(common::rvalue_list<statement::statement> statements) noexcept;
 
     /**
      * @brief creates a new instance.
@@ -49,6 +62,15 @@ public:
 
     /// @copydoc statements()
     [[nodiscard]] common::vector<::takatori::util::unique_object_ptr<statement::statement>> const& statements() const noexcept;
+
+    /**
+     * @brief returns the comment regions.
+     * @return the comment regions
+     */
+    [[nodiscard]] common::vector<region_type>& comments() noexcept;
+
+    /// @copydoc comments()
+    [[nodiscard]] common::vector<region_type> const& comments() const noexcept;
 
     /**
      * @brief returns the source document.
@@ -81,6 +103,7 @@ public:
 
 private:
     common::vector<::takatori::util::unique_object_ptr<statement::statement>> statements_;
+    common::vector<region_type> comments_;
     ::takatori::util::maybe_shared_ptr<document_type const> document_;
 };
 
