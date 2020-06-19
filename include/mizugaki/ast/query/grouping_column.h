@@ -1,6 +1,7 @@
 #pragma once
 
 #include <takatori/util/object_creator.h>
+#include <takatori/util/rvalue_ptr.h>
 
 #include <mizugaki/ast/element.h>
 #include <mizugaki/ast/common/clone_wrapper.h>
@@ -29,9 +30,33 @@ public:
      * @param collation the optional grouping collation
      * @param region the element region
      */
-    grouping_column( // NOLINT: conversion constructor
+    explicit grouping_column(
             ::takatori::util::unique_object_ptr<scalar::expression> column,
             ::takatori::util::unique_object_ptr<name::name> collation = {},
+            region_type region = {}) noexcept;
+
+    /**
+     * @brief creates a new instance.
+     * @param column the column expression
+     * @param collation the optional grouping collation
+     * @param region the element region
+     * @attention this will take copy of arguments
+     */
+    grouping_column( // NOLINT: conversion constructor
+            scalar::expression&& column,
+            ::takatori::util::rvalue_ptr<name::name> collation = {},
+            region_type region = {}) noexcept;
+
+    /**
+     * @brief creates a new instance.
+     * @param column the column name
+     * @param collation the optional grouping collation
+     * @param region the element region
+     * @attention this will take copy of arguments
+     */
+    grouping_column( // NOLINT: conversion constructor
+            name::name&& column,
+            ::takatori::util::rvalue_ptr<name::name> collation = {},
             region_type region = {}) noexcept;
 
     /**

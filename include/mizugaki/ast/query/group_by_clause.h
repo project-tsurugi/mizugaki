@@ -4,6 +4,7 @@
 
 #include <mizugaki/ast/element.h>
 #include <mizugaki/ast/common/clone_wrapper.h>
+#include <mizugaki/ast/common/rvalue_list.h>
 #include <mizugaki/ast/common/vector.h>
 #include <mizugaki/ast/name/simple.h>
 
@@ -27,6 +28,16 @@ public:
      */
     explicit group_by_clause(
             common::vector<::takatori::util::unique_object_ptr<element_type>> elements,
+            region_type region = {}) noexcept;
+
+    /**
+     * @brief creates a new instance.
+     * @param elements the elements
+     * @param region the element region
+     * @attention this will take copy of elements
+     */
+    group_by_clause(
+            common::rvalue_list<element_type> elements,
             region_type region = {}) noexcept;
 
     /**

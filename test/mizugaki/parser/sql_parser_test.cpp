@@ -16,6 +16,8 @@
 #include <mizugaki/ast/query/table_value_constructor.h>
 #include <mizugaki/ast/query/select_asterisk.h>
 #include <mizugaki/ast/query/select_column.h>
+#include <mizugaki/ast/query/grouping_element.h>
+#include <mizugaki/ast/query/grouping_column.h>
 
 #include <mizugaki/ast/table/table_reference.h>
 
@@ -205,15 +207,211 @@ TEST_F(sql_parser_test, select_where) {
                                             name::simple { "a" },
                                     },
                                     scalar::comparison_operator::less_than,
-                                    scalar::literal_expression {
-                                            literal::numeric {
-                                                    literal::kind::exact_numeric,
-                                                    std::nullopt,
-                                                    { "0" },
+                                    int_literal("0"),
+                            },
+                    }
+            }
+    }));
+}
+
+TEST_F(sql_parser_test, select_group_by_grand_total) {
+    sql_parser parser;
+    auto result = parser("-", "SELECT C0, C1 FROM T0 GROUP BY ();");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(first(result), (statement::select_statement {
+            query::query {
+                    {},
+                    { // SELECT
+                            query::select_column {
+                                    scalar::variable_reference {
+                                            name::simple { "C0" },
+                                    },
+                            },
+                            query::select_column {
+                                    scalar::variable_reference {
+                                            name::simple { "C1" },
+                                    },
+                            },
+                    },
+                    { // FROM
+                            table::table_reference {
+                                    name::simple { "T0" },
+                            },
+                    },
+                    { // WHERE
+                    },
+                    { // GROUP BY
+                            {}, // grand total
+                    },
+            }
+    }));
+}
+
+TEST_F(sql_parser_test, select_group_by_columns) {
+    sql_parser parser;
+    auto result = parser("-", "SELECT C0, C1 FROM T0 GROUP BY C0, C1;");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(first(result), (statement::select_statement {
+            query::query {
+                    {},
+                    { // SELECT
+                            query::select_column {
+                                    scalar::variable_reference {
+                                            name::simple { "C0" },
+                                    },
+                            },
+                            query::select_column {
+                                    scalar::variable_reference {
+                                            name::simple { "C1" },
+                                    },
+                            },
+                    },
+                    { // FROM
+                            table::table_reference {
+                                    name::simple { "T0" },
+                            },
+                    },
+                    { // WHERE
+                    },
+                    { // GROUP BY
+                            {
+                                    query::grouping_column {
+                                            scalar::variable_reference {
+                                                    name::simple { "C0" },
+                                            },
+                                    },
+                                    query::grouping_column {
+                                            scalar::variable_reference {
+                                                    name::simple { "C1" },
                                             },
                                     },
                             },
-                    }
+                    },
+            }
+    }));
+}
+
+TEST_F(sql_parser_test, select_group_by_having) {
+    sql_parser parser;
+    auto result = parser("-", "SELECT C0 FROM T0 GROUP BY C0, C1 HAVING C1 = 0;");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(first(result), (statement::select_statement {
+            query::query {
+                    {},
+                    { // SELECT
+                            query::select_column {
+                                    scalar::variable_reference {
+                                            name::simple { "C0" },
+                                    },
+                            },
+                    },
+                    { // FROM
+                            table::table_reference {
+                                    name::simple { "T0" },
+                            },
+                    },
+                    { // WHERE
+                    },
+                    { // GROUP BY
+                            {
+                                    query::grouping_column {
+                                            scalar::variable_reference {
+                                                    name::simple { "C0" },
+                                            },
+                                    },
+                                    query::grouping_column {
+                                            scalar::variable_reference {
+                                                    name::simple { "C1" },
+                                            },
+                                    },
+                            },
+                    },
+                    { // HAVING
+                            scalar::comparison_predicate {
+                                    scalar::variable_reference {
+                                            name::simple { "C1" },
+                                    },
+                                    scalar::comparison_operator::equals,
+                                    int_literal("0"),
+                            },
+                    },
+            }
+    }));
+}
+
+TEST_F(sql_parser_test, select_order_by) {
+    sql_parser parser;
+    auto result = parser("-", "SELECT C0 FROM T0 ORDER BY C0, C1 ASC, C2 DESC;");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(first(result), (statement::select_statement {
+            query::query {
+                    {},
+                    { // SELECT
+                            query::select_column {
+                                    scalar::variable_reference {
+                                            name::simple { "C0" },
+                                    },
+                            },
+                    },
+                    { // FROM
+                            table::table_reference {
+                                    name::simple { "T0" },
+                            },
+                    },
+                    { // WHERE
+                    },
+                    { // GROUP BY
+                    },
+                    { // HAVING
+                    },
+                    { // ORDER BY
+                            name::simple { "C0" },
+                            {
+                                    name::simple { "C1" },
+                                    common::ordering_specification::asc,
+                            },
+                            {
+                                    name::simple { "C2" },
+                                    common::ordering_specification::desc,
+                            },
+                    },
+            }
+    }));
+}
+
+TEST_F(sql_parser_test, select_limit) {
+    sql_parser parser;
+    auto result = parser("-", "SELECT C0 FROM T0 LIMIT 10;");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(first(result), (statement::select_statement {
+            query::query {
+                    {},
+                    { // SELECT
+                            query::select_column {
+                                    scalar::variable_reference {
+                                            name::simple { "C0" },
+                                    },
+                            },
+                    },
+                    { // FROM
+                            table::table_reference {
+                                    name::simple { "T0" },
+                            },
+                    },
+                    { // WHERE
+                    },
+                    { // GROUP BY
+                    },
+                    { // HAVING
+                    },
+                    { // ORDER BY
+                    },
+                    int_literal("10"),
             }
     }));
 }
@@ -253,6 +451,40 @@ TEST_F(sql_parser_test, insert_values) {
                             int_literal("1"),
                     },
             }
+    }));
+}
+
+TEST_F(sql_parser_test, insert_values_multirow) {
+    sql_parser parser;
+    auto result = parser("-", "INSERT INTO T0 VALUES (1), (2), (3);");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(first(result), (statement::insert_statement {
+            name::simple { "T0" },
+            {},
+            query::table_value_constructor {
+                    scalar::value_constructor {
+                            int_literal("1"),
+                    },
+                    scalar::value_constructor {
+                            int_literal("2"),
+                    },
+                    scalar::value_constructor {
+                            int_literal("3"),
+                    },
+            }
+    }));
+}
+
+TEST_F(sql_parser_test, insert_default_values) {
+    sql_parser parser;
+    auto result = parser("-", "INSERT INTO T0 DEFAULT VALUES;");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(first(result), (statement::insert_statement {
+            name::simple { "T0" },
+            {},
+            {},
     }));
 }
 
@@ -296,6 +528,33 @@ TEST_F(sql_parser_test, update) {
     }));
 }
 
+TEST_F(sql_parser_test, update_where) {
+    sql_parser parser;
+    auto result = parser("-", "UPDATE T0 SET C0=1, C1 = 2 WHERE C2 = 0;");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(first(result), (statement::update_statement {
+            name::simple { "T0" },
+            {
+                    {
+                            name::simple { "C0" },
+                            int_literal("1"),
+                    },
+                    {
+                            name::simple { "C1" },
+                            int_literal("2"),
+                    },
+            },
+            scalar::comparison_predicate {
+                    scalar::variable_reference {
+                            name::simple { "C2" },
+                    },
+                    scalar::comparison_operator::equals,
+                    int_literal("0"),
+            },
+    }));
+}
+
 TEST_F(sql_parser_test, delete) {
     sql_parser parser;
     auto result = parser("-", "DELETE FROM T0;");
@@ -303,6 +562,23 @@ TEST_F(sql_parser_test, delete) {
 
     EXPECT_EQ(first(result), (statement::delete_statement {
             name::simple { "T0" },
+    }));
+}
+
+TEST_F(sql_parser_test, delete_where) {
+    sql_parser parser;
+    auto result = parser("-", "DELETE FROM T0 WHERE C0 = 0;");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(first(result), (statement::delete_statement {
+            name::simple { "T0" },
+            scalar::comparison_predicate {
+                    scalar::variable_reference {
+                            name::simple { "C0" },
+                    },
+                    scalar::comparison_operator::equals,
+                    int_literal("0"),
+            },
     }));
 }
 

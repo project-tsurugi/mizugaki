@@ -1053,7 +1053,10 @@ group_by_clause_opt
         }
     | "GROUP" "BY" "(" ")"
         {
-            $$ = std::nullopt;
+            $$ = ast::query::group_by_clause {
+                    driver.node_vector<ast::query::grouping_element>(), // grand total
+                    @$,
+            };
         }
     | "GROUP" "BY" grouping_column_reference_list[l]
         {
@@ -1089,7 +1092,11 @@ grouping_column_reference
     ;
 
 collate_clause_opt
-    : "COLLATE" identifier_chain[n]
+    : %empty
+        {
+            $$ = nullptr;
+        }
+    | "COLLATE" identifier_chain[n]
         {
             $$ = $n;
         }
@@ -1162,9 +1169,9 @@ limit_clause_opt
         {
             $$ = nullptr;
         }
-    | "LIMIT" // FIXME
+    | "LIMIT" value_expression[e]
         {
-            $$ = {};
+            $$ = $e;
         }
     ;
 

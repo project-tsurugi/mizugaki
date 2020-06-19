@@ -1,11 +1,14 @@
 #include <mizugaki/ast/common/sort_element.h>
 
+#include <mizugaki/ast/scalar/variable_reference.h>
+
 #include <mizugaki/ast/compare_utils.h>
 
 namespace mizugaki::ast::common {
 
 using ::takatori::util::clone_unique;
 using ::takatori::util::object_creator;
+using ::takatori::util::rvalue_ptr;
 using ::takatori::util::unique_object_ptr;
 
 sort_element::sort_element(
@@ -17,6 +20,62 @@ sort_element::sort_element(
     key_ { std::move(key) },
     collation_ { std::move(collation) },
     direction_ { std::move(direction) }
+{}
+
+sort_element::sort_element(
+        scalar::expression&& key,
+        rvalue_ptr<name::name> collation,
+        std::optional<direction_type> direction,
+        region_type region) noexcept :
+    sort_element {
+            clone_unique(std::move(key)),
+            clone_unique(collation),
+            std::move(direction),
+            region,
+    }
+{}
+
+sort_element::sort_element(
+        scalar::expression&& key,
+        direction_type direction,
+        region_type region) noexcept :
+    sort_element {
+            clone_unique(std::move(key)),
+            nullptr,
+            direction,
+            region,
+    }
+{}
+
+static inline unique_object_ptr<scalar::variable_reference> to_expr(name::name&& column) {
+    object_creator c;
+    auto r = column.region();
+    return c.create_unique<scalar::variable_reference>(std::move(column), r);
+}
+
+sort_element::sort_element(
+        name::name&& key,
+        rvalue_ptr<name::name> collation,
+        std::optional<direction_type> direction,
+        region_type region) noexcept :
+    sort_element {
+            to_expr(std::move(key)),
+            clone_unique(collation),
+            std::move(direction),
+            region,
+    }
+{}
+
+sort_element::sort_element(
+        name::name&& key,
+        direction_type direction,
+        region_type region) noexcept :
+    sort_element {
+            to_expr(std::move(key)),
+            nullptr,
+            direction,
+            region,
+    }
 {}
 
 sort_element::sort_element(sort_element const& other, object_creator creator) :

@@ -3,6 +3,7 @@
 #include <optional>
 
 #include <takatori/util/object_creator.h>
+#include <takatori/util/rvalue_ptr.h>
 
 #include <mizugaki/ast/element.h>
 #include <mizugaki/ast/common/regioned.h>
@@ -39,6 +40,58 @@ public:
             ::takatori::util::unique_object_ptr<scalar::expression> key,
             ::takatori::util::unique_object_ptr<name::name> collation = {},
             std::optional<direction_type> direction = {},
+            region_type region = {}) noexcept;
+
+    /**
+     * @brief creates a new instance.
+     * @param key the sort key
+     * @param collation the optional collation name
+     * @param direction the optional sort direction
+     * @param region the element region
+     * @attention this will take copy of arguments
+     */
+    sort_element( // NOLINT: DSL style constructor
+            scalar::expression&& key,
+            ::takatori::util::rvalue_ptr<name::name> collation = {},
+            std::optional<direction_type> direction = {},
+            region_type region = {}) noexcept;
+
+    /**
+     * @brief creates a new instance.
+     * @param key the sort key
+     * @param direction the optional sort direction
+     * @param region the element region
+     * @attention this will take copy of arguments
+     */
+    sort_element(
+            scalar::expression&& key,
+            direction_type direction,
+            region_type region = {}) noexcept;
+
+    /**
+     * @brief creates a new instance.
+     * @param key the sort key
+     * @param collation the optional collation name
+     * @param direction the optional sort direction
+     * @param region the element region
+     * @attention this will take copy of arguments
+     */
+    sort_element( // NOLINT: DSL style constructor
+            name::name&& key,
+            ::takatori::util::rvalue_ptr<name::name> collation = {},
+            std::optional<direction_type> direction = {},
+            region_type region = {}) noexcept;
+
+    /**
+     * @brief creates a new instance.
+     * @param key the sort key
+     * @param direction the optional sort direction
+     * @param region the element region
+     * @attention this will take copy of arguments
+     */
+    sort_element(
+            name::name&& key,
+            direction_type direction,
             region_type region = {}) noexcept;
 
     /**

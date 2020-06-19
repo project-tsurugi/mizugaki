@@ -8,12 +8,22 @@ using ::takatori::util::object_creator;
 using ::takatori::util::unique_object_ptr;
 
 using common::clone_vector;
+using common::to_vector;
 
 group_by_clause::group_by_clause(
         common::vector<unique_object_ptr<element_type>> elements,
         region_type region) noexcept :
     element { region },
     elements_ { std::move(elements) }
+{}
+
+group_by_clause::group_by_clause(
+        common::rvalue_list<element_type> elements,
+        region_type region) noexcept :
+    group_by_clause {
+            to_vector(elements),
+            region,
+    }
 {}
 
 group_by_clause::group_by_clause(group_by_clause const& other, object_creator creator) :
