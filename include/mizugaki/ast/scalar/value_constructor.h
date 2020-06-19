@@ -4,6 +4,7 @@
 
 #include <mizugaki/ast/common/regioned.h>
 #include <mizugaki/ast/common/vector.h>
+#include <mizugaki/ast/common/rvalue_list.h>
 
 #include "expression.h"
 #include "value_constructor_kind.h"
@@ -34,6 +35,17 @@ public:
     explicit value_constructor(
             operator_kind_type operator_kind,
             common::vector<operand_type> elements,
+            region_type region = {}) noexcept;
+
+    /**
+     * @brief creates a new instance.
+     * @param operator_kind the construction target kind
+     * @param elements the row value elements
+     * @param region the node region
+     */
+    value_constructor(
+            common::rvalue_list<scalar::expression> elements,
+            value_constructor_kind operator_kind = value_constructor_kind::row,
             region_type region = {}) noexcept;
 
     /**

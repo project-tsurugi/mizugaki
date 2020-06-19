@@ -636,8 +636,16 @@
 %nterm <node_ptr<ast::statement::statement>> statement
 %nterm <node_vector<ast::statement::statement>> statement_list
 
+%nterm <node_ptr<ast::name::name>> target_table
+
+%nterm <element_vector<ast::statement::set_element>> set_clause_list
+%nterm <ast::statement::set_element> set_clause
+
+%nterm <node_ptr<ast::scalar::expression>> manipulate_where_clause_opt
+
 %nterm <node_ptr<ast::query::expression>> query_expression
 %nterm <node_ptr<ast::query::expression>> query_expression_body
+%nterm <node_ptr<ast::query::expression>> query_expression_primary
 
 %nterm <element_vector<ast::query::with_element>> with_list
 %nterm <ast::query::with_element> with_element
@@ -680,9 +688,6 @@
 %nterm <node_vector<ast::scalar::expression>> explicit_row_value_expression_list
 %nterm <node_ptr<ast::scalar::expression>> explicit_row_value_expression
 
-// FIXME unambiguous
-// %nterm <node_ptr<ast::scalar::expression>> row_value_expression
-
 %nterm <node_vector<ast::scalar::expression>> value_expression_list
 %nterm <node_ptr<ast::scalar::expression>> value_expression
 %nterm <node_ptr<ast::scalar::expression>> primary_value_expression
@@ -695,6 +700,7 @@
 %nterm <node_ptr<ast::name::simple>> query_name
 %nterm <node_ptr<ast::name::name>> table_name
 %nterm <node_ptr<ast::name::simple>> column_name
+%nterm <node_ptr<ast::name::simple>> cursor_name
 
 %nterm <node_ptr<ast::name::simple>> identifier
 %nterm <node_ptr<ast::name::name>> identifier_chain
@@ -741,6 +747,93 @@ statement
                     $e,
                     driver.element_vector<ast::statement::target_element>(),
                     @$);
+        }
+    | "INSERT" "INTO" table_name[n] "DEFAULT" "VALUES" ";"
+        {
+            $$ = driver.node<ast::statement::insert_statement>(
+                    $n,
+                    driver.node_vector<ast::name::simple>(),
+                    nullptr,
+                    @$);
+        }
+    | "INSERT" "INTO" table_name[n] query_expression[e] ";"
+        {
+            $$ = driver.node<ast::statement::insert_statement>(
+                    $n,
+                    driver.node_vector<ast::name::simple>(),
+                    $e,
+                    @$);
+        }
+    | "INSERT" "INTO" table_name[n] "(" column_name_list[c] ")" query_expression[e] ";"
+        {
+            // NOTE: don't insert reduce point before left paren
+            //       because both insert column list and query expression accepts it
+            $$ = driver.node<ast::statement::insert_statement>(
+                    $n,
+                    $c,
+                    $e,
+                    @$);
+        }
+    | "UPDATE" target_table[t] "SET" set_clause_list[s] manipulate_where_clause_opt[w]
+        {
+            $$ = driver.node<ast::statement::update_statement>(
+                    $t,
+                    $s,
+                    $w,
+                    @$);
+        }
+    | "DELETE" "FROM" target_table[t] manipulate_where_clause_opt[w]
+        {
+            $$ = driver.node<ast::statement::delete_statement>(
+                    $t,
+                    $w,
+                    @$);
+        }
+    ;
+
+target_table
+    : table_name[n]
+        {
+            $$ = $n;
+        }
+    ;
+
+set_clause_list
+    : set_clause_list[L] "," set_clause[c]
+        {
+            $$ = $L;
+            $$.emplace_back($c);
+        }
+    | set_clause[c]
+        {
+            $$ = driver.element_vector<ast::statement::set_element>();
+            $$.emplace_back($c);
+        }
+    ;
+
+set_clause
+    : identifier_chain[n] "=" value_expression[e]
+        {
+            $$ = ast::statement::set_element {
+                    $n,
+                    $e,
+            };
+        }
+    ;
+
+manipulate_where_clause_opt
+    : %empty
+        {
+            $$ = nullptr;
+        }
+    | "WHERE" value_expression[e]
+        {
+            $$ = $e;
+        }
+    | "WHERE" "CURRENT" "OF" cursor_name[n]
+        {
+            (void) $n;
+            $$ = nullptr; // FIXME: impl
         }
     ;
 
@@ -837,11 +930,14 @@ query_expression_body
                     $r,
                     @$);
         }
-    | "(" query_expression_body[e] ")"
+    | query_expression_primary[e]
         {
             $$ = $e;
         }
-    | "SELECT"
+    ;
+
+query_expression_primary
+    : "SELECT"
             set_quantifier_opt[q]
             select_list[s]
             "FROM" table_reference_list[t]
@@ -873,6 +969,10 @@ query_expression_body
             $$ = driver.node<ast::query::table_value_constructor>(
                     $l,
                     @$);
+        }
+    | "(" query_expression[e] ")"
+        {
+            $$ = $e;
         }
     ;
 
@@ -1435,7 +1535,15 @@ primary_value_expression
 */
     | "(" value_expression_list[e] ")"
         {
-            $$ = nullptr; // nullptr
+            auto es = $e;
+            if (es.size() == 1) { // may be a parenthesiezed expression
+                $$ = std::move(es[0]);
+            } else {
+                $$ = driver.node<ast::scalar::value_constructor>(
+                        regioned { ast::scalar::value_constructor_kind::row },
+                        std::move(es),
+                        @$);
+            }
         }
     ;
 
@@ -1574,6 +1682,13 @@ correlation_name
     ;
 
 column_name
+    : identifier[n]
+        {
+            $$ = $n;
+        }
+    ;
+
+cursor_name
     : identifier[n]
         {
             $$ = $n;

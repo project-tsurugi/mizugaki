@@ -8,12 +8,22 @@ using ::takatori::util::object_creator;
 using ::takatori::util::unique_object_ptr;
 
 using common::clone_vector;
+using common::to_vector;
 
 table_value_constructor::table_value_constructor(
         common::vector<unique_object_ptr<scalar::expression>> elements,
         region_type region) noexcept :
     super { region },
     elements_ { std::move(elements) }
+{}
+
+table_value_constructor::table_value_constructor(
+        common::rvalue_list<scalar::expression> elements,
+        element::region_type region) noexcept :
+    table_value_constructor {
+            to_vector(elements),
+            region,
+    }
 {}
 
 table_value_constructor::table_value_constructor(table_value_constructor const& other, object_creator creator) :

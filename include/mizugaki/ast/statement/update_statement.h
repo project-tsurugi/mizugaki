@@ -3,6 +3,7 @@
 #include <optional>
 
 #include <takatori/util/object_creator.h>
+#include <takatori/util/rvalue_ptr.h>
 
 #include <mizugaki/ast/common/vector.h>
 #include <mizugaki/ast/name/name.h>
@@ -37,6 +38,20 @@ public:
             ::takatori::util::unique_object_ptr<name::name> table_name,
             common::vector<set_element> elements,
             ::takatori::util::unique_object_ptr<scalar::expression> condition,
+            region_type region = {}) noexcept;
+
+    /**
+     * @brief creates a new instance.
+     * @param table_name the target table name
+     * @param elements individual update elements
+     * @param condition the optional search condition, may be `CURRENT OF cursor_name`
+     * @param region the node region
+     * @attention this will take copy of arguments
+     */
+    explicit update_statement(
+            name::name&& table_name,
+            std::initializer_list<set_element> elements,
+            ::takatori::util::rvalue_ptr<scalar::expression> condition = {},
             region_type region = {}) noexcept;
 
     /**

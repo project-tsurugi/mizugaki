@@ -17,6 +17,17 @@ set_element::set_element(
     value_ { std::move(value) }
 {}
 
+set_element::set_element(
+        name::name&& target,
+        scalar::expression&& value,
+        region_type region) noexcept :
+    set_element {
+            clone_unique(std::move(target)),
+            clone_unique(std::move(value)),
+            region,
+    }
+{}
+
 set_element::set_element(set_element const& other, object_creator creator) :
     set_element {
             clone_unique(*other.target_, creator),

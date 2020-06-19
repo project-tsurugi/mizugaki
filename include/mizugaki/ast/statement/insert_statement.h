@@ -3,8 +3,10 @@
 #include <optional>
 
 #include <takatori/util/object_creator.h>
+#include <takatori/util/rvalue_ptr.h>
 
 #include <mizugaki/ast/common/vector.h>
+#include <mizugaki/ast/common/rvalue_list.h>
 #include <mizugaki/ast/name/name.h>
 #include <mizugaki/ast/name/simple.h>
 #include <mizugaki/ast/query/expression.h>
@@ -37,6 +39,20 @@ public:
             common::vector<::takatori::util::unique_object_ptr<name::simple>> columns,
             // FIXME: overriding clause
             ::takatori::util::unique_object_ptr<query::expression> expression,
+            region_type region = {}) noexcept;
+
+    /**
+     * @brief creates a new instance.
+     * @param table_name the target table name
+     * @param columns the target columns
+     * @param expression the source table expression, or empty if insert a row with default values
+     * @param region the node region
+     * @attention this will take copy of arguments
+     */
+    explicit insert_statement(
+            name::name&& table_name,
+            common::rvalue_list<name::simple> columns,
+            ::takatori::util::rvalue_ptr<query::expression> expression,
             region_type region = {}) noexcept;
 
     /**

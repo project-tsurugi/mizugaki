@@ -3,6 +3,7 @@
 #include <takatori/util/object_creator.h>
 
 #include <mizugaki/ast/common/vector.h>
+#include <mizugaki/ast/common/rvalue_list.h>
 #include <mizugaki/ast/scalar/expression.h>
 
 #include "expression.h"
@@ -28,6 +29,16 @@ public:
      */
     explicit table_value_constructor(
             common::vector<::takatori::util::unique_object_ptr<scalar::expression>> elements,
+            region_type region = {}) noexcept;
+
+    /**
+     * @brief creates a new instance.
+     * @param elements the element **row** expressions
+     * @param region the node region
+     * @attention this will take copy of argument
+     */
+    table_value_constructor(
+            common::rvalue_list<scalar::expression> elements,
             region_type region = {}) noexcept;
 
     /**

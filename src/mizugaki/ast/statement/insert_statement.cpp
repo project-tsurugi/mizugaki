@@ -8,9 +8,11 @@ namespace mizugaki::ast::statement {
 
 using ::takatori::util::clone_unique;
 using ::takatori::util::object_creator;
+using ::takatori::util::rvalue_ptr;
 using ::takatori::util::unique_object_ptr;
 
 using common::clone_vector;
+using common::to_vector;
 
 insert_statement::insert_statement(
         unique_object_ptr<name::name> table_name,
@@ -21,6 +23,19 @@ insert_statement::insert_statement(
     table_name_ { std::move(table_name) },
     columns_ { std::move(columns) },
     expression_ { std::move(expression) }
+{}
+
+insert_statement::insert_statement(
+        name::name&& table_name,
+        common::rvalue_list<name::simple> columns,
+        rvalue_ptr<query::expression> expression,
+        region_type region) noexcept :
+    insert_statement {
+            clone_unique(std::move(table_name)),
+            to_vector(columns),
+            clone_unique(expression),
+            region,
+    }
 {}
 
 insert_statement::insert_statement(insert_statement const& other, object_creator creator) :

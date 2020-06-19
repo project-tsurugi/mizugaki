@@ -8,6 +8,7 @@ namespace mizugaki::ast::statement {
 
 using ::takatori::util::clone_unique;
 using ::takatori::util::object_creator;
+using ::takatori::util::rvalue_ptr;
 using ::takatori::util::unique_object_ptr;
 
 delete_statement::delete_statement(
@@ -17,6 +18,17 @@ delete_statement::delete_statement(
     super { region },
     table_name_ { std::move(table_name) },
     condition_ { std::move(condition) }
+{}
+
+delete_statement::delete_statement(
+        name::name&& table_name,
+        rvalue_ptr<scalar::expression> condition,
+        region_type region) noexcept :
+    delete_statement {
+            clone_unique(std::move(table_name)),
+            clone_unique(condition),
+            region,
+    }
 {}
 
 delete_statement::delete_statement(delete_statement const& other, object_creator creator) :

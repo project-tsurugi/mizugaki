@@ -8,6 +8,7 @@ using ::takatori::util::object_creator;
 using ::takatori::util::unique_object_ptr;
 
 using common::clone_vector;
+using common::to_vector;
 
 value_constructor::value_constructor(
         operator_kind_type operator_kind,
@@ -16,6 +17,17 @@ value_constructor::value_constructor(
     super { region },
     operator_kind_ { operator_kind },
     elements_ { std::move(elements) }
+{}
+
+value_constructor::value_constructor(
+        common::rvalue_list<scalar::expression> elements,
+        value_constructor_kind operator_kind,
+        region_type region) noexcept :
+    value_constructor {
+            operator_kind,
+            to_vector(elements),
+            region,
+    }
 {}
 
 value_constructor::value_constructor(value_constructor const& other, object_creator creator) :

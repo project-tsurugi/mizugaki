@@ -17,6 +17,12 @@ namespace mizugaki::ast::statement {
  */
 class set_element : public element {
 public:
+    /**
+     * @brief creates a new empty instance.
+     * @note this is used in parser generator.
+     */
+    explicit set_element() = default;
+
     // FIXME: SET ROW = ...
     // FIXME: array suffix
     /**
@@ -28,6 +34,17 @@ public:
     explicit set_element(
             ::takatori::util::unique_object_ptr<name::name> target,
             ::takatori::util::unique_object_ptr<scalar::expression> value,
+            region_type region = {}) noexcept;
+
+    /**
+     * @brief creates a new instance.
+     * @param target the update target
+     * @param value the value expression to set
+     * @param region the element region
+     */
+    set_element(
+            name::name&& target,
+            scalar::expression&& value,
             region_type region = {}) noexcept;
 
     /**

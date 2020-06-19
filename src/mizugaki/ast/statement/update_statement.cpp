@@ -8,6 +8,7 @@ namespace mizugaki::ast::statement {
 
 using ::takatori::util::clone_unique;
 using ::takatori::util::object_creator;
+using ::takatori::util::rvalue_ptr;
 using ::takatori::util::unique_object_ptr;
 
 using common::clone_vector;
@@ -21,6 +22,19 @@ update_statement::update_statement(
     table_name_ { std::move(table_name) },
     elements_ { std::move(elements) },
     condition_ { std::move(condition) }
+{}
+
+update_statement::update_statement(
+        name::name&& table_name,
+        std::initializer_list<set_element> elements,
+        rvalue_ptr<scalar::expression> condition,
+        region_type region) noexcept :
+    update_statement {
+            clone_unique(std::move(table_name)),
+            elements,
+            clone_unique(condition),
+            region,
+    }
 {}
 
 update_statement::update_statement(update_statement const& other, object_creator creator) :

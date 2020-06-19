@@ -3,6 +3,7 @@
 #include <optional>
 
 #include <takatori/util/object_creator.h>
+#include <takatori/util/rvalue_ptr.h>
 
 #include <mizugaki/ast/name/name.h>
 #include <mizugaki/ast/scalar/expression.h>
@@ -33,6 +34,18 @@ public:
     explicit delete_statement(
             ::takatori::util::unique_object_ptr<name::name> table_name,
             ::takatori::util::unique_object_ptr<scalar::expression> condition,
+            region_type region = {}) noexcept;
+
+    /**
+     * @brief creates a new instance.
+     * @param table_name the target table name
+     * @param condition the optional search condition, may be `CURRENT OF cursor_name`
+     * @param region the node region
+     * @attention this will take copy of arguments
+     */
+    explicit delete_statement(
+            name::name&& table_name,
+            ::takatori::util::rvalue_ptr<scalar::expression> condition = {},
             region_type region = {}) noexcept;
 
     /**

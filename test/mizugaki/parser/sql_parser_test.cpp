@@ -8,8 +8,12 @@
 
 #include <mizugaki/ast/statement/empty_statement.h>
 #include <mizugaki/ast/statement/select_statement.h>
+#include <mizugaki/ast/statement/insert_statement.h>
+#include <mizugaki/ast/statement/update_statement.h>
+#include <mizugaki/ast/statement/delete_statement.h>
 
 #include <mizugaki/ast/query/query.h>
+#include <mizugaki/ast/query/table_value_constructor.h>
 #include <mizugaki/ast/query/select_asterisk.h>
 #include <mizugaki/ast/query/select_column.h>
 
@@ -19,6 +23,7 @@
 #include <mizugaki/ast/scalar/variable_reference.h>
 #include <mizugaki/ast/scalar/field_reference.h>
 #include <mizugaki/ast/scalar/comparison_predicate.h>
+#include <mizugaki/ast/scalar/value_constructor.h>
 
 #include <mizugaki/ast/name/simple.h>
 #include <mizugaki/ast/literal/numeric.h>
@@ -48,6 +53,16 @@ static std::string diagnostics(sql_parser::result_type const& result) {
                 << string_builder::to_string;
     }
     return {};
+}
+
+static scalar::literal_expression int_literal(std::string_view str) {
+    return scalar::literal_expression {
+            literal::numeric {
+                    literal::kind::exact_numeric,
+                    std::nullopt,
+                    common::chars { str },
+            },
+    };
 }
 
 TEST_F(sql_parser_test, empty_document) {
@@ -170,7 +185,6 @@ TEST_F(sql_parser_test, select_column_name) {
 
 TEST_F(sql_parser_test, select_where) {
     sql_parser parser;
-    parser.set_debug(1);
     auto result = parser("-", "SELECT * FROM T0 WHERE a < 0;");
     ASSERT_TRUE(result) << diagnostics(result);
 
@@ -201,6 +215,94 @@ TEST_F(sql_parser_test, select_where) {
                             },
                     }
             }
+    }));
+}
+
+TEST_F(sql_parser_test, insert_select) {
+    sql_parser parser;
+    auto result = parser("-", "INSERT INTO T0 SELECT * FROM T1;");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(first(result), (statement::insert_statement {
+            name::simple { "T0" },
+            {},
+            query::query {
+                    {},
+                    { // SELECT
+                            query::select_asterisk {},
+                    },
+                    { // FROM
+                            table::table_reference {
+                                    name::simple { "T1" },
+                            },
+                    },
+            }
+    }));
+}
+
+TEST_F(sql_parser_test, insert_values) {
+    sql_parser parser;
+    auto result = parser("-", "INSERT INTO T0 VALUES (1);");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(first(result), (statement::insert_statement {
+            name::simple { "T0" },
+            {},
+            query::table_value_constructor {
+                    scalar::value_constructor {
+                            int_literal("1"),
+                    },
+            }
+    }));
+}
+
+TEST_F(sql_parser_test, insert_columns) {
+    sql_parser parser;
+    auto result = parser("-", "INSERT INTO T0 (C0, C1) VALUES (1, 2);");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(first(result), (statement::insert_statement {
+            name::simple { "T0" },
+            {
+                    name::simple { "C0" },
+                    name::simple { "C1" },
+            },
+            query::table_value_constructor {
+                    scalar::value_constructor {
+                            int_literal("1"),
+                            int_literal("2"),
+                    },
+            }
+    }));
+}
+
+TEST_F(sql_parser_test, update) {
+    sql_parser parser;
+    auto result = parser("-", "UPDATE T0 SET C0=1, C1 = 2;");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(first(result), (statement::update_statement {
+            name::simple { "T0" },
+            {
+                    {
+                            name::simple { "C0" },
+                            int_literal("1"),
+                    },
+                    {
+                            name::simple { "C1" },
+                            int_literal("2"),
+                    },
+            },
+    }));
+}
+
+TEST_F(sql_parser_test, delete) {
+    sql_parser parser;
+    auto result = parser("-", "DELETE FROM T0;");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(first(result), (statement::delete_statement {
+            name::simple { "T0" },
     }));
 }
 
