@@ -1,5 +1,7 @@
 #include <mizugaki/ast/type/character_string.h>
 
+#include <mizugaki/ast/common/serializers.h>
+
 #include <mizugaki/ast/compare_utils.h>
 
 #include "utils.h"
@@ -86,6 +88,18 @@ bool operator!=(character_string const& a, character_string const& b) noexcept {
 bool character_string::equals(type const& other) const noexcept {
     return tags.contains(other.node_kind())
             && *this == unsafe_downcast<character_string>(other);
+}
+
+void character_string::serialize(takatori::serializer::object_acceptor& acceptor) const {
+    using namespace common::serializers;
+    using namespace std::string_view_literals;
+    auto obj = struct_block(acceptor, *this);
+    property(acceptor, "length"sv, length_);
+    region_property(acceptor, *this);
+}
+
+std::ostream& operator<<(std::ostream& out, character_string const& value) {
+    return common::serializers::print(out, value);
 }
 
 } // namespace mizugaki::ast::type

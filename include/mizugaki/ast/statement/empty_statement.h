@@ -61,6 +61,15 @@ public:
     
 protected:
     [[nodiscard]] bool equals(statement const& other) const noexcept override;
+    void serialize(::takatori::serializer::object_acceptor& acceptor) const override;
 };
+
+/**
+ * @brief appends string representation of the given value.
+ * @param out the target output
+ * @param value the target value
+ * @return the output
+ */
+std::ostream& operator<<(std::ostream& out, empty_statement const& value);
 
 } // namespace mizugaki::ast::statement

@@ -79,9 +79,18 @@ public:
 
 protected:
     [[nodiscard]] bool equals(join_specification const& other) const noexcept override;
+    void serialize(::takatori::serializer::object_acceptor& acceptor) const override;
 
 private:
     common::vector<::takatori::util::unique_object_ptr<name::simple>> columns_;
 };
+
+/**
+ * @brief appends string representation of the given value.
+ * @param out the target output
+ * @param value the target value
+ * @return the output
+ */
+std::ostream& operator<<(std::ostream& out, join_columns const& value);
 
 } // namespace mizugaki::ast::table

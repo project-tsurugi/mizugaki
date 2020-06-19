@@ -29,15 +29,15 @@ public:
 
     /**
      * @brief creates a new instance.
-     * @param operator_kind the reference operator
      * @param value the receiver expression
+     * @param operator_kind the reference operator
      * @param name the method name
      * @param arguments the method arguments
      * @param region the node region
      */
     explicit method_invocation(
-            operator_kind_type operator_kind,
             operand_type value,
+            operator_kind_type operator_kind,
             ::takatori::util::unique_object_ptr<name::simple> name,
             common::vector<operand_type> arguments,
             region_type region = {}) noexcept;
@@ -117,12 +117,21 @@ public:
 
 protected:
     [[nodiscard]] bool equals(expression const& other) const noexcept override;
+    void serialize(::takatori::serializer::object_acceptor& acceptor) const override;
 
 private:
-    operator_kind_type operator_kind_;
     operand_type value_;
+    operator_kind_type operator_kind_;
     ::takatori::util::unique_object_ptr<name::simple> name_;
     common::vector<operand_type> arguments_;
 };
+
+/**
+ * @brief appends string representation of the given value.
+ * @param out the target output
+ * @param value the target value
+ * @return the output
+ */
+std::ostream& operator<<(std::ostream& out, method_invocation const& value);
 
 } // namespace mizugaki::ast::scalar

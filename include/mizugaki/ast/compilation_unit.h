@@ -104,10 +104,28 @@ public:
      */
     friend bool operator!=(compilation_unit const& a, compilation_unit const& b) noexcept;
 
+    /**
+     * @brief dumps structure information of the given value into the target acceptor.
+     * @param acceptor the target acceptor
+     * @param value the target value
+     * @return the output
+     */
+    friend ::takatori::serializer::object_acceptor& operator<<(
+            ::takatori::serializer::object_acceptor& acceptor,
+            compilation_unit const& value);
+
 private:
     common::vector<::takatori::util::unique_object_ptr<statement::statement>> statements_;
     common::vector<region_type> comments_;
     ::takatori::util::maybe_shared_ptr<document_type const> document_;
 };
+
+/**
+ * @brief appends string representation of the given value.
+ * @param out the target output
+ * @param value the target value
+ * @return the output
+ */
+std::ostream& operator<<(std::ostream& out, compilation_unit const& value);
 
 } // namespace mizugaki::ast

@@ -91,9 +91,18 @@ public:
 
 protected:
     [[nodiscard]] bool equals(select_element const& other) const noexcept override;
+    void serialize(::takatori::serializer::object_acceptor& acceptor) const override;
 
 private:
     ::takatori::util::unique_object_ptr<scalar::expression> qualifier_;
 };
+
+/**
+ * @brief appends string representation of the given value.
+ * @param out the target output
+ * @param value the target value
+ * @return the output
+ */
+std::ostream& operator<<(std::ostream& out, select_asterisk const& value);
 
 } // namespace mizugaki::ast::query

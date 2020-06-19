@@ -54,4 +54,12 @@ protected:
     [[nodiscard]] virtual bool equals(statement const& other) const noexcept = 0;
 };
 
+/**
+ * @brief appends string representation of the given value.
+ * @param out the target output
+ * @param value the target value
+ * @return the output
+ */
+std::ostream& operator<<(std::ostream& out, statement const& value);
+
 } // namespace mizugaki::ast::statement

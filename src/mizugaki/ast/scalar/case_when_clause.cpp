@@ -2,6 +2,8 @@
 
 #include <takatori/util/clonable.h>
 
+#include <mizugaki/ast/common/serializers.h>
+
 #include <mizugaki/ast/compare_utils.h>
 
 namespace mizugaki::ast::scalar {
@@ -61,6 +63,20 @@ bool operator==(case_when_clause const& a, case_when_clause const& b) noexcept {
 
 bool operator!=(case_when_clause const& a, case_when_clause const& b) noexcept {
     return !(a == b);
+}
+
+::takatori::serializer::object_acceptor& operator<<(::takatori::serializer::object_acceptor& acceptor, case_when_clause const& value) {
+    using namespace common::serializers;
+    using namespace std::string_view_literals;
+    auto obj = struct_block(acceptor);
+    property(acceptor, "result"sv, *value.result_);
+    property(acceptor, "when"sv, *value.when_);
+    region_property(acceptor, value);
+    return acceptor;
+}
+
+std::ostream& operator<<(std::ostream& out, case_when_clause const& value) {
+    return common::serializers::print(out, value);
 }
 
 } // namespace mizugaki::ast::scalar

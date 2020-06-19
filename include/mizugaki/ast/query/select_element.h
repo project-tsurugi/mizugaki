@@ -54,4 +54,12 @@ protected:
     [[nodiscard]] virtual bool equals(select_element const& other) const noexcept = 0;
 };
 
+/**
+ * @brief appends string representation of the given value.
+ * @param out the target output
+ * @param value the target value
+ * @return the output
+ */
+std::ostream& operator<<(std::ostream& out, select_element const& value);
+
 } // namespace mizugaki::ast::query

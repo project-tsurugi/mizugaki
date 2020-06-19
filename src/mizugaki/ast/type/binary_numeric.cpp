@@ -1,5 +1,7 @@
 #include <mizugaki/ast/type/binary_numeric.h>
 
+#include <mizugaki/ast/common/serializers.h>
+
 #include <mizugaki/ast/compare_utils.h>
 
 #include "utils.h"
@@ -86,6 +88,18 @@ bool operator!=(binary_numeric const& a, binary_numeric const& b) noexcept {
 bool binary_numeric::equals(type const& other) const noexcept {
     return tags.contains(other.node_kind())
             && *this == unsafe_downcast<binary_numeric>(other);
+}
+
+void binary_numeric::serialize(takatori::serializer::object_acceptor& acceptor) const {
+    using namespace common::serializers;
+    using namespace std::string_view_literals;
+    auto obj = struct_block(acceptor, *this);
+    property(acceptor, "precision"sv, precision_);
+    region_property(acceptor, *this);
+}
+
+std::ostream& operator<<(std::ostream& out, binary_numeric const& value) {
+    return common::serializers::print(out, value);
 }
 
 } // namespace mizugaki::ast::type

@@ -1,5 +1,7 @@
 #include <mizugaki/ast/common/target_element.h>
 
+#include <mizugaki/ast/common/serializers.h>
+
 #include <mizugaki/ast/compare_utils.h>
 
 namespace mizugaki::ast::common {
@@ -59,6 +61,20 @@ bool operator==(target_element const& a, target_element const& b) noexcept {
 
 bool operator!=(target_element const& a, target_element const& b) noexcept {
     return !(a == b);
+}
+
+::takatori::serializer::object_acceptor& operator<<(::takatori::serializer::object_acceptor& acceptor, target_element const& value) {
+    using namespace common::serializers;
+    using namespace std::string_view_literals;
+    auto obj = struct_block(acceptor);
+    property(acceptor, "target"sv, *value.target_);
+    property(acceptor, "indicator"sv, *value.indicator_);
+    region_property(acceptor, value);
+    return acceptor;
+}
+
+std::ostream& operator<<(std::ostream& out, target_element const& value) {
+    return common::serializers::print(out, value);
 }
 
 } // namespace mizugaki::ast::common

@@ -155,10 +155,28 @@ public:
      */
     friend bool operator!=(sort_element const& a, sort_element const& b) noexcept;
 
+    /**
+     * @brief dumps structure information of the given value into the target acceptor.
+     * @param acceptor the target acceptor
+     * @param value the target value
+     * @return the output
+     */
+    friend ::takatori::serializer::object_acceptor& operator<<(
+            ::takatori::serializer::object_acceptor& acceptor,
+            sort_element const& value);
+
 private:
     common::clone_wrapper<::takatori::util::unique_object_ptr<scalar::expression>> key_ {};
     common::clone_wrapper<::takatori::util::unique_object_ptr<name::name>> collation_ {};
     std::optional<direction_type> direction_ {};
 };
+
+/**
+ * @brief appends string representation of the given value.
+ * @param out the target output
+ * @param value the target value
+ * @return the output
+ */
+std::ostream& operator<<(std::ostream& out, sort_element const& value);
 
 } // namespace mizugaki::ast::common

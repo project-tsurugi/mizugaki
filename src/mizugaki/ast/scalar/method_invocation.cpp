@@ -2,6 +2,8 @@
 
 #include <takatori/util/clonable.h>
 
+#include <mizugaki/ast/common/serializers.h>
+
 #include <mizugaki/ast/compare_utils.h>
 
 namespace mizugaki::ast::scalar {
@@ -13,22 +15,22 @@ using ::takatori::util::unique_object_ptr;
 using common::clone_vector;
 
 method_invocation::method_invocation(
-        operator_kind_type operator_kind,
         operand_type value,
+        operator_kind_type operator_kind,
         unique_object_ptr<name::simple> name,
         common::vector<operand_type> arguments,
         region_type region) noexcept:
     super { region },
-    operator_kind_ { operator_kind },
     value_ { std::move(value) },
+    operator_kind_ { operator_kind },
     name_ { std::move(name) },
     arguments_ { std::move(arguments) }
 {}
 
 method_invocation::method_invocation(method_invocation const& other, object_creator creator) :
     method_invocation {
-            other.operator_kind_,
             clone_unique(other.value_, creator),
+            other.operator_kind_,
             clone_unique(other.name_, creator),
             clone_vector(other.arguments_, creator),
             other.region(),
@@ -37,8 +39,8 @@ method_invocation::method_invocation(method_invocation const& other, object_crea
 
 method_invocation::method_invocation(method_invocation&& other, object_creator creator) :
     method_invocation {
-            other.operator_kind_,
             clone_unique(std::move(other.value_), creator),
+            other.operator_kind_,
             clone_unique(std::move(other.name_), creator),
             clone_vector(std::move(other.arguments_), creator),
             other.region(),
@@ -106,6 +108,21 @@ bool operator!=(method_invocation const& a, method_invocation const& b) noexcept
 bool method_invocation::equals(expression const& other) const noexcept {
     return other.node_kind() == tag
             && *this == unsafe_downcast<type_of_t<tag>>(other);
+}
+
+void method_invocation::serialize(takatori::serializer::object_acceptor& acceptor) const {
+    using namespace common::serializers;
+    using namespace std::string_view_literals;
+    auto obj = struct_block(acceptor, *this);
+    property(acceptor, "value"sv, value_);
+    property(acceptor, "operator_kind"sv, operator_kind_);
+    property(acceptor, "name"sv, name_);
+    property(acceptor, "arguments"sv, arguments_);
+    region_property(acceptor, *this);
+}
+
+std::ostream& operator<<(std::ostream& out, method_invocation const& value) {
+    return common::serializers::print(out, value);
 }
 
 } // namespace mizugaki::ast::scalar

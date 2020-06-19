@@ -206,6 +206,7 @@ public:
 
 protected:
     [[nodiscard]] bool equals(expression const& other) const noexcept override;
+    void serialize(::takatori::serializer::object_acceptor& acceptor) const override;
 
 private:
     std::optional<quantifier_type> quantifier_;
@@ -217,5 +218,13 @@ private:
     common::vector<common::sort_element> order_by_;
     ::takatori::util::unique_object_ptr<scalar::expression> limit_;
 };
+
+/**
+ * @brief appends string representation of the given value.
+ * @param out the target output
+ * @param value the target value
+ * @return the output
+ */
+std::ostream& operator<<(std::ostream& out, query const& value);
 
 } // namespace mizugaki::ast::query

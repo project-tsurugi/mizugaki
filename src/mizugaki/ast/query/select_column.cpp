@@ -2,6 +2,8 @@
 
 #include <takatori/util/clonable.h>
 
+#include <mizugaki/ast/common/serializers.h>
+
 #include <mizugaki/ast/compare_utils.h>
 
 namespace mizugaki::ast::query {
@@ -90,6 +92,19 @@ bool operator!=(select_column const& a, select_column const& b) noexcept {
 bool select_column::equals(select_element const& other) const noexcept {
     return other.node_kind() == tag
             && *this == unsafe_downcast<type_of_t<tag>>(other);
+}
+
+void select_column::serialize(takatori::serializer::object_acceptor& acceptor) const {
+    using namespace common::serializers;
+    using namespace std::string_view_literals;
+    auto obj = struct_block(acceptor, *this);
+    property(acceptor, "value"sv, value_);
+    property(acceptor, "name"sv, name_);
+    region_property(acceptor, *this);
+}
+
+std::ostream& operator<<(std::ostream& out, select_column const& value) {
+    return common::serializers::print(out, value);
 }
 
 } // namespace mizugaki::ast::query

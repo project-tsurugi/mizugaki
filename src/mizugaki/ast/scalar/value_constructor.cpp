@@ -1,5 +1,7 @@
 #include <mizugaki/ast/scalar/value_constructor.h>
 
+#include <mizugaki/ast/common/serializers.h>
+
 #include <mizugaki/ast/compare_utils.h>
 
 namespace mizugaki::ast::scalar {
@@ -89,6 +91,19 @@ bool operator!=(value_constructor const& a, value_constructor const& b) noexcept
 bool value_constructor::equals(expression const& other) const noexcept {
     return other.node_kind() == tag
             && *this == unsafe_downcast<type_of_t<tag>>(other);
+}
+
+void value_constructor::serialize(takatori::serializer::object_acceptor& acceptor) const {
+    using namespace common::serializers;
+    using namespace std::string_view_literals;
+    auto obj = struct_block(acceptor, *this);
+    property(acceptor, "operator_kind"sv, operator_kind_);
+    property(acceptor, "elements"sv, elements_);
+    region_property(acceptor, *this);
+}
+
+std::ostream& operator<<(std::ostream& out, value_constructor const& value) {
+    return common::serializers::print(out, value);
 }
 
 } // namespace mizugaki::ast::scalar

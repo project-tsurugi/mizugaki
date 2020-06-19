@@ -1,5 +1,7 @@
 #include <mizugaki/ast/literal/datetime.h>
 
+#include <mizugaki/ast/common/serializers.h>
+
 #include <mizugaki/ast/compare_utils.h>
 
 #include "utils.h"
@@ -79,6 +81,18 @@ bool datetime::equals(literal const& other) const noexcept {
     return tags.contains(other.node_kind())
             && *this == unsafe_downcast<datetime>(other);
 
+}
+
+void datetime::serialize(takatori::serializer::object_acceptor& acceptor) const {
+    using namespace common::serializers;
+    using namespace std::string_view_literals;
+    auto obj = struct_block(acceptor, *this);
+    property(acceptor, "value"sv, value_);
+    region_property(acceptor, *this);
+}
+
+std::ostream& operator<<(std::ostream& out, datetime const& value) {
+    return common::serializers::print(out, value);
 }
 
 } // namespace mizugaki::ast::literal

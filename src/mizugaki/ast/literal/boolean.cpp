@@ -1,5 +1,7 @@
 #include <mizugaki/ast/literal/boolean.h>
 
+#include <mizugaki/ast/common/serializers.h>
+
 #include <mizugaki/ast/compare_utils.h>
 
 namespace mizugaki::ast::literal {
@@ -62,6 +64,18 @@ bool operator!=(boolean const& a, boolean const& b) noexcept {
 bool boolean::equals(literal const& other) const noexcept {
     return other.node_kind() == tag
             && *this == unsafe_downcast<type_of_t<tag>>(other);
+}
+
+void boolean::serialize(::takatori::serializer::object_acceptor& acceptor) const {
+    using namespace common::serializers;
+    using namespace std::string_view_literals;
+    auto obj = struct_block(acceptor, *this);
+    property(acceptor, "value"sv, value_);
+    region_property(acceptor, *this);
+}
+
+std::ostream& operator<<(std::ostream& out, boolean const& value) {
+    return common::serializers::print(out, value);
 }
 
 } // namespace mizugaki::ast::literal

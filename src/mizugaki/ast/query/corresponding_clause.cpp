@@ -1,5 +1,7 @@
 #include <mizugaki/ast/query/corresponding_clause.h>
 
+#include <mizugaki/ast/common/serializers.h>
+
 #include <mizugaki/ast/compare_utils.h>
 
 namespace mizugaki::ast::query {
@@ -47,6 +49,19 @@ bool operator==(corresponding_clause const& a, corresponding_clause const& b) no
 
 bool operator!=(corresponding_clause const& a, corresponding_clause const& b) noexcept {
     return !(a == b);
+}
+
+::takatori::serializer::object_acceptor& operator<<(::takatori::serializer::object_acceptor& acceptor, corresponding_clause const& value) {
+    using namespace common::serializers;
+    using namespace std::string_view_literals;
+    auto obj = struct_block(acceptor);
+    property(acceptor, "column_names"sv, *value.column_names_);
+    region_property(acceptor, value);
+    return acceptor;
+}
+
+std::ostream& operator<<(std::ostream& out, corresponding_clause const& value) {
+    return common::serializers::print(out, value);
 }
 
 } // namespace mizugaki::ast::query

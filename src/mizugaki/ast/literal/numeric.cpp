@@ -1,5 +1,7 @@
 #include <mizugaki/ast/literal/numeric.h>
 
+#include <mizugaki/ast/common/serializers.h>
+
 #include <mizugaki/ast/compare_utils.h>
 
 #include "utils.h"
@@ -81,6 +83,7 @@ value_type const& numeric::unsigned_value() const noexcept {
 
 bool operator==(numeric const& a, numeric const& b) noexcept {
     return eq(a.value_kind_, b.value_kind_)
+            && eq(a.sign_, b.sign_)
             && eq(a.unsigned_value_, b.unsigned_value_);
 }
 
@@ -91,6 +94,19 @@ bool operator!=(numeric const& a, numeric const& b) noexcept {
 bool numeric::equals(literal const& other) const noexcept {
     return tags.contains(other.node_kind())
             && *this == unsafe_downcast<numeric>(other);
+}
+
+void numeric::serialize(takatori::serializer::object_acceptor& acceptor) const {
+    using namespace common::serializers;
+    using namespace std::string_view_literals;
+    auto obj = struct_block(acceptor, *this);
+    property(acceptor, "sign"sv, sign_);
+    property(acceptor, "unsigned_value"sv, unsigned_value_);
+    region_property(acceptor, *this);
+}
+
+std::ostream& operator<<(std::ostream& out, numeric const& value) {
+    return common::serializers::print(out, value);
 }
 
 } // namespace mizugaki::ast::literal

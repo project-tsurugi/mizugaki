@@ -4,6 +4,7 @@
 #include <functional>
 #include <ostream>
 
+#include <takatori/serializer/object_acceptor.h>
 #include <takatori/util/detect.h>
 
 #include <cstddef>
@@ -23,10 +24,10 @@ struct node_region {
     static constexpr position_type npos = static_cast<position_type>(-1);
 
     /// @brief the beginning position (inclusive, 0-origin).
-    position_type begin {}; // NOLINT(misc-non-private-member-variables-in-classes): for parser generator's convention
+    position_type begin { npos }; // NOLINT(misc-non-private-member-variables-in-classes): for parser generator's convention
 
     /// @brief the ending position (exclusive, 0-origin).
-    position_type end {}; // NOLINT(misc-non-private-member-variables-in-classes): for parser generator's convention
+    position_type end { npos }; // NOLINT(misc-non-private-member-variables-in-classes): for parser generator's convention
 
     /**
      * @brief creates a new instance with empty region.
@@ -118,6 +119,16 @@ struct node_region {
  * @return the output
  */
 std::ostream& operator<<(std::ostream& out, node_region value);
+
+/**
+ * @brief dumps structure information of the given value into the target acceptor.
+ * @param acceptor the target acceptor
+ * @param value the target value
+ * @return the output
+ */
+::takatori::serializer::object_acceptor& operator<<(
+        ::takatori::serializer::object_acceptor& acceptor,
+        node_region value);
 
 /// @cond IMPL_DEFS
 namespace impl {

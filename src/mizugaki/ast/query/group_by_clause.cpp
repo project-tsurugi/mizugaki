@@ -1,5 +1,7 @@
 #include <mizugaki/ast/query/group_by_clause.h>
 
+#include <mizugaki/ast/common/serializers.h>
+
 #include <mizugaki/ast/compare_utils.h>
 
 namespace mizugaki::ast::query {
@@ -57,6 +59,19 @@ bool operator==(group_by_clause const& a, group_by_clause const& b) noexcept {
 
 bool operator!=(group_by_clause const& a, group_by_clause const& b) noexcept {
     return !(a == b);
+}
+
+::takatori::serializer::object_acceptor& operator<<(::takatori::serializer::object_acceptor& acceptor, group_by_clause const& value) {
+    using namespace common::serializers;
+    using namespace std::string_view_literals;
+    auto obj = struct_block(acceptor);
+    property(acceptor, "elements"sv, *value.elements_);
+    region_property(acceptor, value);
+    return acceptor;
+}
+
+std::ostream& operator<<(std::ostream& out, group_by_clause const& value) {
+    return common::serializers::print(out, value);
 }
 
 } // namespace mizugaki::ast::query

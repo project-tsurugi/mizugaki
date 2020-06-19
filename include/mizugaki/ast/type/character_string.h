@@ -113,10 +113,19 @@ public:
 
 protected:
     [[nodiscard]] bool equals(type const& other) const noexcept override;
+    void serialize(::takatori::serializer::object_acceptor& acceptor) const override;
 
 private:
     type_kind_type type_kind_;
     std::optional<length_type> length_;
 };
+
+/**
+ * @brief appends string representation of the given value.
+ * @param out the target output
+ * @param value the target value
+ * @return the output
+ */
+std::ostream& operator<<(std::ostream& out, character_string const& value);
 
 } // namespace mizugaki::ast::type

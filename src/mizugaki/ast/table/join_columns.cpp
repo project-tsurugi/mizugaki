@@ -2,6 +2,8 @@
 
 #include <takatori/util/clonable.h>
 
+#include <mizugaki/ast/common/serializers.h>
+
 #include <mizugaki/ast/compare_utils.h>
 
 namespace mizugaki::ast::table {
@@ -66,6 +68,18 @@ bool operator!=(join_columns const& a, join_columns const& b) noexcept {
 bool join_columns::equals(join_specification const& other) const noexcept {
     return other.node_kind() == tag
             && *this == unsafe_downcast<type_of_t<tag>>(other);
+}
+
+void join_columns::serialize(takatori::serializer::object_acceptor& acceptor) const {
+    using namespace common::serializers;
+    using namespace std::string_view_literals;
+    auto obj = struct_block(acceptor, *this);
+    property(acceptor, "columns"sv, columns_);
+    region_property(acceptor, *this);
+}
+
+std::ostream& operator<<(std::ostream& out, join_columns const& value) {
+    return common::serializers::print(out, value);
 }
 
 } // namespace mizugaki::ast::table

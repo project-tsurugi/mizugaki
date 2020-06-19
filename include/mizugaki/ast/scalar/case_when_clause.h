@@ -77,9 +77,27 @@ public:
      */
     friend bool operator!=(case_when_clause const& a, case_when_clause const& b) noexcept;
 
+    /**
+     * @brief dumps structure information of the given value into the target acceptor.
+     * @param acceptor the target acceptor
+     * @param value the target value
+     * @return the output
+     */
+    friend ::takatori::serializer::object_acceptor& operator<<(
+            ::takatori::serializer::object_acceptor& acceptor,
+            case_when_clause const& value);
+
 private:
     common::clone_wrapper<::takatori::util::unique_object_ptr<expression>> when_;
     common::clone_wrapper<::takatori::util::unique_object_ptr<expression>> result_;
 };
+
+/**
+ * @brief appends string representation of the given value.
+ * @param out the target output
+ * @param value the target value
+ * @return the output
+ */
+std::ostream& operator<<(std::ostream& out, case_when_clause const& value);
 
 } // namespace mizugaki::ast::scalar

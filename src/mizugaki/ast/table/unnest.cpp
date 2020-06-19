@@ -2,6 +2,8 @@
 
 #include <takatori/util/clonable.h>
 
+#include <mizugaki/ast/common/serializers.h>
+
 #include <mizugaki/ast/compare_utils.h>
 
 namespace mizugaki::ast::table {
@@ -78,6 +80,19 @@ bool operator!=(unnest const& a, unnest const& b) noexcept {
 bool unnest::equals(table::expression const& other) const noexcept {
     return other.node_kind() == tag
             && *this == unsafe_downcast<type_of_t<tag>>(other);
+}
+
+void unnest::serialize(takatori::serializer::object_acceptor& acceptor) const {
+    using namespace common::serializers;
+    using namespace std::string_view_literals;
+    auto obj = struct_block(acceptor, *this);
+    property(acceptor, "expression"sv, expression_);
+    property(acceptor, "with_ordinality"sv, with_ordinality_);
+    region_property(acceptor, *this);
+}
+
+std::ostream& operator<<(std::ostream& out, unnest const& value) {
+    return common::serializers::print(out, value);
 }
 
 } // namespace mizugaki::ast::table

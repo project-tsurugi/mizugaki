@@ -1,6 +1,9 @@
 #pragma once
 
+#include <ostream>
+
 #include <takatori/util/object_creator.h>
+#include <takatori/serializer/object_acceptor.h>
 
 #include "element.h"
 
@@ -54,6 +57,31 @@ public:
 
     /// @copydoc clone()
     [[nodiscard]] virtual node* clone(::takatori::util::object_creator creator) && = 0;
+
+    /**
+     * @brief dumps structure information of the given value into the target acceptor.
+     * @param acceptor the target acceptor
+     * @param value the target value
+     * @return the output
+     */
+    friend ::takatori::serializer::object_acceptor& operator<<(
+            ::takatori::serializer::object_acceptor& acceptor,
+            node const& value);
+
+protected:
+    /**
+     * @brief serializes this object into the given acceptor.
+     * @param acceptor the target acceptor
+     */
+    virtual void serialize(::takatori::serializer::object_acceptor& acceptor) const = 0;
 };
+
+/**
+ * @brief appends string representation of the given value.
+ * @param out the target output
+ * @param value the target value
+ * @return the output
+ */
+std::ostream& operator<<(std::ostream& out, node const& value);
 
 } // namespace mizugaki::ast

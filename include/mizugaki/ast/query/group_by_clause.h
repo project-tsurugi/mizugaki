@@ -81,8 +81,26 @@ public:
      */
     friend bool operator!=(group_by_clause const& a, group_by_clause const& b) noexcept;
 
+    /**
+     * @brief dumps structure information of the given value into the target acceptor.
+     * @param acceptor the target acceptor
+     * @param value the target value
+     * @return the output
+     */
+    friend ::takatori::serializer::object_acceptor& operator<<(
+            ::takatori::serializer::object_acceptor& acceptor,
+            group_by_clause const& value);
+
 private:
     common::clone_wrapper<common::vector<::takatori::util::unique_object_ptr<element_type>>> elements_;
 };
+
+/**
+ * @brief appends string representation of the given value.
+ * @param out the target output
+ * @param value the target value
+ * @return the output
+ */
+std::ostream& operator<<(std::ostream& out, group_by_clause const& value);
 
 } // namespace mizugaki::ast::query

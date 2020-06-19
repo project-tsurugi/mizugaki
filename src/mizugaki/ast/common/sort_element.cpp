@@ -1,5 +1,6 @@
 #include <mizugaki/ast/common/sort_element.h>
 
+#include <mizugaki/ast/common/serializers.h>
 #include <mizugaki/ast/scalar/variable_reference.h>
 
 #include <mizugaki/ast/compare_utils.h>
@@ -131,6 +132,21 @@ bool operator==(sort_element const& a, sort_element const& b) noexcept {
 
 bool operator!=(sort_element const& a, sort_element const& b) noexcept {
     return !(a == b);
+}
+
+::takatori::serializer::object_acceptor& operator<<(takatori::serializer::object_acceptor& acceptor, sort_element const& value) {
+    using namespace common::serializers;
+    using namespace std::string_view_literals;
+    auto obj = struct_block(acceptor);
+    property(acceptor, "key"sv, *value.key_);
+    property(acceptor, "collation"sv, *value.collation_);
+    property(acceptor, "direction"sv, value.direction_);
+    region_property(acceptor, value);
+    return acceptor;
+}
+
+std::ostream& operator<<(std::ostream& out, sort_element const& value) {
+    return common::serializers::print(out, value);
 }
 
 } // namespace mizugaki::ast::common

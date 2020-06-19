@@ -105,11 +105,20 @@ public:
 
 protected:
     [[nodiscard]] bool equals(expression const& other) const noexcept override;
+    void serialize(::takatori::serializer::object_acceptor& acceptor) const override;
 
 private:
     operand_type value_;
     operator_kind_type operator_kind_;
     ::takatori::util::unique_object_ptr<name::simple> name_;
 };
+
+/**
+ * @brief appends string representation of the given value.
+ * @param out the target output
+ * @param value the target value
+ * @return the output
+ */
+std::ostream& operator<<(std::ostream& out, field_reference const& value);
 
 } // namespace mizugaki::ast::scalar

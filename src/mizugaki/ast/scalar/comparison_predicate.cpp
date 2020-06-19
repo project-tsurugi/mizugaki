@@ -2,6 +2,8 @@
 
 #include <takatori/util/clonable.h>
 
+#include <mizugaki/ast/common/serializers.h>
+
 #include <mizugaki/ast/compare_utils.h>
 
 namespace mizugaki::ast::scalar {
@@ -118,6 +120,21 @@ bool operator!=(comparison_predicate const& a, comparison_predicate const& b) no
 bool comparison_predicate::equals(expression const& other) const noexcept {
     return other.node_kind() == tag
             && *this == unsafe_downcast<type_of_t<tag>>(other);
+}
+
+void comparison_predicate::serialize(takatori::serializer::object_acceptor& acceptor) const {
+    using namespace common::serializers;
+    using namespace std::string_view_literals;
+    auto obj = struct_block(acceptor, *this);
+    property(acceptor, "left"sv, left_);
+    property(acceptor, "operator_kind"sv, operator_kind_);
+    property(acceptor, "quantifier"sv, quantifier_);
+    property(acceptor, "right"sv, right_);
+    region_property(acceptor, *this);
+}
+
+std::ostream& operator<<(std::ostream& out, comparison_predicate const& value) {
+    return common::serializers::print(out, value);
 }
 
 } // namespace mizugaki::ast::scalar

@@ -1,5 +1,7 @@
 #include <mizugaki/ast/query/with_element.h>
 
+#include <mizugaki/ast/common/serializers.h>
+
 #include <mizugaki/ast/compare_utils.h>
 
 namespace mizugaki::ast::query {
@@ -74,6 +76,21 @@ bool operator==(with_element const& a, with_element const& b) noexcept {
 
 bool operator!=(with_element const& a, with_element const& b) noexcept {
     return !(a == b);
+}
+
+::takatori::serializer::object_acceptor& operator<<(::takatori::serializer::object_acceptor& acceptor, with_element const& value) {
+    using namespace common::serializers;
+    using namespace std::string_view_literals;
+    auto obj = struct_block(acceptor);
+    property(acceptor, "name"sv, *value.name_);
+    property(acceptor, "expression"sv, *value.expression_);
+    property(acceptor, "column_names"sv, *value.column_names_);
+    region_property(acceptor, value);
+    return acceptor;
+}
+
+std::ostream& operator<<(std::ostream& out, with_element const& value) {
+    return common::serializers::print(out, value);
 }
 
 } // namespace mizugaki::ast::query

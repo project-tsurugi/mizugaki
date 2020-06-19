@@ -128,11 +128,20 @@ public:
 
 protected:
     [[nodiscard]] bool equals(type const& other) const noexcept override;
+    void serialize(::takatori::serializer::object_acceptor& acceptor) const override;
 
 private:
     type_kind_type type_kind_;
     std::optional<precision_type> precision_;
     std::optional<scale_type> scale_;
 };
+
+/**
+ * @brief appends string representation of the given value.
+ * @param out the target output
+ * @param value the target value
+ * @return the output
+ */
+std::ostream& operator<<(std::ostream& out, decimal const& value);
 
 } // namespace mizugaki::ast::type

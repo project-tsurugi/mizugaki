@@ -1,5 +1,7 @@
 #include <mizugaki/ast/node_region.h>
 
+#include <mizugaki/ast/common/serializers.h>
+
 #include <algorithm>
 
 namespace mizugaki::ast {
@@ -22,6 +24,17 @@ std::ostream& operator<<(std::ostream& out, node_region value) {
     return out << "region("
                << "begin=" << value.begin << ", "
                << "end=" << value.end << ")";
+}
+
+::takatori::serializer::object_acceptor& operator<<(::takatori::serializer::object_acceptor& acceptor, node_region value) {
+    using namespace common::serializers;
+    using namespace std::string_view_literals;
+    if (value.begin != node_region::npos && value.end != node_region::npos) {
+        auto obj = struct_block(acceptor);
+        property(acceptor, "begin"sv, value.begin);
+        property(acceptor, "end"sv, value.end);
+    }
+    return acceptor;
 }
 
 } // namespace mizugaki::ast

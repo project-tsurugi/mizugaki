@@ -1,5 +1,7 @@
 #include <mizugaki/ast/scalar/builtin_function_invocation.h>
 
+#include <mizugaki/ast/common/serializers.h>
+
 #include <mizugaki/ast/compare_utils.h>
 
 namespace mizugaki::ast::scalar {
@@ -78,6 +80,19 @@ bool operator!=(builtin_function_invocation const& a, builtin_function_invocatio
 bool builtin_function_invocation::equals(expression const& other) const noexcept {
     return other.node_kind() == tag
             && *this == unsafe_downcast<type_of_t<tag>>(other);
+}
+
+void builtin_function_invocation::serialize(takatori::serializer::object_acceptor& acceptor) const {
+    using namespace common::serializers;
+    using namespace std::string_view_literals;
+    auto obj = struct_block(acceptor, *this);
+    property(acceptor, "function"sv, function_);
+    property(acceptor, "arguments"sv, arguments_);
+    region_property(acceptor, *this);
+}
+
+std::ostream& operator<<(std::ostream& out, builtin_function_invocation const& value) {
+    return common::serializers::print(out, value);
 }
 
 } // namespace mizugaki::ast::scalar

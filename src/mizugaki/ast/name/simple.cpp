@@ -1,5 +1,7 @@
 #include <mizugaki/ast/name/simple.h>
 
+#include <mizugaki/ast/common/serializers.h>
+
 #include <mizugaki/ast/compare_utils.h>
 
 namespace mizugaki::ast::name {
@@ -68,6 +70,18 @@ bool operator!=(simple const& a, simple const& b) noexcept {
 bool simple::equals(name const& other) const noexcept {
     return other.node_kind() == tag
             && *this == unsafe_downcast<type_of_t<tag>>(other);
+}
+
+void simple::serialize(takatori::serializer::object_acceptor& acceptor) const {
+    using namespace common::serializers;
+    using namespace std::string_view_literals;
+    auto obj = struct_block(acceptor, *this);
+    property(acceptor, "identifier"sv, identifier_);
+    region_property(acceptor, *this);
+}
+
+std::ostream& operator<<(std::ostream& out, simple const& value) {
+    return common::serializers::print(out, value);
 }
 
 } // namespace mizugaki::ast::name

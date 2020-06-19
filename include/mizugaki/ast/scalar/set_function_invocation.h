@@ -104,11 +104,20 @@ public:
 
 protected:
     [[nodiscard]] bool equals(expression const& other) const noexcept override;
+    void serialize(::takatori::serializer::object_acceptor& acceptor) const override;
 
 private:
     ::takatori::util::unique_object_ptr<name::name> name_;
     std::optional<quantifier_type> quantifier_;
     common::vector<operand_type> arguments_;
 };
+
+/**
+ * @brief appends string representation of the given value.
+ * @param out the target output
+ * @param value the target value
+ * @return the output
+ */
+std::ostream& operator<<(std::ostream& out, set_function_invocation const& value);
 
 } // namespace mizugaki::ast::scalar

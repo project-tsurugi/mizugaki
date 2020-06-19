@@ -2,6 +2,8 @@
 
 #include <takatori/util/clonable.h>
 
+#include <mizugaki/ast/common/serializers.h>
+
 #include <mizugaki/ast/compare_utils.h>
 
 namespace mizugaki::ast::statement {
@@ -16,23 +18,23 @@ using common::clone_vector;
 update_statement::update_statement(
         unique_object_ptr<name::name> table_name,
         common::vector<set_element> elements,
-        unique_object_ptr<scalar::expression> condition,
+        unique_object_ptr<scalar::expression> where,
         region_type region) noexcept :
     super { region },
     table_name_ { std::move(table_name) },
     elements_ { std::move(elements) },
-    condition_ { std::move(condition) }
+    where_ { std::move(where) }
 {}
 
 update_statement::update_statement(
         name::name&& table_name,
         std::initializer_list<set_element> elements,
-        rvalue_ptr<scalar::expression> condition,
+        rvalue_ptr<scalar::expression> where,
         region_type region) noexcept :
     update_statement {
             clone_unique(std::move(table_name)),
             elements,
-            clone_unique(condition),
+            clone_unique(where),
             region,
     }
 {}
@@ -41,7 +43,7 @@ update_statement::update_statement(update_statement const& other, object_creator
     update_statement {
             clone_unique(other.table_name_, creator),
             clone_vector(other.elements_, creator),
-            clone_unique(other.condition_, creator),
+            clone_unique(other.where_, creator),
             other.region(),
     }
 {}
@@ -50,7 +52,7 @@ update_statement::update_statement(update_statement&& other, object_creator crea
     update_statement {
             clone_unique(std::move(other.table_name_), creator),
             clone_vector(std::move(other.elements_), creator),
-            clone_unique(std::move(other.condition_), creator),
+            clone_unique(std::move(other.where_), creator),
             other.region(),
     }
 {}
@@ -75,12 +77,12 @@ unique_object_ptr<name::name> const& update_statement::table_name() const noexce
     return table_name_;
 }
 
-unique_object_ptr<scalar::expression>& update_statement::condition() noexcept {
-    return condition_;
+unique_object_ptr<scalar::expression>& update_statement::where() noexcept {
+    return where_;
 }
 
-unique_object_ptr<scalar::expression> const& update_statement::condition() const noexcept {
-    return condition_;
+unique_object_ptr<scalar::expression> const& update_statement::where() const noexcept {
+    return where_;
 }
 
 bool operator==(update_statement const& a, update_statement const& b) noexcept {
@@ -89,7 +91,7 @@ bool operator==(update_statement const& a, update_statement const& b) noexcept {
     }
     return eq(a.table_name_, b.table_name_)
             && eq(a.elements_, b.elements_)
-            && eq(a.condition_, b.condition_);
+            && eq(a.where_, b.where_);
 }
 
 bool operator!=(update_statement const& a, update_statement const& b) noexcept {
@@ -99,6 +101,20 @@ bool operator!=(update_statement const& a, update_statement const& b) noexcept {
 bool update_statement::equals(statement const& other) const noexcept {
     return other.node_kind() == tag
             && *this == unsafe_downcast<type_of_t<tag>>(other);
+}
+
+void update_statement::serialize(takatori::serializer::object_acceptor& acceptor) const {
+    using namespace common::serializers;
+    using namespace std::string_view_literals;
+    auto obj = struct_block(acceptor, *this);
+    property(acceptor, "table_name"sv, table_name_);
+    property(acceptor, "elements"sv, elements_);
+    property(acceptor, "where"sv, where_);
+    region_property(acceptor, *this);
+}
+
+std::ostream& operator<<(std::ostream& out, update_statement const& value) {
+    return common::serializers::print(out, value);
 }
 
 } // namespace mizugaki::ast::statement

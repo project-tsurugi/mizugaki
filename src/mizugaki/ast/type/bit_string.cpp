@@ -1,5 +1,7 @@
 #include <mizugaki/ast/type/bit_string.h>
 
+#include <mizugaki/ast/common/serializers.h>
+
 #include <mizugaki/ast/compare_utils.h>
 
 #include "utils.h"
@@ -86,6 +88,19 @@ bool operator!=(bit_string const& a, bit_string const& b) noexcept {
 bool bit_string::equals(type const& other) const noexcept {
     return tags.contains(other.node_kind())
             && *this == unsafe_downcast<bit_string>(other);
+}
+
+void bit_string::serialize(takatori::serializer::object_acceptor& acceptor) const {
+    using namespace common::serializers;
+    using namespace std::string_view_literals;
+    auto obj = struct_block(acceptor, *this);
+    property(acceptor, "type_kind"sv, type_kind_);
+    property(acceptor, "length"sv, length_);
+    region_property(acceptor, *this);
+}
+
+std::ostream& operator<<(std::ostream& out, bit_string const& value) {
+    return common::serializers::print(out, value);
 }
 
 } // namespace mizugaki::ast::type

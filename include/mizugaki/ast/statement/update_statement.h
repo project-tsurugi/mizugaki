@@ -31,27 +31,27 @@ public:
      * @brief creates a new instance.
      * @param table_name the target table name
      * @param elements individual update elements
-     * @param condition the optional search condition, may be `CURRENT OF cursor_name`
+     * @param where expression the where clause, may be `CURRENT OF cursor_name`
      * @param region the node region
      */
     explicit update_statement(
             ::takatori::util::unique_object_ptr<name::name> table_name,
             common::vector<set_element> elements,
-            ::takatori::util::unique_object_ptr<scalar::expression> condition,
+            ::takatori::util::unique_object_ptr<scalar::expression> where,
             region_type region = {}) noexcept;
 
     /**
      * @brief creates a new instance.
      * @param table_name the target table name
      * @param elements individual update elements
-     * @param condition the optional search condition, may be `CURRENT OF cursor_name`
+     * @param where expression the where clause, may be `CURRENT OF cursor_name`
      * @param region the node region
      * @attention this will take copy of arguments
      */
     explicit update_statement(
             name::name&& table_name,
             std::initializer_list<set_element> elements,
-            ::takatori::util::rvalue_ptr<scalar::expression> condition = {},
+            ::takatori::util::rvalue_ptr<scalar::expression> where = {},
             region_type region = {}) noexcept;
 
     /**
@@ -101,10 +101,10 @@ public:
      * @return FIXME: `CURRENT OF cursor_name`
      * @return empty if this statement has no search condition
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<scalar::expression>& condition() noexcept;
+    [[nodiscard]] ::takatori::util::unique_object_ptr<scalar::expression>& where() noexcept;
 
     /// @brief expression()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<scalar::expression> const& condition() const noexcept;
+    [[nodiscard]] ::takatori::util::unique_object_ptr<scalar::expression> const& where() const noexcept;
 
     /**
      * @brief compares two values.
@@ -127,11 +127,20 @@ public:
 
 protected:
     [[nodiscard]] bool equals(statement const& other) const noexcept override;
+    void serialize(::takatori::serializer::object_acceptor& acceptor) const override;
 
 private:
     ::takatori::util::unique_object_ptr<name::name> table_name_;
     common::vector<set_element> elements_;
-    ::takatori::util::unique_object_ptr<scalar::expression> condition_;
+    ::takatori::util::unique_object_ptr<scalar::expression> where_;
 };
+
+/**
+ * @brief appends string representation of the given value.
+ * @param out the target output
+ * @param value the target value
+ * @return the output
+ */
+std::ostream& operator<<(std::ostream& out, update_statement const& value);
 
 } // namespace mizugaki::ast::statement

@@ -1,6 +1,7 @@
 #include <mizugaki/ast/query/query.h>
 
 #include <mizugaki/ast/common/optional.h>
+#include <mizugaki/ast/common/serializers.h>
 
 #include <mizugaki/ast/compare_utils.h>
 
@@ -184,6 +185,25 @@ bool operator!=(query const& a, query const& b) noexcept {
 bool query::equals(expression const& other) const noexcept {
     return other.node_kind() == tag
             && *this == unsafe_downcast<type_of_t<tag>>(other);
+}
+
+void query::serialize(takatori::serializer::object_acceptor& acceptor) const {
+    using namespace common::serializers;
+    using namespace std::string_view_literals;
+    auto obj = struct_block(acceptor, *this);
+    property(acceptor, "quantifier"sv, quantifier_);
+    property(acceptor, "elements"sv, elements_);
+    property(acceptor, "from"sv, from_);
+    property(acceptor, "where"sv, where_);
+    property(acceptor, "group_by"sv, group_by_);
+    property(acceptor, "having"sv, having_);
+    property(acceptor, "order_by"sv, order_by_);
+    property(acceptor, "limit"sv, limit_);
+    region_property(acceptor, *this);
+}
+
+std::ostream& operator<<(std::ostream& out, query const& value) {
+    return common::serializers::print(out, value);
 }
 
 } // namespace mizugaki::ast::query

@@ -1,5 +1,7 @@
 #include <mizugaki/ast/compilation_unit.h>
 
+#include <mizugaki/ast/common/serializers.h>
+
 #include <mizugaki/ast/compare_utils.h>
 
 namespace mizugaki::ast {
@@ -77,6 +79,22 @@ bool operator==(compilation_unit const& a, compilation_unit const& b) noexcept {
 
 bool operator!=(compilation_unit const& a, compilation_unit const& b) noexcept {
     return !(a == b);
+}
+
+::takatori::serializer::object_acceptor& operator<<(::takatori::serializer::object_acceptor& acceptor, compilation_unit const& value) {
+    using namespace common::serializers;
+    using namespace std::string_view_literals;
+    auto obj = struct_block(acceptor);
+    property(acceptor, "statements"sv, value.statements_);
+    property(acceptor, "comments"sv, value.comments_);
+    if (value.document_) {
+        property(acceptor, "document"sv, value.document_->location());
+    }
+    return acceptor;
+}
+
+std::ostream& operator<<(std::ostream& out, compilation_unit const& value) {
+    return common::serializers::print(out, value);
 }
 
 } // namespace mizugaki::ast

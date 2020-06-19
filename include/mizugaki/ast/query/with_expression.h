@@ -33,13 +33,13 @@ public:
      * @brief creates a new instance.
      * @param is_recursive whether or not `RECURSIVE` is specified
      * @param elements the named query declarations
-     * @param body the body expression
+     * @param expression the body expression
      * @param region the node region
      */
     explicit with_expression(
             bool_type is_recursive,
             common::vector<element_type> elements,
-            ::takatori::util::unique_object_ptr<expression> body,
+            ::takatori::util::unique_object_ptr<ast::query::expression> expression,
             region_type region = {}) noexcept;
 
     /**
@@ -74,10 +74,10 @@ public:
      * @brief returns the body expression.
      * @return the body expression
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<expression>& body() noexcept;
+    [[nodiscard]] ::takatori::util::unique_object_ptr<ast::query::expression>& expression() noexcept;
 
-    /// @copydoc body()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<expression> const& body() const noexcept;
+    /// @copydoc expression()
+    [[nodiscard]] ::takatori::util::unique_object_ptr<ast::query::expression> const& expression() const noexcept;
 
     /**
      * @brief returns whether or not `RECURSIVE` is specified.
@@ -108,12 +108,21 @@ public:
     friend bool operator!=(with_expression const& a, with_expression const& b) noexcept;
 
 protected:
-    [[nodiscard]] bool equals(expression const& other) const noexcept override;
+    [[nodiscard]] bool equals(ast::query::expression const& other) const noexcept override;
+    void serialize(::takatori::serializer::object_acceptor& acceptor) const override;
 
 private:
     bool_type is_recursive_;
     common::vector<element_type> elements_;
-    ::takatori::util::unique_object_ptr<expression> body_;
+    ::takatori::util::unique_object_ptr<ast::query::expression> expression_;
 };
+
+/**
+ * @brief appends string representation of the given value.
+ * @param out the target output
+ * @param value the target value
+ * @return the output
+ */
+std::ostream& operator<<(std::ostream& out, with_expression const& value);
 
 } // namespace mizugaki::ast::query

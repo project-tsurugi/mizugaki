@@ -2,8 +2,10 @@
 
 #include <takatori/util/clonable.h>
 
-#include <mizugaki/ast/compare_utils.h>
+#include <mizugaki/ast/common/serializers.h>
 #include <mizugaki/ast/name/simple.h>
+
+#include <mizugaki/ast/compare_utils.h>
 
 namespace mizugaki::ast::name {
 
@@ -88,6 +90,19 @@ bool operator!=(qualified const& a, qualified const& b) noexcept {
 bool qualified::equals(name const& other) const noexcept {
     return other.node_kind() == tag
             && *this == unsafe_downcast<type_of_t<tag>>(other);
+}
+
+void qualified::serialize(takatori::serializer::object_acceptor& acceptor) const {
+    using namespace common::serializers;
+    using namespace std::string_view_literals;
+    auto obj = struct_block(acceptor, *this);
+    property(acceptor, "last"sv, last_);
+    property(acceptor, "qualifier"sv, qualifier_);
+    region_property(acceptor, *this);
+}
+
+std::ostream& operator<<(std::ostream& out, qualified const& value) {
+    return common::serializers::print(out, value);
 }
 
 } // namespace mizugaki::ast::name

@@ -98,10 +98,19 @@ public:
 
 protected:
     [[nodiscard]] bool equals(literal const& other) const noexcept override;
+    void serialize(::takatori::serializer::object_acceptor& acceptor) const override;
 
 private:
     value_kind_type value_kind_;
     value_type value_;
 };
+
+/**
+ * @brief appends string representation of the given value.
+ * @param out the target output
+ * @param value the target value
+ * @return the output
+ */
+std::ostream& operator<<(std::ostream& out, datetime const& value);
 
 } // namespace mizugaki::ast::literal

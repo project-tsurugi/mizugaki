@@ -83,9 +83,27 @@ public:
      */
     friend bool operator!=(correlation_clause const& a, correlation_clause const& b) noexcept;
 
+    /**
+     * @brief dumps structure information of the given value into the target acceptor.
+     * @param acceptor the target acceptor
+     * @param value the target value
+     * @return the output
+     */
+    friend ::takatori::serializer::object_acceptor& operator<<(
+            ::takatori::serializer::object_acceptor& acceptor,
+            correlation_clause const& value);
+
 private:
     common::clone_wrapper<::takatori::util::unique_object_ptr<name::simple>> correlation_name_ {};
     common::clone_wrapper<common::vector<::takatori::util::unique_object_ptr<name::simple>>> column_names_ {};
 };
+
+/**
+ * @brief appends string representation of the given value.
+ * @param out the target output
+ * @param value the target value
+ * @return the output
+ */
+std::ostream& operator<<(std::ostream& out, correlation_clause const& value);
 
 } // namespace mizugaki::ast::table

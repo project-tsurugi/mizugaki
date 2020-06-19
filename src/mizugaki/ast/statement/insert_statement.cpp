@@ -2,6 +2,8 @@
 
 #include <takatori/util/clonable.h>
 
+#include <mizugaki/ast/common/serializers.h>
+
 #include <mizugaki/ast/compare_utils.h>
 
 namespace mizugaki::ast::statement {
@@ -108,6 +110,20 @@ bool operator!=(insert_statement const& a, insert_statement const& b) noexcept {
 bool insert_statement::equals(statement const& other) const noexcept {
     return other.node_kind() == tag
             && *this == unsafe_downcast<type_of_t<tag>>(other);
+}
+
+void insert_statement::serialize(takatori::serializer::object_acceptor& acceptor) const {
+    using namespace common::serializers;
+    using namespace std::string_view_literals;
+    auto obj = struct_block(acceptor, *this);
+    property(acceptor, "table_name"sv, table_name_);
+    property(acceptor, "columns"sv, columns_);
+    property(acceptor, "expression"sv, expression_);
+    region_property(acceptor, *this);
+}
+
+std::ostream& operator<<(std::ostream& out, insert_statement const& value) {
+    return common::serializers::print(out, value);
 }
 
 } // namespace mizugaki::ast::statement

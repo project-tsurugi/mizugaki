@@ -35,11 +35,13 @@ ADD_FLEX_BISON_DEPENDENCY(
 add_library(mizugaki
 
     # AST models
+    mizugaki/ast/node.cpp
     mizugaki/ast/node_region.cpp
     mizugaki/ast/compilation_unit.cpp
 
     mizugaki/ast/common/sort_element.cpp
     mizugaki/ast/common/target_element.cpp
+    mizugaki/ast/common/serializers.cpp
 
     mizugaki/ast/name/name.cpp
     mizugaki/ast/name/simple.cpp

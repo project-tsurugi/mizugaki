@@ -1,5 +1,7 @@
 #include <mizugaki/ast/type/decimal.h>
 
+#include <mizugaki/ast/common/serializers.h>
+
 #include <mizugaki/ast/compare_utils.h>
 
 #include "utils.h"
@@ -100,6 +102,19 @@ bool operator!=(decimal const& a, decimal const& b) noexcept {
 bool decimal::equals(type const& other) const noexcept {
     return tags.contains(other.node_kind())
             && *this == unsafe_downcast<decimal>(other);
+}
+
+void decimal::serialize(takatori::serializer::object_acceptor& acceptor) const {
+    using namespace common::serializers;
+    using namespace std::string_view_literals;
+    auto obj = struct_block(acceptor, *this);
+    property(acceptor, "precision"sv, precision_);
+    property(acceptor, "scale"sv, scale_);
+    region_property(acceptor, *this);
+}
+
+std::ostream& operator<<(std::ostream& out, decimal const& value) {
+    return common::serializers::print(out, value);
 }
 
 } // namespace mizugaki::ast::type

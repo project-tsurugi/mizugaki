@@ -87,10 +87,22 @@ public:
         return !(a == b);
     }
 
+    /**
+     * @brief appends string representation of the given value.
+     * @param out the target output
+     * @param value the target value
+     * @return the output
+     */
+    friend std::ostream& operator<<(std::ostream& out, special const& value) {
+        return out << static_cast<literal const&>(value);
+    }
+
 protected:
     [[nodiscard]] bool equals(literal const& other) const noexcept override {
         return other.node_kind() == tag;
     }
+
+    using literal::serialize;
 };
 
 } // namespace mizugaki::ast::literal

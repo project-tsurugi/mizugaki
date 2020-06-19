@@ -79,9 +79,18 @@ public:
 
 protected:
     [[nodiscard]] bool equals(scalar::expression const& other) const noexcept override;
+    void serialize(::takatori::serializer::object_acceptor& acceptor) const override;
 
 private:
     ::takatori::util::unique_object_ptr<query::expression> expression_;
 };
+
+/**
+ * @brief appends string representation of the given value.
+ * @param out the target output
+ * @param value the target value
+ * @return the output
+ */
+std::ostream& operator<<(std::ostream& out, subquery const& value);
 
 } // namespace mizugaki::ast::scalar

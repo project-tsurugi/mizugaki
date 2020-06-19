@@ -1,5 +1,7 @@
 #include <mizugaki/ast/query/table_value_constructor.h>
 
+#include <mizugaki/ast/common/serializers.h>
+
 #include <mizugaki/ast/compare_utils.h>
 
 namespace mizugaki::ast::query {
@@ -74,6 +76,18 @@ bool operator!=(table_value_constructor const& a, table_value_constructor const&
 bool table_value_constructor::equals(expression const& other) const noexcept {
     return other.node_kind() == tag
             && *this == unsafe_downcast<type_of_t<tag>>(other);
+}
+
+void table_value_constructor::serialize(takatori::serializer::object_acceptor& acceptor) const {
+    using namespace common::serializers;
+    using namespace std::string_view_literals;
+    auto obj = struct_block(acceptor, *this);
+    property(acceptor, "elements"sv, elements_);
+    region_property(acceptor, *this);
+}
+
+std::ostream& operator<<(std::ostream& out, table_value_constructor const& value) {
+    return common::serializers::print(out, value);
 }
 
 } // namespace mizugaki::ast::query

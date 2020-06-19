@@ -1,5 +1,7 @@
 #include <mizugaki/ast/literal/string.h> // NOLINT
 
+#include <mizugaki/ast/common/serializers.h>
+
 #include <mizugaki/ast/compare_utils.h>
 
 #include "utils.h"
@@ -93,6 +95,19 @@ bool operator!=(string const& a, string const& b) noexcept {
 bool string::equals(literal const& other) const noexcept {
     return tags.contains(other.node_kind())
             && *this == unsafe_downcast<string>(other);
+}
+
+void string::serialize(takatori::serializer::object_acceptor& acceptor) const {
+    using namespace common::serializers;
+    using namespace std::string_view_literals;
+    auto obj = struct_block(acceptor, *this);
+    property(acceptor, "value"sv, value_);
+    property(acceptor, "concatenations"sv, concatenations_);
+    region_property(acceptor, *this);
+}
+
+std::ostream& operator<<(std::ostream& out, string const& value) {
+    return common::serializers::print(out, value);
 }
 
 } // namespace mizugaki::ast::literal

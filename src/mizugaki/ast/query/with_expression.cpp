@@ -2,6 +2,8 @@
 
 #include <takatori/util/clonable.h>
 
+#include <mizugaki/ast/common/serializers.h>
+
 #include <mizugaki/ast/compare_utils.h>
 
 namespace mizugaki::ast::query {
@@ -15,19 +17,19 @@ using common::clone_vector;
 with_expression::with_expression(
         bool_type is_recursive,
         common::vector<element_type> elements,
-        unique_object_ptr<expression> body,
+        unique_object_ptr<ast::query::expression> expression,
         region_type region) noexcept :
     super { region },
     is_recursive_ { is_recursive },
     elements_ { std::move(elements) },
-    body_ { std::move(body) }
+    expression_ { std::move(expression) }
 {}
 
 with_expression::with_expression(with_expression const& other, object_creator creator) :
     with_expression {
             other.is_recursive_,
             clone_vector(other.elements_, creator),
-            clone_unique(other.body_, creator),
+            clone_unique(other.expression_, creator),
             other.region(),
     }
 {}
@@ -36,7 +38,7 @@ with_expression::with_expression(with_expression&& other, object_creator creator
     with_expression {
             other.is_recursive_,
             clone_vector(other.elements_, creator),
-            clone_unique(std::move(other.body_), creator),
+            clone_unique(std::move(other.expression_), creator),
             other.region(),
     }
 {}
@@ -61,12 +63,12 @@ common::vector<with_expression::element_type> const& with_expression::elements()
     return elements_;
 }
 
-unique_object_ptr<expression>& with_expression::body() noexcept {
-    return body_;
+unique_object_ptr<ast::query::expression>& with_expression::expression() noexcept {
+    return expression_;
 }
 
-unique_object_ptr<expression> const& with_expression::body() const noexcept {
-    return body_;
+unique_object_ptr<ast::query::expression> const& with_expression::expression() const noexcept {
+    return expression_;
 }
 
 with_expression::bool_type& with_expression::is_recursive() noexcept {
@@ -82,7 +84,7 @@ bool operator==(with_expression const& a, with_expression const& b) noexcept {
         return false;
     }
     return eq(a.elements_, b.elements_)
-            && eq(a.body_, b.body_)
+            && eq(a.expression_, b.expression_)
             && eq(a.is_recursive_, b.is_recursive_);
 }
 
@@ -90,9 +92,23 @@ bool operator!=(with_expression const& a, with_expression const& b) noexcept {
     return !(a == b);
 }
 
-bool with_expression::equals(expression const& other) const noexcept {
+bool with_expression::equals(ast::query::expression const& other) const noexcept {
     return other.node_kind() == tag
             && *this == unsafe_downcast<type_of_t<tag>>(other);
+}
+
+void with_expression::serialize(takatori::serializer::object_acceptor& acceptor) const {
+    using namespace common::serializers;
+    using namespace std::string_view_literals;
+    auto obj = struct_block(acceptor, *this);
+    property(acceptor, "is_recursive"sv, is_recursive_);
+    property(acceptor, "elements"sv, elements_);
+    property(acceptor, "expression"sv, expression_);
+    region_property(acceptor, *this);
+}
+
+std::ostream& operator<<(std::ostream& out, with_expression const& value) {
+    return common::serializers::print(out, value);
 }
 
 } // namespace mizugaki::ast::query

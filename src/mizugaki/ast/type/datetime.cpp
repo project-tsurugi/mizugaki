@@ -1,5 +1,7 @@
 #include <mizugaki/ast/type/datetime.h>
 
+#include <mizugaki/ast/common/serializers.h>
+
 #include <mizugaki/ast/compare_utils.h>
 
 #include "utils.h"
@@ -82,6 +84,18 @@ bool operator!=(datetime const& a, datetime const& b) noexcept {
 bool datetime::equals(type const& other) const noexcept {
     return tags.contains(other.node_kind())
             && *this == unsafe_downcast<datetime>(other);
+}
+
+void datetime::serialize(takatori::serializer::object_acceptor& acceptor) const {
+    using namespace common::serializers;
+    using namespace std::string_view_literals;
+    auto obj = struct_block(acceptor, *this);
+    property(acceptor, "has_time_zone"sv, has_time_zone_);
+    region_property(acceptor, *this);
+}
+
+std::ostream& operator<<(std::ostream& out, datetime const& value) {
+    return common::serializers::print(out, value);
 }
 
 } // namespace mizugaki::ast::type
