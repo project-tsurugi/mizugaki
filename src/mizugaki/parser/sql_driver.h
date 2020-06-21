@@ -1,8 +1,14 @@
 #pragma once
 
+#include <cstddef>
+
 #include <takatori/util/object_creator.h>
 
 #include <mizugaki/ast/common/vector.h>
+#include <mizugaki/ast/name/name.h>
+#include <mizugaki/ast/name/simple.h>
+#include <mizugaki/ast/type/type.h>
+#include <mizugaki/ast/scalar/expression.h>
 #include <mizugaki/ast/statement/statement.h>
 
 #include <mizugaki/parser/sql_parser_result.h>
@@ -53,12 +59,27 @@ public:
         return result;
     }
 
+    template<class T, class... Args>
+    [[nodiscard]] ast::common::vector<node_ptr<T>> to_node_vector(Args&&... args) {
+        auto result = node_vector<T>(sizeof...(args));
+        (..., result.emplace_back(std::forward<Args>(args)));
+        return result;
+    }
+
     template<class T>
     [[nodiscard]] ast::common::vector<T> element_vector(std::size_t capacity = 0) {
         ast::common::vector<T> result { creator_.allocator() };
         result.reserve(capacity);
         return result;
     }
+
+    [[nodiscard]] std::size_t to_size(ast::common::chars const& str);
+
+    [[nodiscard]] node_ptr<ast::name::name> try_build_identifier_chain(
+            node_ptr<ast::scalar::expression>& qualifier,
+            node_ptr<ast::name::simple>& identifier);
+
+    [[nodiscard]] node_ptr<ast::type::type> try_build_type(node_ptr<ast::scalar::expression>& expr);
 
 private:
     ::takatori::util::maybe_shared_ptr<document_type const> document_;

@@ -22,13 +22,13 @@ public:
     using type_kind_type = common::regioned<node_kind_type>;
 
     /// @brief the precision type.
-    using precision_type = std::size_t;
+    using precision_type = common::regioned<std::size_t>;
 
     /// @brief the scale type.
-    using scale_type = std::size_t;
+    using scale_type = common::regioned<std::size_t>;
 
     /// @brief the flexible precision.
-    static constexpr precision_type flexible_precision = static_cast<precision_type>(-1);
+    static constexpr std::size_t flexible_precision = static_cast<std::size_t>(-1);
 
     /// @brief the available node kind of this.
     static constexpr kind_set tags {

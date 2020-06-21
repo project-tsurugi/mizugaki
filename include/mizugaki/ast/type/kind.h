@@ -16,6 +16,7 @@ class decimal;
 class binary_numeric;
 class datetime;
 class interval;
+class user_defined;
 
 /**
  * @brief represents a kind of type.
@@ -152,14 +153,18 @@ enum class kind {
      */
     interval,
 
-    // FIXME: UDT
+    /**
+     * @brief user defined types.
+     * @see user_defined
+     */
+    user_defined,
 };
 
 /// @brief set of type kind.
 using kind_set = ::takatori::util::enum_set<
         kind,
         kind::unknown,
-        kind::interval>;
+        kind::user_defined>;
 
 /**
  * @brief provides the implementation type of the type kind.
@@ -183,7 +188,7 @@ template<> struct type_of<kind, kind::character> : ::takatori::util::meta_type<c
 /// @brief provides implementation type of kind::character_varying.
 template<> struct type_of<kind, kind::character_varying> : ::takatori::util::meta_type<character_string> {};
 
-// @brief provides implementation type of kind::character_large_object.
+// /// @brief provides implementation type of kind::character_large_object.
 // FIXME: template<> struct type_of<kind, kind::character_large_object> : ::takatori::util::meta_type<> {};
 
 /// @brief provides implementation type of kind::bit.
@@ -192,7 +197,7 @@ template<> struct type_of<kind, kind::bit> : ::takatori::util::meta_type<bit_str
 /// @brief provides implementation type of kind::bit_varying.
 template<> struct type_of<kind, kind::bit_varying> : ::takatori::util::meta_type<bit_string> {};
 
-// @brief provides implementation type of kind::binary_large_object.
+// // @brief provides implementation type of kind::binary_large_object.
 // FIXME: template<> struct type_of<kind, kind::binary_large_object> : ::takatori::util::meta_type<> {};
 
 /// @brief provides implementation type of kind::numeric.
@@ -240,6 +245,9 @@ template<> struct type_of<kind, kind::timestamp> : ::takatori::util::meta_type<d
 /// @brief provides implementation type of kind::interval.
 template<> struct type_of<kind, kind::interval> : ::takatori::util::meta_type<interval> {};
 
+/// @brief provides implementation type of kind::user_defined.
+template<> struct type_of<kind, kind::user_defined> : ::takatori::util::meta_type<user_defined> {};
+
 /**
  * @brief returns string representation of the value.
  * @param value the target value
@@ -270,6 +278,7 @@ inline constexpr std::string_view to_string_view(kind value) noexcept {
         case kind::time: return "time"sv;
         case kind::timestamp: return "timestamp"sv;
         case kind::interval: return "interval"sv;
+        case kind::user_defined: return "user_defined"sv;
     }
     std::abort();
 }

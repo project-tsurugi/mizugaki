@@ -1,9 +1,12 @@
 #pragma once
 
+#include <optional>
+
 #include <mizugaki/ast/common/chars.h>
 #include <mizugaki/ast/common/regioned.h>
 
 #include "literal.h"
+#include "sign.h"
 
 namespace mizugaki::ast::literal {
 
@@ -15,6 +18,9 @@ class interval final : public literal {
     using super = literal;
 
 public:
+    /// @brief the sign type.
+    using sign_type = common::regioned<::mizugaki::ast::literal::sign>;
+
     /// @brief the value type.
     using value_type = common::regioned<common::chars>;
 
@@ -25,10 +31,12 @@ public:
 
     /**
      * @brief creates a new instance.
+     * @param sign the numeric sign
      * @param value quoted string representation of the value
      * @param region the node region
      */
     explicit interval(
+            std::optional<sign_type> sign,
             value_type value,
             region_type region = {}) noexcept;
 
@@ -50,6 +58,15 @@ public:
     [[nodiscard]] interval* clone(::takatori::util::object_creator creator) && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
+
+    /**
+     * @brief returns the numeric sign.
+     * @return the numeric sign
+     */
+    [[nodiscard]] std::optional<sign_type>& sign() noexcept;
+
+    /// @copydoc sign()
+    [[nodiscard]] std::optional<sign_type> const& sign() const noexcept;
 
     /**
      * @brief returns the quoted string representation of the value.
@@ -86,6 +103,7 @@ protected:
     void serialize(::takatori::serializer::object_acceptor& acceptor) const override;
 
 private:
+    std::optional<sign_type> sign_;
     value_type value_;
 };
 

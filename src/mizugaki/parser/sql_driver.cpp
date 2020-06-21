@@ -1,7 +1,17 @@
 #include <mizugaki/parser/sql_driver.h>
 
+#include <cerrno>
+#include <cstdlib>
+
+#include <takatori/util/downcast.h>
+
+#include <mizugaki/ast/name/qualified.h>
+#include <mizugaki/ast/type/user_defined.h>
+#include <mizugaki/ast/scalar/variable_reference.h>
+
 namespace mizugaki::parser {
 
+using ::takatori::util::unsafe_downcast;
 using ::takatori::util::maybe_shared_ptr;
 using ::takatori::util::object_creator;
 
@@ -56,6 +66,35 @@ ast::common::vector<sql_driver::location_type>& sql_driver::comments() noexcept 
 
 ast::common::vector<sql_driver::location_type> const& sql_driver::comments() const noexcept {
     return comments_;
+}
+
+sql_driver::node_ptr<ast::name::name> sql_driver::try_build_identifier_chain(
+        node_ptr<ast::scalar::expression>& qualifier,
+        node_ptr<ast::name::simple>& identifier) {
+    if (qualifier->node_kind() == ast::scalar::variable_reference::tag) {
+        auto&& v = unsafe_downcast<ast::scalar::variable_reference>(*qualifier);
+        auto r = qualifier->region() | identifier->region();
+        return node<ast::name::qualified>(std::move(v.name()), std::move(identifier), r);
+    }
+    return {};
+}
+
+sql_driver::node_ptr<ast::type::type> sql_driver::try_build_type(node_ptr<ast::scalar::expression>& expr) {
+    if (expr->node_kind() == ast::scalar::variable_reference::tag) {
+        auto&& v = unsafe_downcast<ast::scalar::variable_reference>(*expr);
+        return node<ast::type::user_defined>(std::move(v.name()), v.region());
+    }
+    return {};
+}
+
+std::size_t sql_driver::to_size(ast::common::chars const& str) { // NOLINT: non-static for calling conv
+    errno = 0;
+    auto result = std::strtoull(str.data(), nullptr, 10);
+    if (errno == ERANGE) {
+        // FIXME: error
+        return 0;
+    }
+    return result;
 }
 
 } // namespace mizugaki::parser

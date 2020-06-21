@@ -3,7 +3,7 @@
 #include <takatori/util/object_creator.h>
 
 #include <mizugaki/ast/common/regioned.h>
-#include <mizugaki/ast/common/vector.h>
+#include <mizugaki/ast/query/expression.h>
 
 #include "expression.h"
 
@@ -11,8 +11,6 @@ namespace mizugaki::ast::scalar {
 
 /**
  * @brief processes a quantified comparison.
- * @details This only supports `in` operator with value list.
- *      Otherwise, `in` operator with table subquery is represented in binary_expresion with `in` or `not_in`.
  * @note `8.4 <in predicate>`
  */
 class in_predicate final : public expression {
@@ -30,13 +28,13 @@ public:
      * @brief creates a new instance.
      * @param left the left term
      * @param is_not whether or not `NOT` is declared
-     * @param right the right term as (row) expression list
+     * @param right the right term
      * @param region the node region
      */
     explicit in_predicate(
             operand_type left,
             bool_type is_not,
-            common::vector<operand_type> right,
+            ::takatori::util::unique_object_ptr<query::expression> right,
             region_type region = {}) noexcept;
 
     /**
@@ -71,10 +69,10 @@ public:
      * @brief returns the right term.
      * @return the right term
      */
-    [[nodiscard]] common::vector<operand_type>& right() noexcept;
+    [[nodiscard]] ::takatori::util::unique_object_ptr<query::expression>& right() noexcept;
 
     /// @copydoc right()
-    [[nodiscard]] common::vector<operand_type> const& right() const noexcept;
+    [[nodiscard]] ::takatori::util::unique_object_ptr<query::expression> const& right() const noexcept;
 
     /**
      * @brief returns whether or not this declared as `NOT`.
@@ -111,7 +109,7 @@ protected:
 private:
     operand_type left_;
     bool_type is_not_;
-    common::vector<operand_type> right_;
+    ::takatori::util::unique_object_ptr<query::expression> right_;
 };
 
 /**

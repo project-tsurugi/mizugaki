@@ -36,7 +36,7 @@ public:
     /**
      * @brief creates a new instance.
      * @param value_kind the value kind, must be one of `exact_numeric` or `approximate_numeric`
-     * @param sign the sign
+     * @param sign the numeric sign
      * @param unsigned_value the unsigned numeric
      * @param region the node region
      * @throws std::invalid_argument if kind is invalid

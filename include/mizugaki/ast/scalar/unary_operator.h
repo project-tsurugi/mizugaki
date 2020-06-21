@@ -37,27 +37,13 @@ enum class unary_operator {
      * @note `6.15 <reference resolution>`
      */
     reference_resolution,
-
-    /**
-     * @brief test for a non-empty relation.
-     * @details The operand must be a subquery, and it will be treated as a table sub-query.
-     * @note `8.9 <exists predicate>`
-     */
-    exists,
-
-    /**
-     * @brief test for absence of duplications.
-     * @details The operand must be a subquery, and it will be treated as a table sub-query.
-     * @note `8.10 <unique predicate>`
-     */
-    unique,
 };
 
 /// @brief set of unary_operator kind.
 using unary_operator_set = ::takatori::util::enum_set<
         unary_operator,
         unary_operator::plus,
-        unary_operator::unique>;
+        unary_operator::reference_resolution>;
 
 /**
  * @brief returns string representation of the value.
@@ -72,8 +58,6 @@ inline constexpr std::string_view to_string_view(unary_operator value) noexcept 
         case kind::minus: return "minus"sv;
         case kind::not_: return "not"sv;
         case kind::reference_resolution: return "reference_resolution"sv;
-        case kind::exists: return "exists"sv;
-        case kind::unique: return "unique"sv;
     }
     std::abort();
 }

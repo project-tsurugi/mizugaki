@@ -28,7 +28,8 @@ endfunction (add_test_executable)
 add_test_executable(mizugaki/ast/node_region_test.cpp)
 
 # SQL parser
-add_test_executable(mizugaki/parser/sql_parser_test.cpp)
+add_test_executable(mizugaki/parser/sql_parser_statement_test.cpp)
+add_test_executable(mizugaki/parser/sql_parser_query_test.cpp)
 
 # shakujo IR translator
 add_test_executable(mizugaki/translator/shakujo_translator_test.cpp)

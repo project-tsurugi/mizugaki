@@ -15,13 +15,11 @@ using ::takatori::util::unique_object_ptr;
 comparison_predicate::comparison_predicate(
         operand_type left,
         operator_kind_type operator_kind,
-        std::optional<quantifier_type> quantifier,
         operand_type right,
         region_type region) noexcept:
     super { region },
     left_ { std::move(left) },
     operator_kind_ { operator_kind },
-    quantifier_ { std::move(quantifier) },
     right_ { std::move(right) }
 {}
 
@@ -33,7 +31,6 @@ comparison_predicate::comparison_predicate(
     comparison_predicate {
             clone_unique(std::move(left)),
             operator_kind,
-            std::nullopt,
             clone_unique(std::move(right)),
             region,
     }
@@ -43,7 +40,6 @@ comparison_predicate::comparison_predicate(comparison_predicate const& other, ob
     comparison_predicate {
             clone_unique(other.left_, creator),
             other.operator_kind_,
-            other.quantifier_,
             clone_unique(other.right_, creator),
             other.region(),
     }
@@ -53,7 +49,6 @@ comparison_predicate::comparison_predicate(comparison_predicate&& other, object_
     comparison_predicate {
             clone_unique(std::move(other.left_), creator),
             other.operator_kind_,
-            std::move(other.quantifier_),
             clone_unique(std::move(other.right_), creator),
             other.region(),
     }
@@ -95,22 +90,13 @@ expression::operand_type const& comparison_predicate::right() const noexcept {
     return right_;
 }
 
-std::optional<comparison_predicate::quantifier_type>& comparison_predicate::quantifier() noexcept {
-    return quantifier_;
-}
-
-std::optional<comparison_predicate::quantifier_type> const& comparison_predicate::quantifier() const noexcept {
-    return quantifier_;
-}
-
 bool operator==(comparison_predicate const& a, comparison_predicate const& b) noexcept {
     if (std::addressof(a) == std::addressof(b)) {
         return false;
     }
     return eq(a.operator_kind_, b.operator_kind_)
             && eq(a.left_, b.left_)
-            && eq(a.right_, b.right_)
-            && eq(a.quantifier_, b.quantifier_);
+            && eq(a.right_, b.right_);
 }
 
 bool operator!=(comparison_predicate const& a, comparison_predicate const& b) noexcept {
@@ -128,7 +114,6 @@ void comparison_predicate::serialize(takatori::serializer::object_acceptor& acce
     auto obj = struct_block(acceptor, *this);
     property(acceptor, "left"sv, left_);
     property(acceptor, "operator_kind"sv, operator_kind_);
-    property(acceptor, "quantifier"sv, quantifier_);
     property(acceptor, "right"sv, right_);
     region_property(acceptor, *this);
 }

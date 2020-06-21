@@ -40,9 +40,9 @@ public:
      */
     explicit between_predicate(
             operand_type target,
-            operand_type left,
             bool_type is_not,
             std::optional<operator_kind_type> operator_kind,
+            operand_type left,
             operand_type right,
             region_type region = {}) noexcept;
 
@@ -135,9 +135,9 @@ protected:
 
 private:
     operand_type target_;
-    operand_type left_;
     bool_type is_not_;
     std::optional<operator_kind_type> operator_kind_;
+    operand_type left_;
     operand_type right_;
 };
 

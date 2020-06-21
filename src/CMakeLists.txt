@@ -62,6 +62,7 @@ add_library(mizugaki
     mizugaki/ast/type/binary_numeric.cpp
     mizugaki/ast/type/datetime.cpp
     mizugaki/ast/type/interval.cpp
+    mizugaki/ast/type/user_defined.cpp
 
     mizugaki/ast/scalar/expression.cpp
     mizugaki/ast/scalar/literal_expression.cpp
@@ -72,11 +73,16 @@ add_library(mizugaki
     mizugaki/ast/scalar/cast_expression.cpp
     mizugaki/ast/scalar/unary_expression.cpp
     mizugaki/ast/scalar/binary_expression.cpp
+    mizugaki/ast/scalar/extract_expression.cpp
+    mizugaki/ast/scalar/convert_expression.cpp
+    mizugaki/ast/scalar/trim_expression.cpp
     mizugaki/ast/scalar/value_constructor.cpp
     mizugaki/ast/scalar/comparison_predicate.cpp
+    mizugaki/ast/scalar/quantified_comparison_predicate.cpp
     mizugaki/ast/scalar/between_predicate.cpp
     mizugaki/ast/scalar/in_predicate.cpp
     mizugaki/ast/scalar/pattern_match_predicate.cpp
+    mizugaki/ast/scalar/table_predicate.cpp
     mizugaki/ast/scalar/function_invocation.cpp
     mizugaki/ast/scalar/set_function_invocation.cpp
     mizugaki/ast/scalar/builtin_function_invocation.cpp
@@ -85,6 +91,7 @@ add_library(mizugaki
     mizugaki/ast/scalar/method_invocation.cpp
     mizugaki/ast/scalar/static_method_invocation.cpp
     mizugaki/ast/scalar/subquery.cpp
+    mizugaki/ast/scalar/current_of_cursor.cpp
 
     mizugaki/ast/table/expression.cpp
     mizugaki/ast/table/table_reference.cpp

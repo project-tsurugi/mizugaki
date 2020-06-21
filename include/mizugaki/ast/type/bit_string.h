@@ -22,10 +22,10 @@ public:
     using type_kind_type = common::regioned<node_kind_type>;
 
     /// @brief the bit length type.
-    using length_type = std::size_t;
+    using length_type = common::regioned<std::size_t>;
 
     /// @brief the flexible length.
-    static constexpr length_type flexible_length = static_cast<length_type>(-1);
+    static constexpr std::size_t flexible_length = static_cast<std::size_t>(-1);
 
     /// @brief the available node kind of this.
     static constexpr kind_set tags {

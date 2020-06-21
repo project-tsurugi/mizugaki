@@ -62,7 +62,7 @@ type_kind_type const& bit_string::type_kind() const noexcept {
 }
 
 bool bit_string::is_flexible_length() const noexcept {
-    return length_ == flexible_length;
+    return length_ == common::regioned { flexible_length };
 }
 
 std::optional<length_type>& bit_string::length() noexcept {

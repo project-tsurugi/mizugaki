@@ -50,6 +50,12 @@ enum class binary_operator {
     concatenation,
 
     /**
+     * @brief element reference operator (`[]`).
+     * @note `6.13 <element reference>`
+     */
+    element_reference,
+
+    /**
      * @brief conditional `AND`.
      * @note `6.30 <boolean value expression>`
      */
@@ -72,19 +78,6 @@ enum class binary_operator {
 
     /// @copydoc binary_operator::is
     is_not,
-
-    /**
-     * @brief quantified comparison with sub-queries.
-     * @details The right term must be a subquery, and it will be treated as a table sub-query.
-     *      Use in_predicate expression for `IN` predicate with value list instead.
-     * @note `8.4 <in predicate>`
-     * @see subquery
-     * @see in_predicate
-     */
-    in,
-
-    /// @copydoc binary_operator::in
-    not_in,
 
     /**
      * @brief test for an overlap between two ranges.
@@ -119,12 +112,11 @@ inline constexpr std::string_view to_string_view(binary_operator value) noexcept
         case kind::asterisk: return "asterisk"sv;
         case kind::solidus: return "solidus"sv;
         case kind::concatenation: return "concatenation"sv;
+        case kind::element_reference: return "element_reference"sv;
         case kind::and_: return "and"sv;
         case kind::or_: return "or"sv;
         case kind::is: return "is"sv;
         case kind::is_not: return "is_not"sv;
-        case kind::in: return "in"sv;
-        case kind::not_in: return "not_in"sv;
         case kind::overlaps: return "overlaps"sv;
         case kind::is_distinct_from: return "is_distinct_from"sv;
     }

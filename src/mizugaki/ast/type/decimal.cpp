@@ -67,7 +67,7 @@ type_kind_type const& decimal::type_kind() const noexcept {
 }
 
 bool decimal::is_flexible_precision() const noexcept {
-    return precision_ == flexible_precision;
+    return precision_ == common::regioned { flexible_precision };
 }
 
 std::optional<precision_type>& decimal::precision() noexcept {

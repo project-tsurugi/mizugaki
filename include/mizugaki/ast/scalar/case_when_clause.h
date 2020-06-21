@@ -18,6 +18,13 @@ public:
 
     /**
      * @brief creates a new instance.
+     * @brief this will be used in parser generator
+     */
+    explicit case_when_clause() = default;
+
+
+    /**
+     * @brief creates a new instance.
      * @param when the `when` operand
      * @param result the result of this clause
      * @param region the node region

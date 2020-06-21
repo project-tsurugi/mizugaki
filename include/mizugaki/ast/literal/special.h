@@ -52,11 +52,11 @@ public:
     {}
 
     [[nodiscard]] special* clone(::takatori::util::object_creator creator) const& override {
-        return creator.create_unique<special>(*this, region());
+        return creator.create_object<special>(*this, creator);
     }
 
     [[nodiscard]] special* clone(::takatori::util::object_creator creator) && override {
-        return creator.create_unique<special>(std::move(*this), region());
+        return creator.create_object<special>(std::move(*this), creator);
     }
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override {

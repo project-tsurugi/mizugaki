@@ -15,25 +15,25 @@ using ::takatori::util::object_creator;
 
 between_predicate::between_predicate(
         operand_type target,
-        operand_type left,
         bool_type is_not,
         std::optional<operator_kind_type> operator_kind,
+        operand_type left,
         operand_type right,
         region_type region) noexcept:
     super { region },
     target_ { std::move(target) },
-    left_ { std::move(left) },
     is_not_ { is_not },
     operator_kind_ { std::move(operator_kind) },
+    left_ { std::move(left) },
     right_ { std::move(right) }
 {}
 
 between_predicate::between_predicate(between_predicate const& other, object_creator creator) :
     between_predicate {
             clone_unique(other.target_, creator),
-            clone_unique(other.left_, creator),
             other.is_not_,
             other.operator_kind_,
+            clone_unique(other.left_, creator),
             clone_unique(other.right_, creator),
             other.region(),
     }
@@ -42,9 +42,9 @@ between_predicate::between_predicate(between_predicate const& other, object_crea
 between_predicate::between_predicate(between_predicate&& other, object_creator creator) :
     between_predicate {
             clone_unique(std::move(other.target_), creator),
-            clone_unique(std::move(other.left_), creator),
             other.is_not_,
             other.operator_kind_,
+            clone_unique(std::move(other.left_), creator),
             clone_unique(std::move(other.right_), creator),
             other.region(),
     }

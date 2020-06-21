@@ -12,12 +12,10 @@ using ::takatori::util::clone_unique;
 using ::takatori::util::object_creator;
 using ::takatori::util::unique_object_ptr;
 
-using common::clone_vector;
-
 in_predicate::in_predicate(
         operand_type left,
         bool_type is_not,
-        common::vector<operand_type> right,
+        unique_object_ptr<query::expression> right,
         region_type region) noexcept :
     super { region },
     left_ { std::move(left) },
@@ -29,7 +27,7 @@ in_predicate::in_predicate(in_predicate const& other, object_creator creator) :
     in_predicate {
             clone_unique(other.left_, creator),
             other.is_not_,
-            clone_vector(other.right_, creator),
+            clone_unique(other.right_, creator),
             other.region(),
     }
 {}
@@ -38,7 +36,7 @@ in_predicate::in_predicate(in_predicate&& other, object_creator creator) :
     in_predicate {
             clone_unique(std::move(other.left_), creator),
             other.is_not_,
-            clone_vector(std::move(other.right_), creator),
+            clone_unique(std::move(other.right_), creator),
             other.region(),
     }
 {}
@@ -63,11 +61,11 @@ expression::operand_type const& in_predicate::left() const noexcept {
     return left_;
 }
 
-common::vector<expression::operand_type>& in_predicate::right() noexcept {
+unique_object_ptr<query::expression>& in_predicate::right() noexcept {
     return right_;
 }
 
-common::vector<expression::operand_type> const& in_predicate::right() const noexcept {
+unique_object_ptr<query::expression> const& in_predicate::right() const noexcept {
     return right_;
 }
 
