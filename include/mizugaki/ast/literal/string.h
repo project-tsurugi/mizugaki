@@ -53,6 +53,28 @@ public:
 
     /**
      * @brief creates a new instance.
+     * @tparam T the quoted string type
+     * @tparam U list of quoted string types
+     * @param value_kind the value kind, must be one of `character_string`, `bit_string` or `hex_string`
+     * @param value quoted string representation of the value (without value qualifier)
+     * @param concatenations the rest quoted string values
+     * @throws std::invalid_argument if kind is invalid
+     * @see tags
+     */
+    template<class T, class... U>
+    explicit string(
+            value_kind_type value_kind,
+            T&& value,
+            U&&... concatenations) :
+        string {
+                value_kind,
+                value_type { std::forward<T>(value) },
+                { value_type { std::forward<U>(concatenations) }... },
+        }
+    {}
+
+    /**
+     * @brief creates a new instance.
      * @param other the copy source
      * @param creator the object creator
      */

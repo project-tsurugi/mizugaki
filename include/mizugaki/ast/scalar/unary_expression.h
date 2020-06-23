@@ -41,6 +41,18 @@ public:
 
     /**
      * @brief creates a new instance.
+     * @param operator_kind the unary operator
+     * @param operand the operand expression
+     * @param region the node region
+     * @attention this will take a copy of argument
+     */
+    explicit unary_expression(
+            operator_kind_type operator_kind,
+            expression&& operand,
+            region_type region = {});
+
+    /**
+     * @brief creates a new instance.
      * @param other the copy source
      * @param creator the object creator
      */

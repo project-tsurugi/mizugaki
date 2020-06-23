@@ -25,7 +25,7 @@ delete_statement::delete_statement(
 delete_statement::delete_statement(
         name::name&& table_name,
         rvalue_ptr<scalar::expression> where,
-        region_type region) noexcept :
+        region_type region) :
     delete_statement {
             clone_unique(std::move(table_name)),
             clone_unique(where),

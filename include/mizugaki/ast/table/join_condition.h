@@ -28,9 +28,19 @@ public:
      * @param expression the condition expression
      * @param region the element region
      */
-    join_condition( // NOLINT: conversion constructor
+    explicit join_condition(
             ::takatori::util::unique_object_ptr<scalar::expression> expression,
             region_type region = {}) noexcept;
+
+    /**
+     * @brief creates a new instance.
+     * @param expression the condition expression
+     * @param region the element region
+     * @attention this will take a copy of argument
+     */
+    explicit join_condition(
+            scalar::expression&& expression,
+            region_type region = {});
 
     /**
      * @brief creates a new instance.

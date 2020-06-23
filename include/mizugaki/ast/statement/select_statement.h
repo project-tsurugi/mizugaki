@@ -46,7 +46,7 @@ public:
     explicit select_statement(
             query::expression&& expression,
             std::initializer_list<target_element> targets = {},
-            region_type region = {}) noexcept;
+            region_type region = {});
 
     /**
      * @brief creates a new instance.

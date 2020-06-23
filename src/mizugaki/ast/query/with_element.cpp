@@ -11,16 +11,43 @@ using ::takatori::util::object_creator;
 using ::takatori::util::unique_object_ptr;
 
 using common::clone_vector;
+using common::to_vector;
 
 with_element::with_element(
         unique_object_ptr<name::simple> name,
         common::vector<unique_object_ptr<name::simple>> column_names,
-        unique_object_ptr<class expression> expression,
+        unique_object_ptr<ast::query::expression> expression,
         region_type region) noexcept :
     element { region },
     name_ { std::move(name) },
     column_names_ { std::move(column_names) },
     expression_ { std::move(expression) }
+{}
+
+
+with_element::with_element(
+        name::simple&& name,
+        ast::query::expression&& expression,
+        region_type region) :
+    with_element {
+            clone_unique(std::move(name)),
+            {},
+            clone_unique(std::move(expression)),
+            region,
+    }
+{}
+
+with_element::with_element(
+        name::simple&& name,
+        common::rvalue_list<name::simple> column_names,
+        ast::query::expression&& expression,
+        element::region_type region) :
+    with_element {
+            clone_unique(std::move(name)),
+            to_vector(column_names),
+            clone_unique(std::move(expression)),
+            region,
+    }
 {}
 
 with_element::with_element(with_element const& other, object_creator creator) :
@@ -49,11 +76,11 @@ unique_object_ptr<name::simple> const& with_element::name() const noexcept {
     return *name_;
 }
 
-unique_object_ptr<class expression>& with_element::expression() noexcept {
+unique_object_ptr<ast::query::expression>& with_element::expression() noexcept {
     return *expression_;
 }
 
-unique_object_ptr<class expression> const& with_element::expression() const noexcept {
+unique_object_ptr<ast::query::expression> const& with_element::expression() const noexcept {
     return *expression_;
 }
 

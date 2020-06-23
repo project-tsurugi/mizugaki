@@ -10,16 +10,30 @@ using ::takatori::util::object_creator;
 using ::takatori::util::unique_object_ptr;
 
 using common::clone_vector;
+using common::to_vector;
 
 builtin_set_function_invocation::builtin_set_function_invocation(
         function_type function,
         std::optional<quantifier_type> quantifier,
         common::vector<operand_type> arguments,
-        region_type region) noexcept:
+        region_type region) noexcept :
     super { region },
     function_ { function },
     quantifier_ { std::move(quantifier) },
     arguments_ { std::move(arguments) }
+{}
+
+builtin_set_function_invocation::builtin_set_function_invocation(
+        function_type function,
+        std::optional<quantifier_type> quantifier,
+        common::rvalue_list<expression> arguments,
+        region_type region) :
+    builtin_set_function_invocation {
+            function,
+            std::move(quantifier),
+            to_vector(arguments),
+            region,
+    }
 {}
 
 builtin_set_function_invocation::builtin_set_function_invocation(builtin_set_function_invocation const& other, object_creator creator) :

@@ -101,7 +101,12 @@ struct element_serializer<bool> {
 template<>
 struct element_serializer<std::uint64_t> {
     void operator()(object_acceptor& acceptor, std::uint64_t value) {
-        acceptor.unsigned_integer(value);
+        using namespace std::string_view_literals;
+        if (value == static_cast<std::uint64_t>(-1)) {
+            acceptor.string("*"sv);
+        } else {
+            acceptor.unsigned_integer(value);
+        }
     }
 };
 

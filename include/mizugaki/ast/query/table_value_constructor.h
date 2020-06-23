@@ -39,7 +39,7 @@ public:
      */
     table_value_constructor(
             common::rvalue_list<scalar::expression> elements,
-            region_type region = {}) noexcept;
+            region_type region = {});
 
     /**
      * @brief creates a new instance.

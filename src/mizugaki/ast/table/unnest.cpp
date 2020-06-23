@@ -15,16 +15,32 @@ using ::takatori::util::unique_object_ptr;
 unnest::unnest(
         unique_object_ptr<scalar::expression> expression,
         bool_type with_ordinality,
+        correlation_type correlation,
         region_type region) noexcept :
     super { region },
     expression_ { std::move(expression) },
-    with_ordinality_ { with_ordinality }
+    with_ordinality_ { with_ordinality },
+    correlation_ { std::move(correlation) }
+{}
+
+unnest::unnest(
+        scalar::expression&& expression,
+        correlation_type correlation,
+        bool_type with_ordinality,
+        region_type region) :
+    unnest {
+            clone_unique(std::move(expression)),
+            with_ordinality,
+            std::move(correlation),
+            region,
+    }
 {}
 
 unnest::unnest(unnest const& other, object_creator creator) :
     unnest {
             clone_unique(other.expression_, creator),
             other.with_ordinality_,
+            decltype(correlation_) { other.correlation_, creator },
             other.region(),
     }
 {}
@@ -33,6 +49,7 @@ unnest::unnest(unnest&& other, object_creator creator) :
     unnest {
             clone_unique(other.expression_, creator),
             other.with_ordinality_,
+            decltype(correlation_) { std::move(other.correlation_), creator },
             other.region(),
     }
 {}

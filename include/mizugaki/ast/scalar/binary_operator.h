@@ -90,13 +90,31 @@ enum class binary_operator {
      * @note `8.13 <distinct predicate>`
      */
     is_distinct_from,
+
+    /**
+     * @brief sequence containment test operator (`<@`).
+     * @note this is an extension
+     */
+    contains,
+
+    /**
+     * @brief transposed sequence containment test operator (`@>`).
+     * @note this is an extension
+     */
+    is_contained_by,
+
+    /**
+     * @brief sequence overlapping test operator (`&&`).
+     * @note this is an extension
+     */
+    have_elements_in_common,
 };
 
 /// @brief set of binary_operator kind.
 using binary_operator_set = ::takatori::util::enum_set<
         binary_operator,
         binary_operator::plus,
-        binary_operator::is_distinct_from>;
+        binary_operator::have_elements_in_common>;
 
 /**
  * @brief returns string representation of the value.
@@ -119,6 +137,9 @@ inline constexpr std::string_view to_string_view(binary_operator value) noexcept
         case kind::is_not: return "is_not"sv;
         case kind::overlaps: return "overlaps"sv;
         case kind::is_distinct_from: return "is_distinct_from"sv;
+        case kind::contains: return "contains"sv;
+        case kind::is_contained_by: return "is_contained_by"sv;
+        case kind::have_elements_in_common: return "have_elements_in_common"sv;
     }
     std::abort();
 }

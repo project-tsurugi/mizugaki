@@ -38,7 +38,7 @@ public:
      */
     group_by_clause(
             common::rvalue_list<element_type> elements,
-            region_type region = {}) noexcept;
+            region_type region = {});
 
     /**
      * @brief creates a new instance.

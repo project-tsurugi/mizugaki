@@ -44,6 +44,20 @@ public:
 
     /**
      * @brief creates a new instance.
+     * @param expression the query expression
+     * @param correlation the correlation declaration
+     * @param is_lateral whether or not `LATERAL` is specified
+     * @param region the node region
+     * @attention this will take copy of arguments
+     */
+    explicit subquery(
+            query::expression&& expression,
+            correlation_type correlation,
+            bool_type is_lateral = false,
+            region_type region = {});
+
+    /**
+     * @brief creates a new instance.
      * @param other the copy source
      * @param creator the object creator
      */

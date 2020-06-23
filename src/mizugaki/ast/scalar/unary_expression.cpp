@@ -15,10 +15,21 @@ using ::takatori::util::unique_object_ptr;
 unary_expression::unary_expression(
         operator_kind_type operator_kind,
         operand_type operand,
-        region_type region) noexcept:
+        region_type region) noexcept :
     super { region },
     operator_kind_ { operator_kind },
     operand_ { std::move(operand) }
+{}
+
+unary_expression::unary_expression(
+        operator_kind_type operator_kind,
+        expression&& operand,
+        region_type region) :
+    unary_expression {
+            operator_kind,
+            clone_unique(std::move(operand)),
+            region,
+    }
 {}
 
 unary_expression::unary_expression(unary_expression const& other, object_creator creator) :

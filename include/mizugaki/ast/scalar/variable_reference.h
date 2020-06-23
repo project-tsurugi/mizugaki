@@ -14,6 +14,7 @@ namespace mizugaki::ast::scalar {
  * @note `6.5 <identifier chain>`
  * @note `6.6 <column reference>`
  * @note `6.7 <SQL parameter reference>`
+ * @note host_parameter_reference can handle host parameters instead of this class.
  */
 class variable_reference final : public expression {
 
@@ -40,7 +41,7 @@ public:
      */
     explicit variable_reference(
             name::name&& name,
-            region_type region = {}) noexcept;
+            region_type region = {});
 
     /**
      * @brief creates a new instance.

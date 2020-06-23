@@ -52,7 +52,7 @@ public:
             name::name&& table_name,
             std::initializer_list<set_element> elements,
             ::takatori::util::rvalue_ptr<scalar::expression> where = {},
-            region_type region = {}) noexcept;
+            region_type region = {});
 
     /**
      * @brief creates a new instance.

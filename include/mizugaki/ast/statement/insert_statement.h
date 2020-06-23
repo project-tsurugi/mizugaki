@@ -53,7 +53,7 @@ public:
             name::name&& table_name,
             common::rvalue_list<name::simple> columns,
             ::takatori::util::rvalue_ptr<query::expression> expression,
-            region_type region = {}) noexcept;
+            region_type region = {});
 
     /**
      * @brief creates a new instance.

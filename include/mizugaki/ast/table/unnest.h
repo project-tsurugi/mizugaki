@@ -6,6 +6,7 @@
 #include <mizugaki/ast/scalar/expression.h>
 
 #include "expression.h"
+#include "correlation_clause.h"
 
 namespace mizugaki::ast::table {
 
@@ -18,6 +19,9 @@ class unnest final : public expression {
     using super = expression;
 
 public:
+    /// @brief the correlation declaration type.
+    using correlation_type = correlation_clause;
+
     /// @brief truth type with element region information.
     using bool_type = common::regioned<bool>;
 
@@ -28,12 +32,27 @@ public:
      * @brief creates a new instance.
      * @param expression the collection expression
      * @param with_ordinality whether or not `WITH ORDINALITY` is specified
+     * @param correlation the correlation declaration
      * @param region the node region
      */
     explicit unnest(
             ::takatori::util::unique_object_ptr<scalar::expression> expression,
             bool_type with_ordinality,
+            correlation_type correlation,
             region_type region = {}) noexcept;
+
+    /**
+     * @brief creates a new instance.
+     * @param expression the collection expression
+     * @param correlation the correlation declaration
+     * @param with_ordinality whether or not `WITH ORDINALITY` is specified
+     * @param region the node region
+     */
+    explicit unnest(
+            scalar::expression&& expression,
+            correlation_type correlation,
+            bool_type with_ordinality = false,
+            region_type region = {});
 
     /**
      * @brief creates a new instance.
@@ -74,6 +93,16 @@ public:
     [[nodiscard]] bool_type const& with_ordinality() const noexcept;
 
     /**
+     * @brief returns the correlation declaration.
+     * @return the correlation declaration
+     * @return empty if there is no such the declaration
+     */
+    [[nodiscard]] correlation_type& correlation() noexcept;
+
+    /// @copydoc correlation()
+    [[nodiscard]] correlation_type const& correlation() const noexcept;
+
+    /**
      * @brief compares two values.
      * @param a the first value
      * @param b the second value
@@ -98,6 +127,7 @@ protected:
 private:
     ::takatori::util::unique_object_ptr<scalar::expression> expression_;
     bool_type with_ordinality_;
+    correlation_type correlation_;
 };
 
 /**

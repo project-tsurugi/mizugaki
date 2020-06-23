@@ -25,6 +25,31 @@ with_expression::with_expression(
     expression_ { std::move(expression) }
 {}
 
+with_expression::with_expression(
+        std::initializer_list<element_type> elements,
+        ast::query::expression&& expression,
+        region_type region) :
+    with_expression {
+            false,
+            decltype(elements_) { elements },
+            clone_unique(std::move(expression)),
+            region,
+    }
+{}
+
+with_expression::with_expression(
+        bool_type is_recursive,
+        std::initializer_list<element_type> elements,
+        ast::query::expression&& expression,
+        region_type region) :
+    with_expression {
+            is_recursive,
+            decltype(elements_) { elements },
+            clone_unique(std::move(expression)),
+            region,
+    }
+{}
+
 with_expression::with_expression(with_expression const& other, object_creator creator) :
     with_expression {
             other.is_recursive_,

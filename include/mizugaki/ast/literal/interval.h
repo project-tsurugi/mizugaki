@@ -42,6 +42,42 @@ public:
 
     /**
      * @brief creates a new instance.
+     * @tparam T the quoted string type
+     * @param sign the numeric sign
+     * @param value quoted string representation of the value
+     * @param region the node region
+     */
+    template<class T>
+    explicit interval(
+            sign_type sign,
+            T&& value,
+            region_type region = {}) :
+        interval {
+                decltype(sign_) { sign },
+                value_type { std::forward<T>(value) },
+                region,
+        }
+    {}
+
+    /**
+     * @brief creates a new instance.
+     * @tparam T the quoted string type
+     * @param value quoted string representation of the value
+     * @param region the node region
+     */
+    template<class T, class = std::enable_if_t<std::is_constructible_v<value_type, T>>>
+    explicit interval(
+            T&& value,
+            region_type region = {}) :
+        interval {
+                std::nullopt,
+                value_type { std::forward<T>(value) },
+                region,
+        }
+    {}
+
+    /**
+     * @brief creates a new instance.
      * @param other the copy source
      * @param creator the object creator
      */

@@ -15,10 +15,21 @@ using ::takatori::util::unique_object_ptr;
 extract_expression::extract_expression(
         field_type field,
         operand_type operand,
-        region_type region) noexcept:
+        region_type region) noexcept :
     super { region },
     field_ { field },
     operand_ { std::move(operand) }
+{}
+
+extract_expression::extract_expression(
+        field_type field,
+        expression&& operand,
+        region_type region) :
+    extract_expression {
+            field,
+            clone_unique(std::move(operand)),
+            region,
+    }
 {}
 
 extract_expression::extract_expression(extract_expression const& other, object_creator creator) :

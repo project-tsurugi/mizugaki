@@ -23,6 +23,20 @@ subquery::subquery(
     correlation_ { std::move(correlation) }
 {}
 
+
+subquery::subquery(
+        query::expression&& expression,
+        correlation_type correlation,
+        bool_type is_lateral,
+        region_type region) :
+    subquery {
+            is_lateral,
+            clone_unique(expression),
+            std::move(correlation),
+            region,
+    }
+{}
+
 subquery::subquery(subquery const& other, object_creator creator) :
     subquery {
             other.is_lateral_,

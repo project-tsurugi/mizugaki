@@ -36,7 +36,7 @@ public:
      */
     explicit user_defined(
             name::name&& name,
-            region_type region = {}) noexcept;
+            region_type region = {});
 
     /**
      * @brief creates a new instance.

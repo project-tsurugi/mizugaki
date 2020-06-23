@@ -27,7 +27,7 @@ comparison_predicate::comparison_predicate(
         expression&& left,
         comparison_operator operator_kind,
         expression&& right,
-        region_type region) noexcept :
+        region_type region) :
     comparison_predicate {
             clone_unique(std::move(left)),
             operator_kind,

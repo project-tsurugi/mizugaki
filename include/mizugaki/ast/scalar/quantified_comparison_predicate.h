@@ -49,6 +49,22 @@ public:
 
     /**
      * @brief creates a new instance.
+     * @param left the left term
+     * @param operator_kind the comparison operator
+     * @param quantifier the quantifier
+     * @param right the right term
+     * @param region the node region
+     * @attention this will take copy of arguments
+     */
+    explicit quantified_comparison_predicate(
+            expression&& left,
+            operator_kind_type operator_kind,
+            quantifier_type quantifier,
+            query::expression&& right,
+            region_type region = {}) noexcept;
+
+    /**
+     * @brief creates a new instance.
      * @param other the copy source
      * @param creator the object creator
      */

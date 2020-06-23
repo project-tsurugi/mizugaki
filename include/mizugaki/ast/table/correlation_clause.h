@@ -4,6 +4,7 @@
 
 #include <mizugaki/ast/element.h>
 #include <mizugaki/ast/common/clone_wrapper.h>
+#include <mizugaki/ast/common/rvalue_list.h>
 #include <mizugaki/ast/common/vector.h>
 #include <mizugaki/ast/name/simple.h>
 
@@ -31,6 +32,18 @@ public:
             ::takatori::util::unique_object_ptr<name::simple> correlation_name,
             common::vector<::takatori::util::unique_object_ptr<name::simple>> column_names = {},
             region_type region = {}) noexcept;
+
+    /**
+     * @brief creates a new instance.
+     * @param correlation_name the correlation name
+     * @param column_names the correlation column names
+     * @param region the element region
+     * @attention this will take copy of arguments
+     */
+    correlation_clause( // NOLINT: DSL-style constructor
+            name::simple&& correlation_name,
+            common::rvalue_list<name::simple> column_names = {},
+            region_type region = {});
 
     /**
      * @brief creates a new instance.

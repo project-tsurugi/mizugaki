@@ -44,6 +44,32 @@ public:
 
     /**
      * @brief creates a new instance.
+     * @param elements the named query declarations
+     * @param expression the body expression
+     * @param region the node region
+     * @attention this will take copy of arguments
+     */
+    explicit with_expression(
+            std::initializer_list<element_type> elements,
+            ast::query::expression&& expression,
+            region_type region = {});
+
+    /**
+     * @brief creates a new instance.
+     * @param is_recursive whether or not `RECURSIVE` is specified
+     * @param elements the named query declarations
+     * @param expression the body expression
+     * @param region the node region
+     * @attention this will take copy of arguments
+     */
+    explicit with_expression(
+            bool_type is_recursive,
+            std::initializer_list<element_type> elements,
+            ast::query::expression&& expression,
+            region_type region = {});
+
+    /**
+     * @brief creates a new instance.
      * @param other the copy source
      * @param creator the object creator
      */

@@ -26,6 +26,13 @@ enum class builtin_function_kind {
     position,
 
     /**
+     * @brief `LENGTH`,
+     * @note this is not in ANSI SQL99
+     * @note format: `(:0)`
+     */
+    length,
+
+    /**
      * @brief `{CHAR,CHARACTER}_LENGTH`,
      * @note `6.17 <numeric value function>` - `<length expression>`
      * @note format: `(:0)`
@@ -91,7 +98,21 @@ enum class builtin_function_kind {
      */
     lower,
 
-    // NOTE: `CONVERT`, `TRANSLATE` is not a built-in function form
+    /**
+     * @brief `CONVERT`
+     * @note `6.18 <string value function>` - `<form-of-use conversion>`
+     * @note format: `(:0 USING :1)`, where `:1` must be a variable_reference
+     */
+    convert,
+
+    /**
+     * @brief `TRANSLATE`
+     * @note `6.18 <string value function>` - `<character translation>`
+     * @note format: `(:0 USING :1)`, where `:1` must be a variable_reference
+     */
+    translate,
+
+
     // NOTE: `TRIM` is not a built-in function form
 
     /**
@@ -111,40 +132,42 @@ enum class builtin_function_kind {
     /**
      * @brief `CURRENT_TIME`
      * @note `6.19 <datetime value function>` - `<current time value function>`
-     * @note format: `[(:0)]`
+     * @note format: `[(:0)]`, where `:0` must be a literal_expression with unsigned integer
      */
     current_time,
 
     /**
      * @brief `LOCALTIME`
      * @note `6.19 <datetime value function>` - `<current local time value function>`
-     * @note format: `[(:0)]`
+     * @note format: `[(:0)]`, where `:0` must be a literal_expression with unsigned integer
      */
     localtime,
 
     /**
      * @brief `CURRENT_TIMESTAMP`
      * @note `6.19 <datetime value function>` - `<current timestamp value function>`
-     * @note format: `[(:0)]`
+     * @note format: `[(:0)]`, where `:0` must be a literal_expression with unsigned integer
      */
     current_timestamp,
 
     /**
      * @brief `LOCALTIMESTAMP`
      * @note `6.19 <datetime value function>` - `<current local timestamp value function>`
-     * @note format: `[(:0)]`
+     * @note format: `[(:0)]`, where `:0` must be a literal_expression with unsigned integer
      */
     localtimestamp,
 
     /**
      * @brief `NULLIF`
      * @note `6.21 <case expression>` - `<case abbreviation>`
+     * @note format: `(:0, :1)`
      */
     nullif,
 
     /**
      * @brief `COALESCE`
      * @note `6.21 <case expression>` - `<case abbreviation>`
+     * @note format: `(:0 [, :1 [, :2 [, ...]]]])`
      */
     coalesce,
 };
@@ -165,6 +188,7 @@ inline constexpr std::string_view to_string_view(builtin_function_kind value) no
     using kind = builtin_function_kind;
     switch (value) {
         case kind::position: return "position"sv;
+        case kind::length: return "length"sv;
         case kind::character_length: return "character_length"sv;
         case kind::octet_length: return "octet_length"sv;
         case kind::bit_length: return "bit_length"sv;
@@ -174,6 +198,8 @@ inline constexpr std::string_view to_string_view(builtin_function_kind value) no
         case kind::substring: return "substring"sv;
         case kind::upper: return "upper"sv;
         case kind::lower: return "lower"sv;
+        case kind::convert: return "convert"sv;
+        case kind::translate: return "translate"sv;
         case kind::overlay: return "overlay"sv;
         case kind::current_date: return "current_date"sv;
         case kind::current_time: return "current_time"sv;

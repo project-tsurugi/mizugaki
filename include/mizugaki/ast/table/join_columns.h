@@ -4,6 +4,7 @@
 
 #include <mizugaki/ast/element.h>
 #include <mizugaki/ast/common/vector.h>
+#include <mizugaki/ast/common/rvalue_list.h>
 #include <mizugaki/ast/name/simple.h>
 
 #include "join_specification.h"
@@ -27,9 +28,19 @@ public:
      * @param columns the column names
      * @param region the element region
      */
-    join_columns( // NOLINT: conversion constructor
+    explicit join_columns(
             common::vector<::takatori::util::unique_object_ptr<name::simple>> columns,
             region_type region = {}) noexcept;
+
+    /**
+     * @brief creates a new instance.
+     * @param columns the column names
+     * @param region the element region
+     * @attention this will take a copy of argument
+     */
+    join_columns(
+            common::rvalue_list<name::simple> columns,
+            region_type region = {});
 
     /**
      * @brief creates a new instance.

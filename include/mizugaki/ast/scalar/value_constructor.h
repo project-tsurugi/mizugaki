@@ -43,10 +43,19 @@ public:
      * @param elements the row value elements
      * @param region the node region
      */
+    explicit value_constructor(
+            value_constructor_kind operator_kind,
+            common::rvalue_list<scalar::expression> elements,
+            region_type region = {});
+
+    /**
+     * @brief creates a new instance.
+     * @param elements the row value elements
+     * @param region the node region
+     */
     value_constructor(
             common::rvalue_list<scalar::expression> elements,
-            value_constructor_kind operator_kind = value_constructor_kind::row,
-            region_type region = {}) noexcept;
+            region_type region = {});
 
     /**
      * @brief creates a new instance.

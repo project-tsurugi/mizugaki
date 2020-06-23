@@ -26,7 +26,7 @@ grouping_column::grouping_column(
 grouping_column::grouping_column(
         scalar::expression&& column,
         rvalue_ptr<name::name> collation,
-        region_type region) noexcept :
+        region_type region) :
     grouping_column {
             clone_unique(std::move(column)),
             clone_unique(collation),
@@ -43,7 +43,7 @@ static inline unique_object_ptr<scalar::variable_reference> to_expr(name::name&&
 grouping_column::grouping_column(
         name::name&& column,
         rvalue_ptr<name::name> collation,
-        element::region_type region) noexcept :
+        element::region_type region) :
     grouping_column {
             to_expr(std::move(column)),
             clone_unique(collation),

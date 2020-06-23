@@ -19,7 +19,9 @@ select_asterisk::select_asterisk(
     qualifier_ { std::move(qualifier) }
 {}
 
-select_asterisk::select_asterisk(scalar::expression&& qualifier, element::region_type region) noexcept :
+select_asterisk::select_asterisk(
+        scalar::expression&& qualifier,
+        region_type region) :
     select_asterisk {
             clone_unique(qualifier),
             region,

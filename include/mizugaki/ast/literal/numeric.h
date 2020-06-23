@@ -50,6 +50,28 @@ public:
 
     /**
      * @brief creates a new instance.
+     * @tparam T the string source type
+     * @param value_kind the value kind, must be one of `exact_numeric` or `approximate_numeric`
+     * @param unsigned_value the unsigned numeric
+     * @param region the node region
+     * @throws std::invalid_argument if kind is invalid
+     * @see tags
+     */
+    template<class T>
+    explicit numeric(
+            value_kind_type value_kind,
+            T&& unsigned_value,
+            region_type region = {}) :
+        numeric {
+                value_kind,
+                std::nullopt,
+                value_type { std::forward<T>(unsigned_value) },
+                region,
+        }
+    {}
+
+    /**
+     * @brief creates a new instance.
      * @param other the copy source
      * @param creator the object creator
      */

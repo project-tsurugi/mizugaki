@@ -4,6 +4,7 @@
 
 #include <mizugaki/ast/common/regioned.h>
 #include <mizugaki/ast/common/vector.h>
+#include <mizugaki/ast/common/rvalue_list.h>
 
 #include "expression.h"
 #include "builtin_set_function_kind.h"
@@ -42,6 +43,20 @@ public:
             std::optional<quantifier_type> quantifier,
             common::vector<operand_type> arguments,
             region_type region = {}) noexcept;
+
+    /**
+     * @brief creates a new instance.
+     * @param function the function symbol
+     * @param quantifier the set quantifier
+     * @param arguments the function arguments
+     * @param region the node region
+     * @attention this will take copy of arguments
+     */
+    explicit builtin_set_function_invocation(
+            function_type function,
+            std::optional<quantifier_type> quantifier,
+            common::rvalue_list<expression> arguments,
+            region_type region = {});
 
     /**
      * @brief creates a new instance.

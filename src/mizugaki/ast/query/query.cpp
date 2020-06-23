@@ -38,6 +38,28 @@ query::query(
 {}
 
 query::query(
+        common::rvalue_list<select_element> elements,
+        common::rvalue_list<table::expression> from,
+        rvalue_ptr<scalar::expression> where,
+        std::optional<group_by_clause> group_by,
+        rvalue_ptr<scalar::expression> having,
+        std::initializer_list<common::sort_element> order_by,
+        rvalue_ptr<scalar::expression> limit,
+        element::region_type region) :
+    query {
+            std::nullopt,
+            to_vector(elements),
+            to_vector(from),
+            clone_unique(where),
+            std::move(group_by),
+            clone_unique(having),
+            decltype(order_by_) { order_by },
+            clone_unique(limit),
+            region,
+    }
+{}
+
+query::query(
         std::optional<quantifier_type> quantifier,
         common::rvalue_list<select_element> elements,
         common::rvalue_list<table::expression> from,
@@ -46,7 +68,7 @@ query::query(
         rvalue_ptr<scalar::expression> having,
         std::initializer_list<common::sort_element> order_by,
         rvalue_ptr<scalar::expression> limit,
-        element::region_type region) noexcept :
+        element::region_type region) :
     query {
             std::move(quantifier),
             to_vector(elements),

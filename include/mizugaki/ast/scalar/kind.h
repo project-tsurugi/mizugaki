@@ -11,13 +11,13 @@ namespace mizugaki::ast::scalar {
 
 class literal_expression;
 class variable_reference;
+class host_parameter_reference;
 class field_reference;
 class case_expression;
 class cast_expression;
 class unary_expression;
 class binary_expression;
 class extract_expression;
-class convert_expression;
 class trim_expression;
 class value_constructor;
 class subquery;
@@ -55,12 +55,16 @@ enum class kind {
     variable_reference,
 
     /**
+     * @copydoc host_parameter_reference
+     * @see host_parameter_reference
+     */
+    host_parameter_reference,
+
+    /**
      * @copydoc field_reference
      * @see field_reference
      */
     field_reference,
-
-    // FIXME: 6.13 <element reference>
 
     /**
      * @copydoc case_expression
@@ -91,12 +95,6 @@ enum class kind {
      * @see extract_expression
      */
     extract_expression,
-
-    /**
-     * @copydoc convert_expression
-     * @see convert_expression
-     */
-    convert_expression,
 
     /**
      * @copydoc trim_expression
@@ -233,6 +231,9 @@ template<> struct type_of<kind, kind::literal_expression> : ::takatori::util::me
 /// @brief provides implementation type of kind::variable_reference.
 template<> struct type_of<kind, kind::variable_reference> : ::takatori::util::meta_type<variable_reference> {};
 
+/// @brief provides implementation type of kind::host_parameter_reference.
+template<> struct type_of<kind, kind::host_parameter_reference> : ::takatori::util::meta_type<host_parameter_reference> {};
+
 /// @brief provides implementation type of kind::field_reference.
 template<> struct type_of<kind, kind::field_reference> : ::takatori::util::meta_type<field_reference> {};
 
@@ -253,9 +254,6 @@ template<> struct type_of<kind, kind::binary_expression> : ::takatori::util::met
 
 /// @brief provides implementation type of kind::extract_expression.
 template<> struct type_of<kind, kind::extract_expression> : ::takatori::util::meta_type<extract_expression> {};
-
-/// @brief provides implementation type of kind::convert_expression.
-template<> struct type_of<kind, kind::convert_expression> : ::takatori::util::meta_type<convert_expression> {};
 
 /// @brief provides implementation type of kind::trim_expression.
 template<> struct type_of<kind, kind::trim_expression> : ::takatori::util::meta_type<trim_expression> {};
@@ -315,6 +313,7 @@ inline constexpr std::string_view to_string_view(kind value) noexcept {
     switch (value) {
         case kind::literal_expression: return "literal_expression"sv;
         case kind::variable_reference: return "variable_reference"sv;
+        case kind::host_parameter_reference: return "host_parameter_reference"sv;
         case kind::field_reference: return "field_reference"sv;
         case kind::subquery: return "subquery"sv;
         case kind::case_expression: return "case_expression"sv;
@@ -322,7 +321,6 @@ inline constexpr std::string_view to_string_view(kind value) noexcept {
         case kind::unary_expression: return "unary_expression"sv;
         case kind::binary_expression: return "binary_expression"sv;
         case kind::extract_expression: return "extract_expression"sv;
-        case kind::convert_expression: return "convert_expression"sv;
         case kind::trim_expression: return "trim_expression"sv;
         case kind::value_constructor: return "value_constructor"sv;
         case kind::comparison_predicate: return "comparison_predicate"sv;

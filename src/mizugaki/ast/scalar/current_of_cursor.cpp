@@ -21,7 +21,7 @@ current_of_cursor::current_of_cursor(
 
 current_of_cursor::current_of_cursor(
         name::name&& name,
-        region_type region) noexcept :
+        region_type region) :
     current_of_cursor {
             clone_unique(std::move(name)),
             region,

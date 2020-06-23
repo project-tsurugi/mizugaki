@@ -22,7 +22,7 @@ set_element::set_element(
 set_element::set_element(
         name::name&& target,
         scalar::expression&& value,
-        region_type region) noexcept :
+        region_type region) :
     set_element {
             clone_unique(std::move(target)),
             clone_unique(std::move(value)),

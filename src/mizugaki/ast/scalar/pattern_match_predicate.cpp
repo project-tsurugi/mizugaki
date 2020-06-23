@@ -10,6 +10,7 @@ namespace mizugaki::ast::scalar {
 
 using ::takatori::util::clone_unique;
 using ::takatori::util::object_creator;
+using ::takatori::util::rvalue_ptr;
 using ::takatori::util::unique_object_ptr;
 
 pattern_match_predicate::pattern_match_predicate(
@@ -25,6 +26,23 @@ pattern_match_predicate::pattern_match_predicate(
     operator_kind_ { operator_kind },
     pattern_ { std::move(pattern) },
     escape_ { std::move(escape) }
+{}
+
+pattern_match_predicate::pattern_match_predicate(
+        expression&& match_value,
+        operator_kind_type operator_kind,
+        expression&& pattern,
+        rvalue_ptr<expression> escape,
+        bool_type is_not,
+        region_type region) :
+    pattern_match_predicate {
+            clone_unique(std::move(match_value)),
+            is_not,
+            operator_kind,
+            clone_unique(std::move(pattern)),
+            clone_unique(escape),
+            region,
+    }
 {}
 
 pattern_match_predicate::pattern_match_predicate(pattern_match_predicate const& other, object_creator creator) :

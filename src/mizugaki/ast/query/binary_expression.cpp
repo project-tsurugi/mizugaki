@@ -25,6 +25,54 @@ binary_expression::binary_expression(
     right_ { std::move(right) }
 {}
 
+binary_expression::binary_expression(
+        expression&& left,
+        operator_kind_type operator_kind,
+        std::optional<quantifier_type> quantifier,
+        common::rvalue_list<name::simple> corresponding,
+        expression&& right,
+        region_type region) :
+    binary_expression {
+            clone_unique(std::move(left)),
+            operator_kind,
+            std::move(quantifier),
+            { corresponding },
+            clone_unique(std::move(right)),
+            region,
+    }
+{}
+
+binary_expression::binary_expression(
+        expression&& left,
+        operator_kind_type operator_kind,
+        std::optional<quantifier_type> quantifier,
+        expression&& right,
+        region_type region)  :
+    binary_expression {
+            clone_unique(std::move(left)),
+            operator_kind,
+            std::move(quantifier),
+            std::nullopt,
+            clone_unique(std::move(right)),
+            region,
+    }
+{}
+
+binary_expression::binary_expression(
+        expression&& left,
+        operator_kind_type operator_kind,
+        expression&& right,
+        region_type region) :
+    binary_expression {
+            clone_unique(std::move(left)),
+            operator_kind,
+            std::nullopt,
+            std::nullopt,
+            clone_unique(std::move(right)),
+            region,
+    }
+{}
+
 binary_expression::binary_expression(binary_expression const& other, object_creator creator) :
     binary_expression {
             clone_unique(other.left_, creator),

@@ -22,7 +22,6 @@ public:
      */
     explicit case_when_clause() = default;
 
-
     /**
      * @brief creates a new instance.
      * @param when the `when` operand
@@ -33,6 +32,18 @@ public:
             operand_type when,
             operand_type result,
             region_type region = {}) noexcept;
+
+    /**
+     * @brief creates a new instance.
+     * @param when the `when` operand
+     * @param result the result of this clause
+     * @param region the node region
+     * @attention this will take copy of arguments
+     */
+    case_when_clause(
+            expression&& when,
+            expression&& result,
+            region_type region = {});
 
     /**
      * @brief creates a new instance.

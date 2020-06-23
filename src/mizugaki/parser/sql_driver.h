@@ -75,6 +75,8 @@ public:
 
     [[nodiscard]] std::size_t to_size(ast::common::chars const& str);
 
+    [[nodiscard]] ast::common::chars parse_delimited_identifier(ast::common::chars const& str);
+
     [[nodiscard]] node_ptr<ast::name::name> try_build_identifier_chain(
             node_ptr<ast::scalar::expression>& qualifier,
             node_ptr<ast::name::simple>& identifier);

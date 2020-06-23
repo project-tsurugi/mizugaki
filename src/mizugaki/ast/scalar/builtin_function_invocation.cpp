@@ -10,14 +10,26 @@ using ::takatori::util::object_creator;
 using ::takatori::util::unique_object_ptr;
 
 using common::clone_vector;
+using common::to_vector;
 
 builtin_function_invocation::builtin_function_invocation(
         function_type function,
         common::vector<operand_type> arguments,
-        region_type region) noexcept:
+        region_type region) noexcept :
     super { region },
     function_ { function },
     arguments_ { std::move(arguments) }
+{}
+
+builtin_function_invocation::builtin_function_invocation(
+        function_type function,
+        common::rvalue_list<expression> arguments,
+        region_type region) :
+    builtin_function_invocation {
+            function,
+            to_vector(arguments),
+            region,
+    }
 {}
 
 

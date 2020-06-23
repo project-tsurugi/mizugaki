@@ -20,6 +20,7 @@
 #include <mizugaki/ast/scalar/variable_reference.h>
 #include <mizugaki/ast/scalar/comparison_predicate.h>
 #include <mizugaki/ast/scalar/value_constructor.h>
+#include <mizugaki/ast/scalar/current_of_cursor.h>
 
 #include <mizugaki/ast/name/simple.h>
 
@@ -213,6 +214,29 @@ TEST_F(sql_parser_statement_test, update_where) {
     }));
 }
 
+TEST_F(sql_parser_statement_test, update_where_current_of_cursor) {
+    sql_parser parser;
+    auto result = parser("-", "UPDATE T0 SET C0=1, C1 = 2 WHERE CURRENT OF cur;");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::update_statement {
+            name::simple { "T0" },
+            {
+                    {
+                            name::simple { "C0" },
+                            int_literal("1"),
+                    },
+                    {
+                            name::simple { "C1" },
+                            int_literal("2"),
+                    },
+            },
+            scalar::current_of_cursor {
+                    name::simple { "cur" },
+            },
+    }));
+}
+
 TEST_F(sql_parser_statement_test, delete) {
     sql_parser parser;
     auto result = parser("-", "DELETE FROM T0;");
@@ -236,6 +260,19 @@ TEST_F(sql_parser_statement_test, delete_where) {
                     },
                     scalar::comparison_operator::equals,
                     int_literal("0"),
+            },
+    }));
+}
+
+TEST_F(sql_parser_statement_test, delete_where_current_of_cursor) {
+    sql_parser parser;
+    auto result = parser("-", "DELETE FROM T0 WHERE CURRENT OF cur;");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::delete_statement {
+            name::simple { "T0" },
+            scalar::current_of_cursor {
+                    name::simple { "cur" },
             },
     }));
 }

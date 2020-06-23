@@ -25,7 +25,7 @@ select_column::select_column(
 select_column::select_column(
         scalar::expression&& value,
         rvalue_ptr<name::simple> name,
-        region_type region) noexcept :
+        region_type region) :
     select_column {
             clone_unique(std::move(value)),
             clone_unique(name),

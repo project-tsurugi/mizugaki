@@ -25,18 +25,18 @@ identifier_body {identifier_start}{identifier_part}*
 identifier {identifier_body}
 
 /* <delimited identifier> */
-delimited_identifier {double_quote}{delimited_identifier_body}+{double_quote}
+delimited_identifier {double_quote}{delimited_identifier_body}{double_quote}
 delimited_identifier_body {delimited_identifier_part}+
 delimited_identifier_part ({nondoublequote_character}|{doublequote_symbol})
-double_quote "\""
-nondoublequote_character [^{double_quote}]
+double_quote \"
+nondoublequote_character [^\"]
 doublequote_symbol {double_quote}{double_quote}
 
 /* <character string literal> */
 character_string_literal {quote}{character_representation}*{quote}
 quote "'"
 character_representation ({nonquote_character}|{quote_symbol})
-nonquote_character [^{quote}]
+nonquote_character [^']
 quote_symbol {quote}{quote}
 
 /* <bit string literal> */
@@ -61,6 +61,8 @@ exponent {signed_integer}
 /* special phrases */
 union_join "UNION"{space}+"JOIN"
 dot_asterisk "."{space}*"*"
+
+host_parameter_name ":"{identifier}
 
 %x bracketed_comment
 %x simple_comment
@@ -138,7 +140,7 @@ dot_asterisk "."{space}*"*"
 "}" { return parser_type::make_RIGHT_BRACE(location()); }
 
 "ABS" { return parser_type::make_ABS(location()); }
-"ADA" { return parser_type::make_ADA(location()); }
+"ADA" { return parser_type::make_ADA(get_image(driver), location()); }
 "ASENSITIVE" { return parser_type::make_ASENSITIVE(location()); }
 "ASSIGNMENT" { return parser_type::make_ASSIGNMENT(location()); }
 "ASYMMETRIC" { return parser_type::make_ASYMMETRIC(location()); }
@@ -147,7 +149,7 @@ dot_asterisk "."{space}*"*"
 "BETWEEN" { return parser_type::make_BETWEEN(location()); }
 "BIT_LENGTH" { return parser_type::make_BIT_LENGTH(location()); }
 "BITVAR" { return parser_type::make_BITVAR(location()); }
-"C" { return parser_type::make_C(location()); }
+"C" { return parser_type::make_C(get_image(driver), location()); }
 "CALLED" { return parser_type::make_CALLED(location()); }
 "CARDINALITY" { return parser_type::make_CARDINALITY(location()); }
 "CATALOG_NAME" { return parser_type::make_CATALOG_NAME(location()); }
@@ -160,7 +162,7 @@ dot_asterisk "."{space}*"*"
 "CHECKED" { return parser_type::make_CHECKED(location()); }
 "CLASS_ORIGIN" { return parser_type::make_CLASS_ORIGIN(location()); }
 "COALESCE" { return parser_type::make_COALESCE(location()); }
-"COBOL" { return parser_type::make_COBOL(location()); }
+"COBOL" { return parser_type::make_COBOL(get_image(driver), location()); }
 "COLLATION_CATALOG" { return parser_type::make_COLLATION_CATALOG(location()); }
 "COLLATION_NAME" { return parser_type::make_COLLATION_NAME(location()); }
 "COLLATION_SCHEMA" { return parser_type::make_COLLATION_SCHEMA(location()); }
@@ -188,8 +190,8 @@ dot_asterisk "."{space}*"*"
 "EXISTS" { return parser_type::make_EXISTS(location()); }
 "EXTRACT" { return parser_type::make_EXTRACT(location()); }
 "FINAL" { return parser_type::make_FINAL(location()); }
-"FORTRAN" { return parser_type::make_FORTRAN(location()); }
-"G" { return parser_type::make_G(location()); }
+"FORTRAN" { return parser_type::make_FORTRAN(get_image(driver), location()); }
+"G" { return parser_type::make_G(get_image(driver), location()); }
 "GENERATED" { return parser_type::make_GENERATED(location()); }
 "GRANTED" { return parser_type::make_GRANTED(location()); }
 "HIERARCHY" { return parser_type::make_HIERARCHY(location()); }
@@ -200,12 +202,12 @@ dot_asterisk "."{space}*"*"
 "INSTANCE" { return parser_type::make_INSTANCE(location()); }
 "INSTANTIABLE" { return parser_type::make_INSTANTIABLE(location()); }
 "INVOKER" { return parser_type::make_INVOKER(location()); }
-"K" { return parser_type::make_K(location()); }
+"K" { return parser_type::make_K(get_image(driver), location()); }
 "KEY_MEMBER" { return parser_type::make_KEY_MEMBER(location()); }
 "KEY_TYPE" { return parser_type::make_KEY_TYPE(location()); }
 "LENGTH" { return parser_type::make_LENGTH(location()); }
 "LOWER" { return parser_type::make_LOWER(location()); }
-"M" { return parser_type::make_M(location()); }
+"M" { return parser_type::make_M(get_image(driver), location()); }
 "MAX" { return parser_type::make_MAX(location()); }
 "MIN" { return parser_type::make_MIN(location()); }
 "MESSAGE_LENGTH" { return parser_type::make_MESSAGE_LENGTH(location()); }
@@ -214,7 +216,7 @@ dot_asterisk "."{space}*"*"
 "METHOD" { return parser_type::make_METHOD(location()); }
 "MOD" { return parser_type::make_MOD(location()); }
 "MORE" { return parser_type::make_MORE(location()); }
-"MUMPS" { return parser_type::make_MUMPS(location()); }
+"MUMPS" { return parser_type::make_MUMPS(get_image(driver), location()); }
 "NAME" { return parser_type::make_NAME(location()); }
 "NULLABLE" { return parser_type::make_NULLABLE(location()); }
 "NUMBER" { return parser_type::make_NUMBER(location()); }
@@ -224,14 +226,14 @@ dot_asterisk "."{space}*"*"
 "OVERLAPS" { return parser_type::make_OVERLAPS(location()); }
 "OVERLAY" { return parser_type::make_OVERLAY(location()); }
 "OVERRIDING" { return parser_type::make_OVERRIDING(location()); }
-"PASCAL" { return parser_type::make_PASCAL(location()); }
+"PASCAL" { return parser_type::make_PASCAL(get_image(driver), location()); }
 "PARAMETER_MODE" { return parser_type::make_PARAMETER_MODE(location()); }
 "PARAMETER_NAME" { return parser_type::make_PARAMETER_NAME(location()); }
 "PARAMETER_ORDINAL_POSITION" { return parser_type::make_PARAMETER_ORDINAL_POSITION(location()); }
 "PARAMETER_SPECIFIC_CATALOG" { return parser_type::make_PARAMETER_SPECIFIC_CATALOG(location()); }
 "PARAMETER_SPECIFIC_NAME" { return parser_type::make_PARAMETER_SPECIFIC_NAME(location()); }
 "PARAMETER_SPECIFIC_SCHEMA" { return parser_type::make_PARAMETER_SPECIFIC_SCHEMA(location()); }
-"PLI" { return parser_type::make_PLI(location()); }
+"PLI" { return parser_type::make_PLI(get_image(driver), location()); }
 "POSITION" { return parser_type::make_POSITION(location()); }
 "REPEATABLE" { return parser_type::make_REPEATABLE(location()); }
 "RETURNED_LENGTH" { return parser_type::make_RETURNED_LENGTH(location()); }
@@ -576,8 +578,18 @@ dot_asterisk "."{space}*"*"
 "WRITE" { return parser_type::make_WRITE(location()); }
 "YEAR" { return parser_type::make_YEAR(location()); }
 "ZONE" { return parser_type::make_ZONE(location()); }
+
+"<@" { return parser_type::make_CONTAINS_OPERATOR(location()); }
+"@>" { return parser_type::make_IS_CONTAINED_BY_OPERATOR(location()); }
+"&&" { return parser_type::make_OVERLAPS_OPERATOR(location()); }
+
+"PLACING" { return parser_type::make_PLACING(location()); }
 "TINYINT" { return parser_type::make_TINYINT(location()); }
 "BIGINT" { return parser_type::make_BIGINT(location()); }
+"BIT_AND" { return parser_type::make_BOOL_AND(location()); }
+"BIT_OR" { return parser_type::make_BOOL_OR(location()); }
+"BOOL_AND" { return parser_type::make_BOOL_AND(location()); }
+"BOOL_OR" { return parser_type::make_BOOL_OR(location()); }
 
 {identifier} {
     return parser_type::make_REGULAR_IDENTIFIER(get_image(driver), location());
@@ -585,6 +597,10 @@ dot_asterisk "."{space}*"*"
 
 {delimited_identifier} {
     return parser_type::make_DELIMITED_IDENTIFIER(get_image(driver), location());
+}
+
+{host_parameter_name} {
+    return parser_type::make_HOST_PARAMETER_NAME(get_image(driver), location());
 }
 
 {unsigned_integer} {

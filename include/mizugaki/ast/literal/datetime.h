@@ -43,6 +43,27 @@ public:
 
     /**
      * @brief creates a new instance.
+     * @tparam T the quoted string type
+     * @param value_kind the value kind, must be one of `date`, `time` or `timestamp`
+     * @param value quoted string representation of the value
+     * @param region the node region
+     * @throws std::invalid_argument if kind is invalid
+     * @see tags
+     */
+    template<class T>
+    explicit datetime(
+            value_kind_type value_kind,
+            T&& value,
+            region_type region = {}) :
+        datetime {
+                value_kind,
+                value_type { std::forward<T>(value) },
+                region,
+        }
+    {}
+
+    /**
+     * @brief creates a new instance.
      * @param other the copy source
      * @param creator the object creator
      */

@@ -38,7 +38,7 @@ public:
      */
     explicit current_of_cursor(
             name::name&& name,
-            region_type region = {}) noexcept;
+            region_type region = {});
 
     /**
      * @brief creates a new instance.

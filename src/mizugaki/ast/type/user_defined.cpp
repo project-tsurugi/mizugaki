@@ -21,7 +21,7 @@ user_defined::user_defined(
 
 user_defined::user_defined(
         name::name&& name,
-        region_type region) noexcept :
+        region_type region) :
     user_defined {
             clone_unique(std::move(name)),
             region,

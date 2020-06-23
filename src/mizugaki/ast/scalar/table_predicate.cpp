@@ -15,10 +15,21 @@ using ::takatori::util::unique_object_ptr;
 table_predicate::table_predicate(
         operator_kind_type operator_kind,
         unique_object_ptr<query::expression> operand,
-        region_type region) noexcept:
+        region_type region) noexcept :
     super { region },
     operator_kind_ { operator_kind },
     operand_ { std::move(operand) }
+{}
+
+table_predicate::table_predicate(
+        operator_kind_type operator_kind,
+        query::expression&& operand,
+        region_type region) :
+    table_predicate {
+        operator_kind,
+        clone_unique(std::move(operand)),
+        region,
+    }
 {}
 
 table_predicate::table_predicate(table_predicate const& other, object_creator creator) :

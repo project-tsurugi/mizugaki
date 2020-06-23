@@ -62,11 +62,15 @@ add_library(mizugaki
     mizugaki/ast/type/binary_numeric.cpp
     mizugaki/ast/type/datetime.cpp
     mizugaki/ast/type/interval.cpp
+    mizugaki/ast/type/row.cpp
     mizugaki/ast/type/user_defined.cpp
+    mizugaki/ast/type/collection.cpp
+    mizugaki/ast/type/field_definition.cpp
 
     mizugaki/ast/scalar/expression.cpp
     mizugaki/ast/scalar/literal_expression.cpp
     mizugaki/ast/scalar/variable_reference.cpp
+    mizugaki/ast/scalar/host_parameter_reference.cpp
     mizugaki/ast/scalar/field_reference.cpp
     mizugaki/ast/scalar/case_expression.cpp
     mizugaki/ast/scalar/case_when_clause.cpp
@@ -74,7 +78,6 @@ add_library(mizugaki
     mizugaki/ast/scalar/unary_expression.cpp
     mizugaki/ast/scalar/binary_expression.cpp
     mizugaki/ast/scalar/extract_expression.cpp
-    mizugaki/ast/scalar/convert_expression.cpp
     mizugaki/ast/scalar/trim_expression.cpp
     mizugaki/ast/scalar/value_constructor.cpp
     mizugaki/ast/scalar/comparison_predicate.cpp

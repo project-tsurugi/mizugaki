@@ -13,6 +13,7 @@ using ::takatori::util::object_creator;
 using ::takatori::util::unique_object_ptr;
 
 using common::clone_vector;
+using common::to_vector;
 
 correlation_clause::correlation_clause(
         unique_object_ptr<name::simple> correlation_name,
@@ -21,6 +22,17 @@ correlation_clause::correlation_clause(
     element { region },
     correlation_name_ { std::move(correlation_name) },
     column_names_ { std::move(column_names) }
+{}
+
+correlation_clause::correlation_clause(
+        name::simple&& correlation_name,
+        common::rvalue_list<name::simple> column_names,
+        region_type region) :
+    correlation_clause {
+            clone_unique(std::move(correlation_name)),
+            to_vector(column_names),
+            region,
+    }
 {}
 
 correlation_clause::correlation_clause(correlation_clause const& other, object_creator creator) :

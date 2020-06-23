@@ -21,7 +21,7 @@ table_value_constructor::table_value_constructor(
 
 table_value_constructor::table_value_constructor(
         common::rvalue_list<scalar::expression> elements,
-        element::region_type region) noexcept :
+        element::region_type region) :
     table_value_constructor {
             to_vector(elements),
             region,

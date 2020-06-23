@@ -11,7 +11,7 @@ namespace mizugaki::ast::scalar {
 
 /**
  * @brief processes sub-query.
- * @details This may represent scalar, row, or table subquery (depends on its context).
+ * @details This may represent scalar or row subquery (depends on its context).
  * @note `7.14 <subquery>`
  */
 class subquery final : public expression {
@@ -29,6 +29,16 @@ public:
      */
     explicit subquery(
             ::takatori::util::unique_object_ptr<query::expression> expression,
+            region_type region = {}) noexcept;
+
+    /**
+     * @brief creates a new instance.
+     * @param expression the query expression
+     * @param region the node region
+     * @attention this will take a copy of argument
+     */
+    explicit subquery(
+            query::expression&& expression,
             region_type region = {}) noexcept;
 
     /**

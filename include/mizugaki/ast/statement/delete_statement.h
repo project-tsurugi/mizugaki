@@ -46,7 +46,7 @@ public:
     explicit delete_statement(
             name::name&& table_name,
             ::takatori::util::rvalue_ptr<scalar::expression> where = {},
-            region_type region = {}) noexcept;
+            region_type region = {});
 
     /**
      * @brief creates a new instance.

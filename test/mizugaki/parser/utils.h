@@ -5,7 +5,9 @@
 #include <takatori/util/string_builder.h>
 
 #include <mizugaki/ast/scalar/literal_expression.h>
+#include <mizugaki/ast/scalar/variable_reference.h>
 #include <mizugaki/ast/literal/numeric.h>
+#include <mizugaki/ast/name/simple.h>
 
 #include <mizugaki/parser/sql_parser_result.h>
 
@@ -43,6 +45,12 @@ inline scalar::literal_expression int_literal(std::string_view str) {
                     std::nullopt,
                     common::chars { str },
             },
+    };
+}
+
+inline scalar::variable_reference v(std::string_view str) {
+    return scalar::variable_reference {
+            name::simple { str },
     };
 }
 

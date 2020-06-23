@@ -44,6 +44,20 @@ public:
 
     /**
      * @brief creates a new instance.
+     * @param left the left term
+     * @param operator_kind the binary operator
+     * @param right the right term
+     * @param region the node region
+     * @attention this will take copy of arguments
+     */
+    explicit binary_expression(
+            expression&& left,
+            operator_kind_type operator_kind,
+            expression&& right,
+            region_type region = {});
+
+    /**
+     * @brief creates a new instance.
      * @param other the copy source
      * @param creator the object creator
      */

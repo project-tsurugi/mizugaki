@@ -40,6 +40,32 @@ public:
 
     /**
      * @brief creates a new instance.
+     * @param operand the case operand
+     * @param when_clauses the when clauses
+     * @param default_result the default result
+     * @param region the node region
+     * @attention this will take copy of arguments
+     */
+    explicit case_expression(
+            expression&& operand,
+            std::initializer_list<when_clause> when_clauses,
+            ::takatori::util::rvalue_ptr<expression> default_result = {},
+            region_type region = {});
+
+    /**
+     * @brief creates a new instance.
+     * @param when_clauses the when clauses
+     * @param default_result the default result
+     * @param region the node region
+     * @attention this will take copy of arguments
+     */
+    case_expression(
+            std::initializer_list<when_clause> when_clauses,
+            ::takatori::util::rvalue_ptr<expression> default_result = {},
+            region_type region = {});
+
+    /**
+     * @brief creates a new instance.
      * @param other the copy source
      * @param creator the object creator
      */

@@ -32,9 +32,9 @@ public:
     /**
      * @brief creates a new instance.
      * @param target the comparison target
-     * @param left the left edge of the comparison range
-     * @param operator_kind the between operator kind
      * @param is_not whether or not this declared as `NOT`
+     * @param operator_kind the between operator kind
+     * @param left the left edge of the comparison range
      * @param right the right comparing term
      * @param region the node region
      */
@@ -45,6 +45,23 @@ public:
             operand_type left,
             operand_type right,
             region_type region = {}) noexcept;
+
+    /**
+     * @brief creates a new instance.
+     * @param target the comparison target
+     * @param left the left edge of the comparison range
+     * @param right the right comparing term
+     * @param is_not whether or not this declared as `NOT`
+     * @param operator_kind the between operator kind
+     * @param region the node region
+     */
+    explicit between_predicate(
+            expression&& target,
+            expression&& left,
+            expression&& right,
+            bool_type is_not = false,
+            std::optional<operator_kind_type> operator_kind = std::nullopt,
+            region_type region = {});
 
     /**
      * @brief creates a new instance.

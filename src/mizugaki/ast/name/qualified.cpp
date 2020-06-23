@@ -23,6 +23,17 @@ qualified::qualified(
     last_ { std::move(last) }
 {}
 
+qualified::qualified(
+        name&& qualifier,
+        simple&& last,
+        region_type region) :
+    qualified {
+            clone_unique(std::move(qualifier)),
+            clone_unique(std::move(last)),
+            region,
+    }
+{}
+
 qualified::qualified(qualified const& other, object_creator creator) :
     qualified{
             clone_unique(other.qualifier_, creator),

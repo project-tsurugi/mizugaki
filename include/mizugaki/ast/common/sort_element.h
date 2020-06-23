@@ -54,7 +54,7 @@ public:
             scalar::expression&& key,
             ::takatori::util::rvalue_ptr<name::name> collation = {},
             std::optional<direction_type> direction = {},
-            region_type region = {}) noexcept;
+            region_type region = {});
 
     /**
      * @brief creates a new instance.

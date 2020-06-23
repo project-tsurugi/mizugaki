@@ -39,6 +39,19 @@ public:
 
     /**
      * @brief creates a new instance.
+     * @param left the left term
+     * @param is_not whether or not `NOT` is declared
+     * @param right the right term
+     * @param region the node region
+     */
+    explicit in_predicate(
+            expression&& left,
+            query::expression&& right,
+            bool_type is_not = false,
+            region_type region = {});
+
+    /**
+     * @brief creates a new instance.
      * @param other the copy source
      * @param creator the object creator
      */

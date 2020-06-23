@@ -46,9 +46,9 @@ public:
      * @see tags
      */
     explicit decimal(
-            type_kind_type type_kind,
-            std::optional<precision_type> precision,
-            std::optional<scale_type> scale,
+            type_kind_type type_kind = kind::decimal,
+            std::optional<precision_type> precision = {},
+            std::optional<scale_type> scale = {},
             region_type region = {});
 
     /**
@@ -135,6 +135,12 @@ private:
     std::optional<precision_type> precision_;
     std::optional<scale_type> scale_;
 };
+
+/**
+ * @brief alias of decimal.
+ * @see decimal
+ */
+using numeric = decimal;
 
 /**
  * @brief appends string representation of the given value.

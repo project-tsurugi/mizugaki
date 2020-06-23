@@ -23,8 +23,18 @@ value_constructor::value_constructor(
 
 value_constructor::value_constructor(
         common::rvalue_list<scalar::expression> elements,
+        region_type region) :
+    value_constructor {
+            value_constructor_kind::row,
+            to_vector(elements),
+            region,
+    }
+{}
+
+value_constructor::value_constructor(
         value_constructor_kind operator_kind,
-        region_type region) noexcept :
+        common::rvalue_list<scalar::expression> elements,
+        region_type region) :
     value_constructor {
             operator_kind,
             to_vector(elements),

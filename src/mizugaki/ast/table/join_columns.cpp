@@ -12,12 +12,22 @@ using ::takatori::util::object_creator;
 using ::takatori::util::unique_object_ptr;
 
 using common::clone_vector;
+using common::to_vector;
 
 join_columns::join_columns(
         common::vector<::takatori::util::unique_object_ptr<name::simple>> columns,
         region_type region) noexcept :
     super { region },
     columns_ { std::move(columns) }
+{}
+
+join_columns::join_columns(
+        common::rvalue_list<name::simple> columns,
+        region_type region) :
+    join_columns {
+            to_vector(columns),
+            region,
+    }
 {}
 
 join_columns::join_columns(join_columns const& other, object_creator creator) :

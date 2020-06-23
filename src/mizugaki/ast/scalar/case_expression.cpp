@@ -12,6 +12,7 @@ using when_clause = case_expression::when_clause;
 
 using ::takatori::util::clone_unique;
 using ::takatori::util::object_creator;
+using ::takatori::util::rvalue_ptr;
 using ::takatori::util::unique_object_ptr;
 
 using common::clone_vector;
@@ -25,6 +26,31 @@ case_expression::case_expression(
     operand_ { std::move(operand) },
     when_clauses_ { std::move(when_clauses) },
     default_result_ { std::move(default_result) }
+{}
+
+case_expression::case_expression(
+        expression&& operand,
+        std::initializer_list<when_clause> when_clauses,
+        rvalue_ptr<expression> default_result,
+        region_type region) :
+    case_expression {
+            clone_unique(std::move(operand)),
+            when_clauses,
+            clone_unique(default_result),
+            region,
+    }
+{}
+
+case_expression::case_expression(
+        std::initializer_list<when_clause> when_clauses,
+        rvalue_ptr<expression> default_result,
+        region_type region) :
+    case_expression {
+            nullptr,
+            when_clauses,
+            clone_unique(default_result),
+            region,
+    }
 {}
 
 case_expression::case_expression(case_expression const& other, object_creator creator) :

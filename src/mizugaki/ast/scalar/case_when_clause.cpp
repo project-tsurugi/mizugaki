@@ -15,10 +15,21 @@ using ::takatori::util::unique_object_ptr;
 case_when_clause::case_when_clause(
         operand_type when,
         operand_type result,
-        region_type region) noexcept:
+        region_type region) noexcept :
     element { region },
     when_ { std::move(when) },
     result_ { std::move(result) }
+{}
+
+case_when_clause::case_when_clause(
+        expression&& when,
+        expression&& result,
+        region_type region) :
+    case_when_clause {
+            clone_unique(std::move(when)),
+            clone_unique(std::move(result)),
+            region,
+    }
 {}
 
 case_when_clause::case_when_clause(case_when_clause const& other, object_creator creator) :

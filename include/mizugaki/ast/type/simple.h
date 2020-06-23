@@ -22,6 +22,7 @@ public:
             node_kind_type::small_integer,
             node_kind_type::integer,
             node_kind_type::big_integer,
+            node_kind_type::float_,
             node_kind_type::real,
             node_kind_type::double_precision,
             node_kind_type::boolean,

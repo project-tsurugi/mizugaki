@@ -45,7 +45,7 @@ public:
     set_element(
             name::name&& target,
             scalar::expression&& value,
-            region_type region = {}) noexcept;
+            region_type region = {});
 
     /**
      * @brief creates a new instance.

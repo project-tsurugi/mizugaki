@@ -42,10 +42,10 @@ public:
      * @param region the element region
      * @attention this will take copy of arguments
      */
-    grouping_column( // NOLINT: conversion constructor
+    explicit grouping_column(
             scalar::expression&& column,
             ::takatori::util::rvalue_ptr<name::name> collation = {},
-            region_type region = {}) noexcept;
+            region_type region = {});
 
     /**
      * @brief creates a new instance.
@@ -54,10 +54,10 @@ public:
      * @param region the element region
      * @attention this will take copy of arguments
      */
-    grouping_column( // NOLINT: conversion constructor
+    explicit grouping_column(
             name::name&& column,
             ::takatori::util::rvalue_ptr<name::name> collation = {},
-            region_type region = {}) noexcept;
+            region_type region = {});
 
     /**
      * @brief creates a new instance.

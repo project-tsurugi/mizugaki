@@ -19,6 +19,15 @@ subquery::subquery(
     expression_ { std::move(expression) }
 {}
 
+subquery::subquery(
+        query::expression&& expression,
+        region_type region) noexcept :
+    subquery {
+            clone_unique(std::move(expression)),
+            region,
+    }
+{}
+
 subquery::subquery(subquery const& other, object_creator creator) :
     subquery {
             clone_unique(other.expression_, creator),

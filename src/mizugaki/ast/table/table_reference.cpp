@@ -30,7 +30,7 @@ table_reference::table_reference(
         name::name&& name,
         std::optional<correlation_type> correlation,
         bool_type is_only,
-        region_type region) noexcept :
+        region_type region) :
     table_reference {
             is_only,
             clone_unique(std::move(name)),

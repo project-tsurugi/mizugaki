@@ -28,7 +28,7 @@ public:
      * @param qualifier the optional qualifier
      * @param region the element region
      */
-    select_asterisk( // NOLINT: conversion constructor
+    explicit select_asterisk(
             ::takatori::util::unique_object_ptr<scalar::expression> qualifier = {},
             region_type region = {}) noexcept;
 
@@ -38,9 +38,9 @@ public:
      * @param region the element region
      * @attention this may take copy of elements
      */
-    select_asterisk( // NOLINT: conversion constructor
+    explicit select_asterisk(
             scalar::expression&& qualifier,
-            region_type region = {}) noexcept;
+            region_type region = {});
 
     /**
      * @brief creates a new instance.

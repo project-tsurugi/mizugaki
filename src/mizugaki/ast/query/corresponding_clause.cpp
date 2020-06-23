@@ -10,12 +10,23 @@ using ::takatori::util::object_creator;
 using ::takatori::util::unique_object_ptr;
 
 using common::clone_vector;
+using common::to_vector;
 
 corresponding_clause::corresponding_clause(
         common::vector<unique_object_ptr<name::simple>> column_names,
         region_type region) noexcept :
     element { region },
     column_names_ { std::move(column_names) }
+{}
+
+
+corresponding_clause::corresponding_clause(
+        common::rvalue_list<name::simple> column_names,
+        region_type region) :
+    corresponding_clause {
+            to_vector(column_names),
+            region,
+    }
 {}
 
 corresponding_clause::corresponding_clause(corresponding_clause const& other, object_creator creator) :

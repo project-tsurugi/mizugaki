@@ -18,11 +18,24 @@ field_reference::field_reference(
         operand_type value,
         operator_kind_type operator_kind,
         unique_object_ptr<name::simple> name,
-        element::region_type region) noexcept:
+        region_type region) noexcept:
     super { region },
     value_ { std::move(value) },
     operator_kind_ { operator_kind },
     name_ { std::move(name) }
+{}
+
+field_reference::field_reference(
+        expression&& value,
+        name::simple&& name,
+        operator_kind_type operator_kind,
+        region_type region) :
+    field_reference {
+            clone_unique(std::move(value)),
+            operator_kind,
+            clone_unique(std::move(name)),
+            region,
+    }
 {}
 
 field_reference::field_reference(field_reference const& other, object_creator creator) :

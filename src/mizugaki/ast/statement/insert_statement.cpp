@@ -31,7 +31,7 @@ insert_statement::insert_statement(
         name::name&& table_name,
         common::rvalue_list<name::simple> columns,
         rvalue_ptr<query::expression> expression,
-        region_type region) noexcept :
+        region_type region) :
     insert_statement {
             clone_unique(std::move(table_name)),
             to_vector(columns),

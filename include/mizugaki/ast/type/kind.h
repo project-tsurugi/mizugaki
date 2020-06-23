@@ -16,7 +16,9 @@ class decimal;
 class binary_numeric;
 class datetime;
 class interval;
+class row;
 class user_defined;
+class collection;
 
 /**
  * @brief represents a kind of type.
@@ -100,6 +102,12 @@ enum class kind {
     big_integer,
 
     /**
+     * @brief default precision floating point number type.
+     * @see simple
+     */
+    float_,
+
+    /**
      * @brief single precision floating point number type.
      * @see simple
      */
@@ -154,17 +162,29 @@ enum class kind {
     interval,
 
     /**
+     * @brief row types.
+     * @see row
+     */
+    row,
+
+    /**
      * @brief user defined types.
      * @see user_defined
      */
     user_defined,
+
+    /**
+     * @brief collection types.
+     * @see collection
+     */
+    collection,
 };
 
 /// @brief set of type kind.
 using kind_set = ::takatori::util::enum_set<
         kind,
         kind::unknown,
-        kind::user_defined>;
+        kind::collection>;
 
 /**
  * @brief provides the implementation type of the type kind.
@@ -218,6 +238,9 @@ template<> struct type_of<kind, kind::integer> : ::takatori::util::meta_type<sim
 /// @brief provides implementation type of kind::big_integer.
 template<> struct type_of<kind, kind::big_integer> : ::takatori::util::meta_type<simple> {};
 
+/// @brief provides implementation type of kind::float_.
+template<> struct type_of<kind, kind::float_> : ::takatori::util::meta_type<simple> {};
+
 /// @brief provides implementation type of kind::real.
 template<> struct type_of<kind, kind::real> : ::takatori::util::meta_type<simple> {};
 
@@ -245,8 +268,14 @@ template<> struct type_of<kind, kind::timestamp> : ::takatori::util::meta_type<d
 /// @brief provides implementation type of kind::interval.
 template<> struct type_of<kind, kind::interval> : ::takatori::util::meta_type<interval> {};
 
+/// @brief provides implementation type of kind::row.
+template<> struct type_of<kind, kind::row> : ::takatori::util::meta_type<row> {};
+
 /// @brief provides implementation type of kind::user_defined.
 template<> struct type_of<kind, kind::user_defined> : ::takatori::util::meta_type<user_defined> {};
+
+/// @brief provides implementation type of kind::collection.
+template<> struct type_of<kind, kind::collection> : ::takatori::util::meta_type<collection> {};
 
 /**
  * @brief returns string representation of the value.
@@ -269,6 +298,7 @@ inline constexpr std::string_view to_string_view(kind value) noexcept {
         case kind::small_integer: return "small_integer"sv;
         case kind::integer: return "integer"sv;
         case kind::big_integer: return "big_integer"sv;
+        case kind::float_: return "float"sv;
         case kind::real: return "real"sv;
         case kind::double_precision: return "double_precision"sv;
         case kind::binary_integer: return "binary_integer"sv;
@@ -278,7 +308,9 @@ inline constexpr std::string_view to_string_view(kind value) noexcept {
         case kind::time: return "time"sv;
         case kind::timestamp: return "timestamp"sv;
         case kind::interval: return "interval"sv;
+        case kind::row: return "row"sv;
         case kind::user_defined: return "user_defined"sv;
+        case kind::collection: return "collection"sv;
     }
     std::abort();
 }

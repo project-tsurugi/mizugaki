@@ -3,6 +3,8 @@
 #include "name.h"
 #include "simple.h"
 
+
+
 namespace mizugaki::ast::name {
 
 /**
@@ -26,6 +28,38 @@ public:
             ::takatori::util::unique_object_ptr<name> qualifier,
             ::takatori::util::unique_object_ptr<simple> last,
             region_type region = {}) noexcept;
+
+    /**
+     * @brief creates a new instance.
+     * @param qualifier the name qualifier
+     * @param last the last name
+     * @param region the node region
+     * @attention this will take copy of arguments
+     */
+    explicit qualified(
+            name&& qualifier,
+            simple&& last,
+            region_type region = {});
+
+    /**
+     * @brief creates a new instance from chain of names.
+     * @details this is a DSL-style constructor designed for testing.
+     * @tparam Args the chain types, must be simple
+     * @param qualifier the name qualifier
+     * @param next the next simple name
+     * @param args the rest simple names, must be rvalue references
+     * @attention this will take copy of arguments
+     */
+    template<class... Args>
+    explicit qualified(name&& qualifier, simple&& next, Args&&... args) :
+        qualified {
+                qualified {
+                        std::move(qualifier),
+                        std::move(next),
+                },
+                std::forward<Args>(args)...,
+        }
+    {}
 
     /**
      * @brief creates a new instance.

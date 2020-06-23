@@ -5,6 +5,10 @@
 #include <mizugaki/ast/statement/select_statement.h>
 
 #include <mizugaki/ast/query/query.h>
+#include <mizugaki/ast/query/table_reference.h>
+#include <mizugaki/ast/query/table_value_constructor.h>
+#include <mizugaki/ast/query/binary_expression.h>
+#include <mizugaki/ast/query/with_expression.h>
 #include <mizugaki/ast/query/select_asterisk.h>
 #include <mizugaki/ast/query/select_column.h>
 #include <mizugaki/ast/query/grouping_column.h>
@@ -14,6 +18,7 @@
 #include <mizugaki/ast/scalar/literal_expression.h>
 #include <mizugaki/ast/scalar/variable_reference.h>
 #include <mizugaki/ast/scalar/comparison_predicate.h>
+#include <mizugaki/ast/scalar/value_constructor.h>
 
 #include <mizugaki/ast/name/simple.h>
 
@@ -36,13 +41,13 @@ TEST_F(sql_parser_query_test, query_asterisk) {
     auto result = parser("-", "SELECT * FROM T0;");
     ASSERT_TRUE(result) << diagnostics(result);
 
-    EXPECT_EQ(extract(result), (query::query{
+    EXPECT_EQ(extract(result), (query::query {
             {},
             { // SELECT
                     query::select_asterisk{},
             },
             { // FROM
-                    table::table_reference{
+                    table::table_reference {
                             name::simple{"T0"},
                     },
             },
@@ -340,6 +345,409 @@ TEST_F(sql_parser_query_test, query_limit) {
             { // ORDER BY
             },
             int_literal("10"),
+    }));
+}
+
+TEST_F(sql_parser_query_test, explicit_table) {
+    sql_parser parser;
+    auto result = parser("-", "TABLE T0;");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (query::table_reference {
+            name::simple { "T0" },
+    }));
+}
+
+TEST_F(sql_parser_query_test, table_value_constructor) {
+    sql_parser parser;
+    auto result = parser("-", "VALUES (1);");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (query::table_value_constructor {
+            scalar::value_constructor {
+                    int_literal("1"),
+            },
+    }));
+}
+
+TEST_F(sql_parser_query_test, table_value_constructor_columns) {
+    sql_parser parser;
+    auto result = parser("-", "VALUES (1, 2, 3);");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (query::table_value_constructor {
+            scalar::value_constructor {
+                    int_literal("1"),
+                    int_literal("2"),
+                    int_literal("3"),
+            },
+    }));
+}
+
+TEST_F(sql_parser_query_test, table_value_constructor_rows) {
+    sql_parser parser;
+    auto result = parser("-", "VALUES (1), (2), (3);");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (query::table_value_constructor {
+            scalar::value_constructor {
+                    int_literal("1"),
+            },
+            scalar::value_constructor {
+                    int_literal("2"),
+            },
+            scalar::value_constructor {
+                    int_literal("3"),
+            },
+    }));
+}
+
+TEST_F(sql_parser_query_test, binary_expression_union) {
+    sql_parser parser;
+    auto result = parser("-", "TABLE a UNION TABLE b;");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (query::binary_expression {
+            query::table_reference {
+                    name::simple { "a" },
+            },
+            query::binary_operator::union_,
+            query::table_reference {
+                    name::simple { "b" },
+            },
+    }));
+}
+
+TEST_F(sql_parser_query_test, binary_expression_except) {
+    sql_parser parser;
+    auto result = parser("-", "TABLE a EXCEPT TABLE b;");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (query::binary_expression {
+            query::table_reference {
+                    name::simple { "a" },
+            },
+            query::binary_operator::except,
+            query::table_reference {
+                    name::simple { "b" },
+            },
+    }));
+}
+
+TEST_F(sql_parser_query_test, binary_expression_intersect) {
+    sql_parser parser;
+    auto result = parser("-", "TABLE a INTERSECT TABLE b;");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (query::binary_expression {
+            query::table_reference {
+                    name::simple { "a" },
+            },
+            query::binary_operator::intersect,
+            query::table_reference {
+                    name::simple { "b" },
+            },
+    }));
+}
+
+TEST_F(sql_parser_query_test, binary_expression_precedence) {
+    sql_parser parser;
+    auto result = parser("-", "TABLE t0 UNION TABLE t1 EXCEPT TABLE t2 INTERSECT TABLE t3;");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (query::binary_expression {
+            query::binary_expression {
+                    query::table_reference {
+                            name::simple { "t0" },
+                    },
+                    query::binary_operator::union_,
+                    query::table_reference {
+                            name::simple { "t1" },
+                    },
+            },
+            query::binary_operator::except,
+            query::binary_expression {
+                    query::table_reference {
+                            name::simple { "t2" },
+                    },
+                    query::binary_operator::intersect,
+                    query::table_reference {
+                            name::simple { "t3" },
+                    },
+            },
+    }));
+}
+
+TEST_F(sql_parser_query_test, binary_expression_all) {
+    sql_parser parser;
+    auto result = parser("-", "TABLE a UNION ALL TABLE b;");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (query::binary_expression {
+            query::table_reference {
+                    name::simple { "a" },
+            },
+            query::binary_operator::union_,
+            query::set_quantifier::all,
+            query::table_reference {
+                    name::simple { "b" },
+            },
+    }));
+}
+
+TEST_F(sql_parser_query_test, binary_expression_distinct) {
+    sql_parser parser;
+    auto result = parser("-", "TABLE a UNION DISTINCT TABLE b;");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (query::binary_expression {
+            query::table_reference {
+                    name::simple { "a" },
+            },
+            query::binary_operator::union_,
+            query::set_quantifier::distinct,
+            query::table_reference {
+                    name::simple { "b" },
+            },
+    }));
+}
+
+TEST_F(sql_parser_query_test, binary_expression_corresponding) {
+    sql_parser parser;
+    auto result = parser("-", "TABLE a UNION ALL CORRESPONDING TABLE b;");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (query::binary_expression {
+            query::table_reference {
+                    name::simple { "a" },
+            },
+            query::binary_operator::union_,
+            query::set_quantifier::all,
+            {},
+            query::table_reference {
+                    name::simple { "b" },
+            },
+    }));
+}
+
+TEST_F(sql_parser_query_test, binary_expression_corresponding_by) {
+    sql_parser parser;
+    auto result = parser("-", "TABLE a UNION ALL CORRESPONDING BY (C0, C1, C2) TABLE b;");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (query::binary_expression {
+            query::table_reference {
+                    name::simple { "a" },
+            },
+            query::binary_operator::union_,
+            query::set_quantifier::all,
+            {
+                    name::simple { "C0" },
+                    name::simple { "C1" },
+                    name::simple { "C2" },
+            },
+            query::table_reference {
+                    name::simple { "b" },
+            },
+    }));
+}
+
+TEST_F(sql_parser_query_test, with_expression) {
+    sql_parser parser;
+    auto result = parser("-", "WITH q AS (SELECT * FROM T0) SELECT * FROM q;");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (query::with_expression {
+            { // WITH
+                    {
+                            name::simple { "q" },
+                            query::query {
+                                    { // SELECT
+                                            query::select_asterisk {},
+                                    },
+                                    { // FROM
+                                            table::table_reference {
+                                                    name::simple { "T0" },
+                                            },
+                                    },
+                                    { // WHERE
+                                    }
+                            }
+                    },
+            },
+            query::query {
+                    { // SELECT
+                            query::select_asterisk {},
+                    },
+                    { // FROM
+                            table::table_reference {
+                                    name::simple { "q" },
+                            },
+                    },
+            }
+    }));
+}
+
+TEST_F(sql_parser_query_test, with_expression_recursive) {
+    sql_parser parser;
+    auto result = parser("-", "WITH RECURSIVE q AS (SELECT * FROM T0) SELECT * FROM q;");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (query::with_expression {
+            true,
+            { // WITH
+                    {
+                            name::simple { "q" },
+                            query::query {
+                                    { // SELECT
+                                            query::select_asterisk {},
+                                    },
+                                    { // FROM
+                                            table::table_reference {
+                                                    name::simple { "T0" },
+                                            },
+                                    },
+                                    { // WHERE
+                                    }
+                            }
+                    },
+            },
+            query::query {
+                    { // SELECT
+                            query::select_asterisk {},
+                    },
+                    { // FROM
+                            table::table_reference {
+                                    name::simple { "q" },
+                            },
+                    },
+            }
+    }));
+}
+
+TEST_F(sql_parser_query_test, with_expression_columns) {
+    sql_parser parser;
+    auto result = parser("-", "WITH q (x, y) AS (SELECT * FROM T0) SELECT * FROM q;");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (query::with_expression {
+            { // WITH
+                    {
+                            name::simple { "q" },
+                            {
+                                    name::simple { "x" },
+                                    name::simple { "y" },
+                            },
+                            query::query {
+                                    { // SELECT
+                                            query::select_asterisk {},
+                                    },
+                                    { // FROM
+                                            table::table_reference {
+                                                    name::simple { "T0" },
+                                            },
+                                    },
+                                    { // WHERE
+                                    }
+                            }
+                    },
+            },
+            query::query {
+                    { // SELECT
+                            query::select_asterisk {},
+                    },
+                    { // FROM
+                            table::table_reference {
+                                    name::simple { "q" },
+                            },
+                    },
+            }
+    }));
+}
+
+TEST_F(sql_parser_query_test, with_expression_multiple_elements) {
+    sql_parser parser;
+    auto result = parser("-",
+            "WITH q AS (SELECT * FROM T0)"
+            ",  r AS (SELECT * FROM q)"
+            ",  s AS (SELECT * FROM r)"
+            "SELECT * FROM s;");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (query::with_expression {
+            { // WITH
+                    {
+                            name::simple { "q" },
+                            query::query {
+                                    { // SELECT
+                                            query::select_asterisk {},
+                                    },
+                                    { // FROM
+                                            table::table_reference {
+                                                    name::simple { "T0" },
+                                            },
+                                    },
+                            }
+                    },
+                    {
+                            name::simple { "r" },
+                            query::query {
+                                    { // SELECT
+                                            query::select_asterisk {},
+                                    },
+                                    { // FROM
+                                            table::table_reference {
+                                                    name::simple { "q" },
+                                            },
+                                    },
+                            }
+                    },
+                    {
+                            name::simple { "s" },
+                            query::query {
+                                    { // SELECT
+                                            query::select_asterisk {},
+                                    },
+                                    { // FROM
+                                            table::table_reference {
+                                                    name::simple { "r" },
+                                            },
+                                    },
+                            }
+                    },
+            },
+            query::query {
+                    { // SELECT
+                            query::select_asterisk {},
+                    },
+                    { // FROM
+                            table::table_reference {
+                                    name::simple { "s" },
+                            },
+                    },
+            }
+    }));
+}
+
+TEST_F(sql_parser_query_test, parenthesize) {
+    sql_parser parser;
+    auto result = parser("-", "TABLE t0 UNION (TABLE t1 EXCEPT TABLE t2);");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (query::binary_expression {
+            query::table_reference {
+                    name::simple { "t0" },
+            },
+            query::binary_operator::union_,
+            query::binary_expression {
+                    query::table_reference {
+                            name::simple { "t1" },
+                    },
+                    query::binary_operator::except,
+                    query::table_reference {
+                            name::simple { "t2" },
+                    },
+            },
     }));
 }
 

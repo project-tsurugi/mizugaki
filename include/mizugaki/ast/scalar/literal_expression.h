@@ -39,7 +39,7 @@ public:
      */
     explicit literal_expression(
             literal::literal&& value,
-            region_type region = {}) noexcept;
+            region_type region = {});
 
     /**
      * @brief creates a new instance.

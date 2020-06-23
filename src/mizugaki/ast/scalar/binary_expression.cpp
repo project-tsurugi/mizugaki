@@ -16,11 +16,24 @@ binary_expression::binary_expression(
         operand_type left,
         operator_kind_type operator_kind,
         operand_type right,
-        region_type region) noexcept:
+        region_type region) noexcept :
     super { region },
     left_ { std::move(left) },
     operator_kind_ { operator_kind },
     right_ { std::move(right) }
+{}
+
+binary_expression::binary_expression(
+        expression&& left,
+        operator_kind_type operator_kind,
+        expression&& right,
+        region_type region) :
+    binary_expression {
+            clone_unique(std::move(left)),
+            operator_kind,
+            clone_unique(std::move(right)),
+            region,
+    }
 {}
 
 binary_expression::binary_expression(binary_expression const& other, object_creator creator) :

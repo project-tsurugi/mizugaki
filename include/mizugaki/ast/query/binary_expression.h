@@ -6,6 +6,7 @@
 
 #include <mizugaki/ast/common/regioned.h>
 #include <mizugaki/ast/common/vector.h>
+#include <mizugaki/ast/common/rvalue_list.h>
 #include <mizugaki/ast/name/simple.h>
 #include <mizugaki/ast/scalar/set_quantifier.h>
 
@@ -55,6 +56,54 @@ public:
             std::optional<corresponding_type> corresponding,
             ::takatori::util::unique_object_ptr<expression> right,
             region_type region = {}) noexcept;
+
+    /**
+     * @brief creates a new instance.
+     * @param left the left term
+     * @param operator_kind the binary operator
+     * @param quantifier the set quantifier
+     * @param corresponding the corresponding clause
+     * @param right the right term
+     * @param region the node region
+     * @attention this will take copy of arguments
+     */
+    explicit binary_expression(
+            expression&& left,
+            operator_kind_type operator_kind,
+            std::optional<quantifier_type> quantifier,
+            common::rvalue_list<name::simple> corresponding,
+            expression&& right,
+            region_type region = {});
+
+    /**
+     * @brief creates a new instance.
+     * @param left the left term
+     * @param operator_kind the binary operator
+     * @param quantifier the set quantifier
+     * @param right the right term
+     * @param region the node region
+     * @attention this will take copy of arguments
+     */
+    explicit binary_expression(
+            expression&& left,
+            operator_kind_type operator_kind,
+            std::optional<quantifier_type> quantifier,
+            expression&& right,
+            region_type region = {});
+
+    /**
+     * @brief creates a new instance.
+     * @param left the left term
+     * @param operator_kind the binary operator
+     * @param right the right term
+     * @param region the node region
+     * @attention this will take copy of arguments
+     */
+    explicit binary_expression(
+            expression&& left,
+            operator_kind_type operator_kind,
+            expression&& right,
+            region_type region = {});
 
     /**
      * @brief creates a new instance.

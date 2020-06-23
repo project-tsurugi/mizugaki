@@ -30,6 +30,13 @@ add_test_executable(mizugaki/ast/node_region_test.cpp)
 # SQL parser
 add_test_executable(mizugaki/parser/sql_parser_statement_test.cpp)
 add_test_executable(mizugaki/parser/sql_parser_query_test.cpp)
+add_test_executable(mizugaki/parser/sql_parser_table_test.cpp)
+add_test_executable(mizugaki/parser/sql_parser_predicate_test.cpp)
+add_test_executable(mizugaki/parser/sql_parser_scalar_test.cpp)
+add_test_executable(mizugaki/parser/sql_parser_function_test.cpp)
+add_test_executable(mizugaki/parser/sql_parser_literal_test.cpp)
+add_test_executable(mizugaki/parser/sql_parser_type_test.cpp)
+add_test_executable(mizugaki/parser/sql_parser_misc_test.cpp)
 
 # shakujo IR translator
 add_test_executable(mizugaki/translator/shakujo_translator_test.cpp)

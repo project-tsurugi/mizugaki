@@ -34,6 +34,16 @@ public:
 
     /**
      * @brief creates a new instance.
+     * @param name the table or query name
+     * @param region the node region
+     * @attention this may take a copy of argument
+     */
+    explicit table_reference(
+            name::name&& name,
+            region_type region = {}) noexcept;
+
+    /**
+     * @brief creates a new instance.
      * @param other the copy source
      * @param creator the object creator
      */

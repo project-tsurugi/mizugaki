@@ -38,6 +38,18 @@ public:
 
     /**
      * @brief creates a new instance.
+     * @param field the target field
+     * @param operand the operand expression
+     * @param region the node region
+     * @attention this will take a copy of argument
+     */
+    explicit extract_expression(
+            field_type field,
+            expression&& operand,
+            region_type region = {});
+
+    /**
+     * @brief creates a new instance.
      * @param other the copy source
      * @param creator the object creator
      */

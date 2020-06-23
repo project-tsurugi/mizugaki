@@ -52,7 +52,7 @@ public:
             expression&& left,
             comparison_operator operator_kind,
             expression&& right,
-            region_type region = {}) noexcept;
+            region_type region = {});
 
     /**
      * @brief creates a new instance.

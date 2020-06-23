@@ -39,7 +39,7 @@ public:
      */
     explicit datetime(
             type_kind_type type_kind,
-            std::optional<bool_type> has_time_zone,
+            std::optional<bool_type> has_time_zone = {},
             region_type region = {});
 
     /**

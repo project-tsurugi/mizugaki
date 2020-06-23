@@ -25,6 +25,21 @@ quantified_comparison_predicate::quantified_comparison_predicate(
     right_ { std::move(right) }
 {}
 
+quantified_comparison_predicate::quantified_comparison_predicate(
+        expression&& left,
+        operator_kind_type operator_kind,
+        quantifier_type quantifier,
+        query::expression&& right,
+        region_type region) noexcept:
+    quantified_comparison_predicate {
+            clone_unique(std::move(left)),
+            operator_kind,
+            quantifier,
+            clone_unique(std::move(right)),
+            region,
+    }
+{}
+
 quantified_comparison_predicate::quantified_comparison_predicate(quantified_comparison_predicate const& other, object_creator creator) :
     quantified_comparison_predicate {
             clone_unique(other.left_, creator),

@@ -51,11 +51,11 @@ public:
      * @param region the node region
      * @attention this may take copy of elements
      */
-    table_reference( // NOLINT: implicit conversion
+    explicit table_reference(
             name::name&& name,
             std::optional<correlation_type> correlation = {},
             bool_type is_only = false,
-            region_type region = {}) noexcept;
+            region_type region = {});
 
     /**
      * @brief creates a new instance.

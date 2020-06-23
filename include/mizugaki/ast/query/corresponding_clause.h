@@ -5,6 +5,7 @@
 #include <mizugaki/ast/element.h>
 #include <mizugaki/ast/common/clone_wrapper.h>
 #include <mizugaki/ast/common/vector.h>
+#include <mizugaki/ast/common/rvalue_list.h>
 #include <mizugaki/ast/name/simple.h>
 
 namespace mizugaki::ast::query {
@@ -22,8 +23,18 @@ public:
      * @param region the element region
      */
     explicit corresponding_clause(
-            common::vector<::takatori::util::unique_object_ptr<name::simple>> column_names = {},
+            common::vector<::takatori::util::unique_object_ptr<name::simple>> column_names,
             region_type region = {}) noexcept;
+
+    /**
+     * @brief creates a new instance.
+     * @param column_names the corresponding column names
+     * @param region the element region
+     * @attention this will take a copy of argument
+     */
+    corresponding_clause(
+            common::rvalue_list<name::simple> column_names,
+            region_type region = {});
 
     /**
      * @brief creates a new instance.

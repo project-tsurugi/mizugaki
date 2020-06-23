@@ -41,7 +41,7 @@ public:
      */
     compilation_unit(
             common::rvalue_list<statement::statement> statements,
-            std::initializer_list<region_type> comments = {}) noexcept;
+            std::initializer_list<region_type> comments = {});
 
     /**
      * @brief creates a new instance.

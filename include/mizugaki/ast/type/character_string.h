@@ -43,7 +43,7 @@ public:
      */
     explicit character_string(
             type_kind_type type_kind,
-            std::optional<length_type> length,
+            std::optional<length_type> length = {},
             region_type region = {});
 
     /**

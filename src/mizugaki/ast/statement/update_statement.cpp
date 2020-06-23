@@ -30,7 +30,7 @@ update_statement::update_statement(
         name::name&& table_name,
         std::initializer_list<set_element> elements,
         rvalue_ptr<scalar::expression> where,
-        region_type region) noexcept :
+        region_type region) :
     update_statement {
             clone_unique(std::move(table_name)),
             elements,

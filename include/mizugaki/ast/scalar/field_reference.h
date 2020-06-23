@@ -34,10 +34,23 @@ public:
      * @param region the node region
      */
     explicit field_reference(
-            expression::operand_type value,
+            operand_type value,
             operator_kind_type operator_kind,
             ::takatori::util::unique_object_ptr<name::simple> name,
             region_type region = {}) noexcept;
+
+    /**
+     * @brief creates a new instance.
+     * @param value the field owner expression
+     * @param name the field name
+     * @param operator_kind the reference operator kind
+     * @param region the node region
+     */
+    explicit field_reference(
+            expression&& value,
+            name::simple&& name,
+            operator_kind_type operator_kind = reference_operator::period,
+            region_type region = {});
 
     /**
      * @brief creates a new instance.

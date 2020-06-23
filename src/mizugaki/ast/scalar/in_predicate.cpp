@@ -23,6 +23,19 @@ in_predicate::in_predicate(
     right_ { std::move(right) }
 {}
 
+in_predicate::in_predicate(
+        expression&& left,
+        query::expression&& right,
+        bool_type is_not,
+        region_type region) :
+    in_predicate {
+            clone_unique(std::move(left)),
+            is_not,
+            clone_unique(right),
+            region,
+    }
+{}
+
 in_predicate::in_predicate(in_predicate const& other, object_creator creator) :
     in_predicate {
             clone_unique(other.left_, creator),

@@ -27,7 +27,7 @@ sort_element::sort_element(
         scalar::expression&& key,
         rvalue_ptr<name::name> collation,
         std::optional<direction_type> direction,
-        region_type region) noexcept :
+        region_type region) :
     sort_element {
             clone_unique(std::move(key)),
             clone_unique(collation),

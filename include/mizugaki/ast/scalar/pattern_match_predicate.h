@@ -1,6 +1,7 @@
 #pragma once
 
 #include <takatori/util/object_creator.h>
+#include <takatori/util/rvalue_ptr.h>
 
 #include <mizugaki/ast/common/regioned.h>
 
@@ -45,6 +46,24 @@ public:
             operand_type pattern,
             operand_type escape = {},
             region_type region = {}) noexcept;
+
+    /**
+     * @brief creates a new instance.
+     * @param match_value the match value
+     * @param operator_kind the pattern match operator
+     * @param pattern the pattern string
+     * @param escape the escape character
+     * @param is_not whether or not `NOT` is declared
+     * @param region the node region
+     * @attention this will take copy of arguments
+     */
+    explicit pattern_match_predicate(
+            expression&& match_value,
+            operator_kind_type operator_kind,
+            expression&& pattern,
+            ::takatori::util::rvalue_ptr<expression> escape = {},
+            bool_type is_not = false,
+            region_type region = {});
 
     /**
      * @brief creates a new instance.

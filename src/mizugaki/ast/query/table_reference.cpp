@@ -19,6 +19,16 @@ table_reference::table_reference(
     name_ { std::move(name) }
 {}
 
+
+table_reference::table_reference(
+        name::name&& name,
+        region_type region) noexcept :
+    table_reference {
+            clone_unique(std::move(name)),
+            region,
+    }
+{}
+
 table_reference::table_reference(table_reference const& other, object_creator creator) :
     table_reference {
             clone_unique(other.name_, creator),

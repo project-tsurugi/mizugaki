@@ -3,6 +3,7 @@
 #include <cerrno>
 #include <cstdlib>
 
+#include <takatori/util/assertion.h>
 #include <takatori/util/downcast.h>
 
 #include <mizugaki/ast/name/qualified.h>
@@ -94,6 +95,29 @@ std::size_t sql_driver::to_size(ast::common::chars const& str) { // NOLINT: non-
         // FIXME: error
         return 0;
     }
+    return result;
+}
+
+ast::common::chars sql_driver::parse_delimited_identifier(ast::common::chars const& str) {
+    constexpr char delimiter = '"';
+    BOOST_ASSERT(str.size() >= 3); // NOLINT
+    BOOST_ASSERT(str.front() == delimiter); // NOLINT
+    BOOST_ASSERT(str.back() == delimiter); // NOLINT
+    ast::common::chars result { creator_.allocator() };
+    result.reserve(str.size() - 2);
+    bool saw_escape = false;
+    for (std::size_t i = 1, n = str.size() - 1; i < n; ++i) {
+        char c = str[i];
+        if (saw_escape) {
+            result.push_back(c);
+            saw_escape = false;
+        } else if (c == delimiter) {
+            saw_escape = true;
+        } else {
+            result.push_back(c);
+        }
+    }
+    BOOST_ASSERT(!saw_escape); // NOLINT
     return result;
 }
 

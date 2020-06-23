@@ -10,6 +10,7 @@ namespace mizugaki::ast::table {
 
 using ::takatori::util::clone_unique;
 using ::takatori::util::object_creator;
+using ::takatori::util::rvalue_ptr;
 using ::takatori::util::unique_object_ptr;
 
 join::join(
@@ -23,6 +24,21 @@ join::join(
     operator_kind_ { operator_kind },
     right_ { std::move(right) },
     specification_ { std::move(specification) }
+{}
+
+join::join(
+        expression&& left,
+        operator_kind_type operator_kind,
+        expression&& right,
+        rvalue_ptr<join_specification> specification,
+        region_type region) :
+    join {
+            clone_unique(std::move(left)),
+            operator_kind,
+            clone_unique(std::move(right)),
+            clone_unique(specification),
+            region,
+    }
 {}
 
 join::join(join const& other, object_creator creator) :

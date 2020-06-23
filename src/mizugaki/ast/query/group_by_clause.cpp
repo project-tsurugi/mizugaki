@@ -21,7 +21,7 @@ group_by_clause::group_by_clause(
 
 group_by_clause::group_by_clause(
         common::rvalue_list<element_type> elements,
-        region_type region) noexcept :
+        region_type region) :
     group_by_clause {
             to_vector(elements),
             region,

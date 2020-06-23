@@ -21,7 +21,7 @@ variable_reference::variable_reference(
 
 variable_reference::variable_reference(
         name::name&& name,
-        region_type region) noexcept :
+        region_type region) :
     variable_reference {
             clone_unique(std::move(name)),
             region,

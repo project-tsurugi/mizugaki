@@ -1,6 +1,7 @@
 #pragma once
 
 #include <takatori/util/object_creator.h>
+#include <takatori/util/rvalue_ptr.h>
 
 #include <mizugaki/ast/common/regioned.h>
 #include <mizugaki/ast/name/simple.h>
@@ -42,6 +43,22 @@ public:
             ::takatori::util::unique_object_ptr<table::expression> right,
             ::takatori::util::unique_object_ptr<join_specification> specification = {},
             region_type region = {}) noexcept;
+
+    /**
+     * @brief creates a new instance.
+     * @param left the left operand
+     * @param operator_kind the join type
+     * @param right the right operand
+     * @param specification the join specification (`ON`, `USING` or nothing)
+     * @param region the node region
+     * @attention this will take copy of arguments
+     */
+    explicit join(
+            table::expression&& left,
+            operator_kind_type operator_kind,
+            table::expression&& right,
+            ::takatori::util::rvalue_ptr<join_specification> specification = {},
+            region_type region = {});
 
     /**
      * @brief creates a new instance.

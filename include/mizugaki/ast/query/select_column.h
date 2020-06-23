@@ -44,7 +44,7 @@ public:
     explicit select_column(
             scalar::expression&& value,
             ::takatori::util::rvalue_ptr<name::simple> name = {},
-            region_type region = {}) noexcept;
+            region_type region = {});
 
     /**
      * @brief creates a new instance.

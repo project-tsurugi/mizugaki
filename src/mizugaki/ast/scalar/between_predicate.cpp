@@ -28,6 +28,23 @@ between_predicate::between_predicate(
     right_ { std::move(right) }
 {}
 
+between_predicate::between_predicate(
+        expression&& target,
+        expression&& left,
+        expression&& right,
+        bool_type is_not,
+        std::optional<operator_kind_type> operator_kind,
+        region_type region) :
+    between_predicate {
+            clone_unique(std::move(target)),
+            is_not,
+            std::move(operator_kind),
+            clone_unique(std::move(left)),
+            clone_unique(std::move(right)),
+            region,
+    }
+{}
+
 between_predicate::between_predicate(between_predicate const& other, object_creator creator) :
     between_predicate {
             clone_unique(other.target_, creator),

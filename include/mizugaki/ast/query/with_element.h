@@ -4,6 +4,7 @@
 
 #include <mizugaki/ast/element.h>
 #include <mizugaki/ast/common/clone_wrapper.h>
+#include <mizugaki/ast/common/rvalue_list.h>
 #include <mizugaki/ast/common/vector.h>
 #include <mizugaki/ast/name/simple.h>
 
@@ -33,9 +34,35 @@ public:
     explicit with_element(
             ::takatori::util::unique_object_ptr<name::simple> name,
             common::vector<::takatori::util::unique_object_ptr<name::simple>> column_names,
-            ::takatori::util::unique_object_ptr<class expression> expression,
+            ::takatori::util::unique_object_ptr<ast::query::expression> expression,
             // FIXME: search clause
             region_type region = {}) noexcept;
+
+    /**
+     * @brief creates a new instance.
+     * @param name the query name
+     * @param expression the query expression
+     * @param region the element region
+     */
+    with_element(
+            name::simple&& name,
+            ast::query::expression&& expression,
+            // FIXME: search clause
+            region_type region = {});
+
+    /**
+     * @brief creates a new instance.
+     * @param name the query name
+     * @param column_names the correlation column names
+     * @param expression the query expression
+     * @param region the element region
+     */
+    with_element(
+            name::simple&& name,
+            common::rvalue_list<name::simple> column_names,
+            ast::query::expression&& expression,
+            // FIXME: search clause
+            region_type region = {});
 
     /**
      * @brief creates a new instance.

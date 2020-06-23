@@ -19,6 +19,15 @@ join_condition::join_condition(
     expression_ { std::move(expression) }
 {}
 
+join_condition::join_condition(
+        scalar::expression&& expression,
+        region_type region) :
+    join_condition {
+            clone_unique(std::move(expression)),
+            region,
+    }
+{}
+
 join_condition::join_condition(join_condition const& other, object_creator creator) :
     join_condition {
             clone_unique(other.expression_, creator),

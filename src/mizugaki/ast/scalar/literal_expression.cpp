@@ -21,7 +21,7 @@ literal_expression::literal_expression(
 
 literal_expression::literal_expression(
         literal::literal&& value,
-        region_type region) noexcept :
+        region_type region) :
     literal_expression {
             clone_unique(std::move(value)),
             region,

@@ -28,7 +28,7 @@ public:
      * @param identifier the name identifier
      */
     template<class T>
-    simple(T const& identifier) noexcept // NOLINT
+    explicit simple(T const& identifier) noexcept(std::is_nothrow_constructible_v<identifier_type, T const&>)
         : identifier_ { identifier }
     {}
 

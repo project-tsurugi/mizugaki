@@ -23,7 +23,7 @@ compilation_unit::compilation_unit(
 
 compilation_unit::compilation_unit(
         common::rvalue_list<statement::statement> statements,
-        std::initializer_list<region_type> comments) noexcept :
+        std::initializer_list<region_type> comments) :
     compilation_unit {
             common::to_vector(statements),
             decltype(comments_) { comments },

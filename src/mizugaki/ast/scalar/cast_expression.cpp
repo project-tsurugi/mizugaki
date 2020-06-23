@@ -17,19 +17,32 @@ using ::takatori::util::unique_object_ptr;
 cast_expression::cast_expression(
         operator_kind_type operator_kind,
         operand_type operand,
-        unique_object_ptr<type::type> target,
-        region_type region) noexcept:
+        unique_object_ptr<type::type> type,
+        region_type region) noexcept :
     super { region },
     operator_kind_ { operator_kind },
     operand_ { std::move(operand) },
-    target_ { std::move(target) }
+    type_ { std::move(type) }
+{}
+
+cast_expression::cast_expression(
+        operator_kind_type operator_kind,
+        expression&& operand,
+        type::type&& type,
+        region_type region) :
+    cast_expression {
+            operator_kind,
+            clone_unique(std::move(operand)),
+            clone_unique(std::move(type)),
+            region,
+    }
 {}
 
 cast_expression::cast_expression(cast_expression const& other, object_creator creator) :
     cast_expression {
             other.operator_kind_,
             clone_unique(other.operand_, creator),
-            clone_unique(other.target_, creator),
+            clone_unique(other.type_, creator),
             other.region(),
     }
 {}
@@ -38,7 +51,7 @@ cast_expression::cast_expression(cast_expression&& other, object_creator creator
     cast_expression {
             other.operator_kind_,
             clone_unique(std::move(other.operand_), creator),
-            clone_unique(std::move(other.target_), creator),
+            clone_unique(std::move(other.type_), creator),
             other.region(),
     }
 {}
@@ -71,12 +84,12 @@ expression::operand_type const& cast_expression::operand() const noexcept {
     return operand_;
 }
 
-unique_object_ptr<type::type>& cast_expression::target() noexcept {
-    return target_;
+unique_object_ptr<type::type>& cast_expression::type() noexcept {
+    return type_;
 }
 
-unique_object_ptr<type::type> const& cast_expression::target() const noexcept {
-    return target_;
+unique_object_ptr<type::type> const& cast_expression::type() const noexcept {
+    return type_;
 }
 
 bool operator==(cast_expression const& a, cast_expression const& b) noexcept {
@@ -85,7 +98,7 @@ bool operator==(cast_expression const& a, cast_expression const& b) noexcept {
     }
     return eq(a.operator_kind_, b.operator_kind_)
             && eq(a.operand_, b.operand_)
-            && eq(a.target_, b.target_);
+            && eq(a.type_, b.type_);
 }
 
 bool operator!=(cast_expression const& a, cast_expression const& b) noexcept {
@@ -103,7 +116,7 @@ void cast_expression::serialize(takatori::serializer::object_acceptor& acceptor)
     auto obj = struct_block(acceptor, *this);
     property(acceptor, "operator_kind"sv, operator_kind_);
     property(acceptor, "operand"sv, operand_);
-    property(acceptor, "target"sv, target_);
+    property(acceptor, "type"sv, type_);
     region_property(acceptor, *this);
 }
 

@@ -26,7 +26,7 @@ select_statement::select_statement(
 select_statement::select_statement(
         query::expression&& expression,
         std::initializer_list<target_element> targets,
-        region_type region) noexcept :
+        region_type region) :
     select_statement {
             clone_unique(std::move(expression)),
             decltype(targets_) { targets },

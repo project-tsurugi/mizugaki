@@ -30,13 +30,21 @@ enum class builtin_set_function_kind {
     some,
     /// @brief `COUNT`
     count,
+    /// @brief `BIT_AND`
+    bit_and,
+    /// @brief `BIT_OR`
+    bit_or,
+    /// @brief `BOOL_AND`
+    bool_and,
+    /// @brief `BOOL_OR`
+    bool_or,
 };
 
 /// @brief set of builtin_set_function_kind kind.
 using builtin_set_function_kind_set = ::takatori::util::enum_set<
         builtin_set_function_kind,
         builtin_set_function_kind::avg,
-        builtin_set_function_kind::count>;
+        builtin_set_function_kind::bool_or>;
 
 /**
  * @brief returns string representation of the value.
@@ -55,6 +63,10 @@ inline constexpr std::string_view to_string_view(builtin_set_function_kind value
         case kind::any: return "any"sv;
         case kind::some: return "some"sv;
         case kind::count: return "count"sv;
+        case kind::bit_and: return "bit_and"sv;
+        case kind::bit_or: return "bit_or"sv;
+        case kind::bool_and: return "bool_and"sv;
+        case kind::bool_or: return "bool_or"sv;
     }
     std::abort();
 }

@@ -10,17 +10,31 @@ namespace mizugaki::ast::scalar {
 
 using ::takatori::util::clone_unique;
 using ::takatori::util::object_creator;
+using ::takatori::util::rvalue_ptr;
 using ::takatori::util::unique_object_ptr;
 
 trim_expression::trim_expression(
         std::optional<specification_type> specification,
         operand_type character,
         operand_type source,
-        region_type region) noexcept:
+        region_type region) noexcept :
     super { region },
     specification_ { std::move(specification) },
     character_ { std::move(character) },
     source_ { std::move(source) }
+{}
+
+trim_expression::trim_expression(
+        std::optional<specification_type> specification,
+        rvalue_ptr<expression> character,
+        expression&& source,
+        region_type region) :
+    trim_expression {
+            std::move(specification),
+            clone_unique(character),
+            clone_unique(std::move(source)),
+            region,
+    }
 {}
 
 trim_expression::trim_expression(trim_expression const& other, object_creator creator) :

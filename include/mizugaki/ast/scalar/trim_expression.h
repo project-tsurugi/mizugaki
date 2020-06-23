@@ -3,6 +3,7 @@
 #include <optional>
 
 #include <takatori/util/object_creator.h>
+#include <takatori/util/rvalue_ptr.h>
 
 #include <mizugaki/ast/common/regioned.h>
 
@@ -39,6 +40,20 @@ public:
             operand_type character,
             operand_type source,
             region_type region = {}) noexcept;
+
+    /**
+     * @brief creates a new instance.
+     * @param specification the trim specification
+     * @param character the optional trim character term
+     * @param source the source term
+     * @param region the node region
+     * @attention this will take copy of arguments
+     */
+    explicit trim_expression(
+            std::optional<specification_type> specification,
+            ::takatori::util::rvalue_ptr<expression> character,
+            expression&& source,
+            region_type region = {});
 
     /**
      * @brief creates a new instance.
