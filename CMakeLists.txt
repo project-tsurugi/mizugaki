@@ -9,6 +9,8 @@ list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 
 option(BUILD_TESTS "build test programs" ON)
 option(BUILD_DOCUMENTS "build documents" ON)
+option(BUILD_EXAMPLES "build examples" ON)
+option(INSTALL_EXAMPLES "install examples" OFF)
 option(BUILD_SHARED_LIBS "build shared libraries instead of static" ON)
 
 option(FORCE_INSTALL_RPATH "automatically add library directory of custom prefixes to INSTALL_RPATH" OFF)
@@ -16,6 +18,7 @@ option(FORCE_INSTALL_RPATH "automatically add library directory of custom prefix
 option(ENABLE_COVERAGE "enable coverage on debug build" OFF)
 
 include(GNUInstallDirs)
+include(force_install_rpath)
 
 find_package(takatori REQUIRED)
 find_package(yugawara REQUIRED)
@@ -24,6 +27,7 @@ find_package(shakujo REQUIRED)
 find_package(tsl-hopscotch-map 2.2 REQUIRED)
 find_package(FLEX REQUIRED)
 find_package(BISON 3.6 REQUIRED)
+find_package(gflags REQUIRED)
 
 set(Boost_USE_STATIC_LIBS OFF)
 set(Boost_USE_MULTITHREADED ON)
@@ -71,6 +75,9 @@ if(BUILD_TESTS)
 endif()
 if (BUILD_DOCUMENTS)
     add_subdirectory(doxygen)
+endif()
+if (BUILD_EXAMPLES OR INSTALL_EXAMPLES)
+    add_subdirectory(examples)
 endif()
 add_subdirectory(third_party)
 

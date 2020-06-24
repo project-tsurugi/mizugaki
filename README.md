@@ -16,7 +16,7 @@ git submodule update --init --recursive
 ```dockerfile
 FROM ubuntu:18.04
 
-RUN apt update -y && apt install -y git build-essential cmake flex ninja-build
+RUN apt update -y && apt install -y git build-essential cmake flex libgflags-dev ninja-build
 ```
 
 optional packages:
@@ -84,6 +84,8 @@ available options:
 * `-DBUILD_SHARED_LIBS=OFF` - create static libraries instead of shared libraries
 * `-DBUILD_TESTS=OFF` - don't build test programs
 * `-DBUILD_DOCUMENTS=OFF` - don't build documents by doxygen
+* `-DBUILD_EXAMPLES=OFF` - don't build example applications
+* `-DINSTALL_EXAMPLES=ON` - also install example applications
 * `-DFORCE_INSTALL_RPATH=ON` - automatically configure `INSTALL_RPATH` for non-default library paths
 
 ### install
