@@ -13,6 +13,7 @@ using ::takatori::util::object_creator;
 using ::takatori::util::unique_object_ptr;
 
 using common::clone_vector;
+using common::to_vector;
 
 static_method_invocation::static_method_invocation(
         unique_object_ptr<type::type> type,
@@ -23,6 +24,19 @@ static_method_invocation::static_method_invocation(
     type_ { std::move(type) },
     name_ { std::move(name) },
     arguments_ { std::move(arguments) }
+{}
+
+static_method_invocation::static_method_invocation(
+        type::type&& type,
+        name::simple&& name,
+        common::rvalue_list<expression> arguments,
+        region_type region) :
+    static_method_invocation {
+            clone_unique(std::move(type)),
+            clone_unique(std::move(name)),
+            to_vector(arguments),
+            region,
+    }
 {}
 
 static_method_invocation::static_method_invocation(static_method_invocation const& other, object_creator creator) :

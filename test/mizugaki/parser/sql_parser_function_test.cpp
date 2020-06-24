@@ -8,17 +8,19 @@
 #include <mizugaki/ast/query/table_value_constructor.h>
 #include <mizugaki/ast/query/table_reference.h>
 
+#include <mizugaki/ast/scalar/cast_expression.h>
 #include <mizugaki/ast/scalar/extract_expression.h>
 #include <mizugaki/ast/scalar/trim_expression.h>
-#include <mizugaki/ast/scalar/function_invocation.h>
-#include <mizugaki/ast/scalar/set_function_invocation.h>
 #include <mizugaki/ast/scalar/builtin_function_invocation.h>
 #include <mizugaki/ast/scalar/builtin_set_function_invocation.h>
+#include <mizugaki/ast/scalar/function_invocation.h>
 #include <mizugaki/ast/scalar/method_invocation.h>
 #include <mizugaki/ast/scalar/static_method_invocation.h>
 #include <mizugaki/ast/scalar/value_constructor.h>
 
-#include <mizugaki/ast/name/simple.h>
+#include <mizugaki/ast/type/user_defined.h>
+
+#include <mizugaki/ast/name/qualified.h>
 
 #include "utils.h"
 
@@ -414,6 +416,18 @@ TEST_F(sql_parser_function_test, current_time) {
     }));
 }
 
+TEST_F(sql_parser_function_test, current_time_precision) {
+    auto result = parse("CURRENT_TIME(10)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (scalar::builtin_function_invocation {
+            scalar::builtin_function_kind::current_time,
+            {
+                int_literal("10"),
+            },
+    }));
+}
+
 TEST_F(sql_parser_function_test, localtime) {
     auto result = parse("LOCALTIME");
     ASSERT_TRUE(result) << diagnostics(result);
@@ -584,6 +598,207 @@ TEST_F(sql_parser_function_test, bool_or) {
             {},
             {
                     v("a")
+            },
+    }));
+}
+
+TEST_F(sql_parser_function_test, user_defined_function) {
+    auto result = parse("f(a)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (scalar::function_invocation {
+            name::simple { "f" },
+            {
+                    v("a")
+            },
+    }));
+}
+
+TEST_F(sql_parser_function_test, user_defined_function_identifier_chain) {
+    auto result = parse("u.v.w(a)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (scalar::function_invocation {
+            name::qualified {
+                    name::simple { "u" },
+                    name::simple { "v" },
+                    name::simple { "w" },
+            },
+            {
+                    v("a")
+            },
+    }));
+}
+
+TEST_F(sql_parser_function_test, user_defined_function_empty_arguments) {
+    auto result = parse("f()");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (scalar::function_invocation {
+            name::simple { "f" },
+            {
+            },
+    }));
+}
+
+TEST_F(sql_parser_function_test, user_defined_function_multiple_arguments) {
+    auto result = parse("f(a, b, c)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (scalar::function_invocation {
+            name::simple { "f" },
+            {
+                    v("a"),
+                    v("b"),
+                    v("c"),
+            },
+    }));
+}
+
+TEST_F(sql_parser_function_test, user_defined_function_generalize_arguments) {
+    auto result = parse("f(a AS t)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (scalar::function_invocation {
+            name::simple { "f" },
+            {
+                    scalar::cast_expression {
+                            scalar::cast_operator::generalize,
+                            v("a"),
+                            type::user_defined {
+                                    name::simple { "t" },
+                            }
+                    },
+            },
+    }));
+}
+
+TEST_F(sql_parser_function_test, method_invocation) {
+    auto result = parse("CAST(a AS t).f(b)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (scalar::method_invocation {
+            scalar::cast_expression {
+                    scalar::cast_operator::cast,
+                    v("a"),
+                    type::user_defined {
+                            name::simple { "t" },
+                    }
+            },
+            name::simple { "f" },
+            {
+                    v("b"),
+            },
+    }));
+}
+
+TEST_F(sql_parser_function_test, method_invocation_generalize) {
+    auto result = parse("(a AS t).f(b)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (scalar::method_invocation {
+            scalar::cast_expression {
+                    scalar::cast_operator::generalize,
+                    v("a"),
+                    type::user_defined {
+                            name::simple { "t" },
+                    }
+            },
+            name::simple { "f" },
+            {
+                    v("b"),
+            },
+    }));
+}
+
+TEST_F(sql_parser_function_test, method_invocation_arguments) {
+    auto result = parse("(a AS t).f(b, c, d)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (scalar::method_invocation {
+            scalar::cast_expression {
+                    scalar::cast_operator::generalize,
+                    v("a"),
+                    type::user_defined {
+                            name::simple { "t" },
+                    }
+            },
+            name::simple { "f" },
+            {
+                    v("b"),
+                    v("c"),
+                    v("d"),
+            },
+    }));
+}
+
+TEST_F(sql_parser_function_test, method_invocation_reference) {
+    auto result = parse("CAST(a AS t)->f(b)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (scalar::method_invocation {
+            scalar::cast_expression {
+                    scalar::cast_operator::cast,
+                    v("a"),
+                    type::user_defined {
+                            name::simple { "t" },
+                    }
+            },
+            name::simple { "f" },
+            {
+                    v("b"),
+            },
+            scalar::reference_operator::arrow,
+    }));
+}
+
+TEST_F(sql_parser_function_test, static_method_invocation) {
+    auto result = parse("t::f(a)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (scalar::static_method_invocation {
+            type::user_defined {
+                    name::simple { "t" },
+            },
+            name::simple { "f" },
+            {
+                    v("a")
+            },
+    }));
+}
+
+TEST_F(sql_parser_function_test, static_method_invocation_identifier_chain) {
+    auto result = parse("u.v.w::f(a)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (scalar::static_method_invocation {
+            type::user_defined {
+                    name::qualified {
+                            name::simple { "u" },
+                            name::simple { "v" },
+                            name::simple { "w" },
+                    },
+            },
+            name::simple { "f" },
+            {
+                    v("a")
+            },
+    }));
+}
+
+TEST_F(sql_parser_function_test, static_method_invocation_multiple_arguments) {
+    auto result = parse("t::f(a, b, c)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (scalar::static_method_invocation {
+            type::user_defined {
+                    name::simple { "t" },
+            },
+            name::simple { "f" },
+            {
+                    v("a"),
+                    v("b"),
+                    v("c"),
             },
     }));
 }

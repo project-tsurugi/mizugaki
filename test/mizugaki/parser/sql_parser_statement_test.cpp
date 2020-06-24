@@ -33,7 +33,14 @@ using namespace testing;
 class sql_parser_statement_test : public ::testing::Test {};
 
 static statement::statement const& extract(sql_parser::result_type const& result) {
-    return *result.value()->statements().at(0);
+    auto&& statements = result.value()->statements();
+    if (statements.size() >= 2) {
+        using ::takatori::util::string_builder;
+        throw std::runtime_error(string_builder {}
+                << "extra statements: " << *result.value()
+                << string_builder::to_string);
+    }
+    return *statements.at(0);
 }
 
 TEST_F(sql_parser_statement_test, empty_document) {

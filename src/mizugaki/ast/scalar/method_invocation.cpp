@@ -13,18 +13,34 @@ using ::takatori::util::object_creator;
 using ::takatori::util::unique_object_ptr;
 
 using common::clone_vector;
+using common::to_vector;
 
 method_invocation::method_invocation(
         operand_type value,
         operator_kind_type operator_kind,
         unique_object_ptr<name::simple> name,
         common::vector<operand_type> arguments,
-        region_type region) noexcept:
+        region_type region) noexcept :
     super { region },
     value_ { std::move(value) },
     operator_kind_ { operator_kind },
     name_ { std::move(name) },
     arguments_ { std::move(arguments) }
+{}
+
+method_invocation::method_invocation(
+        expression&& value,
+        name::simple&& name,
+        common::rvalue_list<expression> arguments,
+        operator_kind_type operator_kind,
+        region_type region) :
+    method_invocation {
+            clone_unique(std::move(value)),
+            operator_kind,
+            clone_unique(std::move(name)),
+            to_vector(arguments),
+            region,
+    }
 {}
 
 method_invocation::method_invocation(method_invocation const& other, object_creator creator) :

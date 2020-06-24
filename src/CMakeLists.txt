@@ -87,7 +87,6 @@ add_library(mizugaki
     mizugaki/ast/scalar/pattern_match_predicate.cpp
     mizugaki/ast/scalar/table_predicate.cpp
     mizugaki/ast/scalar/function_invocation.cpp
-    mizugaki/ast/scalar/set_function_invocation.cpp
     mizugaki/ast/scalar/builtin_function_invocation.cpp
     mizugaki/ast/scalar/builtin_set_function_invocation.cpp
     mizugaki/ast/scalar/new_invocation.cpp

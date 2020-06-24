@@ -69,7 +69,6 @@
     #include <mizugaki/ast/scalar/pattern_match_predicate.h>
     #include <mizugaki/ast/scalar/table_predicate.h>
     #include <mizugaki/ast/scalar/function_invocation.h>
-    #include <mizugaki/ast/scalar/set_function_invocation.h>
     #include <mizugaki/ast/scalar/builtin_function_invocation.h>
     #include <mizugaki/ast/scalar/builtin_set_function_invocation.h>
     #include <mizugaki/ast/scalar/new_invocation.h>
@@ -756,6 +755,7 @@
 %nterm <node_ptr<ast::query::expression>> subquery
 
 %nterm <node_ptr<ast::literal::literal>> literal
+%nterm <node_ptr<ast::literal::literal>> unsigned_integer
 %nterm <node_ptr<ast::literal::literal>> truth_literal
 %nterm <std::optional<ast::common::regioned<ast::literal::sign>>> sign_opt
 %nterm <element_vector<ast::common::regioned<ast::common::chars>>> concatenations_list_opt
@@ -869,7 +869,7 @@ statement
                     $e,
                     @$);
         }
-    | "UPDATE" target_table[t] "SET" set_clause_list[s] manipulate_where_clause_opt[w]
+    | "UPDATE" target_table[t] "SET" set_clause_list[s] manipulate_where_clause_opt[w] ";"
         {
             $$ = driver.node<ast::statement::update_statement>(
                     $t,
@@ -877,7 +877,7 @@ statement
                     $w,
                     @$);
         }
-    | "DELETE" "FROM" target_table[t] manipulate_where_clause_opt[w]
+    | "DELETE" "FROM" target_table[t] manipulate_where_clause_opt[w] ";"
         {
             $$ = driver.node<ast::statement::delete_statement>(
                     $t,
@@ -2245,7 +2245,13 @@ system_function_invocation
                     driver.to_node_vector<ast::scalar::expression>(),
                     @$);
         }
-    // FIXME: precise_system_function_name[f] "(" unsigned_integer ")"
+    | precise_system_function_name[f] "(" value_expression[e] ")"
+        {
+            $$ = driver.node<ast::scalar::builtin_function_invocation>(
+                    $f,
+                    driver.to_node_vector<ast::scalar::expression>($e),
+                    @$);
+        }
     ;
 
 simple_system_function_name
@@ -2482,8 +2488,7 @@ else_expression_opt
     ;
 
 routine_invocation_arguments
-    // FIXME: paren
-    : "{" sql_argument_list_opt[l] "}"
+    : "(" sql_argument_list_opt[l] ")"
         {
             $$ = $l;
         }
@@ -2558,13 +2563,9 @@ subquery
     ;
 
 literal
-    : UNSIGNED_INTEGER[t]
+    : unsigned_integer[v]
         {
-            $$ = driver.node<ast::literal::numeric>(
-                    ast::literal::kind::exact_numeric,
-                    std::nullopt,
-                    $t,
-                    @$);
+            $$ = $v;
         }
     | EXACT_NUMERIC_LITERAL[t]
         {
@@ -2634,9 +2635,9 @@ literal
                     regioned { $t, @t },
                     @$);
         }
-    | truth_literal[l]
+    | truth_literal[v]
         {
-            $$ = $l;
+            $$ = $v;
         }
     | "ARRAY" "[" "]"
         {
@@ -2647,6 +2648,17 @@ literal
             $$ = driver.node<ast::literal::special<ast::literal::kind::default_>>(@$);
         }
     ;
+
+unsigned_integer
+    : UNSIGNED_INTEGER[t]
+         {
+             $$ = driver.node<ast::literal::numeric>(
+                     ast::literal::kind::exact_numeric,
+                     std::nullopt,
+                     $t,
+                     @$);
+         }
+     ;
 
 truth_literal
     : "TRUE"

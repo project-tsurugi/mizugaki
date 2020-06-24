@@ -28,7 +28,6 @@ class in_predicate;
 class pattern_match_predicate;
 class table_predicate;
 class function_invocation;
-class set_function_invocation;
 class builtin_function_invocation;
 class builtin_set_function_invocation;
 class new_invocation;
@@ -164,20 +163,14 @@ enum class kind {
     function_invocation,
 
     /**
-     * @copydoc set_function_invocation
-     * @see set_function_invocation
-     */
-    set_function_invocation,
-
-    /**
-     * @copydoc function_invocation
-     * @see function_invocation
+     * @copydoc builtin_function_invocation
+     * @see builtin_function_invocation
      */
     builtin_function_invocation,
 
     /**
-     * @copydoc set_function_invocation
-     * @see set_function_invocation
+     * @copydoc builtin_set_function_invocation
+     * @see builtin_set_function_invocation
      */
     builtin_set_function_invocation,
 
@@ -282,9 +275,6 @@ template<> struct type_of<kind, kind::table_predicate> : ::takatori::util::meta_
 /// @brief provides implementation type of kind::function_invocation.
 template<> struct type_of<kind, kind::function_invocation> : ::takatori::util::meta_type<function_invocation> {};
 
-/// @brief provides implementation type of kind::set_function_invocation.
-template<> struct type_of<kind, kind::set_function_invocation> : ::takatori::util::meta_type<set_function_invocation> {};
-
 /// @brief provides implementation type of kind::builtin_function_invocation.
 template<> struct type_of<kind, kind::builtin_function_invocation> : ::takatori::util::meta_type<builtin_function_invocation> {};
 
@@ -330,7 +320,6 @@ inline constexpr std::string_view to_string_view(kind value) noexcept {
         case kind::pattern_match_predicate: return "pattern_match_predicate"sv;
         case kind::table_predicate: return "table_predicate"sv;
         case kind::function_invocation: return "function_invocation"sv;
-        case kind::set_function_invocation: return "set_function_invocation"sv;
         case kind::builtin_function_invocation: return "builtin_function_invocation"sv;
         case kind::builtin_set_function_invocation: return "builtin_set_function_invocation"sv;
         case kind::new_invocation: return "new_invocation"sv;

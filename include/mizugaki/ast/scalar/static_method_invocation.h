@@ -3,6 +3,7 @@
 #include <takatori/util/object_creator.h>
 
 #include <mizugaki/ast/common/regioned.h>
+#include <mizugaki/ast/common/rvalue_list.h>
 #include <mizugaki/ast/common/vector.h>
 #include <mizugaki/ast/name/simple.h>
 #include <mizugaki/ast/type/type.h>
@@ -35,6 +36,20 @@ public:
             ::takatori::util::unique_object_ptr<name::simple> name,
             common::vector<operand_type> arguments,
             region_type region = {}) noexcept;
+
+    /**
+     * @brief creates a new instance.
+     * @param type the declaring type
+     * @param name the method name
+     * @param arguments the method arguments
+     * @param region the node region
+     * @attention this will take copy of arguments
+     */
+    explicit static_method_invocation(
+            type::type&& type,
+            name::simple&& name,
+            common::rvalue_list<expression> arguments,
+            region_type region = {});
 
     /**
      * @brief creates a new instance.
