@@ -19,8 +19,8 @@ void sql_scanner::user_action() noexcept {
     cursor_ += yyleng;
 }
 
-sql_scanner::location_type sql_scanner::location() noexcept {
-    return { cursor_ - yyleng, cursor_ };
+sql_scanner::location_type sql_scanner::location(bool eof) noexcept {
+    return { cursor_ - (eof ? 0 : yyleng), cursor_ };
 }
 
 ast::common::chars sql_scanner::get_image(sql_driver const& driver) {

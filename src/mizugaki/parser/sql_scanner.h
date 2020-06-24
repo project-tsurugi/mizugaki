@@ -41,7 +41,7 @@ private:
     std::size_t comment_begin_ { npos };
 
     void user_action() noexcept;
-    [[nodiscard]] location_type location() noexcept;
+    [[nodiscard]] location_type location(bool eof = false) noexcept;
 
     void enter_comment() noexcept;
     [[nodiscard]] location_type exit_comment(bool inclusive) noexcept;

@@ -102,9 +102,8 @@ host_parameter_name ":"{identifier}
         BEGIN(INITIAL);
     }
     <<EOF>> {
-        // NOTE: EOF does not update yyleng
         driver.add_comment(exit_comment(true));
-        return parser_type::make_END_OF_FILE(location());
+        return parser_type::make_END_OF_FILE(location(true));
     }
     . {}
 }
@@ -637,6 +636,8 @@ host_parameter_name ":"{identifier}
     . { return parser_type::make_ERROR(location()); }
 }
 
-<<EOF>> { return parser_type::make_END_OF_FILE(location()); }
+<<EOF>> {
+    return parser_type::make_END_OF_FILE(location(true));
+}
 
 %%
