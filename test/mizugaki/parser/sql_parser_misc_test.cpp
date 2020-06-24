@@ -105,6 +105,12 @@ R"(
  */)");
 }
 
+TEST_F(sql_parser_misc_test, block_comment_unclosed) {
+    sql_parser parser;
+    auto result = parser("-", "; /* unexpected EOF");
+    EXPECT_FALSE(result);
+}
+
 TEST_F(sql_parser_misc_test, delimited_identifier) {
     sql_parser parser;
     auto result = parser("-", R"(TABLE "TABLE";)");

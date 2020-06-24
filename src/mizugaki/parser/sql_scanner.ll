@@ -84,7 +84,9 @@ host_parameter_name ":"{identifier}
         BEGIN(INITIAL);
     }
     <<EOF>> {
-        return parser_type::make_UNCLOSED_BLOCK_COMMENT(location());
+        // NOTE: EOF does not update yyleng
+        auto loc = exit_comment(true);
+        return parser_type::make_UNCLOSED_BLOCK_COMMENT(loc(0, 2));
     }
     . {}
 }
