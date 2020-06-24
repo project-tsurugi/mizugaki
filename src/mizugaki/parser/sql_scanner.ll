@@ -18,6 +18,8 @@
 
 space [[:space:]]+
 
+line_break ("\n"|"\r\n")
+
 /* <regular identifier> FIXME: more characters */
 identifier_start [A-Za-z]
 identifier_part [A-Za-z_0-9]
@@ -78,11 +80,11 @@ host_parameter_name ":"{identifier}
 
 <bracketed_comment>{
     "*/" {
-        driver.add_comment(exit_comment());
+        driver.add_comment(exit_comment(true));
         BEGIN(INITIAL);
     }
     <<EOF>> {
-        return parser_type::make_ERROR(location());
+        return parser_type::make_UNCLOSED_BLOCK_COMMENT(location());
     }
     . {}
 }
@@ -93,11 +95,13 @@ host_parameter_name ":"{identifier}
 }
 
 <simple_comment>{
-    "\n" {
-        driver.add_comment(exit_comment());
+    {line_break} {
+        driver.add_comment(exit_comment(false));
         BEGIN(INITIAL);
     }
     <<EOF>> {
+        // NOTE: EOF does not update yyleng
+        driver.add_comment(exit_comment(true));
         return parser_type::make_END_OF_FILE(location());
     }
     . {}

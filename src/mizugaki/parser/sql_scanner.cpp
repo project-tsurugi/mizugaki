@@ -34,10 +34,10 @@ void sql_scanner::enter_comment() noexcept {
     comment_begin_ = cursor_ - yyleng;
 }
 
-sql_scanner::location_type sql_scanner::exit_comment() noexcept {
+sql_scanner::location_type sql_scanner::exit_comment(bool inclusive) noexcept {
     return {
             std::exchange(comment_begin_, npos),
-            cursor_,
+            inclusive ? cursor_ : cursor_ - yyleng,
     };
 }
 

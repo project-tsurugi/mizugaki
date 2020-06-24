@@ -44,7 +44,7 @@ private:
     [[nodiscard]] location_type location() noexcept;
 
     void enter_comment() noexcept;
-    [[nodiscard]] location_type exit_comment() noexcept;
+    [[nodiscard]] location_type exit_comment(bool inclusive) noexcept;
 
     ast::common::chars get_image(sql_driver const& driver);
 };

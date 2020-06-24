@@ -656,6 +656,7 @@
 %token <ast::common::chars> HOST_PARAMETER_NAME
 
 %token ERROR "<ERROR>"
+%token UNCLOSED_BLOCK_COMMENT "<UNCLOSED_BLOCK_COMMENT>"
 
 %token END_OF_FILE 0 "<END_OF_FILE>"
 
