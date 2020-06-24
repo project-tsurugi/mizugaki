@@ -1972,7 +1972,7 @@ value_expression_primary
                 $$ = nullptr;
             }
         }
-    // FIXME: user defined aggregate functinons
+    // FIXME: user defined aggregate functions
     // 6.13 <element reference>
     | value_expression_primary[l] "["[o] value_expression[r] "]"
         {
