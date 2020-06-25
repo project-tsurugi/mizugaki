@@ -149,6 +149,62 @@ template<class T, class U>
 }
 
 /**
+ * @brief returns whether or not the two values are equivalent ignoring their regions.
+ * @tparam T the first value type
+ * @tparam U the second value type
+ * @param a the first value
+ * @param b the second value
+ * @return true if the both are equivalent
+ * @return false otherwise
+ */
+template<class T, class U>
+[[nodiscard]] constexpr bool operator==(regioned<T> const& a, U const& b) noexcept {
+    return a.value() == b;
+}
+
+/**
+ * @brief returns whether or not the two values are different ignoring their regions.
+ * @tparam T the first value type
+ * @tparam U the second value type
+ * @param a the first value
+ * @param b the second value
+ * @return true if the both are different
+ * @return false otherwise
+ */
+template<class T, class U>
+[[nodiscard]] constexpr bool operator!=(regioned<T> const& a, U const& b) noexcept {
+    return !(a == b);
+}
+
+/**
+ * @brief returns whether or not the two values are equivalent ignoring their regions.
+ * @tparam T the first value type
+ * @tparam U the second value type
+ * @param a the first value
+ * @param b the second value
+ * @return true if the both are equivalent
+ * @return false otherwise
+ */
+template<class T, class U>
+[[nodiscard]] constexpr bool operator==(T const& a, regioned<U> const& b) noexcept {
+    return a == b.value();
+}
+
+/**
+ * @brief returns whether or not the two values are different ignoring their regions.
+ * @tparam T the first value type
+ * @tparam U the second value type
+ * @param a the first value
+ * @param b the second value
+ * @return true if the both are different
+ * @return false otherwise
+ */
+template<class T, class U>
+[[nodiscard]] constexpr bool operator!=(T const& a, regioned<U> const& b) noexcept {
+    return !(a == b);
+}
+
+/**
  * @brief appends string representation of the given value.
  * @param out the target output
  * @param value the target value

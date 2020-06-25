@@ -9,6 +9,7 @@
 #include <mizugaki/ast/common/regioned.h>
 #include <mizugaki/ast/common/clone_wrapper.h>
 #include <mizugaki/ast/common/ordering_specification.h>
+#include <mizugaki/ast/common/null_ordering_specification.h>
 #include <mizugaki/ast/name/name.h>
 #include <mizugaki/ast/scalar/expression.h>
 
@@ -22,6 +23,9 @@ class sort_element : public element {
 public:
     /// @brief the direction type.
     using direction_type = regioned<ordering_specification>;
+    
+    /// @brief the null location type.
+    using null_location_type = regioned<null_ordering_specification>;
 
     /**
      * @brief creates a new empty instance.
@@ -34,12 +38,14 @@ public:
      * @param key the sort key
      * @param collation the optional collation name
      * @param direction the optional sort direction
+     * @param null_location the optional nulls location
      * @param region the element region
      */
     explicit sort_element(
             std::unique_ptr<scalar::expression> key,
             std::unique_ptr<name::name> collation = {},
             std::optional<direction_type> direction = {},
+            std::optional<null_location_type> null_location = {},
             region_type region = {}) noexcept;
 
     /**
@@ -47,6 +53,7 @@ public:
      * @param key the sort key
      * @param collation the optional collation name
      * @param direction the optional sort direction
+     * @param null_location the optional nulls location
      * @param region the element region
      * @attention this will take copy of arguments
      */
@@ -54,18 +61,21 @@ public:
             scalar::expression&& key,
             ::takatori::util::rvalue_ptr<name::name> collation = {},
             std::optional<direction_type> direction = {},
+            std::optional<null_location_type> null_location = {},
             region_type region = {});
 
     /**
      * @brief creates a new instance.
      * @param key the sort key
      * @param direction the optional sort direction
+     * @param null_location the optional nulls location
      * @param region the element region
      * @attention this will take copy of arguments
      */
     sort_element(
             scalar::expression&& key,
             direction_type direction,
+            std::optional<null_location_type> null_location = {},
             region_type region = {}) noexcept;
 
     /**
@@ -73,6 +83,7 @@ public:
      * @param key the sort key
      * @param collation the optional collation name
      * @param direction the optional sort direction
+     * @param null_location the optional nulls location
      * @param region the element region
      * @attention this will take copy of arguments
      */
@@ -80,18 +91,21 @@ public:
             name::name&& key,
             ::takatori::util::rvalue_ptr<name::name> collation = {},
             std::optional<direction_type> direction = {},
+            std::optional<null_location_type> null_location = {},
             region_type region = {}) noexcept;
 
     /**
      * @brief creates a new instance.
      * @param key the sort key
      * @param direction the optional sort direction
+     * @param null_location the optional nulls location
      * @param region the element region
      * @attention this will take copy of arguments
      */
     sort_element(
             name::name&& key,
             direction_type direction,
+            std::optional<null_location_type> null_location = {},
             region_type region = {}) noexcept;
 
     /**
@@ -136,6 +150,16 @@ public:
     [[nodiscard]] std::optional<direction_type> const& direction() const noexcept;
 
     /**
+     * @brief returns the null location.
+     * @return the sort null location
+     * @return empty if it is not declared
+     */
+    [[nodiscard]] std::optional<null_location_type>& null_location() noexcept;
+
+    /// @copydoc null_location()
+    [[nodiscard]] std::optional<null_location_type> const& null_location() const noexcept;
+
+    /**
      * @brief compares two values.
      * @param a the first value
      * @param b the second value
@@ -167,6 +191,7 @@ private:
     common::clone_wrapper<std::unique_ptr<scalar::expression>> key_ {};
     common::clone_wrapper<std::unique_ptr<name::name>> collation_ {};
     std::optional<direction_type> direction_ {};
+    std::optional<null_location_type> null_location_ {};
 };
 
 /**

@@ -8,6 +8,7 @@ bugprone-*,\
 cert-*,\
 -cert-oop54-cpp,\
 cppcoreguidelines-*,\
+-cppcoreguidelines-avoid-const-or-ref-data-members,\
 -cppcoreguidelines-pro-type-const-cast,\
 -cppcoreguidelines-avoid-magic-numbers,\
 fuchsia-*,\
@@ -30,6 +31,8 @@ llvm-*,\
 -llvm-header-guard,\
 -llvm-namespace-comment,\
 misc-*,\
+-misc-const-correctness,\
+-misc-include-cleaner,\
 -misc-no-recursion,\
 -misc-unused-parameters,\
 modernize-*,\
