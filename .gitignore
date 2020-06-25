@@ -17,5 +17,6 @@
 
 # CLion
 cmake-build-*
+/.clion.*
 .idea
 *.tokens

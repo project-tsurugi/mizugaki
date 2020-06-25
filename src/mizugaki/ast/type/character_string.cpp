@@ -60,8 +60,12 @@ type_kind_type const& character_string::type_kind() const noexcept {
     return type_kind_;
 }
 
+bool character_string::is_varying() const noexcept {
+    return node_kind() == node_kind_type::character_varying;
+}
+
 bool character_string::is_flexible_length() const noexcept {
-    return length_ == common::regioned { flexible_length };
+    return length_ == flexible_length;
 }
 
 std::optional<length_type>& character_string::length() noexcept {

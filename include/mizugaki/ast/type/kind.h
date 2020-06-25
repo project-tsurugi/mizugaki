@@ -12,6 +12,7 @@ namespace mizugaki::ast::type {
 class simple;
 class character_string;
 class bit_string;
+class octet_string;
 class decimal;
 class binary_numeric;
 class datetime;
@@ -58,6 +59,18 @@ enum class kind {
      * @see bit_string
      */
     bit_varying,
+
+    /**
+     * @brief octet string type.
+     * @see octet_string
+     */
+    octet,
+
+    /**
+     * @brief varying octet string type.
+     * @see octet_string
+     */
+    octet_varying,
 
     /**
      * @brief binary large object type.
@@ -208,8 +221,8 @@ template<> struct type_of<kind, kind::character> : ::takatori::util::meta_type<c
 /// @brief provides implementation type of kind::character_varying.
 template<> struct type_of<kind, kind::character_varying> : ::takatori::util::meta_type<character_string> {};
 
-// /// @brief provides implementation type of kind::character_large_object.
-// FIXME: template<> struct type_of<kind, kind::character_large_object> : ::takatori::util::meta_type<> {};
+/// @brief FIXME:  provides implementation type of kind::character_large_object.
+template<> struct type_of<kind, kind::character_large_object> : ::takatori::util::meta_type<simple> {};
 
 /// @brief provides implementation type of kind::bit.
 template<> struct type_of<kind, kind::bit> : ::takatori::util::meta_type<bit_string> {};
@@ -217,8 +230,14 @@ template<> struct type_of<kind, kind::bit> : ::takatori::util::meta_type<bit_str
 /// @brief provides implementation type of kind::bit_varying.
 template<> struct type_of<kind, kind::bit_varying> : ::takatori::util::meta_type<bit_string> {};
 
-// // @brief provides implementation type of kind::binary_large_object.
-// FIXME: template<> struct type_of<kind, kind::binary_large_object> : ::takatori::util::meta_type<> {};
+/// @brief provides implementation type of kind::octet.
+template<> struct type_of<kind, kind::octet> : ::takatori::util::meta_type<octet_string> {};
+
+/// @brief provides implementation type of kind::octet_varying.
+template<> struct type_of<kind, kind::octet_varying> : ::takatori::util::meta_type<octet_string> {};
+
+/// @brief FIXME: provides implementation type of kind::binary_large_object.
+template<> struct type_of<kind, kind::binary_large_object> : ::takatori::util::meta_type<simple> {};
 
 /// @brief provides implementation type of kind::numeric.
 template<> struct type_of<kind, kind::numeric> : ::takatori::util::meta_type<decimal> {};
@@ -291,6 +310,8 @@ inline constexpr std::string_view to_string_view(kind value) noexcept {
         case kind::character_large_object: return "character_large_object"sv;
         case kind::bit: return "bit"sv;
         case kind::bit_varying: return "bit_varying"sv;
+        case kind::octet: return "octet"sv;
+        case kind::octet_varying: return "octet_varying"sv;
         case kind::binary_large_object: return "binary_large_object"sv;
         case kind::numeric: return "numeric"sv;
         case kind::decimal: return "decimal"sv;
