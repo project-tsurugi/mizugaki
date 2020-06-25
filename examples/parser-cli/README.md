@@ -16,14 +16,14 @@ Available options:
   * repeat N times
   * default: `1`
 * `-debug N`
-  * parser debug level
+  * parser debug level (requires `-DCMAKE_BUILD_TYPE=Debug`)
   * default: `0`
 * `-help`
   * print help messages
 
 ## How to install
 
-Please build this project with `-DINSTALL_EXAMPLES=ON` option.
+Please build this project with `-DINSTALL_EXAMPLES=ON` option, then `cmake --build . --target install` will place `<install-prefix>/bin/mizugaki-parser-cli`.
 
 ## Examples
 
@@ -47,6 +47,6 @@ mizugaki-parser-cli "INSERT INTO T1 VALUES 1;"
 # parse a statement 10,000 times without printing
 mizugaki-parser-cli -repeat 10000 -quiet "SELECT * FROM T0;"
 
-# parse with parser tracing
+# parse with tracing (require -DCMAKE_BUILD_TYPE=Debug)
 mizugaki-parser-cli -debug 1 "SELECT * FROM T0;"
 ```
