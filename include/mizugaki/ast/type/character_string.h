@@ -75,6 +75,13 @@ public:
     [[nodiscard]] type_kind_type const& type_kind() const noexcept;
 
     /**
+     * @brief returns whether or not this type is varying length.
+     * @return true if this is varying length
+     * @return false otherwise
+     */
+    [[nodiscard]] bool is_varying() const noexcept;
+
+    /**
      * @brief returns whether or not this type is flexible length.
      * @return true if this is flexible length
      * @return false otherwise

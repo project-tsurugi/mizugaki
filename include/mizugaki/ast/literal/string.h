@@ -30,6 +30,9 @@ public:
     /// @brief the concatenations type.
     using concatenations_type = std::vector<value_type>;
 
+    /// @brief the quote character.
+    static constexpr char quote_character = '\'';
+
     /// @brief the node kind of this.
     static constexpr kind_set tags {
             node_kind_type::character_string,
@@ -69,8 +72,8 @@ public:
             U&&... concatenations) :
         string {
                 value_kind,
-                value_type { std::forward<T>(value) },
-                { value_type { std::forward<U>(concatenations) }... },
+                value_type { common::chars { std::forward<T>(value) } },
+                { value_type { common::chars { std::forward<U>(concatenations) } }... },
         }
     {}
 

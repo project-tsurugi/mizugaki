@@ -24,8 +24,22 @@ function (add_test_executable source_file)
     )
 endfunction (add_test_executable)
 
+function (add_analyzer_test_executable source_file)
+    add_test_executable(${source_file})
+    target_sources(${test_target}
+            PRIVATE mizugaki/analyzer/details/test_parent.cpp
+    )
+endfunction (add_analyzer_test_executable)
+
 # AST
 add_test_executable(mizugaki/ast/node_region_test.cpp)
+add_test_executable(mizugaki/ast/literal_dispatch_test.cpp)
+add_test_executable(mizugaki/ast/name_dispatch_test.cpp)
+add_test_executable(mizugaki/ast/type_dispatch_test.cpp)
+add_test_executable(mizugaki/ast/scalar_dispatch_test.cpp)
+add_test_executable(mizugaki/ast/table_dispatch_test.cpp)
+add_test_executable(mizugaki/ast/query_dispatch_test.cpp)
+add_test_executable(mizugaki/ast/statement_dispatch_test.cpp)
 
 # SQL parser
 add_test_executable(mizugaki/parser/sql_parser_statement_test.cpp)
@@ -37,6 +51,19 @@ add_test_executable(mizugaki/parser/sql_parser_function_test.cpp)
 add_test_executable(mizugaki/parser/sql_parser_literal_test.cpp)
 add_test_executable(mizugaki/parser/sql_parser_type_test.cpp)
 add_test_executable(mizugaki/parser/sql_parser_misc_test.cpp)
+
+# SQL analyzer
+add_analyzer_test_executable(mizugaki/analyzer/details/analyze_literal_test.cpp)
+add_analyzer_test_executable(mizugaki/analyzer/details/analyze_name_test.cpp)
+add_analyzer_test_executable(mizugaki/analyzer/details/analyze_type_test.cpp)
+add_analyzer_test_executable(mizugaki/analyzer/details/analyze_scalar_expression_test.cpp)
+add_analyzer_test_executable(mizugaki/analyzer/details/analyze_query_expression_test.cpp)
+add_analyzer_test_executable(mizugaki/analyzer/details/analyze_query_expression_select_test.cpp)
+add_analyzer_test_executable(mizugaki/analyzer/details/analyze_query_expression_join_test.cpp)
+add_analyzer_test_executable(mizugaki/analyzer/details/analyze_query_expression_aggregate_test.cpp)
+add_analyzer_test_executable(mizugaki/analyzer/details/analyze_statement_dml_test.cpp)
+add_analyzer_test_executable(mizugaki/analyzer/details/analyze_statement_ddl_test.cpp)
+add_analyzer_test_executable(mizugaki/analyzer/details/set_function_processor_test.cpp)
 
 # shakujo IR translator
 add_test_executable(mizugaki/translator/shakujo_translator_test.cpp)

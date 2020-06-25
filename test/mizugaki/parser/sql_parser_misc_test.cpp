@@ -117,7 +117,7 @@ TEST_F(sql_parser_misc_test, delimited_identifier) {
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::table_reference {
-            name::simple { "TABLE" },
+            name::simple { "TABLE" }.delimited(),
     }));
 }
 

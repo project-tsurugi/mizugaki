@@ -70,7 +70,19 @@ public:
 
     [[nodiscard]] std::size_t to_size(ast::common::chars const& str);
 
+    [[nodiscard]] ast::common::chars parse_regular_identifier(ast::common::chars str);
+
     [[nodiscard]] ast::common::chars parse_delimited_identifier(ast::common::chars const& str);
+
+    [[nodiscard]] node_ptr<ast::name::simple> to_regular_identifier(ast::common::chars str, location_type location);
+
+    [[nodiscard]] node_ptr<ast::name::simple> to_delimited_identifier(
+            ast::common::chars const& str,
+            location_type location);
+
+    [[nodiscard]] node_ptr<ast::scalar::expression> try_merge_identifier_chain(
+            node_ptr<ast::scalar::expression>& qualifier,
+            node_ptr<ast::name::simple>& identifier);
 
     [[nodiscard]] node_ptr<ast::name::name> try_build_identifier_chain(
             node_ptr<ast::scalar::expression>& qualifier,

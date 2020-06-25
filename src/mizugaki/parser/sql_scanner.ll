@@ -584,9 +584,26 @@ host_parameter_name ":"{identifier}
 "YEAR" { return parser_type::make_YEAR(location()); }
 "ZONE" { return parser_type::make_ZONE(location()); }
 
+"ALWAYS" { return parser_type::make_ALWAYS(location()); }
+"MAXVALUE" { return parser_type::make_MAXVALUE(location()); }
+"MINVALUE" { return parser_type::make_MINVALUE(location()); }
+"INCREMENT" { return parser_type::make_INCREMENT(location()); }
+"NULLS" { return parser_type::make_NULLS(location()); }
+"REPLACE" { return parser_type::make_REPLACE(location()); }
+"OWNED" { return parser_type::make_OWNED(location()); }
+
 "<@" { return parser_type::make_CONTAINS_OPERATOR(location()); }
 "@>" { return parser_type::make_IS_CONTAINED_BY_OPERATOR(location()); }
 "&&" { return parser_type::make_OVERLAPS_OPERATOR(location()); }
+
+"INCLUDE" { return parser_type::make_INCLUDE(location()); }
+"IF" { return parser_type::make_IF(location()); }
+"INDEX" { return parser_type::make_INDEX(location()); }
+
+"BYTE" { return parser_type::make_BYTE(location()); }
+"BYTEVAR" { return parser_type::make_BYTEVAR(location()); }
+"VARBIT" { return parser_type::make_VARBIT(location()); }
+"VARBYTE" { return parser_type::make_VARBYTE(location()); }
 
 "PLACING" { return parser_type::make_PLACING(location()); }
 "TINYINT" { return parser_type::make_TINYINT(location()); }

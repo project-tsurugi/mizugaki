@@ -72,11 +72,11 @@ builtin_set_function_invocation::function_type const& builtin_set_function_invoc
     return function_;
 }
 
-constexpr std::optional<builtin_set_function_invocation::quantifier_type>& builtin_set_function_invocation::quantifier() noexcept {
+std::optional<builtin_set_function_invocation::quantifier_type>& builtin_set_function_invocation::quantifier() noexcept {
     return quantifier_;
 }
 
-constexpr std::optional<builtin_set_function_invocation::quantifier_type> const& builtin_set_function_invocation::quantifier() const noexcept {
+std::optional<builtin_set_function_invocation::quantifier_type> const& builtin_set_function_invocation::quantifier() const noexcept {
     return quantifier_;
 }
 
