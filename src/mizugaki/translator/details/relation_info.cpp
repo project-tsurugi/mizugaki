@@ -63,17 +63,12 @@ relation_info::build_column_map(yugawara::storage::index const& index) {
 }
 
 static auto column_name(::yugawara::storage::column const& column) {
-#if defined(NDEBUG)
-    (void) column;
-    return std::string_view {};
-#else
-    using ::takatori::util::string_builder;
-    return string_builder {}
+    using ::takatori::util::debug_string_builder;
+    return debug_string_builder {}
             << column.owner().simple_name()
             << "::"
             << column.simple_name()
-            << string_builder::to_string;
-#endif
+            << debug_string_builder::to_string;
 }
 
 decltype(relation_info::for_scan::variable_map_)

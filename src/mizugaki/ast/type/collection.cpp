@@ -70,7 +70,7 @@ std::unique_ptr<type> const& collection::element() const noexcept {
 }
 
 bool collection::is_flexible_length() const noexcept {
-    return length_ == common::regioned { flexible_length };
+    return length_ == flexible_length;
 }
 
 std::optional<length_type>& collection::length() noexcept {

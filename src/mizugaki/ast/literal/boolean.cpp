@@ -15,6 +15,20 @@ boolean::boolean(value_type value, region_type region) noexcept :
     value_ { value }
 {}
 
+boolean::boolean(bool value, region_type region) noexcept :
+    boolean {
+            value ? value_type::true_ : value_type::false_,
+            region,
+    }
+{}
+
+boolean::boolean(std::nullptr_t , region_type region) noexcept :
+    boolean {
+            value_type::unknown,
+            region,
+    }
+{}
+
 boolean::boolean(::takatori::util::clone_tag_t, boolean const& other) noexcept :
     boolean {
             other.value_,

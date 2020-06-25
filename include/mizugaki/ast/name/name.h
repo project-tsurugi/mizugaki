@@ -9,6 +9,8 @@
 
 namespace mizugaki::ast::name {
 
+class simple;
+
 /**
  * @brief an abstract super interface of name models.
  */
@@ -34,7 +36,13 @@ public:
      * @brief returns identifier of the last name.
      * @return the last identifier
      */
-    [[nodiscard]] virtual identifier_type const& last_identifier() const noexcept = 0;
+    [[nodiscard]] identifier_type const& last_identifier() const noexcept;
+
+    /**
+     * @brief returns the last name.
+     * @return the last name
+     */
+    [[nodiscard]] virtual simple const& last_name() const noexcept = 0;
 
     /**
      * @brief returns the name qualifier.

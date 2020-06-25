@@ -56,7 +56,7 @@ public:
             region_type region = {}) :
         interval {
                 decltype(sign_) { sign },
-                value_type { std::forward<T>(value) },
+                value_type { common::chars { std::forward<T>(value) } },
                 region,
         }
     {}

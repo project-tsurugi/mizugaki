@@ -32,6 +32,9 @@ public:
     /// @brief the flexible precision.
     static constexpr std::size_t flexible_precision = static_cast<std::size_t>(-1);
 
+    /// @brief the flexible scale.
+    static constexpr std::size_t flexible_scale = static_cast<std::size_t>(-1);
+
     /// @brief the available node kind of this.
     static constexpr kind_set tags {
             node_kind_type::numeric,
@@ -86,6 +89,14 @@ public:
      * @see flexible_precision
      */
     [[nodiscard]] bool is_flexible_precision() const noexcept;
+
+    /**
+     * @brief returns whether or not this type is flexible scale.
+     * @return true if this is flexible scale
+     * @return false otherwise
+     * @see flexible_scale
+     */
+    [[nodiscard]] bool is_flexible_scale() const noexcept;
 
     /**
      * @brief returns the guaranteed number of decimal significands.
