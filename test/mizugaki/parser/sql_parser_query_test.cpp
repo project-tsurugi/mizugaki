@@ -42,17 +42,32 @@ TEST_F(sql_parser_query_test, query_asterisk) {
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::query {
-            {},
             { // SELECT
                     query::select_asterisk{},
             },
             { // FROM
                     table::table_reference {
-                            name::simple{"T0"},
+                            name::simple { "T0" },
                     },
             },
-            { // WHERE
-            }
+    }));
+}
+
+TEST_F(sql_parser_query_test, query_distinct) {
+    sql_parser parser;
+    auto result = parser("-", "SELECT DISTINCT * FROM T0;");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (query::query {
+            query::set_quantifier::distinct,
+            { // SELECT
+                    query::select_asterisk{},
+            },
+            { // FROM
+                    table::table_reference {
+                            name::simple { "T0" },
+                    },
+            },
     }));
 }
 
@@ -62,7 +77,6 @@ TEST_F(sql_parser_query_test, query_asterisk_qualified) {
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::query {
-            {},
             { // SELECT
                     query::select_asterisk {
                             scalar::variable_reference {
@@ -75,8 +89,6 @@ TEST_F(sql_parser_query_test, query_asterisk_qualified) {
                             name::simple { "T0" },
                     },
             },
-            { // WHERE
-            }
     }));
 }
 
@@ -86,7 +98,6 @@ TEST_F(sql_parser_query_test, query_column) {
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::query {
-            {},
             { // SELECT
                     query::select_column {
                             scalar::variable_reference {
@@ -99,8 +110,6 @@ TEST_F(sql_parser_query_test, query_column) {
                             name::simple { "T0" },
                     },
             },
-            { // WHERE
-            }
     }));
 }
 
@@ -110,7 +119,6 @@ TEST_F(sql_parser_query_test, query_column_name) {
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::query {
-            {},
             { // SELECT
                     query::select_column {
                             scalar::variable_reference {
@@ -124,8 +132,6 @@ TEST_F(sql_parser_query_test, query_column_name) {
                             name::simple { "T0" },
                     },
             },
-            { // WHERE
-            }
     }));
 }
 
@@ -135,7 +141,6 @@ TEST_F(sql_parser_query_test, query_where) {
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::query {
-            {},
             { // SELECT
                     query::select_asterisk {},
             },
@@ -152,7 +157,7 @@ TEST_F(sql_parser_query_test, query_where) {
                             scalar::comparison_operator::less_than,
                             int_literal("0"),
                     },
-            }
+            },
     }));
 }
 
@@ -162,7 +167,6 @@ TEST_F(sql_parser_query_test, query_group_by_grand_total) {
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::query {
-            {},
             { // SELECT
                     query::select_column {
                             scalar::variable_reference {
@@ -194,7 +198,6 @@ TEST_F(sql_parser_query_test, query_group_by_columns) {
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::query {
-            {},
             { // SELECT
                     query::select_column {
                             scalar::variable_reference {
@@ -237,7 +240,6 @@ TEST_F(sql_parser_query_test, query_group_by_having) {
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::query {
-            {},
             { // SELECT
                     query::select_column {
                             scalar::variable_reference {
@@ -284,7 +286,6 @@ TEST_F(sql_parser_query_test, query_order_by) {
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::query {
-            {},
             { // SELECT
                     query::select_column {
                             scalar::variable_reference {
@@ -323,7 +324,6 @@ TEST_F(sql_parser_query_test, query_limit) {
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::query {
-            {},
             { // SELECT
                     query::select_column {
                             scalar::variable_reference {
@@ -345,6 +345,20 @@ TEST_F(sql_parser_query_test, query_limit) {
             { // ORDER BY
             },
             int_literal("10"),
+    }));
+}
+
+TEST_F(sql_parser_query_test, query_wo_from) {
+    sql_parser parser;
+    auto result = parser("-", "SELECT 1;");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (query::query {
+            { // SELECT
+                    query::select_column {
+                            int_literal("1"),
+                    },
+            },
     }));
 }
 
@@ -418,6 +432,22 @@ TEST_F(sql_parser_query_test, binary_expression_union) {
     }));
 }
 
+TEST_F(sql_parser_query_test, binary_expression_outer_union) {
+    sql_parser parser;
+    auto result = parser("-", "TABLE a OUTER UNION TABLE b;");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (query::binary_expression {
+            query::table_reference {
+                    name::simple { "a" },
+            },
+            query::binary_operator::outer_union,
+            query::table_reference {
+                    name::simple { "b" },
+            },
+    }));
+}
+
 TEST_F(sql_parser_query_test, binary_expression_except) {
     sql_parser parser;
     auto result = parser("-", "TABLE a EXCEPT TABLE b;");
@@ -452,27 +482,27 @@ TEST_F(sql_parser_query_test, binary_expression_intersect) {
 
 TEST_F(sql_parser_query_test, binary_expression_precedence) {
     sql_parser parser;
-    auto result = parser("-", "TABLE t0 UNION TABLE t1 EXCEPT TABLE t2 INTERSECT TABLE t3;");
+    auto result = parser("-", "TABLE T0 UNION TABLE T1 EXCEPT TABLE T2 INTERSECT TABLE T3;");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::binary_expression {
             query::binary_expression {
                     query::table_reference {
-                            name::simple { "t0" },
+                            name::simple { "T0" },
                     },
                     query::binary_operator::union_,
                     query::table_reference {
-                            name::simple { "t1" },
+                            name::simple { "T1" },
                     },
             },
             query::binary_operator::except,
             query::binary_expression {
                     query::table_reference {
-                            name::simple { "t2" },
+                            name::simple { "T2" },
                     },
                     query::binary_operator::intersect,
                     query::table_reference {
-                            name::simple { "t3" },
+                            name::simple { "T3" },
                     },
             },
     }));
@@ -731,21 +761,21 @@ TEST_F(sql_parser_query_test, with_expression_multiple_elements) {
 
 TEST_F(sql_parser_query_test, parenthesize) {
     sql_parser parser;
-    auto result = parser("-", "TABLE t0 UNION (TABLE t1 EXCEPT TABLE t2);");
+    auto result = parser("-", "TABLE T0 UNION (TABLE T1 EXCEPT TABLE T2);");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::binary_expression {
             query::table_reference {
-                    name::simple { "t0" },
+                    name::simple { "T0" },
             },
             query::binary_operator::union_,
             query::binary_expression {
                     query::table_reference {
-                            name::simple { "t1" },
+                            name::simple { "T1" },
                     },
                     query::binary_operator::except,
                     query::table_reference {
-                            name::simple { "t2" },
+                            name::simple { "T2" },
                     },
             },
     }));

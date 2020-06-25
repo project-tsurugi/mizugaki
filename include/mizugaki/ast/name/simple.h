@@ -3,6 +3,7 @@
 #include <takatori/util/clone_tag.h>
 
 #include "name.h"
+#include "identifier_kind.h"
 
 namespace mizugaki::ast::name {
 
@@ -14,8 +15,22 @@ class simple final : public name {
     using super = name;
 
 public:
+    /// @brief the identifier type.
+    using identifier_kind_type = ast::name::identifier_kind;
+
+    /// @brief the default kind of the identifier.
+    static constexpr identifier_kind_type default_identifier_kind = identifier_kind_type::regular;
+
     /// @brief the node kind of this.
     static constexpr node_kind_type tag = node_kind_type::simple;
+
+    /**
+     * @brief creates a new instance.
+     * @param identifier the name identifier
+     * @param kind the identifier kind
+     * @param region the node region
+     */
+    explicit simple(identifier_type identifier, identifier_kind_type kind, region_type region = {}) noexcept;
 
     /**
      * @brief creates a new instance.
@@ -51,8 +66,11 @@ public:
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 
-    /// @copydoc identifier()
-    [[nodiscard]] identifier_type const& last_identifier() const noexcept override;
+    /**
+     * @brief always returns this name.
+     * @return this
+     */
+    [[nodiscard]] simple const& last_name() const noexcept override;
 
     /**
      * @brief always returns empty.
@@ -68,6 +86,27 @@ public:
 
     /// @copydoc identifier()
     [[nodiscard]] identifier_type const& identifier() const noexcept;
+
+    /**
+     * @brief returns the kind of the identifier.
+     * @return the identifier kind
+     */
+    [[nodiscard]] identifier_kind_type& identifier_kind() noexcept;
+
+    /// @copydoc identifier_kind()
+    [[nodiscard]] identifier_kind_type const& identifier_kind() const noexcept;
+
+    /**
+     * @brief makes this simple name as using delimited identifier.
+     * @return this
+     */
+    [[nodiscard]] simple& delimited() & noexcept;
+
+    /**
+     * @brief makes this simple name as using delimited identifier.
+     * @return this
+     */
+    [[nodiscard]] simple&& delimited() && noexcept;
 
     /**
      * @brief compares two values.
@@ -93,6 +132,7 @@ protected:
 
 private:
     identifier_type identifier_;
+    identifier_kind_type identifier_kind_ { default_identifier_kind };
 };
 
 /**
