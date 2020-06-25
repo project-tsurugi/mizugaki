@@ -84,7 +84,7 @@ enum class kind {
 
     /**
      * @brief `NULL`
-     * @see null
+     * @see special
      */
     null,
 
@@ -96,7 +96,7 @@ enum class kind {
 
     /**
      * @brief `DEFAULT`
-     * @see default_
+     * @see special
      */
     default_,
 };
@@ -135,7 +135,10 @@ using kind_set = ::takatori::util::enum_set<
  */
 template<class K, K Kind> struct type_of;
 
-/// @copydoc type_of
+/**
+ * @brief provides the implementation type of the node kind.
+ * @tparam Kind the node kind
+ */
 template<kind Kind> using type_of_t = typename type_of<decltype(Kind), Kind>::type;
 
 /// @brief provides implementation type of kind::boolean.

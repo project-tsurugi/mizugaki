@@ -5,6 +5,7 @@
 #include <takatori/descriptor/variable.h>
 
 #include <takatori/relation/project.h>
+#include <takatori/relation/filter.h>
 #include <takatori/relation/intermediate/aggregate.h>
 
 #include <takatori/util/optional_ptr.h>

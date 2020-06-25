@@ -58,6 +58,7 @@ add_library(mizugaki
     mizugaki/ast/type/simple.cpp
     mizugaki/ast/type/character_string.cpp
     mizugaki/ast/type/bit_string.cpp
+    mizugaki/ast/type/octet_string.cpp
     mizugaki/ast/type/decimal.cpp
     mizugaki/ast/type/binary_numeric.cpp
     mizugaki/ast/type/datetime.cpp
@@ -125,8 +126,25 @@ add_library(mizugaki
     mizugaki/ast/statement/insert_statement.cpp
     mizugaki/ast/statement/update_statement.cpp
     mizugaki/ast/statement/delete_statement.cpp
+    mizugaki/ast/statement/table_definition.cpp
+    mizugaki/ast/statement/index_definition.cpp
+    mizugaki/ast/statement/view_definition.cpp
+    mizugaki/ast/statement/sequence_definition.cpp
+    mizugaki/ast/statement/schema_definition.cpp
+    mizugaki/ast/statement/drop_statement.cpp
     mizugaki/ast/statement/empty_statement.cpp
     mizugaki/ast/statement/set_element.cpp
+    mizugaki/ast/statement/storage_parameter.cpp
+    mizugaki/ast/statement/table_element.cpp
+    mizugaki/ast/statement/column_definition.cpp
+    mizugaki/ast/statement/table_constraint_definition.cpp
+    mizugaki/ast/statement/column_constraint_definition.cpp
+    mizugaki/ast/statement/constraint.cpp
+    mizugaki/ast/statement/simple_constraint.cpp
+    mizugaki/ast/statement/expression_constraint.cpp
+    mizugaki/ast/statement/key_constraint.cpp
+    mizugaki/ast/statement/referential_constraint.cpp
+    mizugaki/ast/statement/identity_constraint.cpp
 
     # SQL parser
     mizugaki/parser/sql_parser.cpp
@@ -135,6 +153,28 @@ add_library(mizugaki
     mizugaki/parser/sql_driver.cpp
     ${FLEX_sql_scanner_OUTPUTS}
     ${BISON_sql_parser_OUTPUTS}
+
+    # SQL analyzer
+    mizugaki/analyzer/sql_analyzer.cpp
+    mizugaki/analyzer/sql_analyzer_options.cpp
+    mizugaki/analyzer/sql_analyzer_result.cpp
+    mizugaki/analyzer/sql_analyzer_impl.cpp
+
+    mizugaki/analyzer/details/relation_info.cpp
+    mizugaki/analyzer/details/column_info.cpp
+    mizugaki/analyzer/details/query_scope.cpp
+    mizugaki/analyzer/details/value_context.cpp
+    mizugaki/analyzer/details/scalar_value_context.cpp
+    mizugaki/analyzer/details/row_value_context.cpp
+
+    mizugaki/analyzer/details/analyzer_context.cpp
+    mizugaki/analyzer/details/analyze_statement.cpp
+    mizugaki/analyzer/details/analyze_query_expression.cpp
+    mizugaki/analyzer/details/analyze_scalar_expression.cpp
+    mizugaki/analyzer/details/analyze_literal.cpp
+    mizugaki/analyzer/details/analyze_type.cpp
+    mizugaki/analyzer/details/analyze_name.cpp
+    mizugaki/analyzer/details/set_function_processor.cpp
 
     # common tools
     mizugaki/placeholder_map.cpp

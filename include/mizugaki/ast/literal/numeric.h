@@ -67,7 +67,7 @@ public:
         numeric {
                 value_kind,
                 std::nullopt,
-                value_type { std::forward<T>(unsigned_value) },
+                value_type { common::chars { std::forward<T>(unsigned_value) } },
                 region,
         }
     {}
