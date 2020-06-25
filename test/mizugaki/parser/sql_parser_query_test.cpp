@@ -42,17 +42,32 @@ TEST_F(sql_parser_query_test, query_asterisk) {
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::query {
-            {},
             { // SELECT
                     query::select_asterisk{},
             },
             { // FROM
                     table::table_reference {
-                            name::simple{"T0"},
+                            name::simple { "t0" },
                     },
             },
-            { // WHERE
-            }
+    }));
+}
+
+TEST_F(sql_parser_query_test, query_distinct) {
+    sql_parser parser;
+    auto result = parser("-", "SELECT DISTINCT * FROM T0;");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (query::query {
+            query::set_quantifier::distinct,
+            { // SELECT
+                    query::select_asterisk{},
+            },
+            { // FROM
+                    table::table_reference {
+                            name::simple { "t0" },
+                    },
+            },
     }));
 }
 
@@ -62,21 +77,18 @@ TEST_F(sql_parser_query_test, query_asterisk_qualified) {
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::query {
-            {},
             { // SELECT
                     query::select_asterisk {
                             scalar::variable_reference {
-                                    name::simple { "T0" },
+                                    name::simple { "t0" },
                             },
                     },
             },
             { // FROM
                     table::table_reference {
-                            name::simple { "T0" },
+                            name::simple { "t0" },
                     },
             },
-            { // WHERE
-            }
     }));
 }
 
@@ -86,21 +98,18 @@ TEST_F(sql_parser_query_test, query_column) {
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::query {
-            {},
             { // SELECT
                     query::select_column {
                             scalar::variable_reference {
-                                    name::simple { "C0" },
+                                    name::simple { "c0" },
                             },
                     },
             },
             { // FROM
                     table::table_reference {
-                            name::simple { "T0" },
+                            name::simple { "t0" },
                     },
             },
-            { // WHERE
-            }
     }));
 }
 
@@ -110,22 +119,19 @@ TEST_F(sql_parser_query_test, query_column_name) {
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::query {
-            {},
             { // SELECT
                     query::select_column {
                             scalar::variable_reference {
-                                    name::simple { "C0" },
+                                    name::simple { "c0" },
                             },
                             name::simple { "x0" },
                     },
             },
             { // FROM
                     table::table_reference {
-                            name::simple { "T0" },
+                            name::simple { "t0" },
                     },
             },
-            { // WHERE
-            }
     }));
 }
 
@@ -135,13 +141,12 @@ TEST_F(sql_parser_query_test, query_where) {
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::query {
-            {},
             { // SELECT
                     query::select_asterisk {},
             },
             { // FROM
                     table::table_reference {
-                            name::simple { "T0" },
+                            name::simple { "t0" },
                     },
             },
             { // WHERE
@@ -152,7 +157,7 @@ TEST_F(sql_parser_query_test, query_where) {
                             scalar::comparison_operator::less_than,
                             int_literal("0"),
                     },
-            }
+            },
     }));
 }
 
@@ -162,22 +167,21 @@ TEST_F(sql_parser_query_test, query_group_by_grand_total) {
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::query {
-            {},
             { // SELECT
                     query::select_column {
                             scalar::variable_reference {
-                                    name::simple { "C0" },
+                                    name::simple { "c0" },
                             },
                     },
                     query::select_column {
                             scalar::variable_reference {
-                                    name::simple { "C1" },
+                                    name::simple { "c1" },
                             },
                     },
             },
             { // FROM
                     table::table_reference {
-                            name::simple { "T0" },
+                            name::simple { "t0" },
                     },
             },
             { // WHERE
@@ -194,22 +198,21 @@ TEST_F(sql_parser_query_test, query_group_by_columns) {
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::query {
-            {},
             { // SELECT
                     query::select_column {
                             scalar::variable_reference {
-                                    name::simple { "C0" },
+                                    name::simple { "c0" },
                             },
                     },
                     query::select_column {
                             scalar::variable_reference {
-                                    name::simple { "C1" },
+                                    name::simple { "c1" },
                             },
                     },
             },
             { // FROM
                     table::table_reference {
-                            name::simple { "T0" },
+                            name::simple { "t0" },
                     },
             },
             { // WHERE
@@ -218,12 +221,12 @@ TEST_F(sql_parser_query_test, query_group_by_columns) {
                     {
                             query::grouping_column {
                                     scalar::variable_reference {
-                                            name::simple { "C0" },
+                                            name::simple { "c0" },
                                     },
                             },
                             query::grouping_column {
                                     scalar::variable_reference {
-                                            name::simple { "C1" },
+                                            name::simple { "c1" },
                                     },
                             },
                     },
@@ -237,17 +240,16 @@ TEST_F(sql_parser_query_test, query_group_by_having) {
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::query {
-            {},
             { // SELECT
                     query::select_column {
                             scalar::variable_reference {
-                                    name::simple { "C0" },
+                                    name::simple { "c0" },
                             },
                     },
             },
             { // FROM
                     table::table_reference {
-                            name::simple { "T0" },
+                            name::simple { "t0" },
                     },
             },
             { // WHERE
@@ -256,12 +258,12 @@ TEST_F(sql_parser_query_test, query_group_by_having) {
                     {
                             query::grouping_column {
                                     scalar::variable_reference {
-                                            name::simple { "C0" },
+                                            name::simple { "c0" },
                                     },
                             },
                             query::grouping_column {
                                     scalar::variable_reference {
-                                            name::simple { "C1" },
+                                            name::simple { "c1" },
                                     },
                             },
                     },
@@ -269,7 +271,7 @@ TEST_F(sql_parser_query_test, query_group_by_having) {
             { // HAVING
                     scalar::comparison_predicate {
                             scalar::variable_reference {
-                                    name::simple { "C1" },
+                                    name::simple { "c1" },
                             },
                             scalar::comparison_operator::equals,
                             int_literal("0"),
@@ -284,17 +286,16 @@ TEST_F(sql_parser_query_test, query_order_by) {
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::query {
-            {},
             { // SELECT
                     query::select_column {
                             scalar::variable_reference {
-                                    name::simple { "C0" },
+                                    name::simple { "c0" },
                             },
                     },
             },
             { // FROM
                     table::table_reference {
-                            name::simple { "T0" },
+                            name::simple { "t0" },
                     },
             },
             { // WHERE
@@ -304,13 +305,13 @@ TEST_F(sql_parser_query_test, query_order_by) {
             { // HAVING
             },
             { // ORDER BY
-                    name::simple { "C0" },
+                    name::simple { "c0" },
                     {
-                            name::simple { "C1" },
+                            name::simple { "c1" },
                             common::ordering_specification::asc,
                     },
                     {
-                            name::simple { "C2" },
+                            name::simple { "c2" },
                             common::ordering_specification::desc,
                     },
             },
@@ -323,17 +324,16 @@ TEST_F(sql_parser_query_test, query_limit) {
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::query {
-            {},
             { // SELECT
                     query::select_column {
                             scalar::variable_reference {
-                                    name::simple { "C0" },
+                                    name::simple { "c0" },
                             },
                     },
             },
             { // FROM
                     table::table_reference {
-                            name::simple { "T0" },
+                            name::simple { "t0" },
                     },
             },
             { // WHERE
@@ -348,13 +348,27 @@ TEST_F(sql_parser_query_test, query_limit) {
     }));
 }
 
+TEST_F(sql_parser_query_test, query_wo_from) {
+    sql_parser parser;
+    auto result = parser("-", "SELECT 1;");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (query::query {
+            { // SELECT
+                    query::select_column {
+                            int_literal("1"),
+                    },
+            },
+    }));
+}
+
 TEST_F(sql_parser_query_test, explicit_table) {
     sql_parser parser;
     auto result = parser("-", "TABLE T0;");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::table_reference {
-            name::simple { "T0" },
+            name::simple { "t0" },
     }));
 }
 
@@ -412,6 +426,22 @@ TEST_F(sql_parser_query_test, binary_expression_union) {
                     name::simple { "a" },
             },
             query::binary_operator::union_,
+            query::table_reference {
+                    name::simple { "b" },
+            },
+    }));
+}
+
+TEST_F(sql_parser_query_test, binary_expression_outer_union) {
+    sql_parser parser;
+    auto result = parser("-", "TABLE a OUTER UNION TABLE b;");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (query::binary_expression {
+            query::table_reference {
+                    name::simple { "a" },
+            },
+            query::binary_operator::outer_union,
             query::table_reference {
                     name::simple { "b" },
             },
@@ -542,9 +572,9 @@ TEST_F(sql_parser_query_test, binary_expression_corresponding_by) {
             query::binary_operator::union_,
             query::set_quantifier::all,
             {
-                    name::simple { "C0" },
-                    name::simple { "C1" },
-                    name::simple { "C2" },
+                    name::simple { "c0" },
+                    name::simple { "c1" },
+                    name::simple { "c2" },
             },
             query::table_reference {
                     name::simple { "b" },
@@ -567,7 +597,7 @@ TEST_F(sql_parser_query_test, with_expression) {
                                     },
                                     { // FROM
                                             table::table_reference {
-                                                    name::simple { "T0" },
+                                                    name::simple { "t0" },
                                             },
                                     },
                                     { // WHERE
@@ -604,7 +634,7 @@ TEST_F(sql_parser_query_test, with_expression_recursive) {
                                     },
                                     { // FROM
                                             table::table_reference {
-                                                    name::simple { "T0" },
+                                                    name::simple { "t0" },
                                             },
                                     },
                                     { // WHERE
@@ -644,7 +674,7 @@ TEST_F(sql_parser_query_test, with_expression_columns) {
                                     },
                                     { // FROM
                                             table::table_reference {
-                                                    name::simple { "T0" },
+                                                    name::simple { "t0" },
                                             },
                                     },
                                     { // WHERE
@@ -684,7 +714,7 @@ TEST_F(sql_parser_query_test, with_expression_multiple_elements) {
                                     },
                                     { // FROM
                                             table::table_reference {
-                                                    name::simple { "T0" },
+                                                    name::simple { "t0" },
                                             },
                                     },
                             }

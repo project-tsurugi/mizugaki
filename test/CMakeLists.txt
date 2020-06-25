@@ -26,6 +26,13 @@ endfunction (add_test_executable)
 
 # AST
 add_test_executable(mizugaki/ast/node_region_test.cpp)
+add_test_executable(mizugaki/ast/literal_dispatch_test.cpp)
+add_test_executable(mizugaki/ast/name_dispatch_test.cpp)
+add_test_executable(mizugaki/ast/type_dispatch_test.cpp)
+add_test_executable(mizugaki/ast/scalar_dispatch_test.cpp)
+add_test_executable(mizugaki/ast/table_dispatch_test.cpp)
+add_test_executable(mizugaki/ast/query_dispatch_test.cpp)
+add_test_executable(mizugaki/ast/statement_dispatch_test.cpp)
 
 # SQL parser
 add_test_executable(mizugaki/parser/sql_parser_statement_test.cpp)
@@ -37,6 +44,12 @@ add_test_executable(mizugaki/parser/sql_parser_function_test.cpp)
 add_test_executable(mizugaki/parser/sql_parser_literal_test.cpp)
 add_test_executable(mizugaki/parser/sql_parser_type_test.cpp)
 add_test_executable(mizugaki/parser/sql_parser_misc_test.cpp)
+
+# SQL analyzer
+add_test_executable(mizugaki/analyzer/details/analyze_literal_test.cpp)
+add_test_executable(mizugaki/analyzer/details/analyze_name_test.cpp)
+add_test_executable(mizugaki/analyzer/details/analyze_type_test.cpp)
+add_test_executable(mizugaki/analyzer/details/analyze_scalar_expression_test.cpp)
 
 # shakujo IR translator
 add_test_executable(mizugaki/translator/shakujo_translator_test.cpp)

@@ -49,7 +49,7 @@ TEST_F(sql_parser_table_test, table_reference) {
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (table::table_reference {
-            name::simple { "T0" },
+            name::simple { "t0" },
     }));
 }
 
@@ -58,9 +58,9 @@ TEST_F(sql_parser_table_test, table_reference_correlation) {
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (table::table_reference {
-            name::simple { "T0" },
+            name::simple { "t0" },
             {
-                name::simple { "X" },
+                name::simple { "x" },
             }
     }));
 }
@@ -70,14 +70,14 @@ TEST_F(sql_parser_table_test, table_reference_correlation_columns) {
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (table::table_reference {
-            name::simple { "T0" },
+            name::simple { "t0" },
             {
                     {
-                            name::simple { "X" },
+                            name::simple { "x" },
                             {
-                                    name::simple { "C0" },
-                                    name::simple { "C1" },
-                                    name::simple { "C2" },
+                                    name::simple { "c0" },
+                                    name::simple { "c1" },
+                                    name::simple { "c2" },
                             },
                     }
             },
@@ -90,10 +90,10 @@ TEST_F(sql_parser_table_test, derived_table) {
 
     EXPECT_EQ(extract(result), (table::subquery {
             query::table_reference {
-                    name::simple { "T0" },
+                    name::simple { "t0" },
             },
             {
-                    name::simple { "X" },
+                    name::simple { "x" },
             }
     }));
 }
@@ -104,10 +104,10 @@ TEST_F(sql_parser_table_test, lateral_derived_table) {
 
     EXPECT_EQ(extract(result), (table::subquery {
             query::table_reference {
-                    name::simple { "T0" },
+                    name::simple { "t0" },
             },
             {
-                    name::simple { "X" },
+                    name::simple { "x" },
             },
             true,
     }));
@@ -122,7 +122,7 @@ TEST_F(sql_parser_table_test, collection_derived_table) {
                     name::simple { "a" },
             },
             {
-                    name::simple { "X" },
+                    name::simple { "x" },
             },
     }));
 }
@@ -136,7 +136,7 @@ TEST_F(sql_parser_table_test, collection_derived_table_with_ordinaliry) {
                     name::simple { "a" },
             },
             {
-                    name::simple { "X" },
+                    name::simple { "x" },
             },
             true,
     }));
@@ -147,7 +147,7 @@ TEST_F(sql_parser_table_test, only_spec) {
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (table::table_reference {
-            name::simple { "T0" },
+            name::simple { "t0" },
             {},
             true,
     }));
@@ -158,9 +158,9 @@ TEST_F(sql_parser_table_test, only_spec_correlation) {
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (table::table_reference {
-            name::simple { "T0" },
+            name::simple { "t0" },
             {
-                    name::simple { "X" },
+                    name::simple { "x" },
             },
             true,
     }));
@@ -172,11 +172,11 @@ TEST_F(sql_parser_table_test, cross_join) {
 
     EXPECT_EQ(extract(result), (table::join {
             table::table_reference {
-                    name::simple { "T0" },
+                    name::simple { "t0" },
             },
             table::join_type::cross,
             table::table_reference {
-                    name::simple { "T1" },
+                    name::simple { "t1" },
             },
     }));
 }
@@ -187,20 +187,20 @@ TEST_F(sql_parser_table_test, join_on) {
 
     EXPECT_EQ(extract(result), (table::join {
             table::table_reference {
-                    name::simple { "T0" },
+                    name::simple { "t0" },
             },
             table::join_type::inner,
             table::table_reference {
-                    name::simple { "T1" },
+                    name::simple { "t1" },
             },
             table::join_condition {
                     scalar::comparison_predicate {
                             scalar::variable_reference {
-                                    name::simple { "A" },
+                                    name::simple { "a" },
                             },
                             scalar::comparison_operator::equals,
                             scalar::variable_reference {
-                                    name::simple { "B" },
+                                    name::simple { "b" },
                             },
                     },
             },
@@ -213,15 +213,15 @@ TEST_F(sql_parser_table_test, join_using) {
 
     EXPECT_EQ(extract(result), (table::join {
             table::table_reference {
-                    name::simple { "T0" },
+                    name::simple { "t0" },
             },
             table::join_type::inner,
             table::table_reference {
-                    name::simple { "T1" },
+                    name::simple { "t1" },
             },
             table::join_columns {
-                    name::simple { "A" },
-                    name::simple { "B" },
+                    name::simple { "a" },
+                    name::simple { "b" },
             },
     }));
 }
@@ -232,20 +232,20 @@ TEST_F(sql_parser_table_test, left_outer_join) {
 
     EXPECT_EQ(extract(result), (table::join {
             table::table_reference {
-                    name::simple { "T0" },
+                    name::simple { "t0" },
             },
             table::join_type::left_outer,
             table::table_reference {
-                    name::simple { "T1" },
+                    name::simple { "t1" },
             },
             table::join_condition {
                     scalar::comparison_predicate {
                             scalar::variable_reference {
-                                    name::simple { "A" },
+                                    name::simple { "a" },
                             },
                             scalar::comparison_operator::equals,
                             scalar::variable_reference {
-                                    name::simple { "B" },
+                                    name::simple { "b" },
                             },
                     },
             },
@@ -258,20 +258,20 @@ TEST_F(sql_parser_table_test, right_outer_join) {
 
     EXPECT_EQ(extract(result), (table::join {
             table::table_reference {
-                    name::simple { "T0" },
+                    name::simple { "t0" },
             },
             table::join_type::right_outer,
             table::table_reference {
-                    name::simple { "T1" },
+                    name::simple { "t1" },
             },
             table::join_condition {
                     scalar::comparison_predicate {
                             scalar::variable_reference {
-                                    name::simple { "A" },
+                                    name::simple { "a" },
                             },
                             scalar::comparison_operator::equals,
                             scalar::variable_reference {
-                                    name::simple { "B" },
+                                    name::simple { "b" },
                             },
                     },
             },
@@ -284,20 +284,20 @@ TEST_F(sql_parser_table_test, full_outer_join) {
 
     EXPECT_EQ(extract(result), (table::join {
             table::table_reference {
-                    name::simple { "T0" },
+                    name::simple { "t0" },
             },
             table::join_type::full_outer,
             table::table_reference {
-                    name::simple { "T1" },
+                    name::simple { "t1" },
             },
             table::join_condition {
                     scalar::comparison_predicate {
                             scalar::variable_reference {
-                                    name::simple { "A" },
+                                    name::simple { "a" },
                             },
                             scalar::comparison_operator::equals,
                             scalar::variable_reference {
-                                    name::simple { "B" },
+                                    name::simple { "b" },
                             },
                     },
             },
@@ -310,11 +310,11 @@ TEST_F(sql_parser_table_test, natural_join) {
 
     EXPECT_EQ(extract(result), (table::join {
             table::table_reference {
-                    name::simple { "T0" },
+                    name::simple { "t0" },
             },
             table::join_type::natural_inner,
             table::table_reference {
-                    name::simple { "T1" },
+                    name::simple { "t1" },
             },
     }));
 }
@@ -325,11 +325,11 @@ TEST_F(sql_parser_table_test, union_join) {
 
     EXPECT_EQ(extract(result), (table::join {
             table::table_reference {
-                    name::simple { "T0" },
+                    name::simple { "t0" },
             },
             table::join_type::union_,
             table::table_reference {
-                    name::simple { "T1" },
+                    name::simple { "t1" },
             },
     }));
 }

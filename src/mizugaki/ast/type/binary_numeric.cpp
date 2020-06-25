@@ -61,7 +61,7 @@ type_kind_type const& binary_numeric::type_kind() const noexcept {
 }
 
 bool binary_numeric::is_flexible_precision() const noexcept {
-    return precision_ == common::regioned { flexible_precision };
+    return precision_ == flexible_precision;
 }
 
 std::optional<precision_type>& binary_numeric::precision() noexcept {
