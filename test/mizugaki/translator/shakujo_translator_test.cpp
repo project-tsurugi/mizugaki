@@ -87,10 +87,8 @@ public:
     ::yugawara::binding::factory bindings { options.get_object_creator() };
 };
 
-void compile(shakujo_translator_test& test, relation::graph_type&& graph) {
-    ::yugawara::compiler_options options {
-            test.storages,
-    };
+void compile(shakujo_translator_test&, relation::graph_type&& graph) {
+    ::yugawara::compiler_options options {};
     ::yugawara::compiler compiler {};
     auto r = compiler(options, std::move(graph));
     if (!r) {
