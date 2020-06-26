@@ -197,6 +197,16 @@ public:
             return report(code_type::function_not_found, node, string_builder {} << *node.name());
         }
 
+        std::string canonical_name { name };
+        for (auto&& c : canonical_name) {
+            if ('A' <= c && c <= 'Z') {
+                c = static_cast<char>(c - 'A' + 'a');
+            }
+        }
+        if (node.quantifier() == ::shakujo::model::expression::FunctionCall::Quantifier::DISTINCT) {
+            canonical_name += ::yugawara::aggregate::declaration::name_suffix_distinct;
+        }
+
         ::takatori::util::reference_vector<scalar::expression> args { translator_.object_creator() };
         args.reserve(node.arguments().size());
 
@@ -222,11 +232,9 @@ public:
             ts.emplace_back(std::move(r));
         }
 
-        auto quantifier = convert(node.quantifier());
-        using quanfifier_type = ::yugawara::aggregate::set_quantifier;
-        if (!quantifier) {
-            auto&& fs = collect_functions(name);
-            auto&& as = collect_aggregates(name, quanfifier_type::all);
+        if (node.quantifier() == ::shakujo::model::expression::FunctionCall::Quantifier::ABSENT) {
+            auto&& fs = collect_functions(canonical_name);
+            auto&& as = collect_aggregates(canonical_name);
             translator_.type_buffer().clear();
             if (!fs.empty() && !as.empty()) {
                 fs.clear();
@@ -258,7 +266,7 @@ public:
                 return create<extension::scalar::aggregate_function_call>(node, std::move(desc), std::move(args));
             }
         } else {
-            auto&& as = collect_aggregates(name, *quantifier);
+            auto&& as = collect_aggregates(canonical_name);
             translator_.type_buffer().clear();
             if (!as.empty()) {
                 auto r = resolve_overload(as);
@@ -391,22 +399,6 @@ private:
         }
     }
 
-    static std::optional<::yugawara::aggregate::set_quantifier> convert(
-            ::shakujo::model::expression::FunctionCall::Quantifier quantifier) noexcept {
-        using from = ::shakujo::model::expression::FunctionCall::Quantifier;
-        using to = ::yugawara::aggregate::set_quantifier;
-        switch (quantifier) {
-            case from::ABSENT:
-                return std::nullopt;
-            case from::ALL:
-            case from::ASTERISK:
-                return to::all;
-            case from::DISTINCT:
-                return to::distinct;
-        }
-        fail();
-    }
-
     result_type char_string(std::string_view str) {
         auto c = translator_.object_creator();
         return c.create_unique<scalar::immediate>(
@@ -431,13 +423,11 @@ private:
     }
 
     [[nodiscard]] std::vector<std::shared_ptr<::yugawara::aggregate::declaration const>>& collect_aggregates(
-            std::string_view name,
-            ::yugawara::aggregate::set_quantifier quantifier) {
+            std::string_view name) {
         // NOTE: should be filled to translator_.type_buffer()
         translator_.aggregate_buffer().clear();
         translator_.options().aggregate_function_provider().each(
                 name,
-                quantifier,
                 translator_.type_buffer().size(),
                 [this](std::shared_ptr<::yugawara::aggregate::declaration const> const& d) {
                     if (is_callable(d->shared_parameter_types(), translator_.type_buffer())) {

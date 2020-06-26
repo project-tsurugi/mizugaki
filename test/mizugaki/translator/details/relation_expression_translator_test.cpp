@@ -41,8 +41,6 @@ namespace relation = ::takatori::relation;
 
 namespace tinfo = ::shakujo::common::core::type;
 
-using quantifier = ::yugawara::aggregate::set_quantifier;
-
 class relation_expression_translator_test : public ::testing::Test {
 public:
     std::shared_ptr<::yugawara::storage::configurable_provider> storages
@@ -316,7 +314,6 @@ TEST_F(relation_expression_translator_test, project_aggregate) {
     auto f = aggregates->add({
             20'001,
             "f",
-            quantifier::all,
             type::int4 {},
             {
                     type::int4 {},
@@ -358,7 +355,6 @@ TEST_F(relation_expression_translator_test, project_aggregate_after_project) {
     auto f = aggregates->add({
             20'001,
             "f",
-            quantifier::all,
             type::int4 {},
             {
                     type::int4 {},
@@ -411,7 +407,6 @@ TEST_F(relation_expression_translator_test, project_aggregate_and_project) {
     auto f1 = aggregates->add({
             20'001,
             "f1",
-            quantifier::all,
             type::int4 {},
             {
                     type::int4 {},
@@ -421,7 +416,6 @@ TEST_F(relation_expression_translator_test, project_aggregate_and_project) {
     auto f2 = aggregates->add({
             20'001,
             "f2",
-            quantifier::all,
             type::int4 {},
             {
                     type::int4 {},
@@ -483,7 +477,6 @@ TEST_F(relation_expression_translator_test, project_aggregate_group) {
     auto f = aggregates->add({
             20'001,
             "f",
-            quantifier::all,
             type::int4 {},
             {
                     type::int4 {},
@@ -534,7 +527,6 @@ TEST_F(relation_expression_translator_test, project_aggregate_group_with_key) {
     auto f = aggregates->add({
             20'001,
             "f",
-            quantifier::all,
             type::int4 {},
             {
                     type::int4 {},
@@ -579,7 +571,6 @@ TEST_F(relation_expression_translator_test, project_aggregate_group_key_only) {
     auto f = aggregates->add({
             20'001,
             "f",
-            quantifier::all,
             type::int4 {},
             {
                     type::int4 {},
@@ -660,7 +651,6 @@ TEST_F(relation_expression_translator_test, project_aggregate_group_complex_key)
     auto f = aggregates->add({
             20'001,
             "f",
-            quantifier::all,
             type::int4 {},
             {
                     type::int4 {},

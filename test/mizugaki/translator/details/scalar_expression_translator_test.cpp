@@ -45,8 +45,6 @@ namespace vinfo = ::shakujo::common::core::value;
 
 namespace extension = ::yugawara::extension;
 
-using quantifier = ::yugawara::aggregate::set_quantifier;
-
 class scalar_expression_translator_test : public ::testing::Test {
 public:
     std::shared_ptr<::yugawara::function::configurable_provider> functions = std::make_shared<::yugawara::function::configurable_provider>();
@@ -60,6 +58,13 @@ public:
     ::shakujo::model::IRFactory f;
     ::yugawara::binding::factory bindings { options.get_object_creator() };
 };
+
+static std::string distinct_of(std::string_view s) {
+    std::string r;
+    r += s;
+    r += ::yugawara::aggregate::declaration::name_suffix_distinct;
+    return r;
+}
 
 TEST_F(scalar_expression_translator_test, literal) {
     auto s = f.Literal(tinfo::Int(32), vinfo::Int(100));
@@ -358,7 +363,6 @@ TEST_F(scalar_expression_translator_test, aggregate_function_call_quantifier_abs
     auto d = aggregates->add({
             20'001,
             "f",
-            quantifier::all,
             type::int4 {},
             {
                     type::int8 {},
@@ -366,8 +370,7 @@ TEST_F(scalar_expression_translator_test, aggregate_function_call_quantifier_abs
     });
     aggregates->add({
             20'002,
-            "f",
-            quantifier::distinct,
+            distinct_of("f"),
             type::int4 {},
             {
                     type::int8 {},
@@ -390,7 +393,6 @@ TEST_F(scalar_expression_translator_test, aggregate_function_call_quantifier_all
     auto d = aggregates->add({
             20'001,
             "f",
-            quantifier::all,
             type::int4 {},
             {
                     type::int8 {},
@@ -398,8 +400,7 @@ TEST_F(scalar_expression_translator_test, aggregate_function_call_quantifier_all
     });
     aggregates->add({
             20'002,
-            "f",
-            quantifier::distinct,
+            distinct_of("f"),
             type::int4 {},
             {
                     type::int8 {},
@@ -423,7 +424,6 @@ TEST_F(scalar_expression_translator_test, aggregate_function_call_quantifier_dis
     aggregates->add({
             20'001,
             "f",
-            quantifier::all,
             type::int4 {},
             {
                     type::int8 {},
@@ -431,8 +431,7 @@ TEST_F(scalar_expression_translator_test, aggregate_function_call_quantifier_dis
     });
     auto d = aggregates->add({
             20'002,
-            "f",
-            quantifier::distinct,
+            distinct_of("f"),
             type::int4 {},
             {
                     type::int8 {},
@@ -456,7 +455,6 @@ TEST_F(scalar_expression_translator_test, aggregate_function_call_quantifier_ast
     auto d = aggregates->add({
             20'001,
             "f",
-            quantifier::all,
             type::int4 {},
             {},
     });
@@ -486,7 +484,6 @@ TEST_F(scalar_expression_translator_test, aggregate_function_call_overload_umbig
     aggregates->add({
             20'001,
             "f",
-            quantifier::all,
             type::int4 {},
             {
                     type::decimal { 5, 2 },
@@ -495,7 +492,6 @@ TEST_F(scalar_expression_translator_test, aggregate_function_call_overload_umbig
     aggregates->add({
             20'002,
             "f",
-            quantifier::all,
             type::int8 {},
             {
                     type::int4 {},
@@ -522,7 +518,6 @@ TEST_F(scalar_expression_translator_test, aggregate_function_call_overload_confl
     aggregates->add({
             20'002,
             "f",
-            quantifier::all,
             type::int8 {},
             {
                     type::int4 {},
