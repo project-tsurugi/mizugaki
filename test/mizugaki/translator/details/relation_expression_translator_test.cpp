@@ -50,7 +50,7 @@ public:
     std::shared_ptr<::yugawara::aggregate::configurable_provider> aggregates
             = std::make_shared<::yugawara::aggregate::configurable_provider>();
 
-    std::shared_ptr<::yugawara::storage::table> t0 = storages->add_table("T0", {
+    std::shared_ptr<::yugawara::storage::table> t0 = storages->add_table({
             "T0",
             {
                     { "C0", type::int4() },
@@ -58,7 +58,7 @@ public:
                     { "C2", type::int4() },
             },
     });
-    std::shared_ptr<::yugawara::storage::table> t1 = storages->add_table("T1", {
+    std::shared_ptr<::yugawara::storage::table> t1 = storages->add_table({
             "T1",
             {
                     { "C0", type::int4() },
@@ -67,7 +67,7 @@ public:
             },
     });
 
-    std::shared_ptr<::yugawara::storage::index> i0 = storages->add_index("I0", {
+    std::shared_ptr<::yugawara::storage::index> i0 = storages->add_index({
             t0,
             "I0",
             {
@@ -82,7 +82,7 @@ public:
             },
 
     });
-    std::shared_ptr<::yugawara::storage::index> i1 = storages->add_index("I1", {
+    std::shared_ptr<::yugawara::storage::index> i1 = storages->add_index({
             t1,
             "I1",
             {
