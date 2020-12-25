@@ -303,13 +303,53 @@ TEST_F(scalar_expression_translator_test, function_call_overload_candidates) {
     });
     auto s = f.FunctionCall(
             f.Name("f"),
-            f.Literal(tinfo::Int(64), vinfo::Int(1)));
+            f.Literal(tinfo::Int(32), vinfo::Int(1)));
     auto r = engine.process(*s, { options, {} });
     ASSERT_TRUE(r);
     EXPECT_EQ(*r, scalar::function_call(
             bindings(d),
             {
                     scalar::immediate(value::int4(1), type::int4()),
+            }));
+}
+
+TEST_F(scalar_expression_translator_test, function_call_overload_int8_float8) {
+    auto fi8 = functions->add({
+            20'001,
+            "f",
+            type::int8 {},
+            {
+                    type::int8 {},
+            },
+    });
+    auto ff8 = functions->add({
+            20'002,
+            "f",
+            type::float8 {},
+            {
+                    type::float8 {},
+            },
+    });
+    auto ei8 = f.FunctionCall(
+            f.Name("f"),
+            f.Literal(tinfo::Int(64), vinfo::Int(1)));
+    auto ri8 = engine.process(*ei8, { options, {} });
+    ASSERT_TRUE(ri8);
+    EXPECT_EQ(*ri8, scalar::function_call(
+            bindings(fi8),
+            {
+                    scalar::immediate(value::int4(1), type::int8()),
+            }));
+
+    auto ef8 = f.FunctionCall(
+            f.Name("f"),
+            f.Literal(tinfo::Float(64), vinfo::Float(1)));
+    auto rf8 = engine.process(*ef8, { options, {} });
+    ASSERT_TRUE(rf8);
+    EXPECT_EQ(*rf8, scalar::function_call(
+            bindings(ff8),
+            {
+                    scalar::immediate(value::float8(1), type::float8()),
             }));
 }
 
@@ -486,20 +526,20 @@ TEST_F(scalar_expression_translator_test, aggregate_function_call_overload_umbig
             "f",
             type::int4 {},
             {
-                    type::decimal { 5, 2 },
+                    type::decimal { 18, 2 },
             },
     });
     aggregates->add({
             20'002,
             "f",
-            type::int8 {},
+            type::int4 {},
             {
-                    type::int4 {},
+                    type::int8 {},
             },
     });
     auto s = f.FunctionCall(
             f.Name("f"),
-            f.Literal(tinfo::Int(64), vinfo::Int(1)),
+            f.Literal(tinfo::Int(32), vinfo::Int(1)),
             ::shakujo::model::expression::FunctionCall::Quantifier::ALL);
     auto r = engine.process(*s, { options, {} });
     ASSERT_FALSE(r);

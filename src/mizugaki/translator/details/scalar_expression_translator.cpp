@@ -442,7 +442,7 @@ private:
             std::vector<std::shared_ptr<::takatori::type::data const>> const& args) {
         BOOST_ASSERT(params.size() == args.size()); // NOLINT
         for (std::size_t i = 0, n = params.size(); i < n; ++i) {
-            auto r = ::yugawara::type::is_assignment_convertible(*args[i], *params[i]);
+            auto r = ::yugawara::type::is_widening_convertible(*args[i], *params[i]);
             if (r != true) {
                 return false;
             }
