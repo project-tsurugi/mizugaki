@@ -189,11 +189,6 @@ public:
      */
     template<kind_type Kind>
     [[nodiscard]] typename unwrap_if_unique_ptr<element_type<Kind>>::reference element() {
-        if constexpr (Kind == kind_type::diagnostics) { // NOLINT
-            if (entity_.index() == std::variant_npos) {
-                return {};
-            }
-        }
         unwrap_if_unique_ptr<element_type<Kind>> unwrap;
         return unwrap(std::get<static_cast<std::size_t>(Kind)>(entity_));
     }
@@ -201,11 +196,6 @@ public:
     /// @copydoc element()
     template<kind_type Kind>
     [[nodiscard]] typename unwrap_if_unique_ptr<element_type<Kind>>::const_reference element() const {
-        if constexpr (Kind == kind_type::diagnostics) { // NOLINT
-            if (entity_.index() == std::variant_npos) {
-                return {};
-            }
-        }
         unwrap_if_unique_ptr<element_type<Kind>> unwrap;
         return unwrap(std::get<static_cast<std::size_t>(Kind)>(entity_));
     }
@@ -218,11 +208,6 @@ public:
      */
     template<kind_type Kind>
     [[nodiscard]] typename unwrap_if_unique_ptr<element_type<Kind>>::type release() {
-        if constexpr (Kind == kind_type::diagnostics) { // NOLINT
-            if (entity_.index() == std::variant_npos) {
-                return {};
-            }
-        }
         return std::move(std::get<static_cast<std::size_t>(Kind)>(entity_));
     }
 

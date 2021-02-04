@@ -238,4 +238,105 @@ TEST_F(shakujo_translator_test, compile_group_by_key_only) {
     compile(*this, std::move(graph));
 }
 
+TEST_F(shakujo_translator_test, compile_join_seek) {
+    auto t_c = storages->add_table({
+        "customer",
+            {
+                    { "c_id", type::int4()} ,
+                    { "c_w_id", type::int4() },
+                    { "c_d_id", type::int4() },
+                    { "c_x", type::int4()} ,
+            },
+    });
+    auto t_w = storages->add_table({
+            "warehouse",
+            {
+                    { "w_id", type::int4()} ,
+                    { "w_x", type::int4()} ,
+            },
+    });
+    storages->add_index({
+            t_c,
+            "customer_primary",
+            {
+                    t_c->columns()[0],
+                    t_c->columns()[1],
+                    t_c->columns()[2],
+            },
+            {},
+            {
+                    ::yugawara::storage::index_feature::find,
+                    ::yugawara::storage::index_feature::scan,
+                    ::yugawara::storage::index_feature::unique,
+                    ::yugawara::storage::index_feature::primary,
+            },
+    });
+    storages->add_index({
+            t_w,
+            "warehouse_primary",
+            {
+                    t_w->columns()[0],
+            },
+            {},
+            {
+                    ::yugawara::storage::index_feature::find,
+                    ::yugawara::storage::index_feature::scan,
+                    ::yugawara::storage::index_feature::unique,
+                    ::yugawara::storage::index_feature::primary,
+            },
+    });
+
+    using BOp = ::shakujo::model::expression::BinaryOperator::Kind;
+
+    /*
+    "SELECT w_tax, c_discount FROM warehouse, customer "
+    "WHERE w_id = :w_id "
+    "AND c_w_id = w_id AND "
+    "c_d_id = :c_d_id AND "
+    "c_id = :c_id "
+    */
+    auto s = ir.EmitStatement(
+            ir.ProjectionExpression(
+                    ir.SelectionExpression(
+                            ir.JoinExpression(
+                                    ::shakujo::model::expression::relation::JoinExpression::Kind::CROSS,
+                                    ir.ScanExpression(ir.Name("warehouse")),
+                                    ir.ScanExpression(ir.Name("customer"))),
+                            ir.BinaryOperator(
+                                    BOp::CONDITIONAL_AND,
+                                    ir.BinaryOperator(
+                                            BOp::CONDITIONAL_AND,
+                                            ir.BinaryOperator(
+                                                    BOp::CONDITIONAL_AND,
+                                                    ir.BinaryOperator(
+                                                            BOp::EQUAL,
+                                                            ir.VariableReference(ir.Name("w_id")),
+                                                            ir.Literal(tinfo::Int(32), 1)),
+                                                    ir.BinaryOperator(
+                                                            BOp::EQUAL,
+                                                            ir.VariableReference(ir.Name("c_w_id")),
+                                                            ir.VariableReference(ir.Name("w_id")))),
+                                            ir.BinaryOperator(
+                                                    BOp::EQUAL,
+                                                    ir.VariableReference(ir.Name("c_d_id")),
+                                                    ir.Literal(tinfo::Int(32), 2))),
+                                    ir.BinaryOperator(
+                                            BOp::EQUAL,
+                                            ir.VariableReference(ir.Name("c_id")),
+                                            ir.Literal(tinfo::Int(32), 3)))),
+                    {
+                            ir.ProjectionExpressionColumn(ir.VariableReference(ir.Name("w_x"))),
+                            ir.ProjectionExpressionColumn(ir.VariableReference(ir.Name("c_x"))),
+                    }
+            )
+    );
+    auto r = translator(options, *s, documents, placeholders);
+    ASSERT_EQ(r.kind(), result_kind::execution_plan);
+
+    auto ptr = r.release<result_kind::execution_plan>();
+    auto&& graph = *ptr;
+
+    compile(*this, std::move(graph));
+}
+
 } // namespace mizugaki::translator
