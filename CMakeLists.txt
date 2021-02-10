@@ -28,6 +28,7 @@ find_package(tsl-hopscotch-map 2.2 REQUIRED)
 find_package(FLEX REQUIRED)
 find_package(BISON 3.6 REQUIRED)
 find_package(gflags REQUIRED)
+find_package(Threads REQUIRED)
 
 set(Boost_USE_STATIC_LIBS OFF)
 set(Boost_USE_MULTITHREADED ON)

@@ -9,6 +9,7 @@ target_include_directories(parser-cli
 target_link_libraries(parser-cli
     PRIVATE mizugaki
     PRIVATE gflags::gflags
+    PRIVATE Threads::Threads
 )
 
 set(output_name "mizugaki-parser-cli")
