@@ -221,23 +221,23 @@ TEST_F(scalar_expression_translator_test, cast_implicit) {
 }
 
 TEST_F(scalar_expression_translator_test, placeholder) {
-    placeholders.add(":x", { value::int4(1), type::int8() });
-    auto s = f.Placeholder(":x");
+    placeholders.add("x", { value::int4(1), type::int8() });
+    auto s = f.Placeholder("x");
     auto r = engine.process(*s, { options, {} });
     ASSERT_TRUE(r);
     EXPECT_EQ(*r, scalar::immediate(value::int4(1), type::int8()));
 }
 
 TEST_F(scalar_expression_translator_test, placeholder_host_variable) {
-    auto v = host_variables->add({ ":x", type::int8 {} });
-    auto s = f.Placeholder(":x");
+    auto v = host_variables->add({ "x", type::int8 {} });
+    auto s = f.Placeholder("x");
     auto r = engine.process(*s, { options, {} });
     ASSERT_TRUE(r);
     EXPECT_EQ(*r, scalar::variable_reference { bindings(v) });
 }
 
 TEST_F(scalar_expression_translator_test, placeholder_missing) {
-    auto s = f.Placeholder(":x");
+    auto s = f.Placeholder("x");
     auto r = engine.process(*s, { options, {} });
     ASSERT_FALSE(r);
     EXPECT_TRUE(occurred(code::variable_not_found, entry.diagnostics()));
