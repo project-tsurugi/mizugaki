@@ -22,6 +22,7 @@
 #include <yugawara/binding/factory.h>
 #include <yugawara/function/configurable_provider.h>
 #include <yugawara/aggregate/configurable_provider.h>
+#include <yugawara/variable/configurable_provider.h>
 #include <yugawara/extension/scalar/aggregate_function_call.h>
 
 #include <shakujo/common/core/type/Int.h>
@@ -49,9 +50,10 @@ class scalar_expression_translator_test : public ::testing::Test {
 public:
     std::shared_ptr<::yugawara::function::configurable_provider> functions = std::make_shared<::yugawara::function::configurable_provider>();
     std::shared_ptr<::yugawara::aggregate::configurable_provider> aggregates = std::make_shared<::yugawara::aggregate::configurable_provider>();
+    std::shared_ptr<::yugawara::variable::configurable_provider> host_variables = std::make_shared<::yugawara::variable::configurable_provider>();
 
     shakujo_translator::impl entry { new_translator_impl() };
-    shakujo_translator_options options { new_options({}, {}, functions, aggregates) };
+    shakujo_translator_options options { new_options({}, {}, functions, aggregates, host_variables) };
     placeholder_map placeholders;
     scalar_expression_translator engine { entry.initialize(options, {}, placeholders) };
 
@@ -219,15 +221,23 @@ TEST_F(scalar_expression_translator_test, cast_implicit) {
 }
 
 TEST_F(scalar_expression_translator_test, placeholder) {
-    placeholders.add(":x", { value::int4(1), type::int8() });
-    auto s = f.Placeholder(":x");
+    placeholders.add("x", { value::int4(1), type::int8() });
+    auto s = f.Placeholder("x");
     auto r = engine.process(*s, { options, {} });
     ASSERT_TRUE(r);
     EXPECT_EQ(*r, scalar::immediate(value::int4(1), type::int8()));
 }
 
+TEST_F(scalar_expression_translator_test, placeholder_host_variable) {
+    auto v = host_variables->add({ "x", type::int8 {} });
+    auto s = f.Placeholder("x");
+    auto r = engine.process(*s, { options, {} });
+    ASSERT_TRUE(r);
+    EXPECT_EQ(*r, scalar::variable_reference { bindings(v) });
+}
+
 TEST_F(scalar_expression_translator_test, placeholder_missing) {
-    auto s = f.Placeholder(":x");
+    auto s = f.Placeholder("x");
     auto r = engine.process(*s, { options, {} });
     ASSERT_FALSE(r);
     EXPECT_TRUE(occurred(code::variable_not_found, entry.diagnostics()));

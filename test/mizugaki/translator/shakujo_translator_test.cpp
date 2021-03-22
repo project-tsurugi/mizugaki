@@ -80,6 +80,7 @@ public:
             {},
             {},
             {},
+            {},
     };
     placeholder_map placeholders;
     ::takatori::document::document_map documents;

@@ -1,7 +1,11 @@
 #include "shakujo_translator_impl.h"
 
+#include <takatori/scalar/variable_reference.h>
+
 #include <takatori/util/finalizer.h>
 #include <takatori/util/downcast.h>
+
+#include <yugawara/binding/factory.h>
 
 #include <shakujo/model/name/SimpleName.h>
 
@@ -77,6 +81,10 @@ static ::takatori::document::position convert0(
         if (auto ph = placeholders_->find(name)) {
             return ph->resolve(object_creator());
         }
+    }
+    if (auto v = options_->host_variable_provider().find(name)) {
+        ::yugawara::binding::factory f { object_creator() };
+        return object_creator().create_unique<::takatori::scalar::variable_reference>(f(std::move(v)));
     }
     return {};
 }
