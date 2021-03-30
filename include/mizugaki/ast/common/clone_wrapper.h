@@ -100,7 +100,9 @@ private:
     target_type element_ {};
 
     [[nodiscard]] target_type clone() const noexcept {
-        return ::takatori::util::clone_unique(element_, element_.get_deleter().creator());
+        return ::takatori::util::clone_unique(
+                element_,
+                ::takatori::util::get_object_creator_from_deleter(element_.get_deleter()));
     }
 };
 
@@ -202,7 +204,9 @@ private:
         target_type results { element_.get_allocator() };
         results.reserve(element_.size());
         for (auto&& e : element_) {
-            results.emplace_back(::takatori::util::clone_unique(e, e.get_deleter().creator()));
+            results.emplace_back(::takatori::util::clone_unique(
+                    e,
+                    ::takatori::util::get_object_creator_from_deleter(e.get_deleter())));
         }
         return results;
     }
