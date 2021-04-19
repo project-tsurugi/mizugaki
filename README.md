@@ -51,7 +51,7 @@ see https://github.com/Tessil/hopscotch-map
 
 #### GNU Bison `>= 3.6`
 
-This project requires GNU Bison `>= 3.6`.
+This project requires GNU Bison `>= 3.5.1`.
 Please run `bison --version` and check the printed version.
 
 ```sh
@@ -59,8 +59,8 @@ Please run `bison --version` and check the printed version.
 sudo apt update -y
 sudo apt install -y curl m4
 
-curl http://ftp.jaist.ac.jp/pub/GNU/bison/bison-3.6.2.tar.gz | tar zxv
-cd bison-3.6.2
+curl http://ftp.jaist.ac.jp/pub/GNU/bison/bison-3.5.1.tar.gz | tar zxv
+cd bison-3.5.1
 ./configure --prefix=/path/to/install
 make -j4
 make install # or sudo make install

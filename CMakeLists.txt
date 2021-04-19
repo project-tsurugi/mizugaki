@@ -26,7 +26,7 @@ find_package(fpdecimal 3.68 REQUIRED)
 find_package(shakujo REQUIRED)
 find_package(tsl-hopscotch-map 2.2 REQUIRED)
 find_package(FLEX REQUIRED)
-find_package(BISON 3.6 REQUIRED)
+find_package(BISON 3.5 REQUIRED)
 find_package(gflags REQUIRED)
 find_package(Threads REQUIRED)
 
