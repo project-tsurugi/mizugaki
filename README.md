@@ -21,7 +21,7 @@ RUN apt update -y && apt install -y git build-essential cmake flex libgflags-dev
 
 optional packages:
 
-* `bison` (only `>= 3.6`)
+* `bison` (only `>= 3.5`)
 * `doxygen`
 * `graphviz`
 * `clang-tidy-9`
@@ -49,9 +49,9 @@ cmake --build . --target install
 
 see https://github.com/Tessil/hopscotch-map
 
-#### GNU Bison `>= 3.6`
+#### GNU Bison `>= 3.5`
 
-This project requires GNU Bison `>= 3.5.1`.
+This project requires GNU Bison `>= 3.5`.
 Please run `bison --version` and check the printed version.
 
 ```sh
