@@ -1,5 +1,5 @@
 %skeleton "lalr1.cc"
-%require "3.6"
+%require "3.5"
 
 %defines
 %define api.token.constructor true
@@ -8,7 +8,7 @@
 %define api.namespace { mizugaki::parser }
 %define api.parser.class { sql_parser_generated }
 %define api.token.prefix {}
-%define parse.error detailed
+%define parse.error verbose /* FIXME: 'detailed' requires bison 3.6 */
 %define parse.lac full
 
 %locations
