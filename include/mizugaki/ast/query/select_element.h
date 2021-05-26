@@ -1,7 +1,6 @@
 #pragma once
 
 #include <mizugaki/ast/node.h>
-#include <takatori/util/object_creator.h>
 
 #include "select_element_kind.h"
 
@@ -17,8 +16,8 @@ public:
     using node_kind_type = select_element_kind;
 
     using node::node;
-    [[nodiscard]] select_element* clone(::takatori::util::object_creator creator) const& override = 0;
-    [[nodiscard]] select_element* clone(::takatori::util::object_creator creator) && override = 0;
+    [[nodiscard]] select_element* clone() const& override = 0;
+    [[nodiscard]] select_element* clone() && override = 0;
 
     /**
      * @brief returns the kind of this name.

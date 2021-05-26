@@ -2,7 +2,7 @@
 
 #include <optional>
 
-#include <takatori/util/object_creator.h>
+#include <takatori/util/clone_tag.h>
 
 #include <mizugaki/ast/common/regioned.h>
 #include <mizugaki/ast/name/name.h>
@@ -39,7 +39,7 @@ public:
      */
     explicit table_reference(
             bool_type is_only,
-            ::takatori::util::unique_object_ptr<name::name> name,
+            std::unique_ptr<name::name> name,
             std::optional<correlation_type> correlation = {},
             region_type region = {}) noexcept;
 
@@ -60,19 +60,17 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit table_reference(table_reference const& other, ::takatori::util::object_creator creator);
+    explicit table_reference(::takatori::util::clone_tag_t, table_reference const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit table_reference(table_reference&& other, ::takatori::util::object_creator creator);
+    explicit table_reference(::takatori::util::clone_tag_t, table_reference&& other);
 
-    [[nodiscard]] table_reference* clone(::takatori::util::object_creator creator) const& override;
-    [[nodiscard]] table_reference* clone(::takatori::util::object_creator creator) && override;
+    [[nodiscard]] table_reference* clone() const& override;
+    [[nodiscard]] table_reference* clone() && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 
@@ -80,10 +78,10 @@ public:
      * @brief returns the table name.
      * @return the table name
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<name::name>& name() noexcept;
+    [[nodiscard]] std::unique_ptr<name::name>& name() noexcept;
 
     /// @brief name()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<name::name> const& name() const noexcept;
+    [[nodiscard]] std::unique_ptr<name::name> const& name() const noexcept;
 
     /**
      * @brief returns the correlation declaration.
@@ -129,7 +127,7 @@ protected:
 
 private:
     bool_type is_only_;
-    ::takatori::util::unique_object_ptr<name::name> name_;
+    std::unique_ptr<name::name> name_;
     std::optional<correlation_type> correlation_;
 };
 

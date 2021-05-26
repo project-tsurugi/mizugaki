@@ -16,7 +16,7 @@ namespace mizugaki::parser::testing {
 using namespace ast;
 
 template<class T>
-using node_ptr = ::takatori::util::unique_object_ptr<T>;
+using node_ptr = std::unique_ptr<T>;
 
 template<class T, class U>
 inline T const& downcast(U const& u) {

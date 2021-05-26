@@ -34,6 +34,7 @@ modernize-*,\
 performance-*,\
 readability-*,\
 -readability-braces-around-statements,\
+-readability-convert-member-functions-to-static,\
 -readability-named-parameter,\
 -readability-magic-numbers,\
 "

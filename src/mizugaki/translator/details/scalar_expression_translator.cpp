@@ -36,7 +36,7 @@
 namespace mizugaki::translator::details {
 
 using translator_type = shakujo_translator::impl;
-using result_type = ::takatori::util::unique_object_ptr<::takatori::scalar::expression>;
+using result_type = std::unique_ptr<::takatori::scalar::expression>;
 using code_type = shakujo_translator_code;
 
 using ::takatori::util::fail;
@@ -207,7 +207,7 @@ public:
             canonical_name += ::yugawara::aggregate::declaration::name_suffix_distinct;
         }
 
-        ::takatori::util::reference_vector<scalar::expression> args { translator_.object_creator() };
+        ::takatori::util::reference_vector<scalar::expression> args {};
         args.reserve(node.arguments().size());
 
         for (auto&& e : node.arguments()) {
@@ -303,12 +303,12 @@ private:
     }
 
     [[nodiscard]] ::yugawara::binding::factory factory() const noexcept {
-        return ::yugawara::binding::factory { translator_.object_creator() };
+        return ::yugawara::binding::factory {};
     }
 
     template<class T, class... Args>
     result_type create(::shakujo::model::Node const& node, Args&&... args) {
-        auto result = translator_.object_creator().create_unique<T>(std::forward<Args>(args)...);
+        auto result = std::make_unique<T>(std::forward<Args>(args)...);
         result->region() = translator_.region(node.region());
         return result;
     }
@@ -400,9 +400,8 @@ private:
     }
 
     result_type char_string(std::string_view str) {
-        auto c = translator_.object_creator();
-        return c.create_unique<scalar::immediate>(
-                translator_.values().get(::takatori::value::character { str, translator_.object_creator().allocator() }),
+        return std::make_unique<scalar::immediate>(
+                translator_.values().get(::takatori::value::character { str }),
                 translator_.types().get(::takatori::type::character { str.size() }));
     }
 

@@ -58,7 +58,7 @@ public:
     scalar_expression_translator engine { entry.initialize(options, {}, placeholders) };
 
     ::shakujo::model::IRFactory f;
-    ::yugawara::binding::factory bindings { options.get_object_creator() };
+    ::yugawara::binding::factory bindings {};
 };
 
 static std::string distinct_of(std::string_view s) {

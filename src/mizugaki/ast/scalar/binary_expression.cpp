@@ -9,8 +9,6 @@
 namespace mizugaki::ast::scalar {
 
 using ::takatori::util::clone_unique;
-using ::takatori::util::object_creator;
-using ::takatori::util::unique_object_ptr;
 
 binary_expression::binary_expression(
         operand_type left,
@@ -36,30 +34,30 @@ binary_expression::binary_expression(
     }
 {}
 
-binary_expression::binary_expression(binary_expression const& other, object_creator creator) :
+binary_expression::binary_expression(::takatori::util::clone_tag_t, binary_expression const& other) :
     binary_expression {
-            clone_unique(other.left_, creator),
+            clone_unique(other.left_),
             other.operator_kind_,
-            clone_unique(other.right_, creator),
+            clone_unique(other.right_),
             other.region(),
     }
 {}
 
-binary_expression::binary_expression(binary_expression&& other, object_creator creator) :
+binary_expression::binary_expression(::takatori::util::clone_tag_t, binary_expression&& other) :
     binary_expression {
-            clone_unique(std::move(other.left_), creator),
+            clone_unique(std::move(other.left_)),
             other.operator_kind_,
-            clone_unique(std::move(other.right_), creator),
+            clone_unique(std::move(other.right_)),
             other.region(),
     }
 {}
 
-binary_expression* binary_expression::clone(object_creator creator) const& {
-    return creator.create_object<binary_expression>(*this, creator);
+binary_expression* binary_expression::clone() const& {
+    return new binary_expression(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-binary_expression* binary_expression::clone(object_creator creator) && {
-    return creator.create_object<binary_expression>(std::move(*this), creator);
+binary_expression* binary_expression::clone() && {
+    return new binary_expression(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 expression::node_kind_type binary_expression::node_kind() const noexcept {

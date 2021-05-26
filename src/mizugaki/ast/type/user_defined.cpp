@@ -9,11 +9,9 @@
 namespace mizugaki::ast::type {
 
 using ::takatori::util::clone_unique;
-using ::takatori::util::object_creator;
-using ::takatori::util::unique_object_ptr;
 
 user_defined::user_defined(
-        unique_object_ptr<name::name> name,
+        std::unique_ptr<name::name> name,
         region_type region) noexcept:
     super { region },
     name_ { std::move(name) }
@@ -28,37 +26,37 @@ user_defined::user_defined(
     }
 {}
 
-user_defined::user_defined(user_defined const& other, object_creator creator) :
+user_defined::user_defined(::takatori::util::clone_tag_t, user_defined const& other) :
     user_defined {
-            clone_unique(other.name_, creator),
+            clone_unique(other.name_),
             other.region(),
     }
 {}
 
-user_defined::user_defined(user_defined&& other, object_creator creator) :
+user_defined::user_defined(::takatori::util::clone_tag_t, user_defined&& other) :
     user_defined {
-            clone_unique(std::move(other.name_), creator),
+            clone_unique(std::move(other.name_)),
             other.region(),
     }
 {}
 
-user_defined* user_defined::clone(object_creator creator) const& {
-    return creator.create_object<user_defined>(*this, creator);
+user_defined* user_defined::clone() const& {
+    return new user_defined(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-user_defined* user_defined::clone(object_creator creator) && {
-    return creator.create_object<user_defined>(std::move(*this), creator);
+user_defined* user_defined::clone() && {
+    return new user_defined(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 type::node_kind_type user_defined::node_kind() const noexcept {
     return tag;
 }
 
-unique_object_ptr<name::name>& user_defined::name() noexcept {
+std::unique_ptr<name::name>& user_defined::name() noexcept {
     return name_;
 }
 
-unique_object_ptr<name::name> const& user_defined::name() const noexcept {
+std::unique_ptr<name::name> const& user_defined::name() const noexcept {
     return name_;
 }
 

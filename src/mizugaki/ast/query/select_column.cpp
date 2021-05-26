@@ -9,13 +9,11 @@
 namespace mizugaki::ast::query {
 
 using ::takatori::util::clone_unique;
-using ::takatori::util::object_creator;
 using ::takatori::util::rvalue_ptr;
-using ::takatori::util::unique_object_ptr;
 
 select_column::select_column(
-        unique_object_ptr<scalar::expression> value,
-        unique_object_ptr<name::simple> name,
+        std::unique_ptr<scalar::expression> value,
+        std::unique_ptr<name::simple> name,
         region_type region) noexcept:
     super { region },
     value_ { std::move(value) },
@@ -33,47 +31,47 @@ select_column::select_column(
     }
 {}
 
-select_column::select_column(select_column const& other, object_creator creator) :
+select_column::select_column(::takatori::util::clone_tag_t, select_column const& other) :
     select_column {
-            clone_unique(other.value_, creator),
-            clone_unique(other.name_, creator),
+            clone_unique(other.value_),
+            clone_unique(other.name_),
             other.region(),
     }
 {}
 
-select_column::select_column(select_column&& other, object_creator creator) :
+select_column::select_column(::takatori::util::clone_tag_t, select_column&& other) :
     select_column {
-            clone_unique(std::move(other.value_), creator),
-            clone_unique(std::move(other.name_), creator),
+            clone_unique(std::move(other.value_)),
+            clone_unique(std::move(other.name_)),
             other.region(),
     }
 {}
 
-select_column* select_column::clone(::takatori::util::object_creator creator) const& {
-    return creator.create_object<select_column>(*this, creator);
+select_column* select_column::clone() const& {
+    return new select_column(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-select_column* select_column::clone(::takatori::util::object_creator creator)&& {
-    return creator.create_object<select_column>(std::move(*this), creator);
+select_column* select_column::clone()&& {
+    return new select_column(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 select_element::node_kind_type select_column::node_kind() const noexcept {
     return tag;
 }
 
-unique_object_ptr<scalar::expression>& select_column::value() noexcept {
+std::unique_ptr<scalar::expression>& select_column::value() noexcept {
     return value_;
 }
 
-unique_object_ptr<scalar::expression> const& select_column::value() const noexcept {
+std::unique_ptr<scalar::expression> const& select_column::value() const noexcept {
     return value_;
 }
 
-unique_object_ptr<name::simple>& select_column::name() noexcept {
+std::unique_ptr<name::simple>& select_column::name() noexcept {
     return name_;
 }
 
-unique_object_ptr<name::simple> const& select_column::name() const noexcept {
+std::unique_ptr<name::simple> const& select_column::name() const noexcept {
     return name_;
 }
 

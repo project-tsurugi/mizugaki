@@ -10,24 +10,19 @@
 
 namespace mizugaki::parser {
 
-using ::takatori::util::object_creator;
 using ::takatori::document::basic_document;
-
-sql_parser::sql_parser(object_creator creator) noexcept :
-    creator_ { creator }
-{}
 
 sql_parser& sql_parser::set_debug(int level) noexcept {
     debug_ = level;
     return *this;
 }
 
-sql_parser::result_type sql_parser::operator()(std::string location, std::string contents) {
+sql_parser::result_type sql_parser::operator()(std::string location, std::string contents) const {
     std::istringstream input { contents };
     sql_scanner scanner { input };
 
-    auto document = creator_.create_shared<basic_document>(std::move(location), std::move(contents));
-    sql_driver driver { std::move(document), creator_ };
+    auto document = std::make_shared<basic_document>(std::move(location), std::move(contents));
+    sql_driver driver { std::move(document) };
 
     sql_parser_generated parser { scanner, driver };
 

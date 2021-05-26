@@ -12,9 +12,7 @@ shakujo_translator_options::shakujo_translator_options(
         std::shared_ptr<::yugawara::variable::provider const> variable_provider,
         std::shared_ptr<::yugawara::function::provider const> function_provider,
         std::shared_ptr<::yugawara::aggregate::provider const> aggregate_function_provider,
-        std::shared_ptr<::yugawara::variable::provider const> host_variable_provider,
-        ::takatori::util::object_creator creator) :
-    creator_ { creator },
+        std::shared_ptr<::yugawara::variable::provider const> host_variable_provider) :
     storage_provider_ { std::move(storage_provider) },
     variable_provider_ { std::move(variable_provider) },
     function_provider_ { std::move(function_provider) },
@@ -60,10 +58,6 @@ shakujo_translator_options::shakujo_translator_options(
     }
     static ::yugawara::variable::configurable_provider const empty;
     return empty;
-}
-
-::takatori::util::object_creator shakujo_translator_options::get_object_creator() const noexcept {
-    return creator_;
 }
 
 } // namespace mizugaki::translator

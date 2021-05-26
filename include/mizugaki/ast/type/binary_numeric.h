@@ -4,6 +4,8 @@
 
 #include <cstddef>
 
+#include <takatori/util/clone_tag.h>
+
 #include <mizugaki/ast/common/regioned.h>
 
 #include "type.h"
@@ -49,19 +51,17 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit binary_numeric(binary_numeric const& other, ::takatori::util::object_creator creator);
+    explicit binary_numeric(::takatori::util::clone_tag_t, binary_numeric const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit binary_numeric(binary_numeric&& other, ::takatori::util::object_creator creator);
+    explicit binary_numeric(::takatori::util::clone_tag_t, binary_numeric&& other);
 
-    [[nodiscard]] binary_numeric* clone(::takatori::util::object_creator creator) const& override;
-    [[nodiscard]] binary_numeric* clone(::takatori::util::object_creator creator) && override;
+    [[nodiscard]] binary_numeric* clone() const& override;
+    [[nodiscard]] binary_numeric* clone() && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 

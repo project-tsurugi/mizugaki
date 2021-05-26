@@ -1,6 +1,6 @@
 #pragma once
 
-#include <takatori/util/object_creator.h>
+#include <takatori/util/clone_tag.h>
 
 #include <mizugaki/ast/element.h>
 #include <mizugaki/ast/common/vector.h>
@@ -29,7 +29,7 @@ public:
      * @param region the element region
      */
     explicit join_columns(
-            common::vector<::takatori::util::unique_object_ptr<name::simple>> columns,
+            std::vector<std::unique_ptr<name::simple>> columns,
             region_type region = {}) noexcept;
 
     /**
@@ -45,19 +45,17 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit join_columns(join_columns const& other, ::takatori::util::object_creator creator);
+    explicit join_columns(::takatori::util::clone_tag_t, join_columns const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit join_columns(join_columns&& other, ::takatori::util::object_creator creator);
+    explicit join_columns(::takatori::util::clone_tag_t, join_columns&& other);
 
-    [[nodiscard]] join_columns* clone(::takatori::util::object_creator creator) const& override;
-    [[nodiscard]] join_columns* clone(::takatori::util::object_creator creator) && override;
+    [[nodiscard]] join_columns* clone() const& override;
+    [[nodiscard]] join_columns* clone() && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 
@@ -65,10 +63,10 @@ public:
      * @brief returns the join column names.
      * @return the join column names
      */
-    [[nodiscard]] common::vector<::takatori::util::unique_object_ptr<name::simple>>& columns() noexcept;
+    [[nodiscard]] std::vector<std::unique_ptr<name::simple>>& columns() noexcept;
 
     /// @copydoc columns()
-    [[nodiscard]] common::vector<::takatori::util::unique_object_ptr<name::simple>> const& columns() const noexcept;
+    [[nodiscard]] std::vector<std::unique_ptr<name::simple>> const& columns() const noexcept;
 
     /**
      * @brief compares two values.
@@ -93,7 +91,7 @@ protected:
     void serialize(::takatori::serializer::object_acceptor& acceptor) const override;
 
 private:
-    common::vector<::takatori::util::unique_object_ptr<name::simple>> columns_;
+    std::vector<std::unique_ptr<name::simple>> columns_;
 };
 
 /**

@@ -2,7 +2,6 @@
 
 #include <string>
 
-#include <takatori/util/object_creator.h>
 
 #include <mizugaki/ast/compilation_unit.h>
 #include <mizugaki/ast/node_region.h>
@@ -17,7 +16,7 @@ namespace mizugaki::parser {
 class sql_parser_result {
 public:
     /// @brief the resulting parsed model type.
-    using value_type = ::takatori::util::unique_object_ptr<ast::compilation_unit>;
+    using value_type = std::unique_ptr<ast::compilation_unit>;
 
     /// @brief the location type.
     using location_type = ast::node_region;

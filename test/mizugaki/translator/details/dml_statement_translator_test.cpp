@@ -101,7 +101,7 @@ public:
     dml_statement_translator engine { entry.initialize(options) };
 
     ::shakujo::model::IRFactory ir;
-    ::yugawara::binding::factory bindings { options.get_object_creator() };
+    ::yugawara::binding::factory bindings {};
 };
 
 TEST_F(dml_statement_translator_test, emit) {

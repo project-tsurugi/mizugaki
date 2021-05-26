@@ -9,11 +9,9 @@
 namespace mizugaki::ast::scalar {
 
 using ::takatori::util::clone_unique;
-using ::takatori::util::object_creator;
-using ::takatori::util::unique_object_ptr;
 
 variable_reference::variable_reference(
-        unique_object_ptr<name::name> name,
+        std::unique_ptr<name::name> name,
         region_type region) noexcept:
     super { region },
     name_ { std::move(name) }
@@ -28,37 +26,37 @@ variable_reference::variable_reference(
     }
 {}
 
-variable_reference::variable_reference(variable_reference const& other, object_creator creator) :
+variable_reference::variable_reference(::takatori::util::clone_tag_t, variable_reference const& other) :
     variable_reference {
-            clone_unique(other.name_, creator),
+            clone_unique(other.name_),
             other.region(),
     }
 {}
 
-variable_reference::variable_reference(variable_reference&& other, object_creator creator) :
+variable_reference::variable_reference(::takatori::util::clone_tag_t, variable_reference&& other) :
     variable_reference {
-            clone_unique(std::move(other.name_), creator),
+            clone_unique(std::move(other.name_)),
             other.region(),
     }
 {}
 
-variable_reference* variable_reference::clone(object_creator creator) const& {
-    return creator.create_object<variable_reference>(*this, creator);
+variable_reference* variable_reference::clone() const& {
+    return new variable_reference(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-variable_reference* variable_reference::clone(object_creator creator) && {
-    return creator.create_object<variable_reference>(std::move(*this), creator);
+variable_reference* variable_reference::clone() && {
+    return new variable_reference(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 expression::node_kind_type variable_reference::node_kind() const noexcept {
     return tag;
 }
 
-unique_object_ptr<name::name>& variable_reference::name() noexcept {
+std::unique_ptr<name::name>& variable_reference::name() noexcept {
     return name_;
 }
 
-unique_object_ptr<name::name> const& variable_reference::name() const noexcept {
+std::unique_ptr<name::name> const& variable_reference::name() const noexcept {
     return name_;
 }
 

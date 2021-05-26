@@ -1,6 +1,6 @@
 #pragma once
 
-#include <takatori/util/object_creator.h>
+#include <takatori/util/clone_tag.h>
 
 #include <mizugaki/ast/common/regioned.h>
 #include <mizugaki/ast/query/expression.h>
@@ -35,7 +35,7 @@ public:
      */
     explicit table_predicate(
             operator_kind_type operator_kind,
-            ::takatori::util::unique_object_ptr<query::expression> operand,
+            std::unique_ptr<query::expression> operand,
             region_type region = {}) noexcept;
 
     /**
@@ -53,19 +53,17 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit table_predicate(table_predicate const& other, ::takatori::util::object_creator creator);
+    explicit table_predicate(::takatori::util::clone_tag_t, table_predicate const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit table_predicate(table_predicate&& other, ::takatori::util::object_creator creator);
+    explicit table_predicate(::takatori::util::clone_tag_t, table_predicate&& other);
 
-    [[nodiscard]] table_predicate* clone(::takatori::util::object_creator creator) const& override;
-    [[nodiscard]] table_predicate* clone(::takatori::util::object_creator creator) && override;
+    [[nodiscard]] table_predicate* clone() const& override;
+    [[nodiscard]] table_predicate* clone() && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 
@@ -81,10 +79,10 @@ public:
      * @brief returns the operand term.
      * @return the operand term
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<query::expression>& operand() noexcept;
+    [[nodiscard]] std::unique_ptr<query::expression>& operand() noexcept;
 
     /// @copydoc operand()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<query::expression> const& operand() const noexcept;
+    [[nodiscard]] std::unique_ptr<query::expression> const& operand() const noexcept;
 
     /**
      * @brief compares two values.
@@ -110,7 +108,7 @@ protected:
 
 private:
     operator_kind_type operator_kind_;
-    ::takatori::util::unique_object_ptr<query::expression> operand_;
+    std::unique_ptr<query::expression> operand_;
 };
 
 /**

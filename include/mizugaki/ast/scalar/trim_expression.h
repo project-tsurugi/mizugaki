@@ -2,7 +2,7 @@
 
 #include <optional>
 
-#include <takatori/util/object_creator.h>
+#include <takatori/util/clone_tag.h>
 #include <takatori/util/rvalue_ptr.h>
 
 #include <mizugaki/ast/common/regioned.h>
@@ -58,19 +58,17 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit trim_expression(trim_expression const& other, ::takatori::util::object_creator creator);
+    explicit trim_expression(::takatori::util::clone_tag_t, trim_expression const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit trim_expression(trim_expression&& other, ::takatori::util::object_creator creator);
+    explicit trim_expression(::takatori::util::clone_tag_t, trim_expression&& other);
 
-    [[nodiscard]] trim_expression* clone(::takatori::util::object_creator creator) const& override;
-    [[nodiscard]] trim_expression* clone(::takatori::util::object_creator creator) && override;
+    [[nodiscard]] trim_expression* clone() const& override;
+    [[nodiscard]] trim_expression* clone() && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 

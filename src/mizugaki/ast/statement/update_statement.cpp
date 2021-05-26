@@ -9,16 +9,14 @@
 namespace mizugaki::ast::statement {
 
 using ::takatori::util::clone_unique;
-using ::takatori::util::object_creator;
 using ::takatori::util::rvalue_ptr;
-using ::takatori::util::unique_object_ptr;
 
 using common::clone_vector;
 
 update_statement::update_statement(
-        unique_object_ptr<name::name> table_name,
-        common::vector<set_element> elements,
-        unique_object_ptr<scalar::expression> where,
+        std::unique_ptr<name::name> table_name,
+        std::vector<set_element> elements,
+        std::unique_ptr<scalar::expression> where,
         region_type region) noexcept :
     super { region },
     table_name_ { std::move(table_name) },
@@ -39,49 +37,49 @@ update_statement::update_statement(
     }
 {}
 
-update_statement::update_statement(update_statement const& other, object_creator creator) :
+update_statement::update_statement(::takatori::util::clone_tag_t, update_statement const& other) :
     update_statement {
-            clone_unique(other.table_name_, creator),
-            clone_vector(other.elements_, creator),
-            clone_unique(other.where_, creator),
+            clone_unique(other.table_name_),
+            clone_vector(other.elements_),
+            clone_unique(other.where_),
             other.region(),
     }
 {}
 
-update_statement::update_statement(update_statement&& other, object_creator creator) :
+update_statement::update_statement(::takatori::util::clone_tag_t, update_statement&& other) :
     update_statement {
-            clone_unique(std::move(other.table_name_), creator),
-            clone_vector(std::move(other.elements_), creator),
-            clone_unique(std::move(other.where_), creator),
+            clone_unique(std::move(other.table_name_)),
+            clone_vector(std::move(other.elements_)),
+            clone_unique(std::move(other.where_)),
             other.region(),
     }
 {}
 
-update_statement* update_statement::clone(object_creator creator) const& {
-    return creator.create_object<update_statement>(*this, creator);
+update_statement* update_statement::clone() const& {
+    return new update_statement(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-update_statement* update_statement::clone(object_creator creator) && {
-    return creator.create_object<update_statement>(std::move(*this), creator);
+update_statement* update_statement::clone() && {
+    return new update_statement(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 statement::node_kind_type update_statement::node_kind() const noexcept {
     return tag;
 }
 
-unique_object_ptr<name::name>& update_statement::table_name() noexcept {
+std::unique_ptr<name::name>& update_statement::table_name() noexcept {
     return table_name_;
 }
 
-unique_object_ptr<name::name> const& update_statement::table_name() const noexcept {
+std::unique_ptr<name::name> const& update_statement::table_name() const noexcept {
     return table_name_;
 }
 
-unique_object_ptr<scalar::expression>& update_statement::where() noexcept {
+std::unique_ptr<scalar::expression>& update_statement::where() noexcept {
     return where_;
 }
 
-unique_object_ptr<scalar::expression> const& update_statement::where() const noexcept {
+std::unique_ptr<scalar::expression> const& update_statement::where() const noexcept {
     return where_;
 }
 

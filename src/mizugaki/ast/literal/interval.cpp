@@ -9,39 +9,38 @@ namespace mizugaki::ast::literal {
 using node_kind_type = literal::node_kind_type;
 using value_type = interval::value_type;
 
-using ::takatori::util::object_creator;
 
 interval::interval(
         std::optional<sign_type> sign,
         value_type value,
         region_type region) noexcept :
     super { region },
-    sign_ { std::move(sign) },
+    sign_ { sign },
     value_ { std::move(value) }
 {}
 
-interval::interval(interval const& other, object_creator creator) :
+interval::interval(::takatori::util::clone_tag_t, interval const& other) :
     interval {
             other.sign_,
-            value_type { other.value_, creator.allocator() },
+            value_type { other.value_ },
             other.region(),
     }
 {}
 
-interval::interval(interval&& other, object_creator creator) :
+interval::interval(::takatori::util::clone_tag_t, interval&& other) :
     interval {
-            std::move(other.sign_),
-            value_type { std::move(other.value_), creator.allocator() },
+            other.sign_,
+            value_type { std::move(other.value_) },
             other.region(),
     }
 {}
 
-interval* interval::clone(object_creator creator) const& {
-    return creator.create_object<interval>(*this, creator);
+interval* interval::clone() const& {
+    return new interval(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-interval* interval::clone(object_creator creator) && {
-    return creator.create_object<interval>(std::move(*this), creator);
+interval* interval::clone() && {
+    return new interval(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 node_kind_type interval::node_kind() const noexcept {

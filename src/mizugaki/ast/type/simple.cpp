@@ -11,7 +11,6 @@ namespace mizugaki::ast::type {
 using node_kind_type = type::node_kind_type;
 using type_kind_type = simple::type_kind_type;
 
-using ::takatori::util::object_creator;
 
 simple::simple(type_kind_type type_kind, region_type region) :
     super { region },
@@ -20,26 +19,26 @@ simple::simple(type_kind_type type_kind, region_type region) :
     utils::validate_kind(tags, type_kind);
 }
 
-simple::simple(simple const& other, object_creator) :
+simple::simple(::takatori::util::clone_tag_t, simple const& other) :
     simple {
             other.type_kind_,
             other.region(),
     }
 {}
 
-simple::simple(simple&& other, object_creator) :
+simple::simple(::takatori::util::clone_tag_t, simple&& other) :
     simple {
             other.type_kind_,
             other.region(),
     }
 {}
 
-simple* simple::clone(object_creator creator) const& {
-    return creator.create_object<simple>(*this, creator);
+simple* simple::clone() const& {
+    return new simple(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-simple* simple::clone(object_creator creator) && {
-    return creator.create_object<simple>(std::move(*this), creator);
+simple* simple::clone() && {
+    return new simple(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 node_kind_type simple::node_kind() const noexcept {

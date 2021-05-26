@@ -7,16 +7,14 @@
 namespace mizugaki::ast::query {
 
 using ::takatori::util::clone_unique;
-using ::takatori::util::object_creator;
-using ::takatori::util::unique_object_ptr;
 
 using common::clone_vector;
 using common::to_vector;
 
 with_element::with_element(
-        unique_object_ptr<name::simple> name,
-        common::vector<unique_object_ptr<name::simple>> column_names,
-        unique_object_ptr<ast::query::expression> expression,
+        std::unique_ptr<name::simple> name,
+        std::vector<std::unique_ptr<name::simple>> column_names,
+        std::unique_ptr<ast::query::expression> expression,
         region_type region) noexcept :
     element { region },
     name_ { std::move(name) },
@@ -50,45 +48,45 @@ with_element::with_element(
     }
 {}
 
-with_element::with_element(with_element const& other, object_creator creator) :
+with_element::with_element(::takatori::util::clone_tag_t, with_element const& other) :
     with_element {
-            clone_unique(*other.name_, creator),
-            clone_vector(*other.column_names_, creator),
-            clone_unique(*other.expression_, creator),
+            clone_unique(*other.name_),
+            clone_vector(*other.column_names_),
+            clone_unique(*other.expression_),
             other.region(),
     }
 {}
 
-with_element::with_element(with_element&& other, object_creator creator) :
+with_element::with_element(::takatori::util::clone_tag_t, with_element&& other) :
     with_element {
-            clone_unique(std::move(*other.name_), creator),
-            clone_vector(std::move(*other.column_names_), creator),
-            clone_unique(std::move(*other.expression_), creator),
+            clone_unique(std::move(*other.name_)),
+            clone_vector(std::move(*other.column_names_)),
+            clone_unique(std::move(*other.expression_)),
             other.region(),
     }
 {}
 
-unique_object_ptr<name::simple>& with_element::name() noexcept {
+std::unique_ptr<name::simple>& with_element::name() noexcept {
     return *name_;
 }
 
-unique_object_ptr<name::simple> const& with_element::name() const noexcept {
+std::unique_ptr<name::simple> const& with_element::name() const noexcept {
     return *name_;
 }
 
-unique_object_ptr<ast::query::expression>& with_element::expression() noexcept {
+std::unique_ptr<ast::query::expression>& with_element::expression() noexcept {
     return *expression_;
 }
 
-unique_object_ptr<ast::query::expression> const& with_element::expression() const noexcept {
+std::unique_ptr<ast::query::expression> const& with_element::expression() const noexcept {
     return *expression_;
 }
 
-common::vector<unique_object_ptr<name::simple>>& with_element::column_names() noexcept {
+std::vector<std::unique_ptr<name::simple>>& with_element::column_names() noexcept {
     return *column_names_;
 }
 
-common::vector<unique_object_ptr<name::simple>> const& with_element::column_names() const noexcept {
+std::vector<std::unique_ptr<name::simple>> const& with_element::column_names() const noexcept {
     return *column_names_;
 }
 

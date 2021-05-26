@@ -13,7 +13,6 @@ using type_kind_type = decimal::type_kind_type;
 using precision_type = decimal::precision_type;
 using scale_type = decimal::scale_type;
 
-using ::takatori::util::object_creator;
 
 decimal::decimal(
         type_kind_type type_kind,
@@ -22,13 +21,13 @@ decimal::decimal(
         region_type region) :
     super { region },
     type_kind_ { type_kind },
-    precision_ { std::move(precision) },
-    scale_ { std::move(scale) }
+    precision_ { precision },
+    scale_ { scale }
 {
     utils::validate_kind(tags, *type_kind);
 }
 
-decimal::decimal(decimal const& other, object_creator) :
+decimal::decimal(::takatori::util::clone_tag_t, decimal const& other) :
     decimal {
             other.type_kind_,
             other.precision_,
@@ -37,21 +36,21 @@ decimal::decimal(decimal const& other, object_creator) :
     }
 {}
 
-decimal::decimal(decimal&& other, object_creator) :
+decimal::decimal(::takatori::util::clone_tag_t, decimal&& other) :
     decimal {
             other.type_kind_,
-            std::move(other.precision_),
-            std::move(other.scale_),
+            other.precision_,
+            other.scale_,
             other.region(),
     }
 {}
 
-decimal* decimal::clone(object_creator creator) const& {
-    return creator.create_object<decimal>(*this, creator);
+decimal* decimal::clone() const& {
+    return new decimal(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-decimal* decimal::clone(object_creator creator) && {
-    return creator.create_object<decimal>(std::move(*this), creator);
+decimal* decimal::clone() && {
+    return new decimal(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 node_kind_type decimal::node_kind() const noexcept {

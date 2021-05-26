@@ -1,5 +1,7 @@
 #pragma once
 
+#include <takatori/util/clone_tag.h>
+
 #include <mizugaki/ast/common/regioned.h>
 
 #include "literal.h"
@@ -39,7 +41,7 @@ public:
      * @brief creates a new instance.
      * @param other the copy source
      */
-    explicit constexpr special(special const& other, ::takatori::util::object_creator) noexcept
+    explicit constexpr special(::takatori::util::clone_tag_t, special const& other) noexcept
         : super(other.region())
     {}
 
@@ -47,16 +49,16 @@ public:
      * @brief creates a new instance.
      * @param other the move source
      */
-    explicit constexpr special(special&& other, ::takatori::util::object_creator) noexcept
+    explicit constexpr special(::takatori::util::clone_tag_t, special&& other) noexcept
         : super(other.region())
     {}
 
-    [[nodiscard]] special* clone(::takatori::util::object_creator creator) const& override {
-        return creator.create_object<special>(*this, creator);
+    [[nodiscard]] special* clone() const& override {
+        return new special(::takatori::util::clone_tag, *this); // NOLINT
     }
 
-    [[nodiscard]] special* clone(::takatori::util::object_creator creator) && override {
-        return creator.create_object<special>(std::move(*this), creator);
+    [[nodiscard]] special* clone() && override {
+        return new special(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
     }
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override {

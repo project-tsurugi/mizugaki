@@ -1,5 +1,7 @@
 #pragma once
 
+#include <takatori/util/clone_tag.h>
+
 #include "statement.h"
 
 namespace mizugaki::ast::statement {
@@ -25,19 +27,17 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit empty_statement(empty_statement const& other, ::takatori::util::object_creator creator);
+    explicit empty_statement(::takatori::util::clone_tag_t, empty_statement const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit empty_statement(empty_statement&& other, ::takatori::util::object_creator creator);
+    explicit empty_statement(::takatori::util::clone_tag_t, empty_statement&& other);
 
-    [[nodiscard]] empty_statement* clone(::takatori::util::object_creator creator) const& override;
-    [[nodiscard]] empty_statement* clone(::takatori::util::object_creator creator) && override;
+    [[nodiscard]] empty_statement* clone() const& override;
+    [[nodiscard]] empty_statement* clone() && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 

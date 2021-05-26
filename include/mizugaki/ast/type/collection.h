@@ -6,6 +6,8 @@
 
 #include <mizugaki/ast/common/regioned.h>
 
+#include <takatori/util/clone_tag.h>
+
 #include "type.h"
 
 namespace mizugaki::ast::type {
@@ -35,7 +37,7 @@ public:
      * @throws std::invalid_argument if kind is invalid
      */
     explicit collection(
-            ::takatori::util::unique_object_ptr<type> element,
+            std::unique_ptr<type> element,
             std::optional<length_type> length = {},
             region_type region = {}) noexcept;
 
@@ -69,7 +71,7 @@ public:
         collection {
                 collection {
                         std::move(element),
-                        std::move(length),
+                        length,
                 },
                 std::forward<Args>(args)...
         }
@@ -78,19 +80,17 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit collection(collection const& other, ::takatori::util::object_creator creator);
+    explicit collection(::takatori::util::clone_tag_t, collection const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit collection(collection&& other, ::takatori::util::object_creator creator);
+    explicit collection(::takatori::util::clone_tag_t, collection&& other);
 
-    [[nodiscard]] collection* clone(::takatori::util::object_creator creator) const& override;
-    [[nodiscard]] collection* clone(::takatori::util::object_creator creator) && override;
+    [[nodiscard]] collection* clone() const& override;
+    [[nodiscard]] collection* clone() && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 
@@ -98,10 +98,10 @@ public:
      * @brief returns the element type.
      * @return the element type
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<ast::type::type>& element() noexcept;
+    [[nodiscard]] std::unique_ptr<ast::type::type>& element() noexcept;
 
     /// @copydoc element()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<ast::type::type> const& element() const noexcept;
+    [[nodiscard]] std::unique_ptr<ast::type::type> const& element() const noexcept;
 
     /**
      * @brief returns whether or not this type is flexible length.
@@ -145,7 +145,7 @@ protected:
     void serialize(::takatori::serializer::object_acceptor& acceptor) const override;
 
 private:
-    ::takatori::util::unique_object_ptr<type> element_;
+    std::unique_ptr<type> element_;
     std::optional<length_type> length_;
 };
 

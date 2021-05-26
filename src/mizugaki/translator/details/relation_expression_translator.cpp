@@ -18,7 +18,6 @@
 #include <takatori/util/assertion.h>
 #include <takatori/util/downcast.h>
 #include <takatori/util/fail.h>
-#include <takatori/util/object_creator.h>
 #include <takatori/util/optional_ptr.h>
 #include <takatori/util/string_builder.h>
 
@@ -38,15 +37,11 @@ using code_type = shakujo_translator_code;
 using ::takatori::util::fail;
 using ::takatori::util::optional_ptr;
 using ::takatori::util::string_builder;
-using ::takatori::util::unique_object_ptr;
 using ::takatori::util::unsafe_downcast;
 
 namespace descriptor = ::takatori::descriptor;
 namespace scalar = ::takatori::scalar;
 namespace relation = ::takatori::relation;
-
-template<class T>
-using object_vector = std::vector<T, ::takatori::util::object_allocator<T>>;
 
 namespace {
 
@@ -82,14 +77,13 @@ public:
     }
 
     result_type operator()(::shakujo::model::expression::relation::ScanExpression const& node) {
-        auto c = translator_.object_creator();
         auto&& index = translator_.find_table(*node.table());
         if (!index) {
             return report(code_type::table_not_found, *node.table(), string_builder {}
                     << *node.table());
         }
 
-        relation_ = relation_info { *index, *node.table(), c };
+        relation_ = relation_info { *index, *node.table() };
 
         auto columns = new_vector<relation::scan::column>(relation_.count_variables());
         for (auto&& column : index->table().columns()) {
@@ -103,10 +97,9 @@ public:
                 node,
                 factory()(*index),
                 std::move(columns),
-                endpoint { c },
-                endpoint { c },
-                std::nullopt,
-                c);
+                endpoint {},
+                endpoint {},
+                std::nullopt);
         resolve(r);
         return r.output();
     }
@@ -132,8 +125,7 @@ public:
 
         auto&& r = create<relation::filter>(
                 node,
-                std::move(c),
-                translator_.object_creator());
+                std::move(c));
         source->connect_to(r.input());
         resolve(r);
         return r.output();
@@ -189,8 +181,7 @@ public:
 
         auto&& r = create<relation::project>(
                 node,
-                std::move(columns),
-                translator_.object_creator());
+                std::move(columns));
         source->connect_to(r.input());
         if (group || saw_aggregate) {
             return process_aggregate(std::move(next), r, group);
@@ -210,7 +201,7 @@ public:
 
         relation_ = relation_info { std::move(relation_left), std::move(relation_right) };
 
-        unique_object_ptr<scalar::expression> cond {};
+        std::unique_ptr<scalar::expression> cond {};
         if (node.condition() != nullptr) {
             scalar_expression_translator e { translator_ };
             cond = e.process(*node.condition(), { translator_.options(), relation_ });
@@ -223,8 +214,7 @@ public:
             auto&& r = create<relation::intermediate::join>(
                     node,
                     k,
-                    std::move(cond),
-                    translator_.object_creator());
+                    std::move(cond));
             output_left->connect_to(r.left());
             output_right->connect_to(r.right());
             resolve(r);
@@ -235,8 +225,7 @@ public:
             auto&& r = create<relation::intermediate::join>(
                     node,
                     *k,
-                    std::move(cond),
-                    translator_.object_creator());
+                    std::move(cond));
             // transpose inputs
             output_right->connect_to(r.left());
             output_left->connect_to(r.right());
@@ -259,8 +248,7 @@ public:
 
         auto&& r = create<relation::intermediate::distinct>(
                 node,
-                std::move(keys),
-                translator_.object_creator());
+                std::move(keys));
         source->connect_to(r.input());
         resolve(r);
         return r.output();
@@ -290,8 +278,7 @@ public:
                 node,
                 std::nullopt,
                 new_vector<descriptor::variable>(),
-                keys,
-                translator_.object_creator());
+                keys);
         source->connect_to(r.input());
         resolve(r);
         return r.output();
@@ -312,8 +299,7 @@ public:
                 node,
                 node.count(),
                 new_vector<descriptor::variable>(),
-                new_vector<relation::intermediate::limit::sort_key>(),
-                translator_.object_creator());
+                new_vector<relation::intermediate::limit::sort_key>());
         source->connect_to(r.input());
         resolve(r);
         return r.output();
@@ -344,12 +330,12 @@ private:
     }
 
     [[nodiscard]] ::yugawara::binding::factory factory() const noexcept {
-        return ::yugawara::binding::factory { translator_.object_creator() };
+        return {};
     }
 
     template<class T>
-    [[nodiscard]] object_vector<T> new_vector(std::size_t capacity = 0) const {
-        object_vector<T> result { translator_.object_creator().allocator() };
+    [[nodiscard]] std::vector<T> new_vector(std::size_t capacity = 0) const {
+        std::vector<T> result {};
         if (capacity > 0) {
             result.reserve(capacity);
         }
@@ -397,8 +383,7 @@ private:
         }
         auto&& aggregation = graph_.emplace<relation::intermediate::aggregate>(
                 std::move(group_keys),
-                new_vector<relation::intermediate::aggregate::column>(),
-                translator_.object_creator());
+                new_vector<relation::intermediate::aggregate::column>());
         aggregation.region() = projection.region();
         aggregation.input().reconnect_to(*projection.input().opposite());
 

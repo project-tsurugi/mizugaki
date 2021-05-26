@@ -37,10 +37,6 @@ impl::options_type const& shakujo_translator::impl::options() const {
     return *options_;
 }
 
-::takatori::util::object_creator shakujo_translator::impl::object_creator() const {
-    return options().get_object_creator();
-}
-
 std::vector<impl::diagnostic_type>& impl::diagnostics() noexcept {
     return diagnostics_;
 }
@@ -76,15 +72,15 @@ static ::takatori::document::position convert0(
     return {};
 }
 
-::takatori::util::unique_object_ptr<::takatori::scalar::expression> impl::placeholder(std::string_view name) const {
+std::unique_ptr<::takatori::scalar::expression> impl::placeholder(std::string_view name) const {
     if (placeholders_) {
         if (auto ph = placeholders_->find(name)) {
-            return ph->resolve(object_creator());
+            return ph->resolve();
         }
     }
     if (auto v = options_->host_variable_provider().find(name)) {
-        ::yugawara::binding::factory f { object_creator() };
-        return object_creator().create_unique<::takatori::scalar::variable_reference>(f(std::move(v)));
+        ::yugawara::binding::factory f {};
+        return std::make_unique<::takatori::scalar::variable_reference>(f(std::move(v)));
     }
     return {};
 }
@@ -145,8 +141,8 @@ impl& impl::initialize(
     options_ = options;
     documents_ = documents;
     placeholders_ = placeholders;
-    types_ = decltype(types_) { options.get_object_creator(), true };
-    values_ = decltype(values_) { options.get_object_creator(), true };
+    types_ = decltype(types_) { true };
+    values_ = decltype(values_) { true };
     return *this;
 }
 

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <takatori/util/object_creator.h>
 
 #include "node_region.h"
 

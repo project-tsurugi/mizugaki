@@ -4,6 +4,8 @@
 
 #include <cstddef>
 
+#include <takatori/util/clone_tag.h>
+
 #include <mizugaki/ast/common/regioned.h>
 
 #include "type.h"
@@ -49,19 +51,17 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit bit_string(bit_string const& other, ::takatori::util::object_creator creator);
+    explicit bit_string(::takatori::util::clone_tag_t, bit_string const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit bit_string(bit_string&& other, ::takatori::util::object_creator creator);
+    explicit bit_string(::takatori::util::clone_tag_t, bit_string&& other);
 
-    [[nodiscard]] bit_string* clone(::takatori::util::object_creator creator) const& override;
-    [[nodiscard]] bit_string* clone(::takatori::util::object_creator creator) && override;
+    [[nodiscard]] bit_string* clone() const& override;
+    [[nodiscard]] bit_string* clone() && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 

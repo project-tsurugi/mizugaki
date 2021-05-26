@@ -9,12 +9,10 @@
 namespace mizugaki::ast::table {
 
 using ::takatori::util::clone_unique;
-using ::takatori::util::object_creator;
-using ::takatori::util::unique_object_ptr;
 
 subquery::subquery(
         bool_type is_lateral,
-        unique_object_ptr<query::expression> expression,
+        std::unique_ptr<query::expression> expression,
         correlation_type correlation,
         region_type region) noexcept :
     super { region },
@@ -37,41 +35,41 @@ subquery::subquery(
     }
 {}
 
-subquery::subquery(subquery const& other, object_creator creator) :
+subquery::subquery(::takatori::util::clone_tag_t, subquery const& other) :
     subquery {
             other.is_lateral_,
-            clone_unique(other.expression_, creator),
-            decltype(correlation_) { other.correlation_, creator },
+            clone_unique(other.expression_),
+            decltype(correlation_) { other.correlation_ },
             other.region(),
     }
 {}
 
-subquery::subquery(subquery&& other, object_creator creator) :
+subquery::subquery(::takatori::util::clone_tag_t, subquery&& other) :
     subquery {
             other.is_lateral_,
-            clone_unique(std::move(other.expression_), creator),
-            decltype(correlation_) { std::move(other.correlation_), creator },
+            clone_unique(std::move(other.expression_)),
+            decltype(correlation_) { std::move(other.correlation_) },
             other.region(),
     }
 {}
 
-subquery* subquery::clone(object_creator creator) const& {
-    return creator.create_object<subquery>(*this, creator);
+subquery* subquery::clone() const& {
+    return new subquery(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-subquery* subquery::clone(object_creator creator) && {
-    return creator.create_object<subquery>(std::move(*this), creator);
+subquery* subquery::clone() && {
+    return new subquery(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 expression::node_kind_type subquery::node_kind() const noexcept {
     return tag;
 }
 
-unique_object_ptr<query::expression>& subquery::expression() noexcept {
+std::unique_ptr<query::expression>& subquery::expression() noexcept {
     return expression_;
 }
 
-unique_object_ptr<query::expression> const& subquery::expression() const noexcept {
+std::unique_ptr<query::expression> const& subquery::expression() const noexcept {
     return expression_;
 }
 

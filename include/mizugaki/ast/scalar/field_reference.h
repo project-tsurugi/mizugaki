@@ -1,6 +1,6 @@
 #pragma once
 
-#include <takatori/util/object_creator.h>
+#include <takatori/util/clone_tag.h>
 
 #include <mizugaki/ast/common/regioned.h>
 #include <mizugaki/ast/name/simple.h>
@@ -36,7 +36,7 @@ public:
     explicit field_reference(
             operand_type value,
             operator_kind_type operator_kind,
-            ::takatori::util::unique_object_ptr<name::simple> name,
+            std::unique_ptr<name::simple> name,
             region_type region = {}) noexcept;
 
     /**
@@ -55,19 +55,17 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit field_reference(field_reference const& other, ::takatori::util::object_creator creator);
+    explicit field_reference(::takatori::util::clone_tag_t, field_reference const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit field_reference(field_reference&& other, ::takatori::util::object_creator creator);
+    explicit field_reference(::takatori::util::clone_tag_t, field_reference&& other);
 
-    [[nodiscard]] field_reference* clone(::takatori::util::object_creator creator) const& override;
-    [[nodiscard]] field_reference* clone(::takatori::util::object_creator creator) && override;
+    [[nodiscard]] field_reference* clone() const& override;
+    [[nodiscard]] field_reference* clone() && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 
@@ -93,10 +91,10 @@ public:
      * @brief returns the field name.
      * @return the field name
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<name::simple>& name() noexcept;
+    [[nodiscard]] std::unique_ptr<name::simple>& name() noexcept;
 
     /// @brief name()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<name::simple> const& name() const noexcept;
+    [[nodiscard]] std::unique_ptr<name::simple> const& name() const noexcept;
 
     /**
      * @brief compares two values.
@@ -123,7 +121,7 @@ protected:
 private:
     operand_type value_;
     operator_kind_type operator_kind_;
-    ::takatori::util::unique_object_ptr<name::simple> name_;
+    std::unique_ptr<name::simple> name_;
 };
 
 /**

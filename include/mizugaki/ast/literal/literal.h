@@ -15,8 +15,8 @@ public:
     using node_kind_type = kind;
 
     using node::node;
-    [[nodiscard]] literal* clone(::takatori::util::object_creator creator) const& override = 0;
-    [[nodiscard]] literal* clone(::takatori::util::object_creator creator) && override = 0;
+    [[nodiscard]] literal* clone() const& override = 0;
+    [[nodiscard]] literal* clone() && override = 0;
 
     /**
      * @brief returns the kind of this name.

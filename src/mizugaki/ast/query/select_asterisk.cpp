@@ -9,11 +9,9 @@
 namespace mizugaki::ast::query {
 
 using ::takatori::util::clone_unique;
-using ::takatori::util::object_creator;
-using ::takatori::util::unique_object_ptr;
 
 select_asterisk::select_asterisk(
-        unique_object_ptr<scalar::expression> qualifier,
+        std::unique_ptr<scalar::expression> qualifier,
         region_type region) noexcept :
     super { region },
     qualifier_ { std::move(qualifier) }
@@ -28,37 +26,37 @@ select_asterisk::select_asterisk(
     }
 {}
 
-select_asterisk::select_asterisk(select_asterisk const& other, object_creator creator) :
+select_asterisk::select_asterisk(::takatori::util::clone_tag_t, select_asterisk const& other) :
     select_asterisk {
-            clone_unique(other.qualifier_, creator),
+            clone_unique(other.qualifier_),
             other.region(),
     }
 {}
 
-select_asterisk::select_asterisk(select_asterisk&& other, object_creator creator) :
+select_asterisk::select_asterisk(::takatori::util::clone_tag_t, select_asterisk&& other) :
     select_asterisk {
-            clone_unique(std::move(other.qualifier_), creator),
+            clone_unique(std::move(other.qualifier_)),
             other.region(),
     }
 {}
 
-select_asterisk* select_asterisk::clone(::takatori::util::object_creator creator) const& {
-    return creator.create_object<select_asterisk>(*this, creator);
+select_asterisk* select_asterisk::clone() const& {
+    return new select_asterisk(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-select_asterisk* select_asterisk::clone(::takatori::util::object_creator creator)&& {
-    return creator.create_object<select_asterisk>(std::move(*this), creator);
+select_asterisk* select_asterisk::clone()&& {
+    return new select_asterisk(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 select_element::node_kind_type select_asterisk::node_kind() const noexcept {
     return tag;
 }
 
-unique_object_ptr<scalar::expression>& select_asterisk::qualifier() noexcept {
+std::unique_ptr<scalar::expression>& select_asterisk::qualifier() noexcept {
     return qualifier_;
 }
 
-unique_object_ptr<scalar::expression> const& select_asterisk::qualifier() const noexcept {
+std::unique_ptr<scalar::expression> const& select_asterisk::qualifier() const noexcept {
     return qualifier_;
 }
 

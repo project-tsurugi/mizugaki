@@ -10,13 +10,11 @@
 namespace mizugaki::ast::query {
 
 using ::takatori::util::clone_unique;
-using ::takatori::util::object_creator;
 using ::takatori::util::rvalue_ptr;
-using ::takatori::util::unique_object_ptr;
 
 grouping_column::grouping_column(
-        unique_object_ptr<scalar::expression> column,
-        unique_object_ptr<name::name> collation,
+        std::unique_ptr<scalar::expression> column,
+        std::unique_ptr<name::name> collation,
         region_type region) noexcept :
     super { region },
     column_ { std::move(column) },
@@ -34,10 +32,9 @@ grouping_column::grouping_column(
     }
 {}
 
-static inline unique_object_ptr<scalar::variable_reference> to_expr(name::name&& column) {
-    object_creator c;
+static inline std::unique_ptr<scalar::variable_reference> to_expr(name::name&& column) {
     auto r = column.region();
-    return c.create_unique<scalar::variable_reference>(std::move(column), r);
+    return std::make_unique<scalar::variable_reference>(std::move(column), r);
 }
 
 grouping_column::grouping_column(
@@ -51,47 +48,47 @@ grouping_column::grouping_column(
     }
 {}
 
-grouping_column::grouping_column(grouping_column const& other, object_creator creator) :
+grouping_column::grouping_column(::takatori::util::clone_tag_t, grouping_column const& other) :
     grouping_column {
-            clone_unique(other.column_, creator),
-            clone_unique(other.collation_, creator),
+            clone_unique(other.column_),
+            clone_unique(other.collation_),
             other.region(),
     }
 {}
 
-grouping_column::grouping_column(grouping_column&& other, object_creator creator) :
+grouping_column::grouping_column(::takatori::util::clone_tag_t, grouping_column&& other) :
     grouping_column {
-            clone_unique(std::move(other.column_), creator),
-            clone_unique(std::move(other.collation_), creator),
+            clone_unique(std::move(other.column_)),
+            clone_unique(std::move(other.collation_)),
             other.region(),
     }
 {}
 
-grouping_column* grouping_column::clone(object_creator creator) const& {
-    return creator.create_object<grouping_column>(*this, creator);
+grouping_column* grouping_column::clone() const& {
+    return new grouping_column(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-grouping_column* grouping_column::clone(object_creator creator)&& {
-    return creator.create_object<grouping_column>(std::move(*this), creator);
+grouping_column* grouping_column::clone()&& {
+    return new grouping_column(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 grouping_element::node_kind_type grouping_column::node_kind() const noexcept {
     return tag;
 }
 
-unique_object_ptr<scalar::expression>& grouping_column::column() noexcept {
+std::unique_ptr<scalar::expression>& grouping_column::column() noexcept {
     return column_;
 }
 
-unique_object_ptr<scalar::expression> const& grouping_column::column() const noexcept {
+std::unique_ptr<scalar::expression> const& grouping_column::column() const noexcept {
     return column_;
 }
 
-unique_object_ptr<name::name>& grouping_column::collation() noexcept {
+std::unique_ptr<name::name>& grouping_column::collation() noexcept {
     return collation_;
 }
 
-unique_object_ptr<name::name> const& grouping_column::collation() const noexcept {
+std::unique_ptr<name::name> const& grouping_column::collation() const noexcept {
     return collation_;
 }
 

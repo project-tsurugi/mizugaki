@@ -1,6 +1,6 @@
 #pragma once
 
-#include <takatori/util/object_creator.h>
+#include <takatori/util/clone_tag.h>
 
 #include <mizugaki/ast/common/regioned.h>
 #include <mizugaki/ast/common/vector.h>
@@ -27,7 +27,7 @@ public:
      * @param region the node region
      */
     explicit row(
-            common::vector<field_definition> elements,
+            std::vector<field_definition> elements,
             region_type region = {}) noexcept;
 
     /**
@@ -43,19 +43,17 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit row(row const& other, ::takatori::util::object_creator creator);
+    explicit row(::takatori::util::clone_tag_t, row const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit row(row&& other, ::takatori::util::object_creator creator);
+    explicit row(::takatori::util::clone_tag_t, row&& other);
 
-    [[nodiscard]] row* clone(::takatori::util::object_creator creator) const& override;
-    [[nodiscard]] row* clone(::takatori::util::object_creator creator) && override;
+    [[nodiscard]] row* clone() const& override;
+    [[nodiscard]] row* clone() && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 
@@ -63,10 +61,10 @@ public:
      * @brief returns the field definitions.
      * @return the field definitions
      */
-    [[nodiscard]] common::vector<field_definition>& elements() noexcept;
+    [[nodiscard]] std::vector<field_definition>& elements() noexcept;
 
     /// @copydoc elements()
-    [[nodiscard]] common::vector<field_definition> const& elements() const noexcept;
+    [[nodiscard]] std::vector<field_definition> const& elements() const noexcept;
 
     /**
      * @brief compares two values.
@@ -91,7 +89,7 @@ protected:
     void serialize(::takatori::serializer::object_acceptor& acceptor) const override;
 
 private:
-    common::vector<field_definition> elements_;
+    std::vector<field_definition> elements_;
 };
 
 /**

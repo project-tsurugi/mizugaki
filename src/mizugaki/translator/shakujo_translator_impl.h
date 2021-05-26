@@ -33,14 +33,13 @@ public:
             placeholder_map const& placeholders = {});
 
     [[nodiscard]] options_type const& options() const;
-    [[nodiscard]] ::takatori::util::object_creator object_creator() const;
 
     [[nodiscard]] std::vector<diagnostic_type>& diagnostics() noexcept;
     [[nodiscard]] std::vector<diagnostic_type> const& diagnostics() const noexcept;
 
     [[nodiscard]] ::takatori::document::region region(::shakujo::common::core::DocumentRegion const& region) const;
 
-    [[nodiscard]] ::takatori::util::unique_object_ptr<::takatori::scalar::expression> placeholder(std::string_view name) const;
+    [[nodiscard]] std::unique_ptr<::takatori::scalar::expression> placeholder(std::string_view name) const;
 
     [[nodiscard]] ::takatori::util::optional_ptr<::yugawara::storage::index const> find_table(std::string_view name) const;
     [[nodiscard]] ::takatori::util::optional_ptr<::yugawara::storage::index const> find_table(::shakujo::model::name::Name const& name) const;

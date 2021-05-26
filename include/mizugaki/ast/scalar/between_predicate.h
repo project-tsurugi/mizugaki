@@ -2,7 +2,7 @@
 
 #include <optional>
 
-#include <takatori/util/object_creator.h>
+#include <takatori/util/clone_tag.h>
 
 #include <mizugaki/ast/common/regioned.h>
 
@@ -66,19 +66,17 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit between_predicate(between_predicate const& other, ::takatori::util::object_creator creator);
+    explicit between_predicate(::takatori::util::clone_tag_t, between_predicate const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit between_predicate(between_predicate&& other, ::takatori::util::object_creator creator);
+    explicit between_predicate(::takatori::util::clone_tag_t, between_predicate&& other);
 
-    [[nodiscard]] between_predicate* clone(::takatori::util::object_creator creator) const& override;
-    [[nodiscard]] between_predicate* clone(::takatori::util::object_creator creator) && override;
+    [[nodiscard]] between_predicate* clone() const& override;
+    [[nodiscard]] between_predicate* clone() && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 

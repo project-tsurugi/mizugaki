@@ -9,15 +9,13 @@
 namespace mizugaki::ast::query {
 
 using ::takatori::util::clone_unique;
-using ::takatori::util::object_creator;
-using ::takatori::util::unique_object_ptr;
 
 using common::clone_vector;
 
 with_expression::with_expression(
         bool_type is_recursive,
-        common::vector<element_type> elements,
-        unique_object_ptr<ast::query::expression> expression,
+        std::vector<element_type> elements,
+        std::unique_ptr<ast::query::expression> expression,
         region_type region) noexcept :
     super { region },
     is_recursive_ { is_recursive },
@@ -50,49 +48,49 @@ with_expression::with_expression(
     }
 {}
 
-with_expression::with_expression(with_expression const& other, object_creator creator) :
+with_expression::with_expression(::takatori::util::clone_tag_t, with_expression const& other) :
     with_expression {
             other.is_recursive_,
-            clone_vector(other.elements_, creator),
-            clone_unique(other.expression_, creator),
+            clone_vector(other.elements_),
+            clone_unique(other.expression_),
             other.region(),
     }
 {}
 
-with_expression::with_expression(with_expression&& other, object_creator creator) :
+with_expression::with_expression(::takatori::util::clone_tag_t, with_expression&& other) :
     with_expression {
             other.is_recursive_,
-            clone_vector(other.elements_, creator),
-            clone_unique(std::move(other.expression_), creator),
+            clone_vector(other.elements_),
+            clone_unique(std::move(other.expression_)),
             other.region(),
     }
 {}
 
-with_expression* with_expression::clone(object_creator creator) const& {
-    return creator.create_object<with_expression>(*this, creator);
+with_expression* with_expression::clone() const& {
+    return new with_expression(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-with_expression* with_expression::clone(object_creator creator)&& {
-    return creator.create_object<with_expression>(std::move(*this), creator);
+with_expression* with_expression::clone()&& {
+    return new with_expression(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 expression::node_kind_type with_expression::node_kind() const noexcept {
     return tag;
 }
 
-common::vector<with_expression::element_type>& with_expression::elements() noexcept {
+std::vector<with_expression::element_type>& with_expression::elements() noexcept {
     return elements_;
 }
 
-common::vector<with_expression::element_type> const& with_expression::elements() const noexcept {
+std::vector<with_expression::element_type> const& with_expression::elements() const noexcept {
     return elements_;
 }
 
-unique_object_ptr<ast::query::expression>& with_expression::expression() noexcept {
+std::unique_ptr<ast::query::expression>& with_expression::expression() noexcept {
     return expression_;
 }
 
-unique_object_ptr<ast::query::expression> const& with_expression::expression() const noexcept {
+std::unique_ptr<ast::query::expression> const& with_expression::expression() const noexcept {
     return expression_;
 }
 

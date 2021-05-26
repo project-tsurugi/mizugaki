@@ -1,6 +1,6 @@
 #pragma once
 
-#include <takatori/util/object_creator.h>
+#include <takatori/util/clone_tag.h>
 
 #include <mizugaki/ast/common/regioned.h>
 #include <mizugaki/ast/common/vector.h>
@@ -38,8 +38,8 @@ public:
      */
     explicit with_expression(
             bool_type is_recursive,
-            common::vector<element_type> elements,
-            ::takatori::util::unique_object_ptr<ast::query::expression> expression,
+            std::vector<element_type> elements,
+            std::unique_ptr<ast::query::expression> expression,
             region_type region = {}) noexcept;
 
     /**
@@ -71,19 +71,17 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit with_expression(with_expression const& other, ::takatori::util::object_creator creator);
+    explicit with_expression(::takatori::util::clone_tag_t, with_expression const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit with_expression(with_expression&& other, ::takatori::util::object_creator creator);
+    explicit with_expression(::takatori::util::clone_tag_t, with_expression&& other);
 
-    [[nodiscard]] with_expression* clone(::takatori::util::object_creator creator) const& override;
-    [[nodiscard]] with_expression* clone(::takatori::util::object_creator creator) && override;
+    [[nodiscard]] with_expression* clone() const& override;
+    [[nodiscard]] with_expression* clone() && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 
@@ -91,19 +89,19 @@ public:
      * @brief returns the named query declarations.
      * @return the named query declarations
      */
-    [[nodiscard]] common::vector<element_type>& elements() noexcept;
+    [[nodiscard]] std::vector<element_type>& elements() noexcept;
 
     /// @brief elements()
-    [[nodiscard]] common::vector<element_type> const& elements() const noexcept;
+    [[nodiscard]] std::vector<element_type> const& elements() const noexcept;
 
     /**
      * @brief returns the body expression.
      * @return the body expression
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<ast::query::expression>& expression() noexcept;
+    [[nodiscard]] std::unique_ptr<ast::query::expression>& expression() noexcept;
 
     /// @copydoc expression()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<ast::query::expression> const& expression() const noexcept;
+    [[nodiscard]] std::unique_ptr<ast::query::expression> const& expression() const noexcept;
 
     /**
      * @brief returns whether or not `RECURSIVE` is specified.
@@ -139,8 +137,8 @@ protected:
 
 private:
     bool_type is_recursive_;
-    common::vector<element_type> elements_;
-    ::takatori::util::unique_object_ptr<ast::query::expression> expression_;
+    std::vector<element_type> elements_;
+    std::unique_ptr<ast::query::expression> expression_;
 };
 
 /**

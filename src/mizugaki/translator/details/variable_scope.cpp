@@ -22,7 +22,7 @@ std::optional<::takatori::descriptor::variable> variable_scope::find(::shakujo::
     if (name.kind() == ::shakujo::model::name::SimpleName::tag) {
         auto&& n = unsafe_downcast<::shakujo::model::name::SimpleName>(name);
         if (auto v = options_.variable_provider().find(n.token())) {
-            ::yugawara::binding::factory f { options_.get_object_creator() };
+            ::yugawara::binding::factory f {};
             return f(std::move(v));
         }
     }

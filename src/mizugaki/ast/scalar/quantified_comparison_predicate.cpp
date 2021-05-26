@@ -9,14 +9,12 @@
 namespace mizugaki::ast::scalar {
 
 using ::takatori::util::clone_unique;
-using ::takatori::util::object_creator;
-using ::takatori::util::unique_object_ptr;
 
 quantified_comparison_predicate::quantified_comparison_predicate(
         operand_type left,
         operator_kind_type operator_kind,
         quantifier_type quantifier,
-        unique_object_ptr<query::expression> right,
+        std::unique_ptr<query::expression> right,
         region_type region) noexcept:
     super { region },
     left_ { std::move(left) },
@@ -40,32 +38,32 @@ quantified_comparison_predicate::quantified_comparison_predicate(
     }
 {}
 
-quantified_comparison_predicate::quantified_comparison_predicate(quantified_comparison_predicate const& other, object_creator creator) :
+quantified_comparison_predicate::quantified_comparison_predicate(::takatori::util::clone_tag_t, quantified_comparison_predicate const& other) :
     quantified_comparison_predicate {
-            clone_unique(other.left_, creator),
+            clone_unique(other.left_),
             other.operator_kind_,
             other.quantifier_,
-            clone_unique(other.right_, creator),
+            clone_unique(other.right_),
             other.region(),
     }
 {}
 
-quantified_comparison_predicate::quantified_comparison_predicate(quantified_comparison_predicate&& other, object_creator creator) :
+quantified_comparison_predicate::quantified_comparison_predicate(::takatori::util::clone_tag_t, quantified_comparison_predicate&& other) :
     quantified_comparison_predicate {
-            clone_unique(std::move(other.left_), creator),
+            clone_unique(std::move(other.left_)),
             other.operator_kind_,
             other.quantifier_,
-            clone_unique(std::move(other.right_), creator),
+            clone_unique(std::move(other.right_)),
             other.region(),
     }
 {}
 
-quantified_comparison_predicate* quantified_comparison_predicate::clone(object_creator creator) const& {
-    return creator.create_object<quantified_comparison_predicate>(*this, creator);
+quantified_comparison_predicate* quantified_comparison_predicate::clone() const& {
+    return new quantified_comparison_predicate(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-quantified_comparison_predicate* quantified_comparison_predicate::clone(object_creator creator) && {
-    return creator.create_object<quantified_comparison_predicate>(std::move(*this), creator);
+quantified_comparison_predicate* quantified_comparison_predicate::clone() && {
+    return new quantified_comparison_predicate(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 expression::node_kind_type quantified_comparison_predicate::node_kind() const noexcept {
@@ -96,11 +94,11 @@ expression::operand_type const& quantified_comparison_predicate::left() const no
     return left_;
 }
 
-unique_object_ptr<query::expression>& quantified_comparison_predicate::right() noexcept {
+std::unique_ptr<query::expression>& quantified_comparison_predicate::right() noexcept {
     return right_;
 }
 
-unique_object_ptr<query::expression> const& quantified_comparison_predicate::right() const noexcept {
+std::unique_ptr<query::expression> const& quantified_comparison_predicate::right() const noexcept {
     return right_;
 }
 

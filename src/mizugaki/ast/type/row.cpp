@@ -6,13 +6,11 @@
 
 namespace mizugaki::ast::type {
 
-using ::takatori::util::object_creator;
-using ::takatori::util::unique_object_ptr;
 
 using common::clone_vector;
 
 row::row(
-        common::vector<field_definition> elements,
+        std::vector<field_definition> elements,
         region_type region) noexcept:
     super { region },
     elements_ { std::move(elements) }
@@ -27,37 +25,37 @@ row::row(
     }
 {}
 
-row::row(row const& other, object_creator creator) :
+row::row(::takatori::util::clone_tag_t, row const& other) :
     row {
-            clone_vector(other.elements_, creator),
+            clone_vector(other.elements_),
             other.region(),
     }
 {}
 
-row::row(row&& other, object_creator creator) :
+row::row(::takatori::util::clone_tag_t, row&& other) :
     row {
-            clone_vector(std::move(other.elements_), creator),
+            clone_vector(std::move(other.elements_)),
             other.region(),
     }
 {}
 
-row* row::clone(object_creator creator) const& {
-    return creator.create_object<row>(*this, creator);
+row* row::clone() const& {
+    return new row(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-row* row::clone(object_creator creator) && {
-    return creator.create_object<row>(std::move(*this), creator);
+row* row::clone() && {
+    return new row(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 type::node_kind_type row::node_kind() const noexcept {
     return tag;
 }
 
-common::vector<field_definition>& row::elements() noexcept {
+std::vector<field_definition>& row::elements() noexcept {
     return elements_;
 }
 
-common::vector<field_definition> const& row::elements() const noexcept {
+std::vector<field_definition> const& row::elements() const noexcept {
     return elements_;
 }
 

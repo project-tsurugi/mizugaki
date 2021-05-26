@@ -1,6 +1,6 @@
 #pragma once
 
-#include <takatori/util/object_creator.h>
+#include <takatori/util/clone_tag.h>
 #include <takatori/util/rvalue_ptr.h>
 
 #include <mizugaki/ast/common/regioned.h>
@@ -68,19 +68,17 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit pattern_match_predicate(pattern_match_predicate const& other, ::takatori::util::object_creator creator);
+    explicit pattern_match_predicate(::takatori::util::clone_tag_t, pattern_match_predicate const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit pattern_match_predicate(pattern_match_predicate&& other, ::takatori::util::object_creator creator);
+    explicit pattern_match_predicate(::takatori::util::clone_tag_t, pattern_match_predicate&& other);
 
-    [[nodiscard]] pattern_match_predicate* clone(::takatori::util::object_creator creator) const& override;
-    [[nodiscard]] pattern_match_predicate* clone(::takatori::util::object_creator creator) && override;
+    [[nodiscard]] pattern_match_predicate* clone() const& override;
+    [[nodiscard]] pattern_match_predicate* clone() && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 

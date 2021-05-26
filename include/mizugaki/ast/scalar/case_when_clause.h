@@ -1,5 +1,7 @@
 #pragma once
 
+#include <takatori/util/clone_tag.h>
+
 #include <mizugaki/ast/common/clone_wrapper.h>
 
 #include "expression.h"
@@ -48,16 +50,14 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit case_when_clause(case_when_clause const& other, ::takatori::util::object_creator creator);
+    explicit case_when_clause(::takatori::util::clone_tag_t, case_when_clause const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit case_when_clause(case_when_clause&& other, ::takatori::util::object_creator creator);
+    explicit case_when_clause(::takatori::util::clone_tag_t, case_when_clause&& other);
 
     /**
      * @brief returns the operand of when clause.
@@ -106,8 +106,8 @@ public:
             case_when_clause const& value);
 
 private:
-    common::clone_wrapper<::takatori::util::unique_object_ptr<expression>> when_;
-    common::clone_wrapper<::takatori::util::unique_object_ptr<expression>> result_;
+    common::clone_wrapper<std::unique_ptr<expression>> when_;
+    common::clone_wrapper<std::unique_ptr<expression>> result_;
 };
 
 /**

@@ -3,8 +3,8 @@
 #include <ostream>
 #include <functional>
 
+#include <takatori/util/clone_tag.h>
 #include <takatori/util/detect.h>
-#include <takatori/util/object_creator.h>
 
 #include <mizugaki/ast/node_region.h>
 
@@ -44,20 +44,18 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit regioned(regioned const& other, ::takatori::util::object_creator creator) :
-        value_ { other.value_, creator.allocator() },
+    explicit regioned(::takatori::util::clone_tag_t, regioned const& other) :
+        value_ { other.value_ },
         region_ { other.region() }
     {}
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit regioned(regioned&& other, ::takatori::util::object_creator creator) :
-        value_ { std::move(other.value_), creator.allocator() },
+    explicit regioned(::takatori::util::clone_tag_t, regioned&& other) :
+        value_ { std::move(other.value_) },
         region_ { other.region() }
     {}
 

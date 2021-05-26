@@ -1,7 +1,6 @@
 #pragma once
 
 #include <mizugaki/ast/node.h>
-#include <takatori/util/object_creator.h>
 
 #include "join_specification_kind.h"
 
@@ -17,8 +16,8 @@ public:
     using node_kind_type = join_specification_kind;
 
     using node::node;
-    [[nodiscard]] join_specification* clone(::takatori::util::object_creator creator) const& override = 0;
-    [[nodiscard]] join_specification* clone(::takatori::util::object_creator creator) && override = 0;
+    [[nodiscard]] join_specification* clone() const& override = 0;
+    [[nodiscard]] join_specification* clone() && override = 0;
 
     /**
      * @brief returns the kind of this name.

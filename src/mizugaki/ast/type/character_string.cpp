@@ -12,7 +12,6 @@ using node_kind_type = type::node_kind_type;
 using type_kind_type = character_string::type_kind_type;
 using length_type = character_string::length_type;
 
-using ::takatori::util::object_creator;
 
 character_string::character_string(
         type_kind_type type_kind,
@@ -20,12 +19,12 @@ character_string::character_string(
         region_type region) :
     super { region },
     type_kind_ { type_kind },
-    length_ { std::move(length) }
+    length_ { length }
 {
     utils::validate_kind(tags, *type_kind);
 }
 
-character_string::character_string(character_string const& other, object_creator) :
+character_string::character_string(::takatori::util::clone_tag_t, character_string const& other) :
     character_string {
             other.type_kind_,
             other.length_,
@@ -33,20 +32,20 @@ character_string::character_string(character_string const& other, object_creator
     }
 {}
 
-character_string::character_string(character_string&& other, object_creator) :
+character_string::character_string(::takatori::util::clone_tag_t, character_string&& other) :
     character_string {
             other.type_kind_,
-            std::move(other.length_),
+            other.length_,
             other.region(),
     }
 {}
 
-character_string* character_string::clone(object_creator creator) const& {
-    return creator.create_object<character_string>(*this, creator);
+character_string* character_string::clone() const& {
+    return new character_string(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-character_string* character_string::clone(object_creator creator) && {
-    return creator.create_object<character_string>(std::move(*this), creator);
+character_string* character_string::clone() && {
+    return new character_string(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 node_kind_type character_string::node_kind() const noexcept {

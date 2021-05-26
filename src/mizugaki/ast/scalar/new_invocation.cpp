@@ -9,15 +9,13 @@
 namespace mizugaki::ast::scalar {
 
 using ::takatori::util::clone_unique;
-using ::takatori::util::object_creator;
-using ::takatori::util::unique_object_ptr;
 
 using common::clone_vector;
 using common::to_vector;
 
 new_invocation::new_invocation(
-        unique_object_ptr<type::type> type,
-        common::vector<operand_type> arguments,
+        std::unique_ptr<type::type> type,
+        std::vector<operand_type> arguments,
         region_type region) noexcept :
     super { region },
     type_ { std::move(type) },
@@ -35,47 +33,47 @@ new_invocation::new_invocation(
     }
 {}
 
-new_invocation::new_invocation(new_invocation const& other, object_creator creator) :
+new_invocation::new_invocation(::takatori::util::clone_tag_t, new_invocation const& other) :
     new_invocation {
-            clone_unique(other.type_, creator),
-            clone_vector(other.arguments_, creator),
+            clone_unique(other.type_),
+            clone_vector(other.arguments_),
             other.region(),
     }
 {}
 
-new_invocation::new_invocation(new_invocation&& other, object_creator creator) :
+new_invocation::new_invocation(::takatori::util::clone_tag_t, new_invocation&& other) :
     new_invocation {
-            clone_unique(std::move(other.type_), creator),
-            clone_vector(std::move(other.arguments_), creator),
+            clone_unique(std::move(other.type_)),
+            clone_vector(std::move(other.arguments_)),
             other.region(),
     }
 {}
 
-new_invocation* new_invocation::clone(object_creator creator) const& {
-    return creator.create_object<new_invocation>(*this, creator);
+new_invocation* new_invocation::clone() const& {
+    return new new_invocation(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-new_invocation* new_invocation::clone(object_creator creator) && {
-    return creator.create_object<new_invocation>(std::move(*this), creator);
+new_invocation* new_invocation::clone() && {
+    return new new_invocation(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 expression::node_kind_type new_invocation::node_kind() const noexcept {
     return tag;
 }
 
-::takatori::util::unique_object_ptr<type::type>& new_invocation::type() noexcept {
+std::unique_ptr<type::type>& new_invocation::type() noexcept {
     return type_;
 }
 
-::takatori::util::unique_object_ptr<type::type> const& new_invocation::type() const noexcept {
+std::unique_ptr<type::type> const& new_invocation::type() const noexcept {
     return type_;
 }
 
-common::vector<expression::operand_type>& new_invocation::arguments() noexcept {
+std::vector<expression::operand_type>& new_invocation::arguments() noexcept {
     return arguments_;
 }
 
-common::vector<expression::operand_type> const& new_invocation::arguments() const noexcept {
+std::vector<expression::operand_type> const& new_invocation::arguments() const noexcept {
     return arguments_;
 }
 

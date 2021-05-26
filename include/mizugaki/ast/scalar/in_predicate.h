@@ -1,6 +1,6 @@
 #pragma once
 
-#include <takatori/util/object_creator.h>
+#include <takatori/util/clone_tag.h>
 
 #include <mizugaki/ast/common/regioned.h>
 #include <mizugaki/ast/query/expression.h>
@@ -34,7 +34,7 @@ public:
     explicit in_predicate(
             operand_type left,
             bool_type is_not,
-            ::takatori::util::unique_object_ptr<query::expression> right,
+            std::unique_ptr<query::expression> right,
             region_type region = {}) noexcept;
 
     /**
@@ -53,19 +53,17 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit in_predicate(in_predicate const& other, ::takatori::util::object_creator creator);
+    explicit in_predicate(::takatori::util::clone_tag_t, in_predicate const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit in_predicate(in_predicate&& other, ::takatori::util::object_creator creator);
+    explicit in_predicate(::takatori::util::clone_tag_t, in_predicate&& other);
 
-    [[nodiscard]] in_predicate* clone(::takatori::util::object_creator creator) const& override;
-    [[nodiscard]] in_predicate* clone(::takatori::util::object_creator creator) && override;
+    [[nodiscard]] in_predicate* clone() const& override;
+    [[nodiscard]] in_predicate* clone() && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 
@@ -82,10 +80,10 @@ public:
      * @brief returns the right term.
      * @return the right term
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<query::expression>& right() noexcept;
+    [[nodiscard]] std::unique_ptr<query::expression>& right() noexcept;
 
     /// @copydoc right()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<query::expression> const& right() const noexcept;
+    [[nodiscard]] std::unique_ptr<query::expression> const& right() const noexcept;
 
     /**
      * @brief returns whether or not this declared as `NOT`.
@@ -122,7 +120,7 @@ protected:
 private:
     operand_type left_;
     bool_type is_not_;
-    ::takatori::util::unique_object_ptr<query::expression> right_;
+    std::unique_ptr<query::expression> right_;
 };
 
 /**

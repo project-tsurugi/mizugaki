@@ -1,7 +1,6 @@
 #pragma once
 
 #include <mizugaki/ast/node.h>
-#include <takatori/util/object_creator.h>
 
 #include "kind.h"
 
@@ -18,11 +17,11 @@ public:
     using node_kind_type = kind;
 
     /// @brief the common operand type.
-    using operand_type = ::takatori::util::unique_object_ptr<expression>;
+    using operand_type = std::unique_ptr<expression>;
 
     using node::node;
-    [[nodiscard]] expression* clone(::takatori::util::object_creator creator) const& override = 0;
-    [[nodiscard]] expression* clone(::takatori::util::object_creator creator) && override = 0;
+    [[nodiscard]] expression* clone() const& override = 0;
+    [[nodiscard]] expression* clone() && override = 0;
 
     /**
      * @brief returns the kind of this name.

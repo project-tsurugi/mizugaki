@@ -6,15 +6,13 @@
 
 namespace mizugaki::ast::scalar {
 
-using ::takatori::util::object_creator;
-using ::takatori::util::unique_object_ptr;
 
 using common::clone_vector;
 using common::to_vector;
 
 builtin_function_invocation::builtin_function_invocation(
         function_type function,
-        common::vector<operand_type> arguments,
+        std::vector<operand_type> arguments,
         region_type region) noexcept :
     super { region },
     function_ { function },
@@ -33,28 +31,28 @@ builtin_function_invocation::builtin_function_invocation(
 {}
 
 
-builtin_function_invocation::builtin_function_invocation(builtin_function_invocation const& other, object_creator creator) :
+builtin_function_invocation::builtin_function_invocation(::takatori::util::clone_tag_t, builtin_function_invocation const& other) :
     builtin_function_invocation {
             other.function_,
-            clone_vector(other.arguments_, creator),
+            clone_vector(other.arguments_),
             other.region(),
     }
 {}
 
-builtin_function_invocation::builtin_function_invocation(builtin_function_invocation&& other, object_creator creator) :
+builtin_function_invocation::builtin_function_invocation(::takatori::util::clone_tag_t, builtin_function_invocation&& other) :
     builtin_function_invocation {
             other.function_,
-            clone_vector(std::move(other.arguments_), creator),
+            clone_vector(std::move(other.arguments_)),
             other.region(),
     }
 {}
 
-builtin_function_invocation* builtin_function_invocation::clone(object_creator creator) const& {
-    return creator.create_object<builtin_function_invocation>(*this, creator);
+builtin_function_invocation* builtin_function_invocation::clone() const& {
+    return new builtin_function_invocation(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-builtin_function_invocation* builtin_function_invocation::clone(object_creator creator) && {
-    return creator.create_object<builtin_function_invocation>(std::move(*this), creator);
+builtin_function_invocation* builtin_function_invocation::clone() && {
+    return new builtin_function_invocation(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 expression::node_kind_type builtin_function_invocation::node_kind() const noexcept {
@@ -69,11 +67,11 @@ builtin_function_invocation::function_type const& builtin_function_invocation::f
     return function_;
 }
 
-common::vector<expression::operand_type>& builtin_function_invocation::arguments() noexcept {
+std::vector<expression::operand_type>& builtin_function_invocation::arguments() noexcept {
     return arguments_;
 }
 
-common::vector<expression::operand_type> const& builtin_function_invocation::arguments() const noexcept {
+std::vector<expression::operand_type> const& builtin_function_invocation::arguments() const noexcept {
     return arguments_;
 }
 

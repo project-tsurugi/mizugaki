@@ -14,24 +14,15 @@ namespace mizugaki::parser {
 
 using ::takatori::util::unsafe_downcast;
 using ::takatori::util::maybe_shared_ptr;
-using ::takatori::util::object_creator;
 
 using document_type = sql_driver::document_type;
 
-sql_driver::sql_driver(
-        maybe_shared_ptr<document_type const> document,
-        object_creator creator) noexcept :
-    document_ { std::move(document) },
-    creator_ { creator },
-    comments_ { creator.allocator() }
+sql_driver::sql_driver(maybe_shared_ptr<document_type const> document) noexcept :
+    document_ { std::move(document) }
 {}
 
 maybe_shared_ptr<document_type const> const& sql_driver::document() const noexcept {
     return document_;
-}
-
-object_creator sql_driver::get_object_creator() const noexcept {
-    return creator_;
 }
 
 sql_driver::result_type& sql_driver::result() noexcept {
@@ -42,7 +33,7 @@ sql_driver::result_type const& sql_driver::result() const noexcept {
     return result_;
 }
 
-void sql_driver::success(ast::common::vector<node_ptr<ast::statement::statement>> statements) {
+void sql_driver::success(std::vector<node_ptr<ast::statement::statement>> statements) {
     result_.value() = node<ast::compilation_unit>(
             std::move(statements),
             std::move(comments_),
@@ -61,11 +52,11 @@ void sql_driver::add_comment(location_type location) {
     comments_.emplace_back(location);
 }
 
-ast::common::vector<sql_driver::location_type>& sql_driver::comments() noexcept {
+std::vector<sql_driver::location_type>& sql_driver::comments() noexcept {
     return comments_;
 }
 
-ast::common::vector<sql_driver::location_type> const& sql_driver::comments() const noexcept {
+std::vector<sql_driver::location_type> const& sql_driver::comments() const noexcept {
     return comments_;
 }
 
@@ -103,7 +94,7 @@ ast::common::chars sql_driver::parse_delimited_identifier(ast::common::chars con
     BOOST_ASSERT(str.size() >= 3); // NOLINT
     BOOST_ASSERT(str.front() == delimiter); // NOLINT
     BOOST_ASSERT(str.back() == delimiter); // NOLINT
-    ast::common::chars result { creator_.allocator() };
+    ast::common::chars result {};
     result.reserve(str.size() - 2);
     bool saw_escape = false;
     for (std::size_t i = 1, n = str.size() - 1; i < n; ++i) {

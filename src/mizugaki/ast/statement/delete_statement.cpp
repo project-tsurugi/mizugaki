@@ -9,13 +9,11 @@
 namespace mizugaki::ast::statement {
 
 using ::takatori::util::clone_unique;
-using ::takatori::util::object_creator;
 using ::takatori::util::rvalue_ptr;
-using ::takatori::util::unique_object_ptr;
 
 delete_statement::delete_statement(
-        unique_object_ptr<name::name> table_name,
-        unique_object_ptr<scalar::expression> where,
+        std::unique_ptr<name::name> table_name,
+        std::unique_ptr<scalar::expression> where,
         region_type region) noexcept :
     super { region },
     table_name_ { std::move(table_name) },
@@ -33,47 +31,47 @@ delete_statement::delete_statement(
     }
 {}
 
-delete_statement::delete_statement(delete_statement const& other, object_creator creator) :
+delete_statement::delete_statement(::takatori::util::clone_tag_t, delete_statement const& other) :
     delete_statement {
-            clone_unique(other.table_name_, creator),
-            clone_unique(other.where_, creator),
+            clone_unique(other.table_name_),
+            clone_unique(other.where_),
             other.region(),
     }
 {}
 
-delete_statement::delete_statement(delete_statement&& other, object_creator creator) :
+delete_statement::delete_statement(::takatori::util::clone_tag_t, delete_statement&& other) :
     delete_statement {
-            clone_unique(std::move(other.table_name_), creator),
-            clone_unique(std::move(other.where_), creator),
+            clone_unique(std::move(other.table_name_)),
+            clone_unique(std::move(other.where_)),
             other.region(),
     }
 {}
 
-delete_statement* delete_statement::clone(object_creator creator) const& {
-    return creator.create_object<delete_statement>(*this, creator);
+delete_statement* delete_statement::clone() const& {
+    return new delete_statement(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-delete_statement* delete_statement::clone(object_creator creator) && {
-    return creator.create_object<delete_statement>(std::move(*this), creator);
+delete_statement* delete_statement::clone() && {
+    return new delete_statement(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 statement::node_kind_type delete_statement::node_kind() const noexcept {
     return tag;
 }
 
-unique_object_ptr<name::name>& delete_statement::table_name() noexcept {
+std::unique_ptr<name::name>& delete_statement::table_name() noexcept {
     return table_name_;
 }
 
-unique_object_ptr<name::name> const& delete_statement::table_name() const noexcept {
+std::unique_ptr<name::name> const& delete_statement::table_name() const noexcept {
     return table_name_;
 }
 
-unique_object_ptr<scalar::expression>& delete_statement::where() noexcept {
+std::unique_ptr<scalar::expression>& delete_statement::where() noexcept {
     return where_;
 }
 
-unique_object_ptr<scalar::expression> const& delete_statement::where() const noexcept {
+std::unique_ptr<scalar::expression> const& delete_statement::where() const noexcept {
     return where_;
 }
 

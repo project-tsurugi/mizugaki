@@ -11,7 +11,6 @@ namespace mizugaki::ast::scalar {
 using operator_kind_type = between_predicate::operator_kind_type;
 
 using ::takatori::util::clone_unique;
-using ::takatori::util::object_creator;
 
 between_predicate::between_predicate(
         operand_type target,
@@ -23,7 +22,7 @@ between_predicate::between_predicate(
     super { region },
     target_ { std::move(target) },
     is_not_ { is_not },
-    operator_kind_ { std::move(operator_kind) },
+    operator_kind_ { operator_kind },
     left_ { std::move(left) },
     right_ { std::move(right) }
 {}
@@ -38,41 +37,41 @@ between_predicate::between_predicate(
     between_predicate {
             clone_unique(std::move(target)),
             is_not,
-            std::move(operator_kind),
+            operator_kind,
             clone_unique(std::move(left)),
             clone_unique(std::move(right)),
             region,
     }
 {}
 
-between_predicate::between_predicate(between_predicate const& other, object_creator creator) :
+between_predicate::between_predicate(::takatori::util::clone_tag_t, between_predicate const& other) :
     between_predicate {
-            clone_unique(other.target_, creator),
+            clone_unique(other.target_),
             other.is_not_,
             other.operator_kind_,
-            clone_unique(other.left_, creator),
-            clone_unique(other.right_, creator),
+            clone_unique(other.left_),
+            clone_unique(other.right_),
             other.region(),
     }
 {}
 
-between_predicate::between_predicate(between_predicate&& other, object_creator creator) :
+between_predicate::between_predicate(::takatori::util::clone_tag_t, between_predicate&& other) :
     between_predicate {
-            clone_unique(std::move(other.target_), creator),
+            clone_unique(std::move(other.target_)),
             other.is_not_,
             other.operator_kind_,
-            clone_unique(std::move(other.left_), creator),
-            clone_unique(std::move(other.right_), creator),
+            clone_unique(std::move(other.left_)),
+            clone_unique(std::move(other.right_)),
             other.region(),
     }
 {}
 
-between_predicate* between_predicate::clone(object_creator creator) const& {
-    return creator.create_object<between_predicate>(*this, creator);
+between_predicate* between_predicate::clone() const& {
+    return new between_predicate(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-between_predicate* between_predicate::clone(object_creator creator) && {
-    return creator.create_object<between_predicate>(std::move(*this), creator);
+between_predicate* between_predicate::clone() && {
+    return new between_predicate(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 expression::node_kind_type between_predicate::node_kind() const noexcept {

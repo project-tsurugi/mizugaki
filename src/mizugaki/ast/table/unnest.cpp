@@ -9,11 +9,9 @@
 namespace mizugaki::ast::table {
 
 using ::takatori::util::clone_unique;
-using ::takatori::util::object_creator;
-using ::takatori::util::unique_object_ptr;
 
 unnest::unnest(
-        unique_object_ptr<scalar::expression> expression,
+        std::unique_ptr<scalar::expression> expression,
         bool_type with_ordinality,
         correlation_type correlation,
         region_type region) noexcept :
@@ -36,41 +34,41 @@ unnest::unnest(
     }
 {}
 
-unnest::unnest(unnest const& other, object_creator creator) :
+unnest::unnest(::takatori::util::clone_tag_t, unnest const& other) :
     unnest {
-            clone_unique(other.expression_, creator),
+            clone_unique(other.expression_),
             other.with_ordinality_,
-            decltype(correlation_) { other.correlation_, creator },
+            decltype(correlation_) { other.correlation_ },
             other.region(),
     }
 {}
 
-unnest::unnest(unnest&& other, object_creator creator) :
+unnest::unnest(::takatori::util::clone_tag_t, unnest&& other) :
     unnest {
-            clone_unique(other.expression_, creator),
+            clone_unique(other.expression_),
             other.with_ordinality_,
-            decltype(correlation_) { std::move(other.correlation_), creator },
+            decltype(correlation_) { std::move(other.correlation_) },
             other.region(),
     }
 {}
 
-unnest* unnest::clone(object_creator creator) const& {
-    return creator.create_object<unnest>(*this, creator);
+unnest* unnest::clone() const& {
+    return new unnest(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-unnest* unnest::clone(object_creator creator) && {
-    return creator.create_object<unnest>(std::move(*this), creator);
+unnest* unnest::clone() && {
+    return new unnest(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 expression::node_kind_type unnest::node_kind() const noexcept {
     return tag;
 }
 
-unique_object_ptr<scalar::expression>& unnest::expression() noexcept {
+std::unique_ptr<scalar::expression>& unnest::expression() noexcept {
     return expression_;
 }
 
-unique_object_ptr<scalar::expression> const& unnest::expression() const noexcept {
+std::unique_ptr<scalar::expression> const& unnest::expression() const noexcept {
     return expression_;
 }
 

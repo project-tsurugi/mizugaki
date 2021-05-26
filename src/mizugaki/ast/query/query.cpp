@@ -8,9 +8,7 @@
 namespace mizugaki::ast::query {
 
 using ::takatori::util::clone_unique;
-using ::takatori::util::object_creator;
 using ::takatori::util::rvalue_ptr;
-using ::takatori::util::unique_object_ptr;
 
 using common::clone_optional;
 using common::clone_vector;
@@ -18,16 +16,16 @@ using common::to_vector;
 
 query::query(
         std::optional<quantifier_type> quantifier,
-        common::vector<unique_object_ptr<select_element>> elements,
-        common::vector<unique_object_ptr<table::expression>> from,
-        unique_object_ptr<scalar::expression> where,
+        std::vector<std::unique_ptr<select_element>> elements,
+        std::vector<std::unique_ptr<table::expression>> from,
+        std::unique_ptr<scalar::expression> where,
         std::optional<group_by_clause> group_by,
-        unique_object_ptr<scalar::expression> having,
-        common::vector<common::sort_element> order_by,
-        unique_object_ptr<scalar::expression> limit,
+        std::unique_ptr<scalar::expression> having,
+        std::vector<common::sort_element> order_by,
+        std::unique_ptr<scalar::expression> limit,
         region_type region) noexcept :
     super { region },
-    quantifier_ { std::move(quantifier) },
+    quantifier_ { quantifier },
     elements_ { std::move(elements) },
     from_ { std::move(from) },
     where_ { std::move(where) },
@@ -70,7 +68,7 @@ query::query(
         rvalue_ptr<scalar::expression> limit,
         element::region_type region) :
     query {
-            std::move(quantifier),
+            quantifier,
             to_vector(elements),
             to_vector(from),
             clone_unique(where),
@@ -82,67 +80,67 @@ query::query(
     }
 {}
 
-query::query(query const& other, object_creator creator) :
+query::query(::takatori::util::clone_tag_t, query const& other) :
     query {
             other.quantifier_,
-            clone_vector(other.elements_, creator),
-            clone_vector(other.from_, creator),
-            clone_unique(other.where_, creator),
-            clone_optional(other.group_by_, creator),
-            clone_unique(other.having_, creator),
-            clone_vector(other.order_by_, creator),
-            clone_unique(other.limit_, creator),
+            clone_vector(other.elements_),
+            clone_vector(other.from_),
+            clone_unique(other.where_),
+            clone_optional(other.group_by_),
+            clone_unique(other.having_),
+            clone_vector(other.order_by_),
+            clone_unique(other.limit_),
             other.region(),
     }
 {}
 
-query::query(query&& other, object_creator creator) :
+query::query(::takatori::util::clone_tag_t, query&& other) :
     query {
-            std::move(other.quantifier_),
-            clone_vector(std::move(other.elements_), creator),
-            clone_vector(std::move(other.from_), creator),
-            clone_unique(std::move(other.where_), creator),
-            clone_optional(std::move(other.group_by_), creator),
-            clone_unique(std::move(other.having_), creator),
-            clone_vector(std::move(other.order_by_), creator),
-            clone_unique(std::move(other.limit_), creator),
+            other.quantifier_,
+            clone_vector(std::move(other.elements_)),
+            clone_vector(std::move(other.from_)),
+            clone_unique(std::move(other.where_)),
+            clone_optional(std::move(other.group_by_)),
+            clone_unique(std::move(other.having_)),
+            clone_vector(std::move(other.order_by_)),
+            clone_unique(std::move(other.limit_)),
             other.region(),
     }
 {}
 
-query* query::clone(object_creator creator) const& {
-    return creator.create_object<query>(*this, creator);
+query* query::clone() const& {
+    return new query(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-query* query::clone(object_creator creator)&& {
-    return creator.create_object<query>(std::move(*this), creator);
+query* query::clone()&& {
+    return new query(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 expression::node_kind_type query::node_kind() const noexcept {
     return tag;
 }
 
-common::vector<unique_object_ptr<select_element>>& query::elements() noexcept {
+std::vector<std::unique_ptr<select_element>>& query::elements() noexcept {
     return elements_;
 }
 
-common::vector<unique_object_ptr<select_element>> const& query::elements() const noexcept {
+std::vector<std::unique_ptr<select_element>> const& query::elements() const noexcept {
     return elements_;
 }
 
-common::vector<unique_object_ptr<table::expression>>& query::from() noexcept {
+std::vector<std::unique_ptr<table::expression>>& query::from() noexcept {
     return from_;
 }
 
-common::vector<unique_object_ptr<table::expression>> const& query::from() const noexcept {
+std::vector<std::unique_ptr<table::expression>> const& query::from() const noexcept {
     return from_;
 }
 
-unique_object_ptr<scalar::expression>& query::where() noexcept {
+std::unique_ptr<scalar::expression>& query::where() noexcept {
     return where_;
 }
 
-unique_object_ptr<scalar::expression> const& query::where() const noexcept {
+std::unique_ptr<scalar::expression> const& query::where() const noexcept {
     return where_;
 }
 
@@ -154,27 +152,27 @@ std::optional<group_by_clause> const& query::group_by() const noexcept {
     return group_by_;
 }
 
-unique_object_ptr<scalar::expression>& query::having() noexcept {
+std::unique_ptr<scalar::expression>& query::having() noexcept {
     return having_;
 }
 
-unique_object_ptr<scalar::expression> const& query::having() const noexcept {
+std::unique_ptr<scalar::expression> const& query::having() const noexcept {
     return having_;
 }
 
-common::vector<common::sort_element>& query::order_by() noexcept {
+std::vector<common::sort_element>& query::order_by() noexcept {
     return order_by_;
 }
 
-common::vector<common::sort_element> const& query::order_by() const noexcept {
+std::vector<common::sort_element> const& query::order_by() const noexcept {
     return order_by_;
 }
 
-unique_object_ptr<scalar::expression>& query::limit() noexcept {
+std::unique_ptr<scalar::expression>& query::limit() noexcept {
     return limit_;
 }
 
-unique_object_ptr<scalar::expression> const& query::limit() const noexcept {
+std::unique_ptr<scalar::expression> const& query::limit() const noexcept {
     return limit_;
 }
 

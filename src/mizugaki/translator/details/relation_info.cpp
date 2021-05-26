@@ -36,15 +36,12 @@ relation_info::relation_info(yugawara::storage::index const& index)
     })
 {}
 
-relation_info::relation_info(
-        ::yugawara::storage::index const& index,
-        Name const& name,
-        ::takatori::util::object_creator creator)
+relation_info::relation_info(::yugawara::storage::index const& index, Name const& name)
     : entity_(for_scan {
             std::addressof(index),
             std::addressof(name),
             build_column_map(index),
-            build_variable_map(index, creator),
+            build_variable_map(index),
     })
 {}
 
@@ -78,9 +75,9 @@ static auto column_name(::yugawara::storage::column const& column) {
 }
 
 decltype(relation_info::for_scan::variable_map_)
-relation_info::build_variable_map(yugawara::storage::index const& index, ::takatori::util::object_creator creator) {
+relation_info::build_variable_map(yugawara::storage::index const& index) {
     decltype(for_scan::variable_map_) result;
-    ::yugawara::binding::factory factory { creator };
+    ::yugawara::binding::factory factory {};
     auto&& cols = index.table().columns();
     result.reserve(index.table().columns().size());
     for (auto&& col : cols) {

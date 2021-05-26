@@ -9,8 +9,6 @@
 namespace mizugaki::ast::scalar {
 
 using ::takatori::util::clone_unique;
-using ::takatori::util::object_creator;
-using ::takatori::util::unique_object_ptr;
 
 extract_expression::extract_expression(
         field_type field,
@@ -32,28 +30,28 @@ extract_expression::extract_expression(
     }
 {}
 
-extract_expression::extract_expression(extract_expression const& other, object_creator creator) :
+extract_expression::extract_expression(::takatori::util::clone_tag_t, extract_expression const& other) :
     extract_expression {
             other.field_,
-            clone_unique(other.operand_, creator),
+            clone_unique(other.operand_),
             other.region(),
     }
 {}
 
-extract_expression::extract_expression(extract_expression&& other, object_creator creator) :
+extract_expression::extract_expression(::takatori::util::clone_tag_t, extract_expression&& other) :
     extract_expression {
             other.field_,
-            clone_unique(std::move(other.operand_), creator),
+            clone_unique(std::move(other.operand_)),
             other.region(),
     }
 {}
 
-extract_expression* extract_expression::clone(object_creator creator) const& {
-    return creator.create_object<extract_expression>(*this, creator);
+extract_expression* extract_expression::clone() const& {
+    return new extract_expression(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-extract_expression* extract_expression::clone(object_creator creator) && {
-    return creator.create_object<extract_expression>(std::move(*this), creator);
+extract_expression* extract_expression::clone() && {
+    return new extract_expression(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 expression::node_kind_type extract_expression::node_kind() const noexcept {

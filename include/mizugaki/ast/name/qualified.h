@@ -1,9 +1,9 @@
 #pragma once
 
+#include <takatori/util/clone_tag.h>
+
 #include "name.h"
 #include "simple.h"
-
-
 
 namespace mizugaki::ast::name {
 
@@ -25,8 +25,8 @@ public:
      * @param region the node region
      */
     explicit qualified(
-            ::takatori::util::unique_object_ptr<name> qualifier,
-            ::takatori::util::unique_object_ptr<simple> last,
+            std::unique_ptr<name> qualifier,
+            std::unique_ptr<simple> last,
             region_type region = {}) noexcept;
 
     /**
@@ -64,19 +64,17 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit qualified(qualified const& other, ::takatori::util::object_creator creator);
+    explicit qualified(::takatori::util::clone_tag_t, qualified const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit qualified(qualified&& other, ::takatori::util::object_creator creator);
+    explicit qualified(::takatori::util::clone_tag_t, qualified&& other);
 
-    [[nodiscard]] qualified* clone(::takatori::util::object_creator creator) const& override;
-    [[nodiscard]] qualified* clone(::takatori::util::object_creator creator) && override;
+    [[nodiscard]] qualified* clone() const& override;
+    [[nodiscard]] qualified* clone() && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 
@@ -93,19 +91,19 @@ public:
      * @brief returns the qualifier of this name.
      * @return the qualifier
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<name>& qualifier() noexcept;
+    [[nodiscard]] std::unique_ptr<name>& qualifier() noexcept;
 
     /// @copydoc qualifier()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<name> const& qualifier() const noexcept;
+    [[nodiscard]] std::unique_ptr<name> const& qualifier() const noexcept;
 
     /**
      * @brief returns a container of the qualified identifier.
      * @return the qualified identifier
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<simple>& last() noexcept;
+    [[nodiscard]] std::unique_ptr<simple>& last() noexcept;
 
     /// @copydoc last()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<simple> const& last() const noexcept;
+    [[nodiscard]] std::unique_ptr<simple> const& last() const noexcept;
 
     /**
      * @brief compares two values.
@@ -130,8 +128,8 @@ protected:
     void serialize(::takatori::serializer::object_acceptor& acceptor) const override;
 
 private:
-    ::takatori::util::unique_object_ptr<name> qualifier_;
-    ::takatori::util::unique_object_ptr<simple> last_;
+    std::unique_ptr<name> qualifier_;
+    std::unique_ptr<simple> last_;
 };
 
 /**

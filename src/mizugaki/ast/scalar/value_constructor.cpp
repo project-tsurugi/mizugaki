@@ -6,15 +6,13 @@
 
 namespace mizugaki::ast::scalar {
 
-using ::takatori::util::object_creator;
-using ::takatori::util::unique_object_ptr;
 
 using common::clone_vector;
 using common::to_vector;
 
 value_constructor::value_constructor(
         operator_kind_type operator_kind,
-        common::vector<operand_type> elements,
+        std::vector<operand_type> elements,
         region_type region) noexcept:
     super { region },
     operator_kind_ { operator_kind },
@@ -42,28 +40,28 @@ value_constructor::value_constructor(
     }
 {}
 
-value_constructor::value_constructor(value_constructor const& other, object_creator creator) :
+value_constructor::value_constructor(::takatori::util::clone_tag_t, value_constructor const& other) :
     value_constructor {
             other.operator_kind_,
-            clone_vector(other.elements_, creator),
+            clone_vector(other.elements_),
             other.region(),
     }
 {}
 
-value_constructor::value_constructor(value_constructor&& other, object_creator creator) :
+value_constructor::value_constructor(::takatori::util::clone_tag_t, value_constructor&& other) :
     value_constructor {
             other.operator_kind_,
-            clone_vector(std::move(other.elements_), creator),
+            clone_vector(std::move(other.elements_)),
             other.region(),
     }
 {}
 
-value_constructor* value_constructor::clone(object_creator creator) const& {
-    return creator.create_object<value_constructor>(*this, creator);
+value_constructor* value_constructor::clone() const& {
+    return new value_constructor(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-value_constructor* value_constructor::clone(object_creator creator) && {
-    return creator.create_object<value_constructor>(std::move(*this), creator);
+value_constructor* value_constructor::clone() && {
+    return new value_constructor(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 expression::node_kind_type value_constructor::node_kind() const noexcept {
@@ -78,11 +76,11 @@ value_constructor::operator_kind_type const& value_constructor::operator_kind() 
     return operator_kind_;
 }
 
-common::vector<expression::operand_type>& value_constructor::elements() noexcept {
+std::vector<expression::operand_type>& value_constructor::elements() noexcept {
     return elements_;
 }
 
-common::vector<expression::operand_type> const& value_constructor::elements() const noexcept {
+std::vector<expression::operand_type> const& value_constructor::elements() const noexcept {
     return elements_;
 }
 

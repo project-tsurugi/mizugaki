@@ -1,6 +1,6 @@
 #pragma once
 
-#include <takatori/util/object_creator.h>
+#include <takatori/util/clone_tag.h>
 
 #include <mizugaki/ast/common/regioned.h>
 #include <mizugaki/ast/common/rvalue_list.h>
@@ -30,8 +30,8 @@ public:
      * @param region the node region
      */
     explicit new_invocation(
-            ::takatori::util::unique_object_ptr<type::type> type,
-            common::vector<operand_type> arguments,
+            std::unique_ptr<type::type> type,
+            std::vector<operand_type> arguments,
             region_type region = {}) noexcept;
 
     /**
@@ -49,19 +49,17 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit new_invocation(new_invocation const& other, ::takatori::util::object_creator creator);
+    explicit new_invocation(::takatori::util::clone_tag_t, new_invocation const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit new_invocation(new_invocation&& other, ::takatori::util::object_creator creator);
+    explicit new_invocation(::takatori::util::clone_tag_t, new_invocation&& other);
 
-    [[nodiscard]] new_invocation* clone(::takatori::util::object_creator creator) const& override;
-    [[nodiscard]] new_invocation* clone(::takatori::util::object_creator creator) && override;
+    [[nodiscard]] new_invocation* clone() const& override;
+    [[nodiscard]] new_invocation* clone() && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 
@@ -69,19 +67,19 @@ public:
      * @brief returns the target type.
      * @return the target type
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<type::type>& type() noexcept;
+    [[nodiscard]] std::unique_ptr<type::type>& type() noexcept;
 
     /// @brief type()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<type::type> const& type() const noexcept;
+    [[nodiscard]] std::unique_ptr<type::type> const& type() const noexcept;
 
     /**
      * @brief returns the function argument list.
      * @return the function argument list
      */
-    [[nodiscard]] common::vector<operand_type>& arguments() noexcept;
+    [[nodiscard]] std::vector<operand_type>& arguments() noexcept;
 
     /// @copydoc arguments()
-    [[nodiscard]] common::vector<operand_type> const& arguments() const noexcept;
+    [[nodiscard]] std::vector<operand_type> const& arguments() const noexcept;
 
     /**
      * @brief compares two values.
@@ -106,8 +104,8 @@ protected:
     void serialize(::takatori::serializer::object_acceptor& acceptor) const override;
 
 private:
-    ::takatori::util::unique_object_ptr<type::type> type_;
-    common::vector<operand_type> arguments_;
+    std::unique_ptr<type::type> type_;
+    std::vector<operand_type> arguments_;
 };
 
 /**

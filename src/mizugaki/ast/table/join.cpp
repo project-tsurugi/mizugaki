@@ -9,15 +9,13 @@
 namespace mizugaki::ast::table {
 
 using ::takatori::util::clone_unique;
-using ::takatori::util::object_creator;
 using ::takatori::util::rvalue_ptr;
-using ::takatori::util::unique_object_ptr;
 
 join::join(
-        unique_object_ptr<table::expression> left,
+        std::unique_ptr<table::expression> left,
         operator_kind_type operator_kind,
-        unique_object_ptr<table::expression> right,
-        ::takatori::util::unique_object_ptr<join_specification> specification,
+        std::unique_ptr<table::expression> right,
+        std::unique_ptr<join_specification> specification,
         element::region_type region) noexcept :
     super { region },
     left_ { std::move(left) },
@@ -41,32 +39,32 @@ join::join(
     }
 {}
 
-join::join(join const& other, object_creator creator) :
+join::join(::takatori::util::clone_tag_t, join const& other) :
     join {
-            clone_unique(other.left_, creator),
+            clone_unique(other.left_),
             other.operator_kind_,
-            clone_unique(other.right_, creator),
-            clone_unique(other.specification_, creator),
+            clone_unique(other.right_),
+            clone_unique(other.specification_),
             other.region(),
     }
 {}
 
-join::join(join&& other, object_creator creator) :
+join::join(::takatori::util::clone_tag_t, join&& other) :
     join {
-            clone_unique(std::move(other.left_), creator),
+            clone_unique(std::move(other.left_)),
             other.operator_kind_,
-            clone_unique(std::move(other.right_), creator),
-            clone_unique(std::move(other.specification_), creator),
+            clone_unique(std::move(other.right_)),
+            clone_unique(std::move(other.specification_)),
             other.region(),
     }
 {}
 
-join* join::clone(object_creator creator) const& {
-    return creator.create_object<join>(*this, creator);
+join* join::clone() const& {
+    return new join(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-join* join::clone(object_creator creator) && {
-    return creator.create_object<join>(std::move(*this), creator);
+join* join::clone() && {
+    return new join(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 expression::node_kind_type join::node_kind() const noexcept {
@@ -81,27 +79,27 @@ join::operator_kind_type const& join::operator_kind() const noexcept {
     return operator_kind_;
 }
 
-unique_object_ptr<table::expression>& join::left() noexcept {
+std::unique_ptr<table::expression>& join::left() noexcept {
     return left_;
 }
 
-unique_object_ptr<table::expression> const& join::left() const noexcept {
+std::unique_ptr<table::expression> const& join::left() const noexcept {
     return left_;
 }
 
-unique_object_ptr<table::expression>& join::right() noexcept {
+std::unique_ptr<table::expression>& join::right() noexcept {
     return right_;
 }
 
-unique_object_ptr<table::expression> const& join::right() const noexcept {
+std::unique_ptr<table::expression> const& join::right() const noexcept {
     return right_;
 }
 
-unique_object_ptr<join_specification>& join::specification() noexcept {
+std::unique_ptr<join_specification>& join::specification() noexcept {
     return specification_;
 }
 
-unique_object_ptr<join_specification> const& join::specification() const noexcept {
+std::unique_ptr<join_specification> const& join::specification() const noexcept {
     return specification_;
 }
 

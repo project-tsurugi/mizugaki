@@ -7,14 +7,12 @@
 namespace mizugaki::ast::type {
 
 using ::takatori::util::clone_unique;
-using ::takatori::util::object_creator;
 using ::takatori::util::rvalue_ptr;
-using ::takatori::util::unique_object_ptr;
 
 field_definition::field_definition(
-        unique_object_ptr<name::simple> name,
-        unique_object_ptr<ast::type::type> type,
-        unique_object_ptr<name::name> collation,
+        std::unique_ptr<name::simple> name,
+        std::unique_ptr<ast::type::type> type,
+        std::unique_ptr<name::name> collation,
         region_type region) noexcept :
     element { region },
     name_ { std::move(name) },
@@ -35,45 +33,45 @@ field_definition::field_definition(
     }
 {}
 
-field_definition::field_definition(field_definition const& other, object_creator creator) :
+field_definition::field_definition(::takatori::util::clone_tag_t, field_definition const& other) :
     field_definition {
-            clone_unique(*other.name_, creator),
-            clone_unique(*other.type_, creator),
-            clone_unique(*other.collation_, creator),
+            clone_unique(*other.name_),
+            clone_unique(*other.type_),
+            clone_unique(*other.collation_),
             other.region(),
     }
 {}
 
-field_definition::field_definition(field_definition&& other, object_creator creator) :
+field_definition::field_definition(::takatori::util::clone_tag_t, field_definition&& other) :
     field_definition {
-            clone_unique(std::move(*other.name_), creator),
-            clone_unique(std::move(*other.type_), creator),
-            clone_unique(std::move(*other.collation_), creator),
+            clone_unique(std::move(*other.name_)),
+            clone_unique(std::move(*other.type_)),
+            clone_unique(std::move(*other.collation_)),
             other.region(),
     }
 {}
 
-unique_object_ptr<name::simple>& field_definition::name() noexcept {
+std::unique_ptr<name::simple>& field_definition::name() noexcept {
     return *name_;
 }
 
-unique_object_ptr<name::simple> const& field_definition::name() const noexcept {
+std::unique_ptr<name::simple> const& field_definition::name() const noexcept {
     return *name_;
 }
 
-unique_object_ptr<ast::type::type>& field_definition::type() noexcept {
+std::unique_ptr<ast::type::type>& field_definition::type() noexcept {
     return *type_;
 }
 
-unique_object_ptr<ast::type::type> const& field_definition::type() const noexcept {
+std::unique_ptr<ast::type::type> const& field_definition::type() const noexcept {
     return *type_;
 }
 
-unique_object_ptr<name::name>& field_definition::collation() noexcept {
+std::unique_ptr<name::name>& field_definition::collation() noexcept {
     return *collation_;
 }
 
-unique_object_ptr<name::name> const& field_definition::collation() const noexcept {
+std::unique_ptr<name::name> const& field_definition::collation() const noexcept {
     return *collation_;
 }
 

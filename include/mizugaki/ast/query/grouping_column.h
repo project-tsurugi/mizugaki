@@ -1,6 +1,6 @@
 #pragma once
 
-#include <takatori/util/object_creator.h>
+#include <takatori/util/clone_tag.h>
 #include <takatori/util/rvalue_ptr.h>
 
 #include <mizugaki/ast/element.h>
@@ -31,8 +31,8 @@ public:
      * @param region the element region
      */
     explicit grouping_column(
-            ::takatori::util::unique_object_ptr<scalar::expression> column,
-            ::takatori::util::unique_object_ptr<name::name> collation = {},
+            std::unique_ptr<scalar::expression> column,
+            std::unique_ptr<name::name> collation = {},
             region_type region = {}) noexcept;
 
     /**
@@ -62,19 +62,17 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit grouping_column(grouping_column const& other, ::takatori::util::object_creator creator);
+    explicit grouping_column(::takatori::util::clone_tag_t, grouping_column const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit grouping_column(grouping_column&& other, ::takatori::util::object_creator creator);
+    explicit grouping_column(::takatori::util::clone_tag_t, grouping_column&& other);
 
-    [[nodiscard]] grouping_column* clone(::takatori::util::object_creator creator) const& override;
-    [[nodiscard]] grouping_column* clone(::takatori::util::object_creator creator) && override;
+    [[nodiscard]] grouping_column* clone() const& override;
+    [[nodiscard]] grouping_column* clone() && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 
@@ -82,20 +80,20 @@ public:
      * @brief returns the column expression.
      * @return the column expression
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<scalar::expression>& column() noexcept;
+    [[nodiscard]] std::unique_ptr<scalar::expression>& column() noexcept;
 
     /// @copydoc column()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<scalar::expression> const& column() const noexcept;
+    [[nodiscard]] std::unique_ptr<scalar::expression> const& column() const noexcept;
 
     /**
      * @brief returns the grouping collation.
      * @return the grouping collation
      * @return empty there is no explicit collation
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<name::name>& collation() noexcept;
+    [[nodiscard]] std::unique_ptr<name::name>& collation() noexcept;
 
     /// @copydoc collation()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<name::name> const& collation() const noexcept;
+    [[nodiscard]] std::unique_ptr<name::name> const& collation() const noexcept;
 
     /**
      * @brief compares two values.
@@ -120,8 +118,8 @@ protected:
     void serialize(::takatori::serializer::object_acceptor& acceptor) const override;
 
 private:
-    ::takatori::util::unique_object_ptr<scalar::expression> column_;
-    ::takatori::util::unique_object_ptr<name::name> collation_;
+    std::unique_ptr<scalar::expression> column_;
+    std::unique_ptr<name::name> collation_;
 };
 
 /**

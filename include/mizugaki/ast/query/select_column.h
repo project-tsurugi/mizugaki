@@ -1,6 +1,6 @@
 #pragma once
 
-#include <takatori/util/object_creator.h>
+#include <takatori/util/clone_tag.h>
 #include <takatori/util/rvalue_ptr.h>
 
 #include <mizugaki/ast/element.h>
@@ -30,8 +30,8 @@ public:
      * @param region the element region
      */
     explicit select_column(
-            ::takatori::util::unique_object_ptr<scalar::expression> value,
-            ::takatori::util::unique_object_ptr<name::simple> name = {},
+            std::unique_ptr<scalar::expression> value,
+            std::unique_ptr<name::simple> name = {},
             region_type region = {}) noexcept;
 
     /**
@@ -49,19 +49,17 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit select_column(select_column const& other, ::takatori::util::object_creator creator);
+    explicit select_column(::takatori::util::clone_tag_t, select_column const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit select_column(select_column&& other, ::takatori::util::object_creator creator);
+    explicit select_column(::takatori::util::clone_tag_t, select_column&& other);
 
-    [[nodiscard]] select_column* clone(::takatori::util::object_creator creator) const& override;
-    [[nodiscard]] select_column* clone(::takatori::util::object_creator creator) && override;
+    [[nodiscard]] select_column* clone() const& override;
+    [[nodiscard]] select_column* clone() && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 
@@ -69,20 +67,20 @@ public:
      * @brief returns the column value expression.
      * @return the column value expression
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<scalar::expression>& value() noexcept;
+    [[nodiscard]] std::unique_ptr<scalar::expression>& value() noexcept;
 
     /// @copydoc value()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<scalar::expression> const& value() const noexcept;
+    [[nodiscard]] std::unique_ptr<scalar::expression> const& value() const noexcept;
 
     /**
      * @brief returns the column name.
      * @return the column name
      * @return empty there is no explicit column name
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<name::simple>& name() noexcept;
+    [[nodiscard]] std::unique_ptr<name::simple>& name() noexcept;
 
     /// @copydoc name()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<name::simple> const& name() const noexcept;
+    [[nodiscard]] std::unique_ptr<name::simple> const& name() const noexcept;
 
     /**
      * @brief compares two values.
@@ -107,8 +105,8 @@ protected:
     void serialize(::takatori::serializer::object_acceptor& acceptor) const override;
 
 private:
-    ::takatori::util::unique_object_ptr<scalar::expression> value_;
-    ::takatori::util::unique_object_ptr<name::simple> name_;
+    std::unique_ptr<scalar::expression> value_;
+    std::unique_ptr<name::simple> name_;
 };
 
 /**

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <takatori/util/object_creator.h>
+#include <takatori/util/clone_tag.h>
 
 #include <mizugaki/ast/common/regioned.h>
 #include <mizugaki/ast/query/expression.h>
@@ -38,7 +38,7 @@ public:
      */
     explicit subquery(
             bool_type is_lateral,
-            ::takatori::util::unique_object_ptr<query::expression> expression,
+            std::unique_ptr<query::expression> expression,
             correlation_type correlation,
             region_type region = {}) noexcept;
 
@@ -59,19 +59,17 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit subquery(subquery const& other, ::takatori::util::object_creator creator);
+    explicit subquery(::takatori::util::clone_tag_t, subquery const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit subquery(subquery&& other, ::takatori::util::object_creator creator);
+    explicit subquery(::takatori::util::clone_tag_t, subquery&& other);
 
-    [[nodiscard]] subquery* clone(::takatori::util::object_creator creator) const& override;
-    [[nodiscard]] subquery* clone(::takatori::util::object_creator creator) && override;
+    [[nodiscard]] subquery* clone() const& override;
+    [[nodiscard]] subquery* clone() && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 
@@ -79,10 +77,10 @@ public:
      * @brief returns the query expression.
      * @return the query expression
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<query::expression>& expression() noexcept;
+    [[nodiscard]] std::unique_ptr<query::expression>& expression() noexcept;
 
     /// @copydoc expression()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<query::expression> const& expression() const noexcept;
+    [[nodiscard]] std::unique_ptr<query::expression> const& expression() const noexcept;
 
     /**
      * @brief returns the correlation declaration.
@@ -128,7 +126,7 @@ protected:
 
 private:
     bool_type is_lateral_;
-    ::takatori::util::unique_object_ptr<query::expression> expression_;
+    std::unique_ptr<query::expression> expression_;
     correlation_type correlation_;
 };
 

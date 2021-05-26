@@ -6,7 +6,6 @@
 
 #include <takatori/relation/graph.h>
 #include <takatori/statement/statement.h>
-#include <takatori/util/object_creator.h>
 
 #include <yugawara/diagnostic.h>
 
@@ -120,8 +119,8 @@ public:
     /// @brief the entity type
     using entity_type = std::variant<
             std::vector<diagnostic_type>, // diagnostics
-            ::takatori::util::unique_object_ptr<::takatori::relation::graph_type>, // execution_plan
-            ::takatori::util::unique_object_ptr<::takatori::statement::statement>>; // statement
+            std::unique_ptr<::takatori::relation::graph_type>, // execution_plan
+            std::unique_ptr<::takatori::statement::statement>>; // statement
 
     /**
      * @brief the element type for each kind.
@@ -147,13 +146,13 @@ public:
      * @brief creates a new instance.
      * @param element the holding element
      */
-    shakujo_translator_result(::takatori::util::unique_object_ptr<::takatori::relation::graph_type> element) noexcept; // NOLINT
+    shakujo_translator_result(std::unique_ptr<::takatori::relation::graph_type> element) noexcept; // NOLINT
 
     /**
      * @brief creates a new instance.
      * @param element the holding element
      */
-    shakujo_translator_result(::takatori::util::unique_object_ptr<::takatori::statement::statement> element) noexcept; // NOLINT
+    shakujo_translator_result(std::unique_ptr<::takatori::statement::statement> element) noexcept; // NOLINT
 
     /**
      * @brief returns the element kind.

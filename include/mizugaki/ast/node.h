@@ -2,7 +2,6 @@
 
 #include <ostream>
 
-#include <takatori/util/object_creator.h>
 #include <takatori/serializer/object_acceptor.h>
 
 #include "element.h"
@@ -50,13 +49,12 @@ public:
 
     /**
      * @brief returns a clone of this node.
-     * @param creator the object creator for building a copy
      * @return the created clone
      */
-    [[nodiscard]] virtual node* clone(::takatori::util::object_creator creator) const& = 0;
+    [[nodiscard]] virtual node* clone() const& = 0;
 
     /// @copydoc clone()
-    [[nodiscard]] virtual node* clone(::takatori::util::object_creator creator) && = 0;
+    [[nodiscard]] virtual node* clone() && = 0;
 
     /**
      * @brief dumps structure information of the given value into the target acceptor.

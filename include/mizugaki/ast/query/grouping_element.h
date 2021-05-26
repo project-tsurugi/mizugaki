@@ -1,7 +1,6 @@
 #pragma once
 
 #include <mizugaki/ast/node.h>
-#include <takatori/util/object_creator.h>
 
 #include "grouping_element_kind.h"
 
@@ -17,8 +16,8 @@ public:
     using node_kind_type = grouping_element_kind;
 
     using node::node;
-    [[nodiscard]] grouping_element* clone(::takatori::util::object_creator creator) const& override = 0;
-    [[nodiscard]] grouping_element* clone(::takatori::util::object_creator creator) && override = 0;
+    [[nodiscard]] grouping_element* clone() const& override = 0;
+    [[nodiscard]] grouping_element* clone() && override = 0;
 
     /**
      * @brief returns the kind of this name.

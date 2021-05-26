@@ -1,6 +1,6 @@
 #pragma once
 
-#include <takatori/util/object_creator.h>
+#include <takatori/util/clone_tag.h>
 
 #include <mizugaki/ast/common/vector.h>
 #include <mizugaki/ast/common/rvalue_list.h>
@@ -28,7 +28,7 @@ public:
      * @param region the node region
      */
     explicit table_value_constructor(
-            common::vector<::takatori::util::unique_object_ptr<scalar::expression>> elements,
+            std::vector<std::unique_ptr<scalar::expression>> elements,
             region_type region = {}) noexcept;
 
     /**
@@ -44,19 +44,17 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit table_value_constructor(table_value_constructor const& other, ::takatori::util::object_creator creator);
+    explicit table_value_constructor(::takatori::util::clone_tag_t, table_value_constructor const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit table_value_constructor(table_value_constructor&& other, ::takatori::util::object_creator creator);
+    explicit table_value_constructor(::takatori::util::clone_tag_t, table_value_constructor&& other);
 
-    [[nodiscard]] table_value_constructor* clone(::takatori::util::object_creator creator) const& override;
-    [[nodiscard]] table_value_constructor* clone(::takatori::util::object_creator creator) && override;
+    [[nodiscard]] table_value_constructor* clone() const& override;
+    [[nodiscard]] table_value_constructor* clone() && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 
@@ -64,10 +62,10 @@ public:
      * @brief returns the element **row** expressions.
      * @return the element expressions
      */
-    [[nodiscard]] common::vector<::takatori::util::unique_object_ptr<scalar::expression>>& elements() noexcept;
+    [[nodiscard]] std::vector<std::unique_ptr<scalar::expression>>& elements() noexcept;
 
     /// @brief elements()
-    [[nodiscard]] common::vector<::takatori::util::unique_object_ptr<scalar::expression>> const& elements() const noexcept;
+    [[nodiscard]] std::vector<std::unique_ptr<scalar::expression>> const& elements() const noexcept;
 
     /**
      * @brief compares two values.
@@ -92,7 +90,7 @@ protected:
     void serialize(::takatori::serializer::object_acceptor& acceptor) const override;
 
 private:
-    common::vector<::takatori::util::unique_object_ptr<scalar::expression>> elements_;
+    std::vector<std::unique_ptr<scalar::expression>> elements_;
 };
 
 /**

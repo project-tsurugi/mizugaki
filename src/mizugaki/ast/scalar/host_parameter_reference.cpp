@@ -9,11 +9,9 @@
 namespace mizugaki::ast::scalar {
 
 using ::takatori::util::clone_unique;
-using ::takatori::util::object_creator;
-using ::takatori::util::unique_object_ptr;
 
 host_parameter_reference::host_parameter_reference(
-        unique_object_ptr<name::simple> name,
+        std::unique_ptr<name::simple> name,
         region_type region) noexcept:
     super { region },
     name_ { std::move(name) }
@@ -28,37 +26,37 @@ host_parameter_reference::host_parameter_reference(
     }
 {}
 
-host_parameter_reference::host_parameter_reference(host_parameter_reference const& other, object_creator creator) :
+host_parameter_reference::host_parameter_reference(::takatori::util::clone_tag_t, host_parameter_reference const& other) :
     host_parameter_reference {
-            clone_unique(other.name_, creator),
+            clone_unique(other.name_),
             other.region(),
     }
 {}
 
-host_parameter_reference::host_parameter_reference(host_parameter_reference&& other, object_creator creator) :
+host_parameter_reference::host_parameter_reference(::takatori::util::clone_tag_t, host_parameter_reference&& other) :
     host_parameter_reference {
-            clone_unique(std::move(other.name_), creator),
+            clone_unique(std::move(other.name_)),
             other.region(),
     }
 {}
 
-host_parameter_reference* host_parameter_reference::clone(object_creator creator) const& {
-    return creator.create_object<host_parameter_reference>(*this, creator);
+host_parameter_reference* host_parameter_reference::clone() const& {
+    return new host_parameter_reference(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-host_parameter_reference* host_parameter_reference::clone(object_creator creator) && {
-    return creator.create_object<host_parameter_reference>(std::move(*this), creator);
+host_parameter_reference* host_parameter_reference::clone() && {
+    return new host_parameter_reference(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 expression::node_kind_type host_parameter_reference::node_kind() const noexcept {
     return tag;
 }
 
-unique_object_ptr<name::simple>& host_parameter_reference::name() noexcept {
+std::unique_ptr<name::simple>& host_parameter_reference::name() noexcept {
     return name_;
 }
 
-unique_object_ptr<name::simple> const& host_parameter_reference::name() const noexcept {
+std::unique_ptr<name::simple> const& host_parameter_reference::name() const noexcept {
     return name_;
 }
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <takatori/util/object_creator.h>
+#include <takatori/util/clone_tag.h>
 
 #include <mizugaki/ast/common/regioned.h>
 #include <mizugaki/ast/type/type.h>
@@ -37,7 +37,7 @@ public:
     explicit cast_expression(
             operator_kind_type operator_kind,
             operand_type operand,
-            ::takatori::util::unique_object_ptr<type::type> type,
+            std::unique_ptr<type::type> type,
             region_type region = {}) noexcept;
 
     /**
@@ -57,19 +57,17 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit cast_expression(cast_expression const& other, ::takatori::util::object_creator creator);
+    explicit cast_expression(::takatori::util::clone_tag_t, cast_expression const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit cast_expression(cast_expression&& other, ::takatori::util::object_creator creator);
+    explicit cast_expression(::takatori::util::clone_tag_t, cast_expression&& other);
 
-    [[nodiscard]] cast_expression* clone(::takatori::util::object_creator creator) const& override;
-    [[nodiscard]] cast_expression* clone(::takatori::util::object_creator creator) && override;
+    [[nodiscard]] cast_expression* clone() const& override;
+    [[nodiscard]] cast_expression* clone() && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 
@@ -95,10 +93,10 @@ public:
      * @brief returns the cast target type.
      * @return the cast target type
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<type::type>& type() noexcept;
+    [[nodiscard]] std::unique_ptr<type::type>& type() noexcept;
 
     /// @brief type()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<type::type> const& type() const noexcept;
+    [[nodiscard]] std::unique_ptr<type::type> const& type() const noexcept;
 
     /**
      * @brief compares two values.
@@ -125,7 +123,7 @@ protected:
 private:
     operator_kind_type operator_kind_;
     operand_type operand_;
-    ::takatori::util::unique_object_ptr<type::type> type_;
+    std::unique_ptr<type::type> type_;
 };
 
 /**

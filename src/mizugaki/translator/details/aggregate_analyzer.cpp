@@ -27,14 +27,10 @@ namespace relation = ::takatori::relation;
 using ::takatori::util::downcast;
 using ::takatori::util::optional_ptr;
 using ::takatori::util::string_builder;
-using ::takatori::util::unique_object_ptr;
 using ::takatori::util::unsafe_downcast;
-using ::takatori::util::object_ownership_reference;
+using ::takatori::util::ownership_reference;
 
 using ::yugawara::extension::scalar::aggregate_function_call;
-
-template<class T>
-using object_vector = std::vector<T, ::takatori::util::object_allocator<T>>;
 
 namespace {
 
@@ -180,22 +176,22 @@ private:
         e.variables().bind(variable, ::yugawara::binding::extract(desc), true);
     }
 
-    void consume(object_ownership_reference<scalar::expression> expr) {
+    void consume(ownership_reference<scalar::expression> expr) {
         auto variable = bindings().stream_variable();
         variable.region() = expr->region();
-        auto vref = translator_.object_creator().create_unique<scalar::variable_reference>(variable);
+        auto vref = std::make_unique<scalar::variable_reference>(variable);
         vref->region() = expr->region();
         auto aggregate = expr.exchange(std::move(vref));
         consume(std::move(aggregate), std::move(variable));
     }
 
-    void consume(unique_object_ptr<scalar::expression> expr, descriptor::variable variable) {
+    void consume(std::unique_ptr<scalar::expression> expr, descriptor::variable variable) {
         BOOST_ASSERT(downcast<aggregate_function_call>(expr.get()) != nullptr); // NOLINT
 
         auto&& a = unsafe_downcast<aggregate_function_call>(*expr);
         resolve(variable, a.function());
 
-        object_vector<descriptor::variable> arguments { translator_.object_creator().allocator() };
+        std::vector<descriptor::variable> arguments {};
         arguments.reserve(a.arguments().size());
         while (!a.arguments().empty()) {
             auto e = a.arguments().release_back();
@@ -208,18 +204,16 @@ private:
     }
 
     [[nodiscard]] ::yugawara::binding::factory bindings() const noexcept {
-        return ::yugawara::binding::factory { translator_.object_creator() };
+        return {};
     }
 
-    [[nodiscard]] descriptor::variable capture(unique_object_ptr<scalar::expression> expr) {
+    [[nodiscard]] descriptor::variable capture(std::unique_ptr<scalar::expression> expr) {
         if (auto v = extract_variable(*expr)) {
             return *v;
         }
         if (!arguments_) {
             BOOST_ASSERT(!aggregation_.is_orphan()); // NOLINT
-            arguments_ = aggregation_.owner().emplace<relation::project>(
-                    object_vector<relation::project::column> { translator_.object_creator().allocator() },
-                    translator_.object_creator());
+            arguments_ = aggregation_.owner().emplace<relation::project>(std::vector<relation::project::column> {});
             auto origin = aggregation_.input().reconnect_to(arguments_->output());
             BOOST_ASSERT(origin); // NOLINT
             arguments_->input().reconnect_to(*origin);

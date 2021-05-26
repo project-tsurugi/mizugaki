@@ -1,6 +1,6 @@
 #pragma once
 
-#include <takatori/util/object_creator.h>
+#include <takatori/util/clone_tag.h>
 #include <takatori/util/rvalue_ptr.h>
 
 #include <mizugaki/ast/common/regioned.h>
@@ -38,10 +38,10 @@ public:
      * @param region the node region
      */
     explicit join(
-            ::takatori::util::unique_object_ptr<table::expression> left,
+            std::unique_ptr<table::expression> left,
             operator_kind_type operator_kind,
-            ::takatori::util::unique_object_ptr<table::expression> right,
-            ::takatori::util::unique_object_ptr<join_specification> specification = {},
+            std::unique_ptr<table::expression> right,
+            std::unique_ptr<join_specification> specification = {},
             region_type region = {}) noexcept;
 
     /**
@@ -63,19 +63,17 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit join(join const& other, ::takatori::util::object_creator creator);
+    explicit join(::takatori::util::clone_tag_t, join const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit join(join&& other, ::takatori::util::object_creator creator);
+    explicit join(::takatori::util::clone_tag_t, join&& other);
 
-    [[nodiscard]] join* clone(::takatori::util::object_creator creator) const& override;
-    [[nodiscard]] join* clone(::takatori::util::object_creator creator) && override;
+    [[nodiscard]] join* clone() const& override;
+    [[nodiscard]] join* clone() && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 
@@ -92,29 +90,29 @@ public:
      * @brief returns the left operand.
      * @return the left operand
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<table::expression>& left() noexcept;
+    [[nodiscard]] std::unique_ptr<table::expression>& left() noexcept;
 
     /// @copydoc left()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<table::expression> const& left() const noexcept;
+    [[nodiscard]] std::unique_ptr<table::expression> const& left() const noexcept;
 
     /**
      * @brief returns the right operand.
      * @return the right operand
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<table::expression>& right() noexcept;
+    [[nodiscard]] std::unique_ptr<table::expression>& right() noexcept;
 
     /// @copydoc right()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<table::expression> const& right() const noexcept;
+    [[nodiscard]] std::unique_ptr<table::expression> const& right() const noexcept;
 
     /**
      * @brief returns the join specification.
      * @return the join specification
      * @return empty if it is not declared
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<join_specification>& specification() noexcept;
+    [[nodiscard]] std::unique_ptr<join_specification>& specification() noexcept;
 
     /// @copydoc specification()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<join_specification> const& specification() const noexcept;
+    [[nodiscard]] std::unique_ptr<join_specification> const& specification() const noexcept;
 
     /**
      * @brief compares two values.
@@ -139,10 +137,10 @@ protected:
     void serialize(::takatori::serializer::object_acceptor& acceptor) const override;
 
 private:
-    ::takatori::util::unique_object_ptr<table::expression> left_;
+    std::unique_ptr<table::expression> left_;
     operator_kind_type operator_kind_;
-    ::takatori::util::unique_object_ptr<table::expression> right_;
-    ::takatori::util::unique_object_ptr<join_specification> specification_;
+    std::unique_ptr<table::expression> right_;
+    std::unique_ptr<join_specification> specification_;
 };
 
 /**

@@ -8,7 +8,6 @@
 
 #include <takatori/descriptor/variable.h>
 
-#include <takatori/util/object_creator.h>
 #include <takatori/util/optional_ptr.h>
 
 #include <yugawara/storage/index.h>
@@ -41,12 +40,10 @@ public:
      * @brief creates a new instance for scan.
      * @param index the source relation
      * @param name the relation name
-     * @param creator the object creator
      */
     explicit relation_info(
             ::yugawara::storage::index const& index,
-            ::shakujo::model::name::Name const& name,
-            ::takatori::util::object_creator creator);
+            ::shakujo::model::name::Name const& name);
 
     /**
      * @brief creates a new instance for join.
@@ -105,11 +102,8 @@ private:
     };
     std::variant<for_projection, for_scan, for_join> entity_;
 
-    [[nodiscard]] static decltype(for_scan::column_map_) build_column_map(
-            ::yugawara::storage::index const& index);
-    [[nodiscard]] static decltype(for_scan::variable_map_) build_variable_map(
-            ::yugawara::storage::index const& index,
-            ::takatori::util::object_creator creator);
+    [[nodiscard]] static decltype(for_scan::column_map_) build_column_map(::yugawara::storage::index const& index);
+    [[nodiscard]] static decltype(for_scan::variable_map_) build_variable_map(::yugawara::storage::index const& index);
     [[nodiscard]] static std::vector<relation_info> build_relations(relation_info&& left, relation_info&& right);
 
     template<class T>

@@ -2,6 +2,8 @@
 
 #include <optional>
 
+#include <takatori/util/clone_tag.h>
+
 #include <mizugaki/ast/common/chars.h>
 #include <mizugaki/ast/common/regioned.h>
 
@@ -73,19 +75,17 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit numeric(numeric const& other, ::takatori::util::object_creator creator);
+    explicit numeric(::takatori::util::clone_tag_t, numeric const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit numeric(numeric&& other, ::takatori::util::object_creator creator);
+    explicit numeric(::takatori::util::clone_tag_t, numeric&& other);
 
-    [[nodiscard]] numeric* clone(::takatori::util::object_creator creator) const& override;
-    [[nodiscard]] numeric* clone(::takatori::util::object_creator creator) && override;
+    [[nodiscard]] numeric* clone() const& override;
+    [[nodiscard]] numeric* clone() && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 

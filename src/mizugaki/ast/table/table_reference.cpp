@@ -10,14 +10,12 @@
 namespace mizugaki::ast::table {
 
 using ::takatori::util::clone_unique;
-using ::takatori::util::object_creator;
-using ::takatori::util::unique_object_ptr;
 
 using common::clone_optional;
 
 table_reference::table_reference(
         bool_type is_only,
-        unique_object_ptr<name::name> name,
+        std::unique_ptr<name::name> name,
         std::optional<correlation_type> correlation,
         region_type region) noexcept:
     super { region },
@@ -39,41 +37,41 @@ table_reference::table_reference(
     }
 {}
 
-table_reference::table_reference(table_reference const& other, object_creator creator) :
+table_reference::table_reference(::takatori::util::clone_tag_t, table_reference const& other) :
     table_reference {
             other.is_only_,
-            clone_unique(other.name_, creator),
-            clone_optional(other.correlation_, creator),
+            clone_unique(other.name_),
+            clone_optional(other.correlation_),
             other.region(),
     }
 {}
 
-table_reference::table_reference(table_reference&& other, object_creator creator) :
+table_reference::table_reference(::takatori::util::clone_tag_t, table_reference&& other) :
     table_reference {
             other.is_only_,
-            clone_unique(std::move(other.name_), creator),
-            clone_optional(std::move(other.correlation_), creator),
+            clone_unique(std::move(other.name_)),
+            clone_optional(std::move(other.correlation_)),
             other.region(),
     }
 {}
 
-table_reference* table_reference::clone(object_creator creator) const& {
-    return creator.create_object<table_reference>(*this, creator);
+table_reference* table_reference::clone() const& {
+    return new table_reference(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-table_reference* table_reference::clone(object_creator creator) && {
-    return creator.create_object<table_reference>(std::move(*this), creator);
+table_reference* table_reference::clone() && {
+    return new table_reference(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 expression::node_kind_type table_reference::node_kind() const noexcept {
     return tag;
 }
 
-unique_object_ptr<name::name>& table_reference::name() noexcept {
+std::unique_ptr<name::name>& table_reference::name() noexcept {
     return name_;
 }
 
-unique_object_ptr<name::name> const& table_reference::name() const noexcept {
+std::unique_ptr<name::name> const& table_reference::name() const noexcept {
     return name_;
 }
 

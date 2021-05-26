@@ -9,8 +9,6 @@
 namespace mizugaki::ast::scalar {
 
 using ::takatori::util::clone_unique;
-using ::takatori::util::object_creator;
-using ::takatori::util::unique_object_ptr;
 
 unary_expression::unary_expression(
         operator_kind_type operator_kind,
@@ -32,28 +30,28 @@ unary_expression::unary_expression(
     }
 {}
 
-unary_expression::unary_expression(unary_expression const& other, object_creator creator) :
+unary_expression::unary_expression(::takatori::util::clone_tag_t, unary_expression const& other) :
     unary_expression {
             other.operator_kind_,
-            clone_unique(other.operand_, creator),
+            clone_unique(other.operand_),
             other.region(),
     }
 {}
 
-unary_expression::unary_expression(unary_expression&& other, object_creator creator) :
+unary_expression::unary_expression(::takatori::util::clone_tag_t, unary_expression&& other) :
     unary_expression {
             other.operator_kind_,
-            clone_unique(std::move(other.operand_), creator),
+            clone_unique(std::move(other.operand_)),
             other.region(),
     }
 {}
 
-unary_expression* unary_expression::clone(object_creator creator) const& {
-    return creator.create_object<unary_expression>(*this, creator);
+unary_expression* unary_expression::clone() const& {
+    return new unary_expression(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-unary_expression* unary_expression::clone(object_creator creator) && {
-    return creator.create_object<unary_expression>(std::move(*this), creator);
+unary_expression* unary_expression::clone() && {
+    return new unary_expression(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 expression::node_kind_type unary_expression::node_kind() const noexcept {

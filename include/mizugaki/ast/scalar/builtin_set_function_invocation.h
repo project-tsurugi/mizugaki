@@ -1,6 +1,6 @@
 #pragma once
 
-#include <takatori/util/object_creator.h>
+#include <takatori/util/clone_tag.h>
 
 #include <mizugaki/ast/common/regioned.h>
 #include <mizugaki/ast/common/vector.h>
@@ -41,7 +41,7 @@ public:
     explicit builtin_set_function_invocation(
             function_type function,
             std::optional<quantifier_type> quantifier,
-            common::vector<operand_type> arguments,
+            std::vector<operand_type> arguments,
             region_type region = {}) noexcept;
 
     /**
@@ -61,19 +61,17 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit builtin_set_function_invocation(builtin_set_function_invocation const& other, ::takatori::util::object_creator creator);
+    explicit builtin_set_function_invocation(::takatori::util::clone_tag_t, builtin_set_function_invocation const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit builtin_set_function_invocation(builtin_set_function_invocation&& other, ::takatori::util::object_creator creator);
+    explicit builtin_set_function_invocation(::takatori::util::clone_tag_t, builtin_set_function_invocation&& other);
 
-    [[nodiscard]] builtin_set_function_invocation* clone(::takatori::util::object_creator creator) const& override;
-    [[nodiscard]] builtin_set_function_invocation* clone(::takatori::util::object_creator creator) && override;
+    [[nodiscard]] builtin_set_function_invocation* clone() const& override;
+    [[nodiscard]] builtin_set_function_invocation* clone() && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 
@@ -99,10 +97,10 @@ public:
      * @brief returns the function argument list.
      * @return the function argument list
      */
-    [[nodiscard]] common::vector<operand_type>& arguments() noexcept;
+    [[nodiscard]] std::vector<operand_type>& arguments() noexcept;
 
     /// @copydoc arguments()
-    [[nodiscard]] common::vector<operand_type> const& arguments() const noexcept;
+    [[nodiscard]] std::vector<operand_type> const& arguments() const noexcept;
 
     /**
      * @brief compares two values.
@@ -129,7 +127,7 @@ protected:
 private:
     function_type function_;
     std::optional<quantifier_type> quantifier_;
-    common::vector<operand_type> arguments_;
+    std::vector<operand_type> arguments_;
 };
 
 /**

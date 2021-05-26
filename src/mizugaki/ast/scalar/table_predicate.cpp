@@ -9,12 +9,10 @@
 namespace mizugaki::ast::scalar {
 
 using ::takatori::util::clone_unique;
-using ::takatori::util::object_creator;
-using ::takatori::util::unique_object_ptr;
 
 table_predicate::table_predicate(
         operator_kind_type operator_kind,
-        unique_object_ptr<query::expression> operand,
+        std::unique_ptr<query::expression> operand,
         region_type region) noexcept :
     super { region },
     operator_kind_ { operator_kind },
@@ -32,28 +30,28 @@ table_predicate::table_predicate(
     }
 {}
 
-table_predicate::table_predicate(table_predicate const& other, object_creator creator) :
+table_predicate::table_predicate(::takatori::util::clone_tag_t, table_predicate const& other) :
     table_predicate {
             other.operator_kind_,
-            clone_unique(other.operand_, creator),
+            clone_unique(other.operand_),
             other.region(),
     }
 {}
 
-table_predicate::table_predicate(table_predicate&& other, object_creator creator) :
+table_predicate::table_predicate(::takatori::util::clone_tag_t, table_predicate&& other) :
     table_predicate {
             other.operator_kind_,
-            clone_unique(std::move(other.operand_), creator),
+            clone_unique(std::move(other.operand_)),
             other.region(),
     }
 {}
 
-table_predicate* table_predicate::clone(object_creator creator) const& {
-    return creator.create_object<table_predicate>(*this, creator);
+table_predicate* table_predicate::clone() const& {
+    return new table_predicate(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-table_predicate* table_predicate::clone(object_creator creator) && {
-    return creator.create_object<table_predicate>(std::move(*this), creator);
+table_predicate* table_predicate::clone() && {
+    return new table_predicate(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 expression::node_kind_type table_predicate::node_kind() const noexcept {
@@ -68,11 +66,11 @@ table_predicate::operator_kind_type const& table_predicate::operator_kind() cons
     return operator_kind_;
 }
 
-unique_object_ptr<query::expression>& table_predicate::operand() noexcept {
+std::unique_ptr<query::expression>& table_predicate::operand() noexcept {
     return operand_;
 }
 
-unique_object_ptr<query::expression> const& table_predicate::operand() const noexcept {
+std::unique_ptr<query::expression> const& table_predicate::operand() const noexcept {
     return operand_;
 }
 

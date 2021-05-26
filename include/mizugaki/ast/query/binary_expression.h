@@ -2,7 +2,7 @@
 
 #include <optional>
 
-#include <takatori/util/object_creator.h>
+#include <takatori/util/clone_tag.h>
 
 #include <mizugaki/ast/common/regioned.h>
 #include <mizugaki/ast/common/vector.h>
@@ -50,11 +50,11 @@ public:
      * @param region the node region
      */
     explicit binary_expression(
-            ::takatori::util::unique_object_ptr<expression> left,
+            std::unique_ptr<expression> left,
             operator_kind_type operator_kind,
             std::optional<quantifier_type> quantifier,
             std::optional<corresponding_type> corresponding,
-            ::takatori::util::unique_object_ptr<expression> right,
+            std::unique_ptr<expression> right,
             region_type region = {}) noexcept;
 
     /**
@@ -108,19 +108,17 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit binary_expression(binary_expression const& other, ::takatori::util::object_creator creator);
+    explicit binary_expression(::takatori::util::clone_tag_t, binary_expression const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit binary_expression(binary_expression&& other, ::takatori::util::object_creator creator);
+    explicit binary_expression(::takatori::util::clone_tag_t, binary_expression&& other);
 
-    [[nodiscard]] binary_expression* clone(::takatori::util::object_creator creator) const& override;
-    [[nodiscard]] binary_expression* clone(::takatori::util::object_creator creator) && override;
+    [[nodiscard]] binary_expression* clone() const& override;
+    [[nodiscard]] binary_expression* clone() && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 
@@ -137,19 +135,19 @@ public:
      * @brief returns the left term.
      * @return the left term
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<expression>& left() noexcept;
+    [[nodiscard]] std::unique_ptr<expression>& left() noexcept;
 
     /// @copydoc left()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<expression> const& left() const noexcept;
+    [[nodiscard]] std::unique_ptr<expression> const& left() const noexcept;
 
     /**
      * @brief returns the right term.
      * @return the right term
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<expression>& right() noexcept;
+    [[nodiscard]] std::unique_ptr<expression>& right() noexcept;
 
     /// @copydoc right()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<expression> const& right() const noexcept;
+    [[nodiscard]] std::unique_ptr<expression> const& right() const noexcept;
 
     /**
      * @brief returns the set quantifier.
@@ -194,11 +192,11 @@ protected:
     void serialize(::takatori::serializer::object_acceptor& acceptor) const override;
 
 private:
-    ::takatori::util::unique_object_ptr<expression> left_;
+    std::unique_ptr<expression> left_;
     operator_kind_type operator_kind_;
     std::optional<quantifier_type> quantifier_;
     std::optional<corresponding_type> corresponding_;
-    ::takatori::util::unique_object_ptr<expression> right_;
+    std::unique_ptr<expression> right_;
 };
 
 /**

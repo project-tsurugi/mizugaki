@@ -13,7 +13,6 @@ using value_kind_type = string::value_kind_type;
 using value_type = string::value_type;
 using concatenations_type = string::concatenations_type;
 
-using ::takatori::util::object_creator;
 
 string::string(
         value_kind_type value_kind,
@@ -28,30 +27,30 @@ string::string(
     utils::validate_kind(tags, *value_kind);
 }
 
-string::string(string const& other, object_creator creator) :
+string::string(::takatori::util::clone_tag_t, string const& other) :
     string {
             other.value_kind_,
-            value_type { other.value_, creator.allocator() },
-            concatenations_type { other.concatenations_, creator.allocator() },
+            value_type { other.value_ },
+            concatenations_type { other.concatenations_ },
             other.region(),
     }
 {}
 
-string::string(string&& other, object_creator creator) :
+string::string(::takatori::util::clone_tag_t, string&& other) :
     string{
             other.value_kind_,
-            value_type { std::move(other.value_), creator.allocator() },
-            concatenations_type { std::move(other.concatenations_), creator.allocator() },
+            value_type { std::move(other.value_) },
+            concatenations_type { std::move(other.concatenations_) },
             other.region(),
     }
 {}
 
-string* string::clone(object_creator creator) const& {
-    return creator.create_object<string>(*this, creator);
+string* string::clone() const& {
+    return new string(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-string* string::clone(object_creator creator) && {
-    return creator.create_object<string>(std::move(*this), creator);
+string* string::clone() && {
+    return new string(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 node_kind_type string::node_kind() const noexcept {

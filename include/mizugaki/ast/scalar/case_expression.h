@@ -2,6 +2,8 @@
 
 #include <vector>
 
+#include <takatori/util/clone_tag.h>
+
 #include <mizugaki/ast/common/vector.h>
 
 #include "expression.h"
@@ -34,7 +36,7 @@ public:
      */
     explicit case_expression(
             operand_type operand,
-            common::vector<when_clause> when_clauses,
+            std::vector<when_clause> when_clauses,
             operand_type default_result = {},
             region_type region = {}) noexcept;
 
@@ -67,19 +69,17 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit case_expression(case_expression const& other, ::takatori::util::object_creator creator);
+    explicit case_expression(::takatori::util::clone_tag_t, case_expression const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit case_expression(case_expression&& other, ::takatori::util::object_creator creator);
+    explicit case_expression(::takatori::util::clone_tag_t, case_expression&& other);
 
-    [[nodiscard]] case_expression* clone(::takatori::util::object_creator creator) const& override;
-    [[nodiscard]] case_expression* clone(::takatori::util::object_creator creator) && override;
+    [[nodiscard]] case_expression* clone() const& override;
+    [[nodiscard]] case_expression* clone() && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 
@@ -97,10 +97,10 @@ public:
      * @brief returns the list of `<when clause>`.
      * @return the when clauses
      */
-    [[nodiscard]] common::vector<when_clause>& when_clauses() noexcept;
+    [[nodiscard]] std::vector<when_clause>& when_clauses() noexcept;
 
     /// @copydoc when_clauses()
-    [[nodiscard]] common::vector<when_clause> const& when_clauses() const noexcept;
+    [[nodiscard]] std::vector<when_clause> const& when_clauses() const noexcept;
 
     /**
      * @brief returns the default result.
@@ -136,7 +136,7 @@ protected:
 
 private:
     operand_type operand_;
-    common::vector<when_clause> when_clauses_;
+    std::vector<when_clause> when_clauses_;
     operand_type default_result_;
 };
 

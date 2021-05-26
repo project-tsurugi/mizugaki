@@ -2,7 +2,7 @@
 
 #include <optional>
 
-#include <takatori/util/object_creator.h>
+#include <takatori/util/clone_tag.h>
 #include <takatori/util/rvalue_ptr.h>
 
 #include <mizugaki/ast/element.h>
@@ -32,9 +32,9 @@ public:
      * @param region the element region
      */
     explicit field_definition(
-            ::takatori::util::unique_object_ptr<name::simple> name,
-            ::takatori::util::unique_object_ptr<ast::type::type> type,
-            ::takatori::util::unique_object_ptr<name::name> collation = {},
+            std::unique_ptr<name::simple> name,
+            std::unique_ptr<ast::type::type> type,
+            std::unique_ptr<name::name> collation = {},
             region_type region = {}) noexcept;
 
     /**
@@ -54,44 +54,42 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit field_definition(field_definition const& other, ::takatori::util::object_creator creator);
+    explicit field_definition(::takatori::util::clone_tag_t, field_definition const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit field_definition(field_definition&& other, ::takatori::util::object_creator creator);
+    explicit field_definition(::takatori::util::clone_tag_t, field_definition&& other);
 
     /**
      * @brief returns the field name.
      * @return the field name
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<name::simple>& name() noexcept;
+    [[nodiscard]] std::unique_ptr<name::simple>& name() noexcept;
 
     /// @copydoc name()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<name::simple> const& name() const noexcept;
+    [[nodiscard]] std::unique_ptr<name::simple> const& name() const noexcept;
 
     /**
      * @brief returns the field type.
      * @return the field type
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<ast::type::type>& type() noexcept;
+    [[nodiscard]] std::unique_ptr<ast::type::type>& type() noexcept;
 
     /// @copydoc type()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<ast::type::type> const& type() const noexcept;
+    [[nodiscard]] std::unique_ptr<ast::type::type> const& type() const noexcept;
 
     /**
      * @brief returns the collation name.
      * @return the collation name
      * @return empty if it is not declared
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<name::name>& collation() noexcept;
+    [[nodiscard]] std::unique_ptr<name::name>& collation() noexcept;
 
     /// @copydoc collation()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<name::name> const& collation() const noexcept;
+    [[nodiscard]] std::unique_ptr<name::name> const& collation() const noexcept;
 
     /**
      * @brief compares two values.
@@ -122,9 +120,9 @@ public:
             field_definition const& value);
 
 private:
-    common::clone_wrapper<::takatori::util::unique_object_ptr<name::simple>> name_;
-    common::clone_wrapper<::takatori::util::unique_object_ptr<ast::type::type>> type_;
-    common::clone_wrapper<::takatori::util::unique_object_ptr<name::name>> collation_;
+    common::clone_wrapper<std::unique_ptr<name::simple>> name_;
+    common::clone_wrapper<std::unique_ptr<ast::type::type>> type_;
+    common::clone_wrapper<std::unique_ptr<name::name>> collation_;
 };
 
 /**

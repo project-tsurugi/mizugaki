@@ -11,15 +11,13 @@ namespace mizugaki::ast::scalar {
 using when_clause = case_expression::when_clause;
 
 using ::takatori::util::clone_unique;
-using ::takatori::util::object_creator;
 using ::takatori::util::rvalue_ptr;
-using ::takatori::util::unique_object_ptr;
 
 using common::clone_vector;
 
 case_expression::case_expression(
         operand_type operand,
-        common::vector<when_clause> when_clauses,
+        std::vector<when_clause> when_clauses,
         operand_type default_result,
         region_type region) noexcept :
     super { region },
@@ -53,30 +51,30 @@ case_expression::case_expression(
     }
 {}
 
-case_expression::case_expression(case_expression const& other, object_creator creator) :
+case_expression::case_expression(::takatori::util::clone_tag_t, case_expression const& other) :
     case_expression {
-            clone_unique(other.operand_, creator),
-            clone_vector(other.when_clauses_, creator),
-            clone_unique(other.default_result_, creator),
+            clone_unique(other.operand_),
+            clone_vector(other.when_clauses_),
+            clone_unique(other.default_result_),
             other.region(),
     }
 {}
 
-case_expression::case_expression(case_expression&& other, object_creator creator) :
+case_expression::case_expression(::takatori::util::clone_tag_t, case_expression&& other) :
     case_expression {
-            clone_unique(std::move(other.operand_), creator),
-            clone_vector(std::move(other.when_clauses_), creator),
-            clone_unique(std::move(other.default_result_), creator),
+            clone_unique(std::move(other.operand_)),
+            clone_vector(std::move(other.when_clauses_)),
+            clone_unique(std::move(other.default_result_)),
             other.region(),
     }
 {}
 
-case_expression* case_expression::clone(object_creator creator) const& {
-    return creator.create_object<case_expression>(*this, creator);
+case_expression* case_expression::clone() const& {
+    return new case_expression(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-case_expression* case_expression::clone(object_creator creator) && {
-    return creator.create_object<case_expression>(std::move(*this), creator);
+case_expression* case_expression::clone() && {
+    return new case_expression(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 expression::node_kind_type case_expression::node_kind() const noexcept {
@@ -91,11 +89,11 @@ expression::operand_type const& case_expression::operand() const noexcept {
     return operand_;
 }
 
-common::vector<when_clause>& case_expression::when_clauses() noexcept {
+std::vector<when_clause>& case_expression::when_clauses() noexcept {
     return when_clauses_;
 }
 
-common::vector<when_clause> const& case_expression::when_clauses() const noexcept {
+std::vector<when_clause> const& case_expression::when_clauses() const noexcept {
     return when_clauses_;
 }
 

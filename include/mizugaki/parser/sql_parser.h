@@ -2,7 +2,6 @@
 
 #include <string>
 
-#include <takatori/util/object_creator.h>
 
 #include "sql_parser_result.h"
 
@@ -15,12 +14,6 @@ class sql_parser {
 public:
     /// @brief the result type.
     using result_type = sql_parser_result;
-
-    /**
-     * @brief creates a new instance.
-     * @param creator the object creator for building syntactic models
-     */
-    explicit sql_parser(::takatori::util::object_creator creator = {}) noexcept;
 
     /**
      * @brief sets the debug level.
@@ -36,10 +29,9 @@ public:
      * @param contents the target contents
      * @return the parsed result
      */
-    [[nodiscard]] result_type operator()(std::string location, std::string contents);
+    [[nodiscard]] result_type operator()(std::string location, std::string contents) const;
 
 private:
-    ::takatori::util::object_creator creator_;
     int debug_ {};
 };
 

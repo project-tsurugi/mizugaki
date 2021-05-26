@@ -20,17 +20,14 @@ using rvalue_list = std::initializer_list<::takatori::util::rvalue_reference_wra
  * @brief converts rvalue_list to vector.
  * @tparam T the element type
  * @param elements the source elements
- * @param creator the object creator
  * @return the created vector
  */
 template<class T>
-inline common::vector<::takatori::util::unique_object_ptr<T>> to_vector(
-        rvalue_list<T> elements,
-        ::takatori::util::object_creator creator = {}) {
-    common::vector<::takatori::util::unique_object_ptr<T>> results { creator.allocator() };
+inline std::vector<std::unique_ptr<T>> to_vector(rvalue_list<T> elements) {
+    std::vector<std::unique_ptr<T>> results {};
     results.reserve(elements.size());
     for (auto&& e : elements) {
-        results.emplace_back(::takatori::util::clone_unique(e, creator));
+        results.emplace_back(::takatori::util::clone_unique(e));
     }
     return results;
 }

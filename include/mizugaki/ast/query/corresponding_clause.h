@@ -1,6 +1,6 @@
 #pragma once
 
-#include <takatori/util/object_creator.h>
+#include <takatori/util/clone_tag.h>
 
 #include <mizugaki/ast/element.h>
 #include <mizugaki/ast/common/clone_wrapper.h>
@@ -23,7 +23,7 @@ public:
      * @param region the element region
      */
     explicit corresponding_clause(
-            common::vector<::takatori::util::unique_object_ptr<name::simple>> column_names,
+            std::vector<std::unique_ptr<name::simple>> column_names,
             region_type region = {}) noexcept;
 
     /**
@@ -39,26 +39,24 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit corresponding_clause(corresponding_clause const& other, ::takatori::util::object_creator creator);
+    explicit corresponding_clause(::takatori::util::clone_tag_t, corresponding_clause const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit corresponding_clause(corresponding_clause&& other, ::takatori::util::object_creator creator);
+    explicit corresponding_clause(::takatori::util::clone_tag_t, corresponding_clause&& other);
 
     /**
      * @brief returns the corresponding column names.
      * @return the column names
      * @return empty if they are not defined explicitly
      */
-    [[nodiscard]] common::vector<::takatori::util::unique_object_ptr<name::simple>>& column_names() noexcept;
+    [[nodiscard]] std::vector<std::unique_ptr<name::simple>>& column_names() noexcept;
 
     /// @copydoc column_names()
-    [[nodiscard]] common::vector<::takatori::util::unique_object_ptr<name::simple>> const& column_names() const noexcept;
+    [[nodiscard]] std::vector<std::unique_ptr<name::simple>> const& column_names() const noexcept;
 
     /**
      * @brief compares two values.
@@ -89,7 +87,7 @@ public:
             corresponding_clause const& value);
 
 private:
-    common::clone_wrapper<common::vector<::takatori::util::unique_object_ptr<name::simple>>> column_names_;
+    common::clone_wrapper<std::vector<std::unique_ptr<name::simple>>> column_names_;
 };
 
 /**

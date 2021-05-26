@@ -1,5 +1,7 @@
 #pragma once
 
+#include <takatori/util/clone_tag.h>
+
 #include "type.h"
 
 namespace mizugaki::ast::type {
@@ -41,19 +43,17 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit simple(simple const& other, ::takatori::util::object_creator creator);
+    explicit simple(::takatori::util::clone_tag_t, simple const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit simple(simple&& other, ::takatori::util::object_creator creator);
+    explicit simple(::takatori::util::clone_tag_t, simple&& other);
 
-    [[nodiscard]] simple* clone(::takatori::util::object_creator creator) const& override;
-    [[nodiscard]] simple* clone(::takatori::util::object_creator creator) && override;
+    [[nodiscard]] simple* clone() const& override;
+    [[nodiscard]] simple* clone() && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 

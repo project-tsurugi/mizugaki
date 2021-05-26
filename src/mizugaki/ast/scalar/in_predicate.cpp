@@ -9,13 +9,11 @@
 namespace mizugaki::ast::scalar {
 
 using ::takatori::util::clone_unique;
-using ::takatori::util::object_creator;
-using ::takatori::util::unique_object_ptr;
 
 in_predicate::in_predicate(
         operand_type left,
         bool_type is_not,
-        unique_object_ptr<query::expression> right,
+        std::unique_ptr<query::expression> right,
         region_type region) noexcept :
     super { region },
     left_ { std::move(left) },
@@ -36,30 +34,30 @@ in_predicate::in_predicate(
     }
 {}
 
-in_predicate::in_predicate(in_predicate const& other, object_creator creator) :
+in_predicate::in_predicate(::takatori::util::clone_tag_t, in_predicate const& other) :
     in_predicate {
-            clone_unique(other.left_, creator),
+            clone_unique(other.left_),
             other.is_not_,
-            clone_unique(other.right_, creator),
+            clone_unique(other.right_),
             other.region(),
     }
 {}
 
-in_predicate::in_predicate(in_predicate&& other, object_creator creator) :
+in_predicate::in_predicate(::takatori::util::clone_tag_t, in_predicate&& other) :
     in_predicate {
-            clone_unique(std::move(other.left_), creator),
+            clone_unique(std::move(other.left_)),
             other.is_not_,
-            clone_unique(std::move(other.right_), creator),
+            clone_unique(std::move(other.right_)),
             other.region(),
     }
 {}
 
-in_predicate* in_predicate::clone(object_creator creator) const& {
-    return creator.create_object<in_predicate>(*this, creator);
+in_predicate* in_predicate::clone() const& {
+    return new in_predicate(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-in_predicate* in_predicate::clone(object_creator creator) && {
-    return creator.create_object<in_predicate>(std::move(*this), creator);
+in_predicate* in_predicate::clone() && {
+    return new in_predicate(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 expression::node_kind_type in_predicate::node_kind() const noexcept {
@@ -74,11 +72,11 @@ expression::operand_type const& in_predicate::left() const noexcept {
     return left_;
 }
 
-unique_object_ptr<query::expression>& in_predicate::right() noexcept {
+std::unique_ptr<query::expression>& in_predicate::right() noexcept {
     return right_;
 }
 
-unique_object_ptr<query::expression> const& in_predicate::right() const noexcept {
+std::unique_ptr<query::expression> const& in_predicate::right() const noexcept {
     return right_;
 }
 

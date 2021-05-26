@@ -11,7 +11,6 @@ namespace mizugaki::ast::literal {
 using node_kind_type = literal::node_kind_type;
 using value_type = datetime::value_type;
 
-using ::takatori::util::object_creator;
 
 datetime::datetime(
         value_kind_type value_kind,
@@ -24,28 +23,28 @@ datetime::datetime(
     utils::validate_kind(tags, *value_kind);
 }
 
-datetime::datetime(datetime const& other, object_creator creator) :
+datetime::datetime(::takatori::util::clone_tag_t, datetime const& other) :
     datetime {
             other.value_kind_,
-            value_type{other.value_, creator.allocator()},
+            value_type{other.value_},
             other.region(),
     }
 {}
 
-datetime::datetime(datetime&& other, object_creator creator) :
+datetime::datetime(::takatori::util::clone_tag_t, datetime&& other) :
     datetime {
             other.value_kind_,
-            value_type{std::move(other.value_), creator.allocator()},
+            value_type{std::move(other.value_)},
             other.region(),
     }
 {}
 
-datetime* datetime::clone(object_creator creator) const& {
-    return creator.create_object<datetime>(*this, creator);
+datetime* datetime::clone() const& {
+    return new datetime(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-datetime* datetime::clone(object_creator creator) && {
-    return creator.create_object<datetime>(std::move(*this), creator);
+datetime* datetime::clone() && {
+    return new datetime(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 node_kind_type datetime::node_kind() const noexcept {

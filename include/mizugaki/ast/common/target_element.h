@@ -2,7 +2,7 @@
 
 #include <optional>
 
-#include <takatori/util/object_creator.h>
+#include <takatori/util/clone_tag.h>
 
 #include <mizugaki/ast/element.h>
 #include <mizugaki/ast/common/clone_wrapper.h>
@@ -24,42 +24,40 @@ public:
      * @param region the element region
      */
     explicit target_element(
-            ::takatori::util::unique_object_ptr<name::name> target,
-            ::takatori::util::unique_object_ptr<name::simple> indicator = {},
+            std::unique_ptr<name::name> target,
+            std::unique_ptr<name::simple> indicator = {},
             region_type region = {}) noexcept;
 
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit target_element(target_element const& other, ::takatori::util::object_creator creator);
+    explicit target_element(::takatori::util::clone_tag_t, target_element const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit target_element(target_element&& other, ::takatori::util::object_creator creator);
+    explicit target_element(::takatori::util::clone_tag_t, target_element&& other);
 
     /**
      * @brief returns the target name.
      * @return the target name
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<name::name>& target() noexcept;
+    [[nodiscard]] std::unique_ptr<name::name>& target() noexcept;
 
     /// @copydoc target()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<name::name> const& target() const noexcept;
+    [[nodiscard]] std::unique_ptr<name::name> const& target() const noexcept;
 
     /**
      * @brief returns the optional indicator target.
      * @return the indicator target
      * @return empty if it is not declared
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<name::simple>& indicator() noexcept;
+    [[nodiscard]] std::unique_ptr<name::simple>& indicator() noexcept;
 
     /// @copydoc indicator()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<name::simple> const& indicator() const noexcept;
+    [[nodiscard]] std::unique_ptr<name::simple> const& indicator() const noexcept;
 
     /**
      * @brief compares two values.
@@ -90,8 +88,8 @@ public:
             target_element const& value);
 
 private:
-    clone_wrapper<::takatori::util::unique_object_ptr<name::name>> target_;
-    clone_wrapper<::takatori::util::unique_object_ptr<name::simple>> indicator_;
+    clone_wrapper<std::unique_ptr<name::name>> target_;
+    clone_wrapper<std::unique_ptr<name::simple>> indicator_;
 };
 
 /**

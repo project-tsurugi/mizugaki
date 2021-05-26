@@ -9,14 +9,12 @@
 namespace mizugaki::ast::statement {
 
 using ::takatori::util::clone_unique;
-using ::takatori::util::object_creator;
-using ::takatori::util::unique_object_ptr;
 
 using common::clone_vector;
 
 select_statement::select_statement(
-        unique_object_ptr<query::expression> expression,
-        common::vector<target_element> targets,
+        std::unique_ptr<query::expression> expression,
+        std::vector<target_element> targets,
         region_type region) noexcept :
     super { region },
     expression_ { std::move(expression) },
@@ -34,47 +32,47 @@ select_statement::select_statement(
     }
 {}
 
-select_statement::select_statement(select_statement const& other, object_creator creator) :
+select_statement::select_statement(::takatori::util::clone_tag_t, select_statement const& other) :
     select_statement {
-            clone_unique(other.expression_, creator),
-            clone_vector(other.targets_, creator),
+            clone_unique(other.expression_),
+            clone_vector(other.targets_),
             other.region(),
     }
 {}
 
-select_statement::select_statement(select_statement&& other, object_creator creator) :
+select_statement::select_statement(::takatori::util::clone_tag_t, select_statement&& other) :
     select_statement {
-            clone_unique(std::move(other.expression_), creator),
-            clone_vector(std::move(other.targets_), creator),
+            clone_unique(std::move(other.expression_)),
+            clone_vector(std::move(other.targets_)),
             other.region(),
     }
 {}
 
-select_statement* select_statement::clone(object_creator creator) const& {
-    return creator.create_object<select_statement>(*this, creator);
+select_statement* select_statement::clone() const& {
+    return new select_statement(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-select_statement* select_statement::clone(object_creator creator) && {
-    return creator.create_object<select_statement>(std::move(*this), creator);
+select_statement* select_statement::clone() && {
+    return new select_statement(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 statement::node_kind_type select_statement::node_kind() const noexcept {
     return tag;
 }
 
-unique_object_ptr<query::expression>& select_statement::expression() noexcept {
+std::unique_ptr<query::expression>& select_statement::expression() noexcept {
     return expression_;
 }
 
-unique_object_ptr<query::expression> const& select_statement::expression() const noexcept {
+std::unique_ptr<query::expression> const& select_statement::expression() const noexcept {
     return expression_;
 }
 
-common::vector<target_element>& select_statement::targets() noexcept {
+std::vector<target_element>& select_statement::targets() noexcept {
     return targets_;
 }
 
-common::vector<target_element> const& select_statement::targets() const noexcept {
+std::vector<target_element> const& select_statement::targets() const noexcept {
     return targets_;
 }
 

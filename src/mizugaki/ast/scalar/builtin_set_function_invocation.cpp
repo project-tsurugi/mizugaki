@@ -6,8 +6,6 @@
 
 namespace mizugaki::ast::scalar {
 
-using ::takatori::util::object_creator;
-using ::takatori::util::unique_object_ptr;
 
 using common::clone_vector;
 using common::to_vector;
@@ -15,11 +13,11 @@ using common::to_vector;
 builtin_set_function_invocation::builtin_set_function_invocation(
         function_type function,
         std::optional<quantifier_type> quantifier,
-        common::vector<operand_type> arguments,
+        std::vector<operand_type> arguments,
         region_type region) noexcept :
     super { region },
     function_ { function },
-    quantifier_ { std::move(quantifier) },
+    quantifier_ { quantifier },
     arguments_ { std::move(arguments) }
 {}
 
@@ -30,36 +28,36 @@ builtin_set_function_invocation::builtin_set_function_invocation(
         region_type region) :
     builtin_set_function_invocation {
             function,
-            std::move(quantifier),
+            quantifier,
             to_vector(arguments),
             region,
     }
 {}
 
-builtin_set_function_invocation::builtin_set_function_invocation(builtin_set_function_invocation const& other, object_creator creator) :
+builtin_set_function_invocation::builtin_set_function_invocation(::takatori::util::clone_tag_t, builtin_set_function_invocation const& other) :
     builtin_set_function_invocation {
             other.function_,
             other.quantifier_,
-            clone_vector(other.arguments_, creator),
+            clone_vector(other.arguments_),
             other.region(),
     }
 {}
 
-builtin_set_function_invocation::builtin_set_function_invocation(builtin_set_function_invocation&& other, object_creator creator) :
+builtin_set_function_invocation::builtin_set_function_invocation(::takatori::util::clone_tag_t, builtin_set_function_invocation&& other) :
     builtin_set_function_invocation {
             other.function_,
             other.quantifier_,
-            clone_vector(std::move(other.arguments_), creator),
+            clone_vector(std::move(other.arguments_)),
             other.region(),
     }
 {}
 
-builtin_set_function_invocation* builtin_set_function_invocation::clone(object_creator creator) const& {
-    return creator.create_object<builtin_set_function_invocation>(*this, creator);
+builtin_set_function_invocation* builtin_set_function_invocation::clone() const& {
+    return new builtin_set_function_invocation(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-builtin_set_function_invocation* builtin_set_function_invocation::clone(object_creator creator) && {
-    return creator.create_object<builtin_set_function_invocation>(std::move(*this), creator);
+builtin_set_function_invocation* builtin_set_function_invocation::clone() && {
+    return new builtin_set_function_invocation(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 expression::node_kind_type builtin_set_function_invocation::node_kind() const noexcept {
@@ -82,11 +80,11 @@ constexpr std::optional<builtin_set_function_invocation::quantifier_type> const&
     return quantifier_;
 }
 
-common::vector<expression::operand_type>& builtin_set_function_invocation::arguments() noexcept {
+std::vector<expression::operand_type>& builtin_set_function_invocation::arguments() noexcept {
     return arguments_;
 }
 
-common::vector<expression::operand_type> const& builtin_set_function_invocation::arguments() const noexcept {
+std::vector<expression::operand_type> const& builtin_set_function_invocation::arguments() const noexcept {
     return arguments_;
 }
 

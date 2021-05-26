@@ -9,9 +9,7 @@
 namespace mizugaki::ast::scalar {
 
 using ::takatori::util::clone_unique;
-using ::takatori::util::object_creator;
 using ::takatori::util::rvalue_ptr;
-using ::takatori::util::unique_object_ptr;
 
 pattern_match_predicate::pattern_match_predicate(
         operand_type match_value,
@@ -45,34 +43,34 @@ pattern_match_predicate::pattern_match_predicate(
     }
 {}
 
-pattern_match_predicate::pattern_match_predicate(pattern_match_predicate const& other, object_creator creator) :
+pattern_match_predicate::pattern_match_predicate(::takatori::util::clone_tag_t, pattern_match_predicate const& other) :
     pattern_match_predicate {
-            clone_unique(other.match_value_, creator),
+            clone_unique(other.match_value_),
             other.is_not_,
             other.operator_kind_,
-            clone_unique(other.pattern_, creator),
-            clone_unique(other.escape_, creator),
+            clone_unique(other.pattern_),
+            clone_unique(other.escape_),
             other.region(),
     }
 {}
 
-pattern_match_predicate::pattern_match_predicate(pattern_match_predicate&& other, object_creator creator) :
+pattern_match_predicate::pattern_match_predicate(::takatori::util::clone_tag_t, pattern_match_predicate&& other) :
     pattern_match_predicate {
-            clone_unique(std::move(other.match_value_), creator),
+            clone_unique(std::move(other.match_value_)),
             other.is_not_,
             other.operator_kind_,
-            clone_unique(std::move(other.pattern_), creator),
-            clone_unique(std::move(other.escape_), creator),
+            clone_unique(std::move(other.pattern_)),
+            clone_unique(std::move(other.escape_)),
             other.region(),
     }
 {}
 
-pattern_match_predicate* pattern_match_predicate::clone(object_creator creator) const& {
-    return creator.create_object<pattern_match_predicate>(*this, creator);
+pattern_match_predicate* pattern_match_predicate::clone() const& {
+    return new pattern_match_predicate(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-pattern_match_predicate* pattern_match_predicate::clone(object_creator creator) && {
-    return creator.create_object<pattern_match_predicate>(std::move(*this), creator);
+pattern_match_predicate* pattern_match_predicate::clone() && {
+    return new pattern_match_predicate(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 expression::node_kind_type pattern_match_predicate::node_kind() const noexcept {

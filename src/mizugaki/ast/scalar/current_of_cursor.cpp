@@ -9,11 +9,9 @@
 namespace mizugaki::ast::scalar {
 
 using ::takatori::util::clone_unique;
-using ::takatori::util::object_creator;
-using ::takatori::util::unique_object_ptr;
 
 current_of_cursor::current_of_cursor(
-        unique_object_ptr<name::name> name,
+        std::unique_ptr<name::name> name,
         region_type region) noexcept:
     super { region },
     name_ { std::move(name) }
@@ -28,37 +26,37 @@ current_of_cursor::current_of_cursor(
     }
 {}
 
-current_of_cursor::current_of_cursor(current_of_cursor const& other, object_creator creator) :
+current_of_cursor::current_of_cursor(::takatori::util::clone_tag_t, current_of_cursor const& other) :
     current_of_cursor {
-            clone_unique(other.name_, creator),
+            clone_unique(other.name_),
             other.region(),
     }
 {}
 
-current_of_cursor::current_of_cursor(current_of_cursor&& other, object_creator creator) :
+current_of_cursor::current_of_cursor(::takatori::util::clone_tag_t, current_of_cursor&& other) :
     current_of_cursor {
-            clone_unique(std::move(other.name_), creator),
+            clone_unique(std::move(other.name_)),
             other.region(),
     }
 {}
 
-current_of_cursor* current_of_cursor::clone(object_creator creator) const& {
-    return creator.create_object<current_of_cursor>(*this, creator);
+current_of_cursor* current_of_cursor::clone() const& {
+    return new current_of_cursor(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-current_of_cursor* current_of_cursor::clone(object_creator creator) && {
-    return creator.create_object<current_of_cursor>(std::move(*this), creator);
+current_of_cursor* current_of_cursor::clone() && {
+    return new current_of_cursor(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 expression::node_kind_type current_of_cursor::node_kind() const noexcept {
     return tag;
 }
 
-unique_object_ptr<name::name>& current_of_cursor::name() noexcept {
+std::unique_ptr<name::name>& current_of_cursor::name() noexcept {
     return name_;
 }
 
-unique_object_ptr<name::name> const& current_of_cursor::name() const noexcept {
+std::unique_ptr<name::name> const& current_of_cursor::name() const noexcept {
     return name_;
 }
 

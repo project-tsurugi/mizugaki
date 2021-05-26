@@ -9,8 +9,6 @@
 namespace mizugaki::ast::scalar {
 
 using ::takatori::util::clone_unique;
-using ::takatori::util::object_creator;
-using ::takatori::util::unique_object_ptr;
 
 comparison_predicate::comparison_predicate(
         operand_type left,
@@ -36,30 +34,30 @@ comparison_predicate::comparison_predicate(
     }
 {}
 
-comparison_predicate::comparison_predicate(comparison_predicate const& other, object_creator creator) :
+comparison_predicate::comparison_predicate(::takatori::util::clone_tag_t, comparison_predicate const& other) :
     comparison_predicate {
-            clone_unique(other.left_, creator),
+            clone_unique(other.left_),
             other.operator_kind_,
-            clone_unique(other.right_, creator),
+            clone_unique(other.right_),
             other.region(),
     }
 {}
 
-comparison_predicate::comparison_predicate(comparison_predicate&& other, object_creator creator) :
+comparison_predicate::comparison_predicate(::takatori::util::clone_tag_t, comparison_predicate&& other) :
     comparison_predicate {
-            clone_unique(std::move(other.left_), creator),
+            clone_unique(std::move(other.left_)),
             other.operator_kind_,
-            clone_unique(std::move(other.right_), creator),
+            clone_unique(std::move(other.right_)),
             other.region(),
     }
 {}
 
-comparison_predicate* comparison_predicate::clone(object_creator creator) const& {
-    return creator.create_object<comparison_predicate>(*this, creator);
+comparison_predicate* comparison_predicate::clone() const& {
+    return new comparison_predicate(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-comparison_predicate* comparison_predicate::clone(object_creator creator) && {
-    return creator.create_object<comparison_predicate>(std::move(*this), creator);
+comparison_predicate* comparison_predicate::clone() && {
+    return new comparison_predicate(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 expression::node_kind_type comparison_predicate::node_kind() const noexcept {

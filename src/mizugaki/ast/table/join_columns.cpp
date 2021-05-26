@@ -8,14 +8,12 @@
 
 namespace mizugaki::ast::table {
 
-using ::takatori::util::object_creator;
-using ::takatori::util::unique_object_ptr;
 
 using common::clone_vector;
 using common::to_vector;
 
 join_columns::join_columns(
-        common::vector<::takatori::util::unique_object_ptr<name::simple>> columns,
+        std::vector<std::unique_ptr<name::simple>> columns,
         region_type region) noexcept :
     super { region },
     columns_ { std::move(columns) }
@@ -30,37 +28,37 @@ join_columns::join_columns(
     }
 {}
 
-join_columns::join_columns(join_columns const& other, object_creator creator) :
+join_columns::join_columns(::takatori::util::clone_tag_t, join_columns const& other) :
     join_columns {
-            clone_vector(other.columns_, creator),
+            clone_vector(other.columns_),
             other.region(),
     }
 {}
 
-join_columns::join_columns(join_columns&& other, object_creator creator) :
+join_columns::join_columns(::takatori::util::clone_tag_t, join_columns&& other) :
     join_columns {
-            clone_vector(std::move(other.columns_), creator),
+            clone_vector(std::move(other.columns_)),
             other.region(),
     }
 {}
 
-join_columns* join_columns::clone(object_creator creator) const& {
-    return creator.create_object<join_columns>(*this, creator);
+join_columns* join_columns::clone() const& {
+    return new join_columns(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-join_columns* join_columns::clone(object_creator creator)&& {
-    return creator.create_object<join_columns>(std::move(*this), creator);
+join_columns* join_columns::clone()&& {
+    return new join_columns(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 join_specification::node_kind_type join_columns::node_kind() const noexcept {
     return tag;
 }
 
-common::vector<unique_object_ptr<name::simple>>& join_columns::columns() noexcept {
+std::vector<std::unique_ptr<name::simple>>& join_columns::columns() noexcept {
     return columns_;
 }
 
-common::vector<unique_object_ptr<name::simple>> const& join_columns::columns() const noexcept {
+std::vector<std::unique_ptr<name::simple>> const& join_columns::columns() const noexcept {
     return columns_;
 }
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <takatori/util/object_creator.h>
+#include <takatori/util/clone_tag.h>
 
 #include <mizugaki/ast/common/regioned.h>
 #include <mizugaki/ast/common/vector.h>
@@ -34,7 +34,7 @@ public:
      */
     explicit value_constructor(
             operator_kind_type operator_kind,
-            common::vector<operand_type> elements,
+            std::vector<operand_type> elements,
             region_type region = {}) noexcept;
 
     /**
@@ -60,19 +60,17 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit value_constructor(value_constructor const& other, ::takatori::util::object_creator creator);
+    explicit value_constructor(::takatori::util::clone_tag_t, value_constructor const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit value_constructor(value_constructor&& other, ::takatori::util::object_creator creator);
+    explicit value_constructor(::takatori::util::clone_tag_t, value_constructor&& other);
 
-    [[nodiscard]] value_constructor* clone(::takatori::util::object_creator creator) const& override;
-    [[nodiscard]] value_constructor* clone(::takatori::util::object_creator creator) && override;
+    [[nodiscard]] value_constructor* clone() const& override;
+    [[nodiscard]] value_constructor* clone() && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 
@@ -89,10 +87,10 @@ public:
      * @brief returns the row value elements.
      * @return the row value elements
      */
-    [[nodiscard]] common::vector<operand_type>& elements() noexcept;
+    [[nodiscard]] std::vector<operand_type>& elements() noexcept;
 
     /// @copydoc elements()
-    [[nodiscard]] common::vector<operand_type> const& elements() const noexcept;
+    [[nodiscard]] std::vector<operand_type> const& elements() const noexcept;
 
     /**
      * @brief compares two values.
@@ -118,7 +116,7 @@ protected:
 
 private:
     operator_kind_type operator_kind_;
-    common::vector<operand_type> elements_;
+    std::vector<operand_type> elements_;
 };
 
 /**

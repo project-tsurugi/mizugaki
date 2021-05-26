@@ -9,16 +9,14 @@
 namespace mizugaki::ast::scalar {
 
 using ::takatori::util::clone_unique;
-using ::takatori::util::object_creator;
-using ::takatori::util::unique_object_ptr;
 
 using common::clone_vector;
 using common::to_vector;
 
 static_method_invocation::static_method_invocation(
-        unique_object_ptr<type::type> type,
-        unique_object_ptr<name::simple> name,
-        common::vector<operand_type> arguments,
+        std::unique_ptr<type::type> type,
+        std::unique_ptr<name::simple> name,
+        std::vector<operand_type> arguments,
         region_type region) noexcept:
     super { region },
     type_ { std::move(type) },
@@ -39,57 +37,57 @@ static_method_invocation::static_method_invocation(
     }
 {}
 
-static_method_invocation::static_method_invocation(static_method_invocation const& other, object_creator creator) :
+static_method_invocation::static_method_invocation(::takatori::util::clone_tag_t, static_method_invocation const& other) :
     static_method_invocation {
-            clone_unique(other.type_, creator),
-            clone_unique(other.name_, creator),
-            clone_vector(other.arguments_, creator),
+            clone_unique(other.type_),
+            clone_unique(other.name_),
+            clone_vector(other.arguments_),
             other.region(),
     }
 {}
 
-static_method_invocation::static_method_invocation(static_method_invocation&& other, object_creator creator) :
+static_method_invocation::static_method_invocation(::takatori::util::clone_tag_t, static_method_invocation&& other) :
     static_method_invocation {
-            clone_unique(std::move(other.type_), creator),
-            clone_unique(std::move(other.name_), creator),
-            clone_vector(std::move(other.arguments_), creator),
+            clone_unique(std::move(other.type_)),
+            clone_unique(std::move(other.name_)),
+            clone_vector(std::move(other.arguments_)),
             other.region(),
     }
 {}
 
-static_method_invocation* static_method_invocation::clone(object_creator creator) const& {
-    return creator.create_object<static_method_invocation>(*this, creator);
+static_method_invocation* static_method_invocation::clone() const& {
+    return new static_method_invocation(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-static_method_invocation* static_method_invocation::clone(object_creator creator) && {
-    return creator.create_object<static_method_invocation>(std::move(*this), creator);
+static_method_invocation* static_method_invocation::clone() && {
+    return new static_method_invocation(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 expression::node_kind_type static_method_invocation::node_kind() const noexcept {
     return tag;
 }
 
-::takatori::util::unique_object_ptr<type::type>& static_method_invocation::type() noexcept {
+std::unique_ptr<type::type>& static_method_invocation::type() noexcept {
     return type_;
 }
 
-::takatori::util::unique_object_ptr<type::type> const& static_method_invocation::type() const noexcept {
+std::unique_ptr<type::type> const& static_method_invocation::type() const noexcept {
     return type_;
 }
 
-::takatori::util::unique_object_ptr<name::simple>& static_method_invocation::name() noexcept {
+std::unique_ptr<name::simple>& static_method_invocation::name() noexcept {
     return name_;
 }
 
-::takatori::util::unique_object_ptr<name::simple> const& static_method_invocation::name() const noexcept {
+std::unique_ptr<name::simple> const& static_method_invocation::name() const noexcept {
     return name_;
 }
 
-common::vector<expression::operand_type>& static_method_invocation::arguments() noexcept {
+std::vector<expression::operand_type>& static_method_invocation::arguments() noexcept {
     return arguments_;
 }
 
-common::vector<expression::operand_type> const& static_method_invocation::arguments() const noexcept {
+std::vector<expression::operand_type> const& static_method_invocation::arguments() const noexcept {
     return arguments_;
 }
 

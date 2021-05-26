@@ -2,7 +2,7 @@
 
 #include <optional>
 
-#include <takatori/util/object_creator.h>
+#include <takatori/util/clone_tag.h>
 #include <takatori/util/rvalue_ptr.h>
 
 #include <mizugaki/ast/common/vector.h>
@@ -35,10 +35,10 @@ public:
      * @param region the node region
      */
     explicit insert_statement(
-            ::takatori::util::unique_object_ptr<name::name> table_name,
-            common::vector<::takatori::util::unique_object_ptr<name::simple>> columns,
+            std::unique_ptr<name::name> table_name,
+            std::vector<std::unique_ptr<name::simple>> columns,
             // FIXME: overriding clause
-            ::takatori::util::unique_object_ptr<query::expression> expression,
+            std::unique_ptr<query::expression> expression,
             region_type region = {}) noexcept;
 
     /**
@@ -58,19 +58,17 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit insert_statement(insert_statement const& other, ::takatori::util::object_creator creator);
+    explicit insert_statement(::takatori::util::clone_tag_t, insert_statement const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit insert_statement(insert_statement&& other, ::takatori::util::object_creator creator);
+    explicit insert_statement(::takatori::util::clone_tag_t, insert_statement&& other);
 
-    [[nodiscard]] insert_statement* clone(::takatori::util::object_creator creator) const& override;
-    [[nodiscard]] insert_statement* clone(::takatori::util::object_creator creator) && override;
+    [[nodiscard]] insert_statement* clone() const& override;
+    [[nodiscard]] insert_statement* clone() && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 
@@ -78,30 +76,30 @@ public:
      * @brief returns the target table name.
      * @return the target table name
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<name::name>& table_name() noexcept;
+    [[nodiscard]] std::unique_ptr<name::name>& table_name() noexcept;
 
     /// @brief table_name()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<name::name> const& table_name() const noexcept;
+    [[nodiscard]] std::unique_ptr<name::name> const& table_name() const noexcept;
 
     /**
      * @brief returns the target columns.
      * @return the target columns
      * @return empty if the target columns are omitted
      */
-    [[nodiscard]] common::vector<::takatori::util::unique_object_ptr<name::simple>>& columns() noexcept;
+    [[nodiscard]] std::vector<std::unique_ptr<name::simple>>& columns() noexcept;
 
     /// @copydoc columns()
-    [[nodiscard]] common::vector<::takatori::util::unique_object_ptr<name::simple>> const& columns() const noexcept;
+    [[nodiscard]] std::vector<std::unique_ptr<name::simple>> const& columns() const noexcept;
 
     /**
      * @brief returns the query expression.
      * @return the query expression
      * @return empty if `DEFAULT VALUES` is specified
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<query::expression>& expression() noexcept;
+    [[nodiscard]] std::unique_ptr<query::expression>& expression() noexcept;
 
     /// @brief expression()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<query::expression> const& expression() const noexcept;
+    [[nodiscard]] std::unique_ptr<query::expression> const& expression() const noexcept;
     
     /**
      * @brief compares two values.
@@ -127,9 +125,9 @@ protected:
     void serialize(::takatori::serializer::object_acceptor& acceptor) const override;
 
 private:
-    ::takatori::util::unique_object_ptr<name::name> table_name_;
-    common::vector<::takatori::util::unique_object_ptr<name::simple>> columns_;
-    ::takatori::util::unique_object_ptr<query::expression> expression_;
+    std::unique_ptr<name::name> table_name_;
+    std::vector<std::unique_ptr<name::simple>> columns_;
+    std::unique_ptr<query::expression> expression_;
 };
 
 /**

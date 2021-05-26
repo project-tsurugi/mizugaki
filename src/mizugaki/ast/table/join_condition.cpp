@@ -9,11 +9,9 @@
 namespace mizugaki::ast::table {
 
 using ::takatori::util::clone_unique;
-using ::takatori::util::object_creator;
-using ::takatori::util::unique_object_ptr;
 
 join_condition::join_condition(
-        unique_object_ptr<scalar::expression> expression,
+        std::unique_ptr<scalar::expression> expression,
         region_type region) noexcept :
     super { region },
     expression_ { std::move(expression) }
@@ -28,37 +26,37 @@ join_condition::join_condition(
     }
 {}
 
-join_condition::join_condition(join_condition const& other, object_creator creator) :
+join_condition::join_condition(::takatori::util::clone_tag_t, join_condition const& other) :
     join_condition {
-            clone_unique(other.expression_, creator),
+            clone_unique(other.expression_),
             other.region(),
     }
 {}
 
-join_condition::join_condition(join_condition&& other, object_creator creator) :
+join_condition::join_condition(::takatori::util::clone_tag_t, join_condition&& other) :
     join_condition {
-            clone_unique(std::move(other.expression_), creator),
+            clone_unique(std::move(other.expression_)),
             other.region(),
     }
 {}
 
-join_condition* join_condition::clone(object_creator creator) const& {
-    return creator.create_object<join_condition>(*this, creator);
+join_condition* join_condition::clone() const& {
+    return new join_condition(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-join_condition* join_condition::clone(object_creator creator)&& {
-    return creator.create_object<join_condition>(std::move(*this), creator);
+join_condition* join_condition::clone()&& {
+    return new join_condition(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 join_specification::node_kind_type join_condition::node_kind() const noexcept {
     return tag;
 }
 
-unique_object_ptr<scalar::expression>& join_condition::expression() noexcept {
+std::unique_ptr<scalar::expression>& join_condition::expression() noexcept {
     return expression_;
 }
 
-unique_object_ptr<scalar::expression> const& join_condition::expression() const noexcept {
+std::unique_ptr<scalar::expression> const& join_condition::expression() const noexcept {
     return expression_;
 }
 

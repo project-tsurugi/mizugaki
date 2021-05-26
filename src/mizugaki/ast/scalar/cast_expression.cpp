@@ -11,13 +11,11 @@ namespace mizugaki::ast::scalar {
 using operator_kind_type = cast_expression::operator_kind_type;
 
 using ::takatori::util::clone_unique;
-using ::takatori::util::object_creator;
-using ::takatori::util::unique_object_ptr;
 
 cast_expression::cast_expression(
         operator_kind_type operator_kind,
         operand_type operand,
-        unique_object_ptr<type::type> type,
+        std::unique_ptr<type::type> type,
         region_type region) noexcept :
     super { region },
     operator_kind_ { operator_kind },
@@ -38,30 +36,30 @@ cast_expression::cast_expression(
     }
 {}
 
-cast_expression::cast_expression(cast_expression const& other, object_creator creator) :
+cast_expression::cast_expression(::takatori::util::clone_tag_t, cast_expression const& other) :
     cast_expression {
             other.operator_kind_,
-            clone_unique(other.operand_, creator),
-            clone_unique(other.type_, creator),
+            clone_unique(other.operand_),
+            clone_unique(other.type_),
             other.region(),
     }
 {}
 
-cast_expression::cast_expression(cast_expression&& other, object_creator creator) :
+cast_expression::cast_expression(::takatori::util::clone_tag_t, cast_expression&& other) :
     cast_expression {
             other.operator_kind_,
-            clone_unique(std::move(other.operand_), creator),
-            clone_unique(std::move(other.type_), creator),
+            clone_unique(std::move(other.operand_)),
+            clone_unique(std::move(other.type_)),
             other.region(),
     }
 {}
 
-cast_expression* cast_expression::clone(object_creator creator) const& {
-    return creator.create_object<cast_expression>(*this, creator);
+cast_expression* cast_expression::clone() const& {
+    return new cast_expression(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-cast_expression* cast_expression::clone(object_creator creator) && {
-    return creator.create_object<cast_expression>(std::move(*this), creator);
+cast_expression* cast_expression::clone() && {
+    return new cast_expression(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 expression::node_kind_type cast_expression::node_kind() const noexcept {
@@ -84,11 +82,11 @@ expression::operand_type const& cast_expression::operand() const noexcept {
     return operand_;
 }
 
-unique_object_ptr<type::type>& cast_expression::type() noexcept {
+std::unique_ptr<type::type>& cast_expression::type() noexcept {
     return type_;
 }
 
-unique_object_ptr<type::type> const& cast_expression::type() const noexcept {
+std::unique_ptr<type::type> const& cast_expression::type() const noexcept {
     return type_;
 }
 

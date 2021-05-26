@@ -56,10 +56,7 @@ public:
     }
 
     result_type operator()(::shakujo::common::core::value::String const& info) {
-        return translator_.values().get(value::character {
-                *info,
-                translator_.object_creator().allocator(),
-        });
+        return translator_.values().get(value::character { *info });
     }
 
     result_type operator()(::shakujo::common::core::value::Null const&) {

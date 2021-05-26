@@ -1,6 +1,6 @@
 #pragma once
 
-#include <takatori/util/object_creator.h>
+#include <takatori/util/clone_tag.h>
 
 #include <mizugaki/ast/name/name.h>
 
@@ -25,7 +25,7 @@ public:
      * @param region the node region
      */
     explicit user_defined(
-            ::takatori::util::unique_object_ptr<name::name> name,
+            std::unique_ptr<name::name> name,
             region_type region = {}) noexcept;
 
     /**
@@ -41,19 +41,17 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit user_defined(user_defined const& other, ::takatori::util::object_creator creator);
+    explicit user_defined(::takatori::util::clone_tag_t, user_defined const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit user_defined(user_defined&& other, ::takatori::util::object_creator creator);
+    explicit user_defined(::takatori::util::clone_tag_t, user_defined&& other);
 
-    [[nodiscard]] user_defined* clone(::takatori::util::object_creator creator) const& override;
-    [[nodiscard]] user_defined* clone(::takatori::util::object_creator creator) && override;
+    [[nodiscard]] user_defined* clone() const& override;
+    [[nodiscard]] user_defined* clone() && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 
@@ -61,10 +59,10 @@ public:
      * @brief returns the type name.
      * @return the type name
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<name::name>& name() noexcept;
+    [[nodiscard]] std::unique_ptr<name::name>& name() noexcept;
 
     /// @brief name()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<name::name> const& name() const noexcept;
+    [[nodiscard]] std::unique_ptr<name::name> const& name() const noexcept;
 
     /**
      * @brief compares two values.
@@ -89,7 +87,7 @@ protected:
     void serialize(::takatori::serializer::object_acceptor& acceptor) const override;
 
 private:
-    ::takatori::util::unique_object_ptr<name::name> name_;
+    std::unique_ptr<name::name> name_;
 };
 
 /**

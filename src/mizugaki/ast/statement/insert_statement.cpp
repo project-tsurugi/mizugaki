@@ -9,17 +9,15 @@
 namespace mizugaki::ast::statement {
 
 using ::takatori::util::clone_unique;
-using ::takatori::util::object_creator;
 using ::takatori::util::rvalue_ptr;
-using ::takatori::util::unique_object_ptr;
 
 using common::clone_vector;
 using common::to_vector;
 
 insert_statement::insert_statement(
-        unique_object_ptr<name::name> table_name,
-        common::vector<unique_object_ptr<name::simple>> columns,
-        unique_object_ptr<query::expression> expression,
+        std::unique_ptr<name::name> table_name,
+        std::vector<std::unique_ptr<name::simple>> columns,
+        std::unique_ptr<query::expression> expression,
         region_type region) noexcept :
     super { region },
     table_name_ { std::move(table_name) },
@@ -40,57 +38,57 @@ insert_statement::insert_statement(
     }
 {}
 
-insert_statement::insert_statement(insert_statement const& other, object_creator creator) :
+insert_statement::insert_statement(::takatori::util::clone_tag_t, insert_statement const& other) :
     insert_statement {
-            clone_unique(other.table_name_, creator),
-            clone_vector(other.columns_, creator),
-            clone_unique(other.expression_, creator),
+            clone_unique(other.table_name_),
+            clone_vector(other.columns_),
+            clone_unique(other.expression_),
             other.region(),
     }
 {}
 
-insert_statement::insert_statement(insert_statement&& other, object_creator creator) :
+insert_statement::insert_statement(::takatori::util::clone_tag_t, insert_statement&& other) :
     insert_statement {
-            clone_unique(std::move(other.table_name_), creator),
-            clone_vector(std::move(other.columns_), creator),
-            clone_unique(std::move(other.expression_), creator),
+            clone_unique(std::move(other.table_name_)),
+            clone_vector(std::move(other.columns_)),
+            clone_unique(std::move(other.expression_)),
             other.region(),
     }
 {}
 
-insert_statement* insert_statement::clone(object_creator creator) const& {
-    return creator.create_object<insert_statement>(*this, creator);
+insert_statement* insert_statement::clone() const& {
+    return new insert_statement(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-insert_statement* insert_statement::clone(object_creator creator) && {
-    return creator.create_object<insert_statement>(std::move(*this), creator);
+insert_statement* insert_statement::clone() && {
+    return new insert_statement(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 statement::node_kind_type insert_statement::node_kind() const noexcept {
     return tag;
 }
 
-unique_object_ptr<name::name>& insert_statement::table_name() noexcept {
+std::unique_ptr<name::name>& insert_statement::table_name() noexcept {
     return table_name_;
 }
 
-unique_object_ptr<name::name> const& insert_statement::table_name() const noexcept {
+std::unique_ptr<name::name> const& insert_statement::table_name() const noexcept {
     return table_name_;
 }
 
-common::vector<unique_object_ptr<name::simple>>& insert_statement::columns() noexcept {
+std::vector<std::unique_ptr<name::simple>>& insert_statement::columns() noexcept {
     return columns_;
 }
 
-common::vector<unique_object_ptr<name::simple>> const& insert_statement::columns() const noexcept {
+std::vector<std::unique_ptr<name::simple>> const& insert_statement::columns() const noexcept {
     return columns_;
 }
 
-unique_object_ptr<query::expression>& insert_statement::expression() noexcept {
+std::unique_ptr<query::expression>& insert_statement::expression() noexcept {
     return expression_;
 }
 
-unique_object_ptr<query::expression> const& insert_statement::expression() const noexcept {
+std::unique_ptr<query::expression> const& insert_statement::expression() const noexcept {
     return expression_;
 }
 

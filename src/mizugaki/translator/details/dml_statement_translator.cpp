@@ -15,7 +15,6 @@
 #include <takatori/util/assertion.h>
 #include <takatori/util/downcast.h>
 #include <takatori/util/fail.h>
-#include <takatori/util/object_creator.h>
 #include <takatori/util/optional_ptr.h>
 #include <takatori/util/string_builder.h>
 
@@ -35,14 +34,10 @@ using code_type = shakujo_translator_code;
 
 using ::takatori::util::optional_ptr;
 using ::takatori::util::string_builder;
-using ::takatori::util::unique_object_ptr;
 using ::takatori::util::unsafe_downcast;
 
 namespace relation = ::takatori::relation;
 namespace dml = ::shakujo::model::statement::dml;
-
-template<class T>
-using object_vector = std::vector<T, ::takatori::util::object_allocator<T>>;
 
 namespace {
 
@@ -71,11 +66,11 @@ public:
             columns.emplace_back(variable, name);
         });
 
-        auto&& w = graph->emplace<emit>(std::move(columns), translator_.object_creator());
+        auto&& w = graph->emplace<emit>(std::move(columns));
         w.region() = translator_.region(node.region());
         w.input().connect_to(*r);
 
-        return std::move(graph);
+        return { std::move(graph) };
     }
 
     result_type operator()(dml::InsertRelationStatement const& node) {
@@ -140,13 +135,12 @@ public:
                 ::takatori::relation::write_kind::insert,
                 factory()(*index),
                 std::move(keys),
-                std::move(columns),
-                translator_.object_creator());
+                std::move(columns));
         w.region() = translator_.region(node.region());
 
         w.input().connect_to(*r);
 
-        return std::move(graph);
+        return { std::move(graph) };
     }
 
     result_type operator()(dml::UpdateStatement const& node) {
@@ -167,7 +161,7 @@ public:
         using ::takatori::relation::write;
         auto keys = build_keys(relation);
         auto columns = new_vector<write::column>(node.columns().size());
-        unique_object_ptr<::takatori::relation::project> projection {};
+        std::unique_ptr<::takatori::relation::project> projection {};
         for (auto&& mapping : node.columns()) {
             auto c = find_column(relation, *mapping->name());
             if (!c) return {};
@@ -180,8 +174,7 @@ public:
                 ::takatori::relation::write_kind::update,
                 factory()(*index),
                 std::move(keys),
-                std::move(columns),
-                translator_.object_creator());
+                std::move(columns));
         w.region() = translator_.region(node.region());
 
         if (projection) {
@@ -191,7 +184,7 @@ public:
         } else {
             r->connect_to(w.input());
         }
-        return std::move(graph);
+        return { std::move(graph) };
     }
 
     result_type operator()(dml::DeleteStatement const& node) {
@@ -211,12 +204,11 @@ public:
                 ::takatori::relation::write_kind::delete_,
                 factory()(*index),
                 std::move(keys),
-                new_vector<write::column>(),
-                translator_.object_creator());
+                new_vector<write::column>());
         w.region() = translator_.region(node.region());
         w.input().connect_to(*r);
 
-        return std::move(graph);
+        return { std::move(graph) };
     }
 
     result_type operator()(dml::InsertValuesStatement const& node) {
@@ -232,8 +224,8 @@ public:
 
         using ::takatori::statement::write;
 
-        object_vector<write::column> columns { translator_.object_creator().allocator() };
-        write::tuple tuple { translator_.object_creator() };
+        std::vector<write::column> columns {};
+        write::tuple tuple {};
         columns.reserve(node.columns().size());
         tuple.elements().reserve(node.columns().size());
         for (auto&& column : node.columns()) {
@@ -248,7 +240,7 @@ public:
             tuple.elements().push_back(std::move(v));
         }
 
-        object_vector<write::tuple> tuples { translator_.object_creator().allocator() };
+        std::vector<write::tuple> tuples {};
         tuples.emplace_back(std::move(tuple));
 
         auto result = create<write>(
@@ -272,24 +264,24 @@ private:
         return {};
     }
 
-    [[nodiscard]] unique_object_ptr<relation::graph_type> new_graph() const {
-        return create<relation::graph_type>(translator_.object_creator());
+    [[nodiscard]] std::unique_ptr<relation::graph_type> new_graph() const {
+        return create<relation::graph_type>();
     }
 
     template<class T>
-    [[nodiscard]] object_vector<T> new_vector(std::size_t capacity = 0) const {
-        object_vector<T> result { translator_.object_creator().allocator() };
+    [[nodiscard]] std::vector<T> new_vector(std::size_t capacity = 0) const {
+        std::vector<T> result {};
         result.reserve(capacity);
         return result;
     }
 
     template<class T, class... Args>
-    [[nodiscard]] unique_object_ptr<T> create(Args&&... args) const {
-        return translator_.object_creator().create_unique<T>(std::forward<Args>(args)...);
+    [[nodiscard]] std::unique_ptr<T> create(Args&&... args) const {
+        return std::make_unique<T>(std::forward<Args>(args)...);
     }
 
     [[nodiscard]] ::yugawara::binding::factory factory() const noexcept {
-        return ::yugawara::binding::factory { translator_.object_creator() };
+        return {};
     }
 
     [[nodiscard]] optional_ptr<::yugawara::storage::index const> find_table(::shakujo::model::name::Name const* name) {
@@ -333,7 +325,7 @@ private:
         return {};
     }
 
-    [[nodiscard]] object_vector<::takatori::relation::write::key> build_keys(relation_info const& relation) const {
+    [[nodiscard]] std::vector<::takatori::relation::write::key> build_keys(relation_info const& relation) const {
         auto index = relation.table_index();
         BOOST_ASSERT(index); // NOLINT
         auto keys = new_vector<::takatori::relation::write::key>(index->keys().size());
@@ -349,7 +341,7 @@ private:
             ::shakujo::model::Node const& parent,
             ::shakujo::model::expression::Expression const& node,
             relation_info const& relation,
-            unique_object_ptr<::takatori::relation::project>& projection) const {
+            std::unique_ptr<::takatori::relation::project>& projection) const {
         scalar_expression_translator scalars { translator_ };
         auto v = scalars.process(node, { translator_.options(), relation });
         if (!v) return {};
@@ -363,10 +355,7 @@ private:
         // otherwise, creates a new projection column and returns it
         if (!projection) {
             using ::takatori::relation::project;
-            projection = translator_.object_creator().create_unique<project>(
-                    new_vector<project::column>(),
-                    translator_.object_creator()
-            );
+            projection = std::make_unique<project>(new_vector<project::column>());
             projection->region() = translator_.region(parent.region());
         }
         auto result = factory().stream_variable();

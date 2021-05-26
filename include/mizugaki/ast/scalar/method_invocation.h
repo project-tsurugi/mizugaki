@@ -1,6 +1,6 @@
 #pragma once
 
-#include <takatori/util/object_creator.h>
+#include <takatori/util/clone_tag.h>
 
 #include <mizugaki/ast/common/regioned.h>
 #include <mizugaki/ast/common/rvalue_list.h>
@@ -39,8 +39,8 @@ public:
     explicit method_invocation(
             operand_type value,
             operator_kind_type operator_kind,
-            ::takatori::util::unique_object_ptr<name::simple> name,
-            common::vector<operand_type> arguments,
+            std::unique_ptr<name::simple> name,
+            std::vector<operand_type> arguments,
             region_type region = {}) noexcept;
 
     /**
@@ -62,19 +62,17 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit method_invocation(method_invocation const& other, ::takatori::util::object_creator creator);
+    explicit method_invocation(::takatori::util::clone_tag_t, method_invocation const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit method_invocation(method_invocation&& other, ::takatori::util::object_creator creator);
+    explicit method_invocation(::takatori::util::clone_tag_t, method_invocation&& other);
 
-    [[nodiscard]] method_invocation* clone(::takatori::util::object_creator creator) const& override;
-    [[nodiscard]] method_invocation* clone(::takatori::util::object_creator creator) && override;
+    [[nodiscard]] method_invocation* clone() const& override;
+    [[nodiscard]] method_invocation* clone() && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 
@@ -100,19 +98,19 @@ public:
      * @brief returns the method name.
      * @return the method name
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<name::simple>& name() noexcept;
+    [[nodiscard]] std::unique_ptr<name::simple>& name() noexcept;
 
     /// @brief name()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<name::simple> const& name() const noexcept;
+    [[nodiscard]] std::unique_ptr<name::simple> const& name() const noexcept;
 
     /**
      * @brief returns the function argument list.
      * @return the function argument list
      */
-    [[nodiscard]] common::vector<operand_type>& arguments() noexcept;
+    [[nodiscard]] std::vector<operand_type>& arguments() noexcept;
 
     /// @copydoc arguments()
-    [[nodiscard]] common::vector<operand_type> const& arguments() const noexcept;
+    [[nodiscard]] std::vector<operand_type> const& arguments() const noexcept;
 
     /**
      * @brief compares two values.
@@ -139,8 +137,8 @@ protected:
 private:
     operand_type value_;
     operator_kind_type operator_kind_;
-    ::takatori::util::unique_object_ptr<name::simple> name_;
-    common::vector<operand_type> arguments_;
+    std::unique_ptr<name::simple> name_;
+    std::vector<operand_type> arguments_;
 };
 
 /**

@@ -2,7 +2,7 @@
 
 #include <optional>
 
-#include <takatori/util/object_creator.h>
+#include <takatori/util/clone_tag.h>
 
 #include <mizugaki/ast/common/vector.h>
 #include <mizugaki/ast/common/target_element.h>
@@ -32,8 +32,8 @@ public:
      * @param region the node region
      */
     explicit select_statement(
-            ::takatori::util::unique_object_ptr<query::expression> expression,
-            common::vector<target_element> targets = {},
+            std::unique_ptr<query::expression> expression,
+            std::vector<target_element> targets = {},
             region_type region = {}) noexcept;
 
     /**
@@ -51,19 +51,17 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit select_statement(select_statement const& other, ::takatori::util::object_creator creator);
+    explicit select_statement(::takatori::util::clone_tag_t, select_statement const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit select_statement(select_statement&& other, ::takatori::util::object_creator creator);
+    explicit select_statement(::takatori::util::clone_tag_t, select_statement&& other);
 
-    [[nodiscard]] select_statement* clone(::takatori::util::object_creator creator) const& override;
-    [[nodiscard]] select_statement* clone(::takatori::util::object_creator creator) && override;
+    [[nodiscard]] select_statement* clone() const& override;
+    [[nodiscard]] select_statement* clone() && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 
@@ -71,10 +69,10 @@ public:
      * @brief returns the query expression.
      * @return the query expression
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<query::expression>& expression() noexcept;
+    [[nodiscard]] std::unique_ptr<query::expression>& expression() noexcept;
 
     /// @brief expression()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<query::expression> const& expression() const noexcept;
+    [[nodiscard]] std::unique_ptr<query::expression> const& expression() const noexcept;
 
     /**
      * @brief returns the optional output targets.
@@ -82,10 +80,10 @@ public:
      * @return empty if the output targets are not declared
      * @note `14.5 <select statement: single row>`
      */
-    [[nodiscard]] common::vector<target_element>& targets() noexcept;
+    [[nodiscard]] std::vector<target_element>& targets() noexcept;
 
     /// @copydoc targets()
-    [[nodiscard]] common::vector<target_element> const& targets() const noexcept;
+    [[nodiscard]] std::vector<target_element> const& targets() const noexcept;
     
     /**
      * @brief compares two values.
@@ -110,8 +108,8 @@ protected:
     void serialize(::takatori::serializer::object_acceptor& acceptor) const override;
 
 private:
-    ::takatori::util::unique_object_ptr<query::expression> expression_;
-    common::vector<target_element> targets_;
+    std::unique_ptr<query::expression> expression_;
+    std::vector<target_element> targets_;
 };
 
 /**

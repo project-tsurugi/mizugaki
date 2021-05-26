@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include <takatori/util/clone_tag.h>
 #include <takatori/util/enum_tag.h>
 
 #include <mizugaki/ast/common/chars.h>
@@ -27,7 +28,7 @@ public:
     using value_type = common::regioned<common::chars>;
 
     /// @brief the concatenations type.
-    using concatenations_type = common::vector<value_type>;
+    using concatenations_type = std::vector<value_type>;
 
     /// @brief the node kind of this.
     static constexpr kind_set tags {
@@ -76,19 +77,17 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit string(string const& other, ::takatori::util::object_creator creator);
+    explicit string(::takatori::util::clone_tag_t, string const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit string(string&& other, ::takatori::util::object_creator creator);
+    explicit string(::takatori::util::clone_tag_t, string&& other);
 
-    [[nodiscard]] string* clone(::takatori::util::object_creator creator) const& override;
-    [[nodiscard]] string* clone(::takatori::util::object_creator creator) && override;
+    [[nodiscard]] string* clone() const& override;
+    [[nodiscard]] string* clone() && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 

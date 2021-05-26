@@ -3,7 +3,6 @@
 #include <vector>
 
 #include <takatori/util/clonable.h>
-#include <takatori/util/object_creator.h>
 
 namespace mizugaki::ast::common {
 
@@ -19,13 +18,13 @@ class clone_wrapper;
  * @tparam E the element type
  */
 template<class E>
-class clone_wrapper<::takatori::util::unique_object_ptr<E>> {
+class clone_wrapper<std::unique_ptr<E>> {
 public:
     /// @brief the element type.
     using element_type = E;
 
     /// @brief the smart pointer type.
-    using target_type = ::takatori::util::unique_object_ptr<E>;
+    using target_type = std::unique_ptr<E>;
 
     /**
      * @brief creates a new empty object.
@@ -100,9 +99,7 @@ private:
     target_type element_ {};
 
     [[nodiscard]] target_type clone() const noexcept {
-        return ::takatori::util::clone_unique(
-                element_,
-                ::takatori::util::get_object_creator_from_deleter(element_.get_deleter()));
+        return ::takatori::util::clone_unique(element_);
     }
 };
 
@@ -111,18 +108,13 @@ private:
  * @tparam E the element type
  */
 template<class E>
-class clone_wrapper<
-        std::vector<
-                ::takatori::util::unique_object_ptr<E>,
-                ::takatori::util::object_allocator<::takatori::util::unique_object_ptr<E>>>> {
+class clone_wrapper<std::vector<std::unique_ptr<E>>> {
 public:
     /// @brief the element type.
     using element_type = E;
 
     /// @brief the smart pointer type.
-    using target_type = std::vector<
-            ::takatori::util::unique_object_ptr<E>,
-            ::takatori::util::object_allocator<::takatori::util::unique_object_ptr<E>>>;
+    using target_type = std::vector<std::unique_ptr<E>>;
 
     /**
      * @brief creates a new empty object.
@@ -201,12 +193,10 @@ private:
     target_type element_ {};
 
     [[nodiscard]] target_type clone() const {
-        target_type results { element_.get_allocator() };
+        target_type results {};
         results.reserve(element_.size());
         for (auto&& e : element_) {
-            results.emplace_back(::takatori::util::clone_unique(
-                    e,
-                    ::takatori::util::get_object_creator_from_deleter(e.get_deleter())));
+            results.emplace_back(::takatori::util::clone_unique(e));
         }
         return results;
     }

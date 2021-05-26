@@ -12,16 +12,14 @@ using node_kind_type = type::node_kind_type;
 using length_type = collection::length_type;
 
 using ::takatori::util::clone_unique;
-using ::takatori::util::object_creator;
-using ::takatori::util::unique_object_ptr;
 
 collection::collection(
-        unique_object_ptr<type> element,
+        std::unique_ptr<type> element,
         std::optional<length_type> length,
         region_type region) noexcept :
     super { region },
     element_ { std::move(element) },
-    length_ { std::move(length) }
+    length_ { length }
 {}
 
 collection::collection(
@@ -30,44 +28,44 @@ collection::collection(
         region_type region) :
     collection {
             clone_unique(std::move(element)),
-            std::move(length),
+            length,
             region,
     }
 {}
 
-collection::collection(collection const& other, object_creator creator) :
+collection::collection(::takatori::util::clone_tag_t, collection const& other) :
     collection {
-            clone_unique(other.element_, creator),
+            clone_unique(other.element_),
             other.length_,
             other.region(),
     }
 {}
 
-collection::collection(collection&& other, object_creator creator) :
+collection::collection(::takatori::util::clone_tag_t, collection&& other) :
     collection {
-            clone_unique(std::move(other.element_), creator),
-            std::move(other.length_),
+            clone_unique(std::move(other.element_)),
+            other.length_,
             other.region(),
     }
 {}
 
-collection* collection::clone(object_creator creator) const& {
-    return creator.create_object<collection>(*this, creator);
+collection* collection::clone() const& {
+    return new collection(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-collection* collection::clone(object_creator creator) && {
-    return creator.create_object<collection>(std::move(*this), creator);
+collection* collection::clone() && {
+    return new collection(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 node_kind_type collection::node_kind() const noexcept {
     return tag;
 }
 
-unique_object_ptr<type>& collection::element() noexcept {
+std::unique_ptr<type>& collection::element() noexcept {
     return element_;
 }
 
-unique_object_ptr<type> const& collection::element() const noexcept {
+std::unique_ptr<type> const& collection::element() const noexcept {
     return element_;
 }
 

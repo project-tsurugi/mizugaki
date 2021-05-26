@@ -1,6 +1,6 @@
 #pragma once
 
-#include <takatori/util/object_creator.h>
+#include <takatori/util/clone_tag.h>
 
 #include <mizugaki/ast/common/regioned.h>
 #include <mizugaki/ast/literal/literal.h>
@@ -28,7 +28,7 @@ public:
      * @param region the node region
      */
     explicit literal_expression(
-            ::takatori::util::unique_object_ptr<literal::literal> value,
+            std::unique_ptr<literal::literal> value,
             region_type region = {}) noexcept;
 
     /**
@@ -44,19 +44,17 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit literal_expression(literal_expression const& other, ::takatori::util::object_creator creator);
+    explicit literal_expression(::takatori::util::clone_tag_t, literal_expression const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit literal_expression(literal_expression&& other, ::takatori::util::object_creator creator);
+    explicit literal_expression(::takatori::util::clone_tag_t, literal_expression&& other);
 
-    [[nodiscard]] literal_expression* clone(::takatori::util::object_creator creator) const& override;
-    [[nodiscard]] literal_expression* clone(::takatori::util::object_creator creator) && override;
+    [[nodiscard]] literal_expression* clone() const& override;
+    [[nodiscard]] literal_expression* clone() && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 
@@ -64,10 +62,10 @@ public:
      * @brief returns the value.
      * @return the value
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<literal::literal>& value() noexcept;
+    [[nodiscard]] std::unique_ptr<literal::literal>& value() noexcept;
 
     /// @brief value()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<literal::literal> const& value() const noexcept;
+    [[nodiscard]] std::unique_ptr<literal::literal> const& value() const noexcept;
 
     /**
      * @brief compares two values.
@@ -92,7 +90,7 @@ protected:
     void serialize(::takatori::serializer::object_acceptor& acceptor) const override;
 
 private:
-    ::takatori::util::unique_object_ptr<literal::literal> value_;
+    std::unique_ptr<literal::literal> value_;
 };
 
 /**

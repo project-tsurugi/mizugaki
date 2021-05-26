@@ -8,19 +8,17 @@
 namespace mizugaki::ast::common {
 
 using ::takatori::util::clone_unique;
-using ::takatori::util::object_creator;
 using ::takatori::util::rvalue_ptr;
-using ::takatori::util::unique_object_ptr;
 
 sort_element::sort_element(
-        unique_object_ptr<scalar::expression> key,
-        unique_object_ptr<name::name> collation,
+        std::unique_ptr<scalar::expression> key,
+        std::unique_ptr<name::name> collation,
         std::optional<direction_type> direction,
         element::region_type region) noexcept :
     element { region },
     key_ { std::move(key) },
     collation_ { std::move(collation) },
-    direction_ { std::move(direction) }
+    direction_ { direction }
 {}
 
 sort_element::sort_element(
@@ -31,7 +29,7 @@ sort_element::sort_element(
     sort_element {
             clone_unique(std::move(key)),
             clone_unique(collation),
-            std::move(direction),
+            direction,
             region,
     }
 {}
@@ -48,10 +46,9 @@ sort_element::sort_element(
     }
 {}
 
-static inline unique_object_ptr<scalar::variable_reference> to_expr(name::name&& column) {
-    object_creator c;
+static inline std::unique_ptr<scalar::variable_reference> to_expr(name::name&& column) {
     auto r = column.region();
-    return c.create_unique<scalar::variable_reference>(std::move(column), r);
+    return std::make_unique<scalar::variable_reference>(std::move(column), r);
 }
 
 sort_element::sort_element(
@@ -62,7 +59,7 @@ sort_element::sort_element(
     sort_element {
             to_expr(std::move(key)),
             clone_unique(collation),
-            std::move(direction),
+            direction,
             region,
     }
 {}
@@ -79,37 +76,37 @@ sort_element::sort_element(
     }
 {}
 
-sort_element::sort_element(sort_element const& other, object_creator creator) :
+sort_element::sort_element(::takatori::util::clone_tag_t, sort_element const& other) :
     sort_element {
-            clone_unique(*other.key_, creator),
-            clone_unique(*other.collation_, creator),
+            clone_unique(*other.key_),
+            clone_unique(*other.collation_),
             other.direction_,
             other.region(),
     }
 {}
 
-sort_element::sort_element(sort_element&& other, object_creator creator) :
+sort_element::sort_element(::takatori::util::clone_tag_t, sort_element&& other) :
     sort_element {
-            clone_unique(std::move(*other.key_), creator),
-            clone_unique(std::move(*other.collation_), creator),
+            clone_unique(std::move(*other.key_)),
+            clone_unique(std::move(*other.collation_)),
             other.direction_,
             other.region(),
     }
 {}
 
-unique_object_ptr<scalar::expression>& sort_element::key() noexcept {
+std::unique_ptr<scalar::expression>& sort_element::key() noexcept {
     return *key_;
 }
 
-unique_object_ptr<scalar::expression> const& sort_element::key() const noexcept {
+std::unique_ptr<scalar::expression> const& sort_element::key() const noexcept {
     return *key_;
 }
 
-unique_object_ptr<name::name>& sort_element::collation() noexcept {
+std::unique_ptr<name::name>& sort_element::collation() noexcept {
     return *collation_;
 }
 
-unique_object_ptr<name::name> const& sort_element::collation() const noexcept {
+std::unique_ptr<name::name> const& sort_element::collation() const noexcept {
     return *collation_;
 }
 

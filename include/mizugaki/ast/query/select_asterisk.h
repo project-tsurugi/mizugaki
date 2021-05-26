@@ -1,6 +1,6 @@
 #pragma once
 
-#include <takatori/util/object_creator.h>
+#include <takatori/util/clone_tag.h>
 
 #include <mizugaki/ast/element.h>
 #include <mizugaki/ast/scalar/expression.h>
@@ -29,7 +29,7 @@ public:
      * @param region the element region
      */
     explicit select_asterisk(
-            ::takatori::util::unique_object_ptr<scalar::expression> qualifier = {},
+            std::unique_ptr<scalar::expression> qualifier = {},
             region_type region = {}) noexcept;
 
     /**
@@ -45,19 +45,17 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit select_asterisk(select_asterisk const& other, ::takatori::util::object_creator creator);
+    explicit select_asterisk(::takatori::util::clone_tag_t, select_asterisk const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit select_asterisk(select_asterisk&& other, ::takatori::util::object_creator creator);
+    explicit select_asterisk(::takatori::util::clone_tag_t, select_asterisk&& other);
 
-    [[nodiscard]] select_asterisk* clone(::takatori::util::object_creator creator) const& override;
-    [[nodiscard]] select_asterisk* clone(::takatori::util::object_creator creator) && override;
+    [[nodiscard]] select_asterisk* clone() const& override;
+    [[nodiscard]] select_asterisk* clone() && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 
@@ -66,10 +64,10 @@ public:
      * @return the qualifier name
      * @return empty there is no qualifier
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<scalar::expression>& qualifier() noexcept;
+    [[nodiscard]] std::unique_ptr<scalar::expression>& qualifier() noexcept;
 
     /// @copydoc qualifier()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<scalar::expression> const& qualifier() const noexcept;
+    [[nodiscard]] std::unique_ptr<scalar::expression> const& qualifier() const noexcept;
 
     /**
      * @brief compares two values.
@@ -94,7 +92,7 @@ protected:
     void serialize(::takatori::serializer::object_acceptor& acceptor) const override;
 
 private:
-    ::takatori::util::unique_object_ptr<scalar::expression> qualifier_;
+    std::unique_ptr<scalar::expression> qualifier_;
 };
 
 /**

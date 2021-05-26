@@ -1,6 +1,6 @@
 #pragma once
 
-#include <takatori/util/object_creator.h>
+#include <takatori/util/clone_tag.h>
 
 #include <mizugaki/ast/name/simple.h>
 
@@ -26,7 +26,7 @@ public:
      * @param region the node region
      */
     explicit host_parameter_reference(
-            ::takatori::util::unique_object_ptr<name::simple> name,
+            std::unique_ptr<name::simple> name,
             region_type region = {}) noexcept;
 
     /**
@@ -42,19 +42,17 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit host_parameter_reference(host_parameter_reference const& other, ::takatori::util::object_creator creator);
+    explicit host_parameter_reference(::takatori::util::clone_tag_t, host_parameter_reference const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit host_parameter_reference(host_parameter_reference&& other, ::takatori::util::object_creator creator);
+    explicit host_parameter_reference(::takatori::util::clone_tag_t, host_parameter_reference&& other);
 
-    [[nodiscard]] host_parameter_reference* clone(::takatori::util::object_creator creator) const& override;
-    [[nodiscard]] host_parameter_reference* clone(::takatori::util::object_creator creator) && override;
+    [[nodiscard]] host_parameter_reference* clone() const& override;
+    [[nodiscard]] host_parameter_reference* clone() && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 
@@ -62,10 +60,10 @@ public:
      * @brief returns the variable name.
      * @return the variable name
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<name::simple>& name() noexcept;
+    [[nodiscard]] std::unique_ptr<name::simple>& name() noexcept;
 
     /// @brief name()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<name::simple> const& name() const noexcept;
+    [[nodiscard]] std::unique_ptr<name::simple> const& name() const noexcept;
 
     /**
      * @brief compares two values.
@@ -90,7 +88,7 @@ protected:
     void serialize(::takatori::serializer::object_acceptor& acceptor) const override;
 
 private:
-    ::takatori::util::unique_object_ptr<name::simple> name_;
+    std::unique_ptr<name::simple> name_;
 };
 
 /**

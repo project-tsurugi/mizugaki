@@ -1,6 +1,6 @@
 #pragma once
 
-#include <takatori/util/object_creator.h>
+#include <takatori/util/clone_tag.h>
 
 #include <mizugaki/ast/name/name.h>
 
@@ -27,7 +27,7 @@ public:
      * @param region the node region
      */
     explicit current_of_cursor(
-            ::takatori::util::unique_object_ptr<name::name> name,
+            std::unique_ptr<name::name> name,
             region_type region = {}) noexcept;
 
     /**
@@ -43,19 +43,17 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit current_of_cursor(current_of_cursor const& other, ::takatori::util::object_creator creator);
+    explicit current_of_cursor(::takatori::util::clone_tag_t, current_of_cursor const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit current_of_cursor(current_of_cursor&& other, ::takatori::util::object_creator creator);
+    explicit current_of_cursor(::takatori::util::clone_tag_t, current_of_cursor&& other);
 
-    [[nodiscard]] current_of_cursor* clone(::takatori::util::object_creator creator) const& override;
-    [[nodiscard]] current_of_cursor* clone(::takatori::util::object_creator creator) && override;
+    [[nodiscard]] current_of_cursor* clone() const& override;
+    [[nodiscard]] current_of_cursor* clone() && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 
@@ -63,10 +61,10 @@ public:
      * @brief returns the cursor name.
      * @return the cursor name
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<name::name>& name() noexcept;
+    [[nodiscard]] std::unique_ptr<name::name>& name() noexcept;
 
     /// @brief name()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<name::name> const& name() const noexcept;
+    [[nodiscard]] std::unique_ptr<name::name> const& name() const noexcept;
 
     /**
      * @brief compares two values.
@@ -91,7 +89,7 @@ protected:
     void serialize(::takatori::serializer::object_acceptor& acceptor) const override;
 
 private:
-    ::takatori::util::unique_object_ptr<name::name> name_;
+    std::unique_ptr<name::name> name_;
 };
 
 /**

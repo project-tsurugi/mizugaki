@@ -9,7 +9,6 @@
 
 #include <takatori/scalar/expression.h>
 
-#include <takatori/util/object_creator.h>
 
 namespace mizugaki {
 
@@ -54,11 +53,9 @@ public:
 
     /**
      * @brief resolves this placeholder.
-     * @param creator the object creator for the resulting scalar expression
      * @return the created scalar expression
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<::takatori::scalar::expression> resolve(
-            ::takatori::util::object_creator creator = {}) const;
+    [[nodiscard]] std::unique_ptr<::takatori::scalar::expression> resolve() const;
 
     /**
      * @brief appends string representation of the given value.

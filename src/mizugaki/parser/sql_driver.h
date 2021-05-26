@@ -2,7 +2,6 @@
 
 #include <cstddef>
 
-#include <takatori/util/object_creator.h>
 
 #include <mizugaki/ast/common/vector.h>
 #include <mizugaki/ast/name/name.h>
@@ -23,52 +22,48 @@ public:
     using location_type = ast::node_region;
 
     template<class T>
-    using node_ptr = ::takatori::util::unique_object_ptr<T>;
+    using node_ptr = std::unique_ptr<T>;
 
-    explicit sql_driver(
-            ::takatori::util::maybe_shared_ptr<document_type const> document,
-            ::takatori::util::object_creator creator) noexcept;
+    explicit sql_driver(::takatori::util::maybe_shared_ptr<document_type const> document) noexcept;
 
     [[nodiscard]] ::takatori::util::maybe_shared_ptr<document_type const> const& document() const noexcept;
-
-    [[nodiscard]] ::takatori::util::object_creator get_object_creator() const noexcept;
 
     [[nodiscard]] result_type& result() noexcept;
 
     [[nodiscard]] result_type const& result() const noexcept;
 
-    void success(ast::common::vector<node_ptr<ast::statement::statement>> statements);
+    void success(std::vector<node_ptr<ast::statement::statement>> statements);
 
     void error(location_type location, result_type::message_type message);
 
     void add_comment(location_type location);
 
-    [[nodiscard]] ast::common::vector<location_type>& comments() noexcept;
+    [[nodiscard]] std::vector<location_type>& comments() noexcept;
 
-    [[nodiscard]] ast::common::vector<location_type> const& comments() const noexcept;
+    [[nodiscard]] std::vector<location_type> const& comments() const noexcept;
 
     template<class T, class... Args>
     [[nodiscard]] node_ptr<T> node(Args&&... args) {
-        return creator_.create_unique<T>(std::forward<Args>(args)...);
+        return std::make_unique<T>(std::forward<Args>(args)...);
     }
 
     template<class T>
-    [[nodiscard]] ast::common::vector<node_ptr<T>> node_vector(std::size_t capacity = 0) {
-        ast::common::vector<node_ptr<T>> result { creator_.allocator() };
+    [[nodiscard]] std::vector<node_ptr<T>> node_vector(std::size_t capacity = 0) {
+        std::vector<node_ptr<T>> result {};
         result.reserve(capacity);
         return result;
     }
 
     template<class T, class... Args>
-    [[nodiscard]] ast::common::vector<node_ptr<T>> to_node_vector(Args&&... args) {
+    [[nodiscard]] std::vector<node_ptr<T>> to_node_vector(Args&&... args) {
         auto result = node_vector<T>(sizeof...(args));
         (..., result.emplace_back(std::forward<Args>(args)));
         return result;
     }
 
     template<class T>
-    [[nodiscard]] ast::common::vector<T> element_vector(std::size_t capacity = 0) {
-        ast::common::vector<T> result { creator_.allocator() };
+    [[nodiscard]] std::vector<T> element_vector(std::size_t capacity = 0) {
+        std::vector<T> result {};
         result.reserve(capacity);
         return result;
     }
@@ -85,8 +80,7 @@ public:
 
 private:
     ::takatori::util::maybe_shared_ptr<document_type const> document_;
-    ::takatori::util::object_creator creator_;
-    ast::common::vector<location_type> comments_;
+    std::vector<location_type> comments_;
     result_type result_ {};
 };
 

@@ -18,8 +18,6 @@
     #include <memory>
     #include <string>
 
-    #include <takatori/util/object_creator.h>
-
     #include <mizugaki/ast/node_region.h>
     #include <mizugaki/ast/common/vector.h>
     #include <mizugaki/ast/common/chars.h>
@@ -105,13 +103,13 @@
     namespace mizugaki::parser {
 
     template<class T>
-    using node_ptr = ::takatori::util::unique_object_ptr<T>;
+    using node_ptr = std::unique_ptr<T>;
 
     template<class T>
-    using node_vector = ast::common::vector<node_ptr<T>>;
+    using node_vector = std::vector<node_ptr<T>>;
 
     template<class T>
-    using element_vector = ast::common::vector<T>;
+    using element_vector = std::vector<T>;
 
     using ast::common::regioned;
 

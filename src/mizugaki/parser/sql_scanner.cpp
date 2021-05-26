@@ -23,10 +23,9 @@ sql_scanner::location_type sql_scanner::location(bool eof) noexcept {
     return { cursor_ - (eof ? 0 : yyleng), cursor_ };
 }
 
-ast::common::chars sql_scanner::get_image(sql_driver const& driver) {
+ast::common::chars sql_scanner::get_image(sql_driver const&) {
     return {
             YYText(),
-            driver.get_object_creator().allocator(),
     };
 }
 

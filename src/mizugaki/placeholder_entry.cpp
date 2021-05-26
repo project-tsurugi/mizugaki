@@ -11,8 +11,6 @@ namespace value = ::takatori::value;
 namespace scalar = ::takatori::scalar;
 
 using ::takatori::util::clone_shared;
-using ::takatori::util::object_creator;
-using ::takatori::util::unique_object_ptr;
 
 placeholder_entry::placeholder_entry(
         std::shared_ptr<value::data const> value,
@@ -40,8 +38,8 @@ placeholder_entry::placeholder_entry(type::data&& type, value::data&& value)
         clone_shared(std::move(type)))
 {}
 
-unique_object_ptr<scalar::expression> placeholder_entry::resolve(object_creator creator) const {
-    return creator.create_unique<scalar::immediate>(value_, type_);
+std::unique_ptr<scalar::expression> placeholder_entry::resolve() const {
+    return std::make_unique<scalar::immediate>(value_, type_);
 }
 
 std::ostream& operator<<(std::ostream& out, placeholder_entry const& value) {

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <takatori/util/object_creator.h>
+#include <takatori/util/clone_tag.h>
 
 #include <mizugaki/ast/common/regioned.h>
 
@@ -54,19 +54,17 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit unary_expression(unary_expression const& other, ::takatori::util::object_creator creator);
+    explicit unary_expression(::takatori::util::clone_tag_t, unary_expression const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit unary_expression(unary_expression&& other, ::takatori::util::object_creator creator);
+    explicit unary_expression(::takatori::util::clone_tag_t, unary_expression&& other);
 
-    [[nodiscard]] unary_expression* clone(::takatori::util::object_creator creator) const& override;
-    [[nodiscard]] unary_expression* clone(::takatori::util::object_creator creator) && override;
+    [[nodiscard]] unary_expression* clone() const& override;
+    [[nodiscard]] unary_expression* clone() && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 

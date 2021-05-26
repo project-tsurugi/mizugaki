@@ -1,6 +1,6 @@
 #pragma once
 
-#include <takatori/util/object_creator.h>
+#include <takatori/util/clone_tag.h>
 
 #include <mizugaki/ast/element.h>
 #include <mizugaki/ast/common/clone_wrapper.h>
@@ -27,7 +27,7 @@ public:
      * @param region the element region
      */
     explicit group_by_clause(
-            common::vector<::takatori::util::unique_object_ptr<element_type>> elements,
+            std::vector<std::unique_ptr<element_type>> elements,
             region_type region = {}) noexcept;
 
     /**
@@ -43,25 +43,23 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit group_by_clause(group_by_clause const& other, ::takatori::util::object_creator creator);
+    explicit group_by_clause(::takatori::util::clone_tag_t, group_by_clause const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit group_by_clause(group_by_clause&& other, ::takatori::util::object_creator creator);
+    explicit group_by_clause(::takatori::util::clone_tag_t, group_by_clause&& other);
 
     /**
      * @brief returns the grouping specification elements.
      * @return the grouping specification elements
      */
-    [[nodiscard]] common::vector<::takatori::util::unique_object_ptr<element_type>>& elements() noexcept;
+    [[nodiscard]] std::vector<std::unique_ptr<element_type>>& elements() noexcept;
 
     /// @copydoc elements()
-    [[nodiscard]] common::vector<::takatori::util::unique_object_ptr<element_type>> const& elements() const noexcept;
+    [[nodiscard]] std::vector<std::unique_ptr<element_type>> const& elements() const noexcept;
 
     /**
      * @brief compares two values.
@@ -92,7 +90,7 @@ public:
             group_by_clause const& value);
 
 private:
-    common::clone_wrapper<common::vector<::takatori::util::unique_object_ptr<element_type>>> elements_;
+    common::clone_wrapper<std::vector<std::unique_ptr<element_type>>> elements_;
 };
 
 /**

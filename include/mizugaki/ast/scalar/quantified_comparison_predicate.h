@@ -2,7 +2,7 @@
 
 #include <optional>
 
-#include <takatori/util/object_creator.h>
+#include <takatori/util/clone_tag.h>
 
 #include <mizugaki/ast/common/regioned.h>
 #include <mizugaki/ast/query/expression.h>
@@ -44,7 +44,7 @@ public:
             operand_type left,
             operator_kind_type operator_kind,
             quantifier_type quantifier,
-            ::takatori::util::unique_object_ptr<query::expression> right,
+            std::unique_ptr<query::expression> right,
             region_type region = {}) noexcept;
 
     /**
@@ -66,19 +66,17 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit quantified_comparison_predicate(quantified_comparison_predicate const& other, ::takatori::util::object_creator creator);
+    explicit quantified_comparison_predicate(::takatori::util::clone_tag_t, quantified_comparison_predicate const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit quantified_comparison_predicate(quantified_comparison_predicate&& other, ::takatori::util::object_creator creator);
+    explicit quantified_comparison_predicate(::takatori::util::clone_tag_t, quantified_comparison_predicate&& other);
 
-    [[nodiscard]] quantified_comparison_predicate* clone(::takatori::util::object_creator creator) const& override;
-    [[nodiscard]] quantified_comparison_predicate* clone(::takatori::util::object_creator creator) && override;
+    [[nodiscard]] quantified_comparison_predicate* clone() const& override;
+    [[nodiscard]] quantified_comparison_predicate* clone() && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 
@@ -114,10 +112,10 @@ public:
      * @brief returns the right term.
      * @return the right term
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<query::expression>& right() noexcept;
+    [[nodiscard]] std::unique_ptr<query::expression>& right() noexcept;
 
     /// @copydoc right()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<query::expression> const& right() const noexcept;
+    [[nodiscard]] std::unique_ptr<query::expression> const& right() const noexcept;
 
     /**
      * @brief compares two values.
@@ -145,7 +143,7 @@ private:
     operand_type left_;
     operator_kind_type operator_kind_;
     quantifier_type quantifier_;
-    ::takatori::util::unique_object_ptr<query::expression> right_;
+    std::unique_ptr<query::expression> right_;
 };
 
 /**

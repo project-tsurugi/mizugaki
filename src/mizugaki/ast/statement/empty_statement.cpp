@@ -6,31 +6,30 @@
 
 namespace mizugaki::ast::statement {
 
-using ::takatori::util::object_creator;
 
 empty_statement::empty_statement(
         region_type region) noexcept :
     super { region }
 {}
 
-empty_statement::empty_statement(empty_statement const& other, object_creator) :
+empty_statement::empty_statement(::takatori::util::clone_tag_t, empty_statement const& other) :
     empty_statement {
             other.region(),
     }
 {}
 
-empty_statement::empty_statement(empty_statement&& other, object_creator) :
+empty_statement::empty_statement(::takatori::util::clone_tag_t, empty_statement&& other) :
     empty_statement {
             other.region(),
     }
 {}
 
-empty_statement* empty_statement::clone(object_creator creator) const& {
-    return creator.create_object<empty_statement>(*this, creator);
+empty_statement* empty_statement::clone() const& {
+    return new empty_statement(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-empty_statement* empty_statement::clone(object_creator creator) && {
-    return creator.create_object<empty_statement>(std::move(*this), creator);
+empty_statement* empty_statement::clone() && {
+    return new empty_statement(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 statement::node_kind_type empty_statement::node_kind() const noexcept {

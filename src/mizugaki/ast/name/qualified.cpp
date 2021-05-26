@@ -10,13 +10,11 @@
 namespace mizugaki::ast::name {
 
 using ::takatori::util::clone_unique;
-using ::takatori::util::object_creator;
 using ::takatori::util::optional_ptr;
-using ::takatori::util::unique_object_ptr;
 
 qualified::qualified(
-        unique_object_ptr<name> qualifier,
-        unique_object_ptr<simple> last,
+        std::unique_ptr<name> qualifier,
+        std::unique_ptr<simple> last,
         region_type region) noexcept :
     super { region },
     qualifier_ { std::move(qualifier) },
@@ -34,28 +32,28 @@ qualified::qualified(
     }
 {}
 
-qualified::qualified(qualified const& other, object_creator creator) :
+qualified::qualified(::takatori::util::clone_tag_t, qualified const& other) :
     qualified{
-            clone_unique(other.qualifier_, creator),
-            clone_unique(other.last_, creator),
+            clone_unique(other.qualifier_),
+            clone_unique(other.last_),
             other.region(),
     }
 {}
 
-qualified::qualified(qualified&& other, object_creator creator) :
+qualified::qualified(::takatori::util::clone_tag_t, qualified&& other) :
     qualified{
-            clone_unique(std::move(other.qualifier_), creator),
-            clone_unique(std::move(other.last_), creator),
+            clone_unique(std::move(other.qualifier_)),
+            clone_unique(std::move(other.last_)),
             other.region(),
     }
 {}
 
-qualified* qualified::clone(object_creator creator) const& {
-    return creator.create_object<qualified>(*this, creator);
+qualified* qualified::clone() const& {
+    return new qualified(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-qualified* qualified::clone(object_creator creator) && {
-    return creator.create_object<qualified>(std::move(*this), creator);
+qualified* qualified::clone() && {
+    return new qualified(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 name::node_kind_type qualified::node_kind() const noexcept {
@@ -70,19 +68,19 @@ optional_ptr<name const> qualified::optional_qualifier() const noexcept {
     return takatori::util::optional_ptr<name const>();
 }
 
-unique_object_ptr<name>& qualified::qualifier() noexcept {
+std::unique_ptr<name>& qualified::qualifier() noexcept {
     return qualifier_;
 }
 
-unique_object_ptr<name> const& qualified::qualifier() const noexcept {
+std::unique_ptr<name> const& qualified::qualifier() const noexcept {
     return qualifier_;
 }
 
-unique_object_ptr<simple>& qualified::last() noexcept {
+std::unique_ptr<simple>& qualified::last() noexcept {
     return last_;
 }
 
-unique_object_ptr<simple> const& qualified::last() const noexcept {
+std::unique_ptr<simple> const& qualified::last() const noexcept {
     return last_;
 }
 

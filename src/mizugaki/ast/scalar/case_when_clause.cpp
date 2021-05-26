@@ -9,8 +9,6 @@
 namespace mizugaki::ast::scalar {
 
 using ::takatori::util::clone_unique;
-using ::takatori::util::object_creator;
-using ::takatori::util::unique_object_ptr;
 
 case_when_clause::case_when_clause(
         operand_type when,
@@ -32,18 +30,18 @@ case_when_clause::case_when_clause(
     }
 {}
 
-case_when_clause::case_when_clause(case_when_clause const& other, object_creator creator) :
+case_when_clause::case_when_clause(::takatori::util::clone_tag_t, case_when_clause const& other) :
     case_when_clause {
-            clone_unique(*other.when_, creator),
-            clone_unique(*other.result_, creator),
+            clone_unique(*other.when_),
+            clone_unique(*other.result_),
             other.region(),
     }
 {}
 
-case_when_clause::case_when_clause(case_when_clause&& other, object_creator creator) :
+case_when_clause::case_when_clause(::takatori::util::clone_tag_t, case_when_clause&& other) :
     case_when_clause {
-            clone_unique(std::move(*other.when_), creator),
-            clone_unique(std::move(*other.result_), creator),
+            clone_unique(std::move(*other.when_)),
+            clone_unique(std::move(*other.result_)),
             other.region(),
     }
 {}

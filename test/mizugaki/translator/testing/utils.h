@@ -33,15 +33,13 @@ inline shakujo_translator_options new_options(
         std::shared_ptr<::yugawara::variable::provider const> variables = {},
         std::shared_ptr<::yugawara::function::provider const> functions = {},
         std::shared_ptr<::yugawara::aggregate::provider const> aggregate_functions = {},
-        std::shared_ptr<::yugawara::variable::provider const> host_variables = {},
-        ::takatori::util::object_creator creator = {}) {
+        std::shared_ptr<::yugawara::variable::provider const> host_variables = {}) {
     return {
             std::move(storages),
             std::move(variables),
             std::move(functions),
             std::move(aggregate_functions),
             std::move(host_variables),
-            creator,
     };
 }
 

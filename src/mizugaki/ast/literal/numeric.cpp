@@ -12,8 +12,6 @@ using node_kind_type = literal::node_kind_type;
 using sign_type = numeric::sign_type;
 using value_type = numeric::value_type;
 
-using ::takatori::util::object_creator;
-
 numeric::numeric(
         value_kind_type value_kind,
         std::optional<sign_type> sign,
@@ -21,36 +19,36 @@ numeric::numeric(
         region_type region) :
     super { region },
     value_kind_ { value_kind },
-    sign_ { std::move(sign) },
+    sign_ { sign },
     unsigned_value_ { std::move(unsigned_value) }
 {
     utils::validate_kind(tags, value_kind);
 }
 
-numeric::numeric(numeric const& other, object_creator creator) :
+numeric::numeric(::takatori::util::clone_tag_t, numeric const& other) :
     numeric {
             other.value_kind_,
             other.sign_,
-            value_type{other.unsigned_value_, creator.allocator()},
+            value_type{other.unsigned_value_},
             other.region(),
     }
 {}
 
-numeric::numeric(numeric&& other, object_creator creator) :
+numeric::numeric(::takatori::util::clone_tag_t, numeric&& other) :
     numeric {
             other.value_kind_,
-            std::move(other.sign_),
-            value_type { std::move(other.unsigned_value_), creator.allocator() },
+            other.sign_,
+            value_type { std::move(other.unsigned_value_) },
             other.region(),
     }
 {}
 
-numeric* numeric::clone(object_creator creator) const& {
-    return creator.create_object<numeric>(*this, creator);
+numeric* numeric::clone() const& {
+    return new numeric(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-numeric* numeric::clone(object_creator creator) && {
-    return creator.create_object<numeric>(std::move(*this), creator);
+numeric* numeric::clone() && {
+    return new numeric(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 node_kind_type numeric::node_kind() const noexcept {

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <takatori/util/object_creator.h>
+#include <takatori/util/clone_tag.h>
 
 #include <mizugaki/ast/element.h>
 #include <mizugaki/ast/common/clone_wrapper.h>
@@ -29,7 +29,7 @@ public:
      * @param region the element region
      */
     explicit join_condition(
-            ::takatori::util::unique_object_ptr<scalar::expression> expression,
+            std::unique_ptr<scalar::expression> expression,
             region_type region = {}) noexcept;
 
     /**
@@ -45,19 +45,17 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit join_condition(join_condition const& other, ::takatori::util::object_creator creator);
+    explicit join_condition(::takatori::util::clone_tag_t, join_condition const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit join_condition(join_condition&& other, ::takatori::util::object_creator creator);
+    explicit join_condition(::takatori::util::clone_tag_t, join_condition&& other);
 
-    [[nodiscard]] join_condition* clone(::takatori::util::object_creator creator) const& override;
-    [[nodiscard]] join_condition* clone(::takatori::util::object_creator creator) && override;
+    [[nodiscard]] join_condition* clone() const& override;
+    [[nodiscard]] join_condition* clone() && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 
@@ -65,10 +63,10 @@ public:
      * @brief returns the condition expression.
      * @return the condition expression
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<scalar::expression>& expression() noexcept;
+    [[nodiscard]] std::unique_ptr<scalar::expression>& expression() noexcept;
 
     /// @copydoc expression()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<scalar::expression> const& expression() const noexcept;
+    [[nodiscard]] std::unique_ptr<scalar::expression> const& expression() const noexcept;
 
     /**
      * @brief compares two values.
@@ -93,7 +91,7 @@ protected:
     void serialize(::takatori::serializer::object_acceptor& acceptor) const override;
 
 private:
-    ::takatori::util::unique_object_ptr<scalar::expression> expression_;
+    std::unique_ptr<scalar::expression> expression_;
 };
 
 /**

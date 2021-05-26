@@ -12,7 +12,6 @@ using node_kind_type = type::node_kind_type;
 using type_kind_type = bit_string::type_kind_type;
 using length_type = bit_string::length_type;
 
-using ::takatori::util::object_creator;
 
 bit_string::bit_string(
         type_kind_type type_kind,
@@ -20,12 +19,12 @@ bit_string::bit_string(
         region_type region) :
     super { region },
     type_kind_ { type_kind },
-    length_ { std::move(length) }
+    length_ { length }
 {
     utils::validate_kind(tags, *type_kind);
 }
 
-bit_string::bit_string(bit_string const& other, object_creator) :
+bit_string::bit_string(::takatori::util::clone_tag_t, bit_string const& other) :
     bit_string {
             other.type_kind_,
             other.length_,
@@ -33,20 +32,20 @@ bit_string::bit_string(bit_string const& other, object_creator) :
     }
 {}
 
-bit_string::bit_string(bit_string&& other, object_creator) :
+bit_string::bit_string(::takatori::util::clone_tag_t, bit_string&& other) :
     bit_string {
             other.type_kind_,
-            std::move(other.length_),
+            other.length_,
             other.region(),
     }
 {}
 
-bit_string* bit_string::clone(object_creator creator) const& {
-    return creator.create_object<bit_string>(*this, creator);
+bit_string* bit_string::clone() const& {
+    return new bit_string(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-bit_string* bit_string::clone(object_creator creator) && {
-    return creator.create_object<bit_string>(std::move(*this), creator);
+bit_string* bit_string::clone() && {
+    return new bit_string(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 node_kind_type bit_string::node_kind() const noexcept {

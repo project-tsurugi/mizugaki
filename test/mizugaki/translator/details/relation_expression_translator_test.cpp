@@ -102,7 +102,7 @@ public:
     relation_expression_translator engine { entry.initialize(options) };
 
     ::shakujo::model::IRFactory ir;
-    ::yugawara::binding::factory bindings { options.get_object_creator() };
+    ::yugawara::binding::factory bindings {};
 
     ::takatori::relation::graph_type graph;
     relation_info rinfo;

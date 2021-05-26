@@ -6,6 +6,8 @@
 
 #include <mizugaki/ast/common/regioned.h>
 
+#include <takatori/util/clone_tag.h>
+
 #include "type.h"
 
 namespace mizugaki::ast::type {
@@ -54,19 +56,17 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit decimal(decimal const& other, ::takatori::util::object_creator creator);
+    explicit decimal(::takatori::util::clone_tag_t, decimal const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit decimal(decimal&& other, ::takatori::util::object_creator creator);
+    explicit decimal(::takatori::util::clone_tag_t, decimal&& other);
 
-    [[nodiscard]] decimal* clone(::takatori::util::object_creator creator) const& override;
-    [[nodiscard]] decimal* clone(::takatori::util::object_creator creator) && override;
+    [[nodiscard]] decimal* clone() const& override;
+    [[nodiscard]] decimal* clone() && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 

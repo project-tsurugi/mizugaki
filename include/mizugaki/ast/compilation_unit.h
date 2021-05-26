@@ -2,8 +2,8 @@
 
 #include <takatori/document/document.h>
 
+#include <takatori/util/clone_tag.h>
 #include <takatori/util/maybe_shared_ptr.h>
-#include <takatori/util/object_creator.h>
 
 #include <mizugaki/ast/common/rvalue_list.h>
 #include <mizugaki/ast/common/vector.h>
@@ -29,8 +29,8 @@ public:
      * @param document the source document
      */
     explicit compilation_unit(
-            common::vector<::takatori::util::unique_object_ptr<statement::statement>> statements,
-            common::vector<region_type> comments = {},
+            std::vector<std::unique_ptr<statement::statement>> statements,
+            std::vector<region_type> comments = {},
             ::takatori::util::maybe_shared_ptr<document_type const> document = {}) noexcept;
 
     /**
@@ -46,34 +46,32 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit compilation_unit(compilation_unit const& other, ::takatori::util::object_creator creator);
+    explicit compilation_unit(::takatori::util::clone_tag_t, compilation_unit const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit compilation_unit(compilation_unit&& other, ::takatori::util::object_creator creator);
+    explicit compilation_unit(::takatori::util::clone_tag_t, compilation_unit&& other);
 
     /**
      * @brief returns the top level statements.
      * @return the top level statements
      */
-    [[nodiscard]] common::vector<::takatori::util::unique_object_ptr<statement::statement>>& statements() noexcept;
+    [[nodiscard]] std::vector<std::unique_ptr<statement::statement>>& statements() noexcept;
 
     /// @copydoc statements()
-    [[nodiscard]] common::vector<::takatori::util::unique_object_ptr<statement::statement>> const& statements() const noexcept;
+    [[nodiscard]] std::vector<std::unique_ptr<statement::statement>> const& statements() const noexcept;
 
     /**
      * @brief returns the comment regions.
      * @return the comment regions
      */
-    [[nodiscard]] common::vector<region_type>& comments() noexcept;
+    [[nodiscard]] std::vector<region_type>& comments() noexcept;
 
     /// @copydoc comments()
-    [[nodiscard]] common::vector<region_type> const& comments() const noexcept;
+    [[nodiscard]] std::vector<region_type> const& comments() const noexcept;
 
     /**
      * @brief returns the source document.
@@ -115,8 +113,8 @@ public:
             compilation_unit const& value);
 
 private:
-    common::vector<::takatori::util::unique_object_ptr<statement::statement>> statements_;
-    common::vector<region_type> comments_;
+    std::vector<std::unique_ptr<statement::statement>> statements_;
+    std::vector<region_type> comments_;
     ::takatori::util::maybe_shared_ptr<document_type const> document_;
 };
 

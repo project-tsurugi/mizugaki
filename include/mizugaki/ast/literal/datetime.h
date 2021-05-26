@@ -1,5 +1,7 @@
 #pragma once
 
+#include <takatori/util/clone_tag.h>
+
 #include <mizugaki/ast/common/chars.h>
 #include <mizugaki/ast/common/regioned.h>
 
@@ -65,19 +67,17 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit datetime(datetime const& other, ::takatori::util::object_creator creator);
+    explicit datetime(::takatori::util::clone_tag_t, datetime const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit datetime(datetime&& other, ::takatori::util::object_creator creator);
+    explicit datetime(::takatori::util::clone_tag_t, datetime&& other);
 
-    [[nodiscard]] datetime* clone(::takatori::util::object_creator creator) const& override;
-    [[nodiscard]] datetime* clone(::takatori::util::object_creator creator) && override;
+    [[nodiscard]] datetime* clone() const& override;
+    [[nodiscard]] datetime* clone() && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 

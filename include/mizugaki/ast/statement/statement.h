@@ -1,7 +1,6 @@
 #pragma once
 
 #include <mizugaki/ast/node.h>
-#include <takatori/util/object_creator.h>
 
 #include "kind.h"
 
@@ -17,8 +16,8 @@ public:
     using node_kind_type = kind;
 
     using node::node;
-    [[nodiscard]] statement* clone(::takatori::util::object_creator creator) const& override = 0;
-    [[nodiscard]] statement* clone(::takatori::util::object_creator creator) && override = 0;
+    [[nodiscard]] statement* clone() const& override = 0;
+    [[nodiscard]] statement* clone() && override = 0;
 
     /**
      * @brief returns the kind of this name.

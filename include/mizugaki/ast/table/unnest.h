@@ -1,6 +1,6 @@
 #pragma once
 
-#include <takatori/util/object_creator.h>
+#include <takatori/util/clone_tag.h>
 
 #include <mizugaki/ast/common/regioned.h>
 #include <mizugaki/ast/scalar/expression.h>
@@ -36,7 +36,7 @@ public:
      * @param region the node region
      */
     explicit unnest(
-            ::takatori::util::unique_object_ptr<scalar::expression> expression,
+            std::unique_ptr<scalar::expression> expression,
             bool_type with_ordinality,
             correlation_type correlation,
             region_type region = {}) noexcept;
@@ -57,19 +57,17 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit unnest(unnest const& other, ::takatori::util::object_creator creator);
+    explicit unnest(::takatori::util::clone_tag_t, unnest const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit unnest(unnest&& other, ::takatori::util::object_creator creator);
+    explicit unnest(::takatori::util::clone_tag_t, unnest&& other);
 
-    [[nodiscard]] unnest* clone(::takatori::util::object_creator creator) const& override;
-    [[nodiscard]] unnest* clone(::takatori::util::object_creator creator) && override;
+    [[nodiscard]] unnest* clone() const& override;
+    [[nodiscard]] unnest* clone() && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 
@@ -77,10 +75,10 @@ public:
      * @brief returns the collection expression.
      * @return the collection expression
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<scalar::expression>& expression() noexcept;
+    [[nodiscard]] std::unique_ptr<scalar::expression>& expression() noexcept;
 
     /// @copydoc expression()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<scalar::expression> const& expression() const noexcept;
+    [[nodiscard]] std::unique_ptr<scalar::expression> const& expression() const noexcept;
 
     /**
      * @brief returns whether or not `WITH ORDINALITY` is specified.
@@ -125,7 +123,7 @@ protected:
     void serialize(::takatori::serializer::object_acceptor& acceptor) const override;
 
 private:
-    ::takatori::util::unique_object_ptr<scalar::expression> expression_;
+    std::unique_ptr<scalar::expression> expression_;
     bool_type with_ordinality_;
     correlation_type correlation_;
 };

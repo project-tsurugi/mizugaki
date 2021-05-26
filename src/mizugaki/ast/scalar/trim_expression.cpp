@@ -9,9 +9,7 @@
 namespace mizugaki::ast::scalar {
 
 using ::takatori::util::clone_unique;
-using ::takatori::util::object_creator;
 using ::takatori::util::rvalue_ptr;
-using ::takatori::util::unique_object_ptr;
 
 trim_expression::trim_expression(
         std::optional<specification_type> specification,
@@ -19,7 +17,7 @@ trim_expression::trim_expression(
         operand_type source,
         region_type region) noexcept :
     super { region },
-    specification_ { std::move(specification) },
+    specification_ { specification },
     character_ { std::move(character) },
     source_ { std::move(source) }
 {}
@@ -30,37 +28,37 @@ trim_expression::trim_expression(
         expression&& source,
         region_type region) :
     trim_expression {
-            std::move(specification),
+            specification,
             clone_unique(character),
             clone_unique(std::move(source)),
             region,
     }
 {}
 
-trim_expression::trim_expression(trim_expression const& other, object_creator creator) :
+trim_expression::trim_expression(::takatori::util::clone_tag_t, trim_expression const& other) :
     trim_expression {
             other.specification_,
-            clone_unique(other.character_, creator),
-            clone_unique(other.source_, creator),
+            clone_unique(other.character_),
+            clone_unique(other.source_),
             other.region(),
     }
 {}
 
-trim_expression::trim_expression(trim_expression&& other, object_creator creator) :
+trim_expression::trim_expression(::takatori::util::clone_tag_t, trim_expression&& other) :
     trim_expression {
-            std::move(other.specification_),
-            clone_unique(std::move(other.character_), creator),
-            clone_unique(std::move(other.source_), creator),
+            other.specification_,
+            clone_unique(std::move(other.character_)),
+            clone_unique(std::move(other.source_)),
             other.region(),
     }
 {}
 
-trim_expression* trim_expression::clone(object_creator creator) const& {
-    return creator.create_object<trim_expression>(*this, creator);
+trim_expression* trim_expression::clone() const& {
+    return new trim_expression(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-trim_expression* trim_expression::clone(object_creator creator) && {
-    return creator.create_object<trim_expression>(std::move(*this), creator);
+trim_expression* trim_expression::clone() && {
+    return new trim_expression(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 expression::node_kind_type trim_expression::node_kind() const noexcept {

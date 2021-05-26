@@ -2,7 +2,7 @@
 
 #include <optional>
 
-#include <takatori/util/object_creator.h>
+#include <takatori/util/clone_tag.h>
 #include <takatori/util/rvalue_ptr.h>
 
 #include <mizugaki/ast/common/regioned.h>
@@ -50,13 +50,13 @@ public:
      */
     explicit query(
             std::optional<quantifier_type> quantifier,
-            common::vector<::takatori::util::unique_object_ptr<select_element>> elements,
-            common::vector<::takatori::util::unique_object_ptr<table::expression>> from,
-            ::takatori::util::unique_object_ptr<scalar::expression> where = {},
+            std::vector<std::unique_ptr<select_element>> elements,
+            std::vector<std::unique_ptr<table::expression>> from,
+            std::unique_ptr<scalar::expression> where = {},
             std::optional<group_by_clause> group_by = {},
-            ::takatori::util::unique_object_ptr<scalar::expression> having = {},
-            common::vector<common::sort_element> order_by = {},
-            ::takatori::util::unique_object_ptr<scalar::expression> limit = {},
+            std::unique_ptr<scalar::expression> having = {},
+            std::vector<common::sort_element> order_by = {},
+            std::unique_ptr<scalar::expression> limit = {},
             region_type region = {}) noexcept;
 
     /**
@@ -108,19 +108,17 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit query(query const& other, ::takatori::util::object_creator creator);
+    explicit query(::takatori::util::clone_tag_t, query const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit query(query&& other, ::takatori::util::object_creator creator);
+    explicit query(::takatori::util::clone_tag_t, query&& other);
 
-    [[nodiscard]] query* clone(::takatori::util::object_creator creator) const& override;
-    [[nodiscard]] query* clone(::takatori::util::object_creator creator) && override;
+    [[nodiscard]] query* clone() const& override;
+    [[nodiscard]] query* clone() && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 
@@ -128,20 +126,20 @@ public:
      * @brief returns the select elements.
      * @return the select elements
      */
-    [[nodiscard]] common::vector<::takatori::util::unique_object_ptr<select_element>>& elements() noexcept;
+    [[nodiscard]] std::vector<std::unique_ptr<select_element>>& elements() noexcept;
 
     /// @copydoc elements()
-    [[nodiscard]] common::vector<::takatori::util::unique_object_ptr<select_element>> const& elements() const noexcept;
+    [[nodiscard]] std::vector<std::unique_ptr<select_element>> const& elements() const noexcept;
 
     /**
      * @brief returns the `FROM` clause.
      * @return the `FROM` clause
      * @note `7.5 <from clause>`
      */
-    [[nodiscard]] common::vector<::takatori::util::unique_object_ptr<table::expression>>& from() noexcept;
+    [[nodiscard]] std::vector<std::unique_ptr<table::expression>>& from() noexcept;
 
     /// @copydoc from()
-    [[nodiscard]] common::vector<::takatori::util::unique_object_ptr<table::expression>> const& from() const noexcept;
+    [[nodiscard]] std::vector<std::unique_ptr<table::expression>> const& from() const noexcept;
 
     /**
      * @brief returns the `WHERE` clause.
@@ -149,10 +147,10 @@ public:
      * @return empty if it is not declared
      * @note `7.8 <where clause>`
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<scalar::expression>& where() noexcept;
+    [[nodiscard]] std::unique_ptr<scalar::expression>& where() noexcept;
 
     /// @copydoc where()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<scalar::expression> const& where() const noexcept;
+    [[nodiscard]] std::unique_ptr<scalar::expression> const& where() const noexcept;
 
     /**
      * @brief returns the `GROUP BY` clause.
@@ -171,10 +169,10 @@ public:
      * @return empty if it is not declared
      * @note `7.10 <having clause>`
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<scalar::expression>& having() noexcept;
+    [[nodiscard]] std::unique_ptr<scalar::expression>& having() noexcept;
 
     /// @copydoc having()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<scalar::expression> const& having() const noexcept;
+    [[nodiscard]] std::unique_ptr<scalar::expression> const& having() const noexcept;
 
     /**
      * @brief returns the `ORDER BY` clause.
@@ -182,10 +180,10 @@ public:
      * @return empty if it is not declared
      * @note `14.1 <declare cursor>` - `<order by clause>`
      */
-    [[nodiscard]] common::vector<common::sort_element>& order_by() noexcept;
+    [[nodiscard]] std::vector<common::sort_element>& order_by() noexcept;
 
     /// @copydoc order_by()
-    [[nodiscard]] common::vector<common::sort_element> const& order_by() const noexcept;
+    [[nodiscard]] std::vector<common::sort_element> const& order_by() const noexcept;
 
     /**
      * @brief returns the `LIMIT` clause.
@@ -193,10 +191,10 @@ public:
      * @return empty if it is not declared
      * @note this is a common extension for SQL.
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<scalar::expression>& limit() noexcept;
+    [[nodiscard]] std::unique_ptr<scalar::expression>& limit() noexcept;
 
     /// @copydoc limit()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<scalar::expression> const& limit() const noexcept;
+    [[nodiscard]] std::unique_ptr<scalar::expression> const& limit() const noexcept;
 
     /**
      * @brief returns the set quantifier.
@@ -232,13 +230,13 @@ protected:
 
 private:
     std::optional<quantifier_type> quantifier_;
-    common::vector<::takatori::util::unique_object_ptr<select_element>> elements_;
-    common::vector<::takatori::util::unique_object_ptr<table::expression>> from_;
-    ::takatori::util::unique_object_ptr<scalar::expression> where_;
+    std::vector<std::unique_ptr<select_element>> elements_;
+    std::vector<std::unique_ptr<table::expression>> from_;
+    std::unique_ptr<scalar::expression> where_;
     std::optional<group_by_clause> group_by_;
-    ::takatori::util::unique_object_ptr<scalar::expression> having_;
-    common::vector<common::sort_element> order_by_;
-    ::takatori::util::unique_object_ptr<scalar::expression> limit_;
+    std::unique_ptr<scalar::expression> having_;
+    std::vector<common::sort_element> order_by_;
+    std::unique_ptr<scalar::expression> limit_;
 };
 
 /**

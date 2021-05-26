@@ -2,7 +2,7 @@
 
 #include <optional>
 
-#include <takatori/util/object_creator.h>
+#include <takatori/util/clone_tag.h>
 #include <takatori/util/rvalue_ptr.h>
 
 #include <mizugaki/ast/name/name.h>
@@ -32,8 +32,8 @@ public:
      * @param region the node region
      */
     explicit delete_statement(
-            ::takatori::util::unique_object_ptr<name::name> table_name,
-            ::takatori::util::unique_object_ptr<scalar::expression> where,
+            std::unique_ptr<name::name> table_name,
+            std::unique_ptr<scalar::expression> where,
             region_type region = {}) noexcept;
 
     /**
@@ -51,19 +51,17 @@ public:
     /**
      * @brief creates a new instance.
      * @param other the copy source
-     * @param creator the object creator
      */
-    explicit delete_statement(delete_statement const& other, ::takatori::util::object_creator creator);
+    explicit delete_statement(::takatori::util::clone_tag_t, delete_statement const& other);
 
     /**
      * @brief creates a new instance.
      * @param other the move source
-     * @param creator the object creator
      */
-    explicit delete_statement(delete_statement&& other, ::takatori::util::object_creator creator);
+    explicit delete_statement(::takatori::util::clone_tag_t, delete_statement&& other);
 
-    [[nodiscard]] delete_statement* clone(::takatori::util::object_creator creator) const& override;
-    [[nodiscard]] delete_statement* clone(::takatori::util::object_creator creator) && override;
+    [[nodiscard]] delete_statement* clone() const& override;
+    [[nodiscard]] delete_statement* clone() && override;
 
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 
@@ -71,10 +69,10 @@ public:
      * @brief returns the target table name.
      * @return the target table name
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<name::name>& table_name() noexcept;
+    [[nodiscard]] std::unique_ptr<name::name>& table_name() noexcept;
 
     /// @brief table_name()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<name::name> const& table_name() const noexcept;
+    [[nodiscard]] std::unique_ptr<name::name> const& table_name() const noexcept;
 
     /**
      * @brief returns the search condition expression.
@@ -82,10 +80,10 @@ public:
      * @return FIXME: `CURRENT OF cursor_name`
      * @return empty if this statement has no search condition
      */
-    [[nodiscard]] ::takatori::util::unique_object_ptr<scalar::expression>& where() noexcept;
+    [[nodiscard]] std::unique_ptr<scalar::expression>& where() noexcept;
 
     /// @brief expression()
-    [[nodiscard]] ::takatori::util::unique_object_ptr<scalar::expression> const& where() const noexcept;
+    [[nodiscard]] std::unique_ptr<scalar::expression> const& where() const noexcept;
     
     /**
      * @brief compares two values.
@@ -111,8 +109,8 @@ protected:
     void serialize(::takatori::serializer::object_acceptor& acceptor) const override;
 
 private:
-    ::takatori::util::unique_object_ptr<name::name> table_name_;
-    ::takatori::util::unique_object_ptr<scalar::expression> where_;
+    std::unique_ptr<name::name> table_name_;
+    std::unique_ptr<scalar::expression> where_;
 };
 
 /**

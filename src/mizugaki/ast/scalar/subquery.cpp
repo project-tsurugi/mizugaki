@@ -9,11 +9,9 @@
 namespace mizugaki::ast::scalar {
 
 using ::takatori::util::clone_unique;
-using ::takatori::util::object_creator;
-using ::takatori::util::unique_object_ptr;
 
 subquery::subquery(
-        unique_object_ptr<query::expression> expression,
+        std::unique_ptr<query::expression> expression,
         region_type region) noexcept :
     super { region },
     expression_ { std::move(expression) }
@@ -28,37 +26,37 @@ subquery::subquery(
     }
 {}
 
-subquery::subquery(subquery const& other, object_creator creator) :
+subquery::subquery(::takatori::util::clone_tag_t, subquery const& other) :
     subquery {
-            clone_unique(other.expression_, creator),
+            clone_unique(other.expression_),
             other.region(),
     }
 {}
 
-subquery::subquery(subquery&& other, object_creator creator) :
+subquery::subquery(::takatori::util::clone_tag_t, subquery&& other) :
     subquery {
-            clone_unique(std::move(other.expression_), creator),
+            clone_unique(std::move(other.expression_)),
             other.region(),
     }
 {}
 
-subquery* subquery::clone(object_creator creator) const& {
-    return creator.create_object<subquery>(*this, creator);
+subquery* subquery::clone() const& {
+    return new subquery(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-subquery* subquery::clone(object_creator creator) && {
-    return creator.create_object<subquery>(std::move(*this), creator);
+subquery* subquery::clone() && {
+    return new subquery(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 expression::node_kind_type subquery::node_kind() const noexcept {
     return tag;
 }
 
-unique_object_ptr<query::expression>& subquery::expression() noexcept {
+std::unique_ptr<query::expression>& subquery::expression() noexcept {
     return expression_;
 }
 
-unique_object_ptr<query::expression> const& subquery::expression() const noexcept {
+std::unique_ptr<query::expression> const& subquery::expression() const noexcept {
     return expression_;
 }
 

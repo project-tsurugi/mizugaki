@@ -9,15 +9,13 @@
 namespace mizugaki::ast::scalar {
 
 using ::takatori::util::clone_unique;
-using ::takatori::util::object_creator;
-using ::takatori::util::unique_object_ptr;
 
 using common::clone_vector;
 using common::to_vector;
 
 function_invocation::function_invocation(
-        unique_object_ptr<name::name> name,
-        common::vector<operand_type> arguments,
+        std::unique_ptr<name::name> name,
+        std::vector<operand_type> arguments,
         region_type region) noexcept :
     super { region },
     name_ { std::move(name) },
@@ -35,47 +33,47 @@ function_invocation::function_invocation(
     }
 {}
 
-function_invocation::function_invocation(function_invocation const& other, object_creator creator) :
+function_invocation::function_invocation(::takatori::util::clone_tag_t, function_invocation const& other) :
     function_invocation {
-            clone_unique(other.name_, creator),
-            clone_vector(other.arguments_, creator),
+            clone_unique(other.name_),
+            clone_vector(other.arguments_),
             other.region(),
     }
 {}
 
-function_invocation::function_invocation(function_invocation&& other, object_creator creator) :
+function_invocation::function_invocation(::takatori::util::clone_tag_t, function_invocation&& other) :
     function_invocation {
-            clone_unique(std::move(other.name_), creator),
-            clone_vector(std::move(other.arguments_), creator),
+            clone_unique(std::move(other.name_)),
+            clone_vector(std::move(other.arguments_)),
             other.region(),
     }
 {}
 
-function_invocation* function_invocation::clone(object_creator creator) const& {
-    return creator.create_object<function_invocation>(*this, creator);
+function_invocation* function_invocation::clone() const& {
+    return new function_invocation(::takatori::util::clone_tag, *this); // NOLINT
 }
 
-function_invocation* function_invocation::clone(object_creator creator) && {
-    return creator.create_object<function_invocation>(std::move(*this), creator);
+function_invocation* function_invocation::clone() && {
+    return new function_invocation(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
 }
 
 expression::node_kind_type function_invocation::node_kind() const noexcept {
     return tag;
 }
 
-::takatori::util::unique_object_ptr<name::name>& function_invocation::name() noexcept {
+std::unique_ptr<name::name>& function_invocation::name() noexcept {
     return name_;
 }
 
-::takatori::util::unique_object_ptr<name::name> const& function_invocation::name() const noexcept {
+std::unique_ptr<name::name> const& function_invocation::name() const noexcept {
     return name_;
 }
 
-common::vector<expression::operand_type>& function_invocation::arguments() noexcept {
+std::vector<expression::operand_type>& function_invocation::arguments() noexcept {
     return arguments_;
 }
 
-common::vector<expression::operand_type> const& function_invocation::arguments() const noexcept {
+std::vector<expression::operand_type> const& function_invocation::arguments() const noexcept {
     return arguments_;
 }
 

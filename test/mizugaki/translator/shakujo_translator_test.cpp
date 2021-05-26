@@ -85,7 +85,7 @@ public:
     placeholder_map placeholders;
     ::takatori::document::document_map documents;
     ::shakujo::model::IRFactory ir;
-    ::yugawara::binding::factory bindings { options.get_object_creator() };
+    ::yugawara::binding::factory bindings {};
 };
 
 void compile(shakujo_translator_test&, relation::graph_type&& graph) {
