@@ -31,8 +31,15 @@ public:
 
     virtual ~node() = default;
 
-    node(node const& other) noexcept = delete;
-    node& operator=(node const& other) noexcept = delete;
+    /**
+     * @brief copying node is restricted.
+     */
+    node(node const&) noexcept = delete;
+
+    /**
+     * @brief copying node is restricted.
+     */
+    node& operator=(node const&) noexcept = delete;
 
     /**
      * @brief creates a new instance.

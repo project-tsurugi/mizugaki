@@ -53,14 +53,20 @@ public:
         : super(other.region())
     {}
 
+    /**
+     * @brief returns a clone of this node.
+     * @return the created clone
+     */
     [[nodiscard]] special* clone() const& override {
         return new special(::takatori::util::clone_tag, *this); // NOLINT
     }
 
+    /// @copydoc clone()
     [[nodiscard]] special* clone() && override {
         return new special(::takatori::util::clone_tag, std::move(*this)); // NOLINT;
     }
 
+    /// @copydoc literal::node_kind()
     [[nodiscard]] node_kind_type node_kind() const noexcept override {
         return tag;
     }
@@ -100,6 +106,7 @@ public:
     }
 
 protected:
+    /// @copydoc literal::equals()
     [[nodiscard]] bool equals(literal const& other) const noexcept override {
         return other.node_kind() == tag;
     }

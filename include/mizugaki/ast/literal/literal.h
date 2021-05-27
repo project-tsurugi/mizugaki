@@ -51,6 +51,7 @@ protected:
      */
     [[nodiscard]] virtual bool equals(literal const& other) const noexcept = 0;
 
+    /// @copydoc node::serialize()
     void serialize(::takatori::serializer::object_acceptor& acceptor) const override;
 };
 
