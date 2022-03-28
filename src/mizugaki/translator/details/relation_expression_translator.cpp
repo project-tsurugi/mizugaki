@@ -77,7 +77,7 @@ public:
     }
 
     result_type operator()(::shakujo::model::expression::relation::ScanExpression const& node) {
-        auto&& index = translator_.find_table(*node.table());
+        auto index = translator_.find_table(*node.table());
         if (!index) {
             return report(code_type::table_not_found, *node.table(), string_builder {}
                     << *node.table());
@@ -95,7 +95,7 @@ public:
         using endpoint = relation::scan::endpoint;
         auto&& r = create<relation::scan>(
                 node,
-                factory()(*index),
+                factory()(std::move(index)),
                 std::move(columns),
                 endpoint {},
                 endpoint {},

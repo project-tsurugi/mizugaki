@@ -4,19 +4,23 @@
 
 #include <takatori/util/finalizer.h>
 #include <takatori/util/downcast.h>
+#include <takatori/util/string_builder.h>
 
 #include <yugawara/binding/factory.h>
 
 #include <shakujo/model/name/SimpleName.h>
 
 #include "details/dml_statement_translator.h"
+#include "details/ddl_statement_translator.h"
 
 namespace mizugaki::translator {
 
 using impl = shakujo_translator::impl;
+using code_type = shakujo_translator_code;
 
 using ::takatori::util::downcast;
 using ::takatori::util::finalizer;
+using ::takatori::util::string_builder;
 
 impl::result_type impl::operator()(
         options_type const& options,
@@ -25,12 +29,30 @@ impl::result_type impl::operator()(
         placeholder_map const& placeholders) {
     initialize(options, documents, placeholders);
     finalizer f { [this] { finalize(); } };
-    details::dml_statement_translator translator { *this };
-    auto result = translator.process(statement);
-    if (!result) {
-        result = std::move(diagnostics_);
+    if (details::dml_statement_translator::is_supported(statement)) {
+        details::dml_statement_translator translator { *this };
+        auto result = translator.process(statement);
+        if (!result) {
+            result = std::move(diagnostics_);
+        }
+        return result;
     }
-    return result;
+    if (details::ddl_statement_translator::is_supported(statement)) {
+        details::ddl_statement_translator translator { *this };
+        auto result = translator.process(statement);
+        if (!result) {
+            result = std::move(diagnostics_);
+        }
+        return result;
+    }
+    diagnostics_.emplace_back(
+            code_type::unsupported_statement,
+            string_builder {}
+                    << "must be a DDL/DML statement: "
+                    << statement.kind()
+                    << string_builder::to_string,
+            region(statement.region()));
+    return { std::move(diagnostics_) };
 }
 
 impl::options_type const& shakujo_translator::impl::options() const {
@@ -85,16 +107,16 @@ std::unique_ptr<::takatori::scalar::expression> impl::placeholder(std::string_vi
     return {};
 }
 
-::takatori::util::optional_ptr<::yugawara::storage::index const> impl::find_table(std::string_view name) const {
+std::shared_ptr<::yugawara::storage::index const> impl::find_table(std::string_view name) const {
     if (auto table = options().storage_provider().find_table(name)) {
         if (auto index = options().storage_provider().find_primary_index(*table)) {
-            return *index;
+            return index;
         }
     }
     return {};
 }
 
-::takatori::util::optional_ptr<::yugawara::storage::index const> impl::find_table(::shakujo::model::name::Name const& name) const {
+std::shared_ptr<::yugawara::storage::index const> impl::find_table(::shakujo::model::name::Name const& name) const {
     if (auto const* n = downcast<::shakujo::model::name::SimpleName>(&name); n != nullptr) {
         return find_table(n->token());
     }

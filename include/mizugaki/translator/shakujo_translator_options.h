@@ -6,6 +6,8 @@
 
 #include <takatori/util/optional_ptr.h>
 
+#include <yugawara/schema/declaration.h>
+
 #include <yugawara/storage/provider.h>
 #include <yugawara/variable/provider.h>
 #include <yugawara/function/provider.h>
@@ -20,6 +22,16 @@ class shakujo_translator_options {
 public:
     /**
      * @brief creates a new instance.
+     * @param schema the target schema
+     * @param host_variable_provider the host variable declaration provider
+     * @note if the provider is empty, it will provide nothing
+     */
+    shakujo_translator_options( // NOLINT
+            ::std::shared_ptr<::yugawara::schema::declaration> schema,
+            std::shared_ptr<::yugawara::variable::provider const> host_variable_provider = {}) noexcept;
+
+    /**
+     * @brief creates a new instance.
      * @param storage_provider the storage element provider
      * @param variable_provider the external variable declaration provider
      * @param function_provider the function declaration provider
@@ -28,11 +40,23 @@ public:
      * @note if each provider is empty, it will provide nothing
      */
     shakujo_translator_options(
-            std::shared_ptr<::yugawara::storage::provider const> storage_provider,
-            std::shared_ptr<::yugawara::variable::provider const> variable_provider,
-            std::shared_ptr<::yugawara::function::provider const> function_provider,
-            std::shared_ptr<::yugawara::aggregate::provider const> aggregate_function_provider,
+            std::shared_ptr<::yugawara::storage::provider> storage_provider,
+            std::shared_ptr<::yugawara::variable::provider> variable_provider,
+            std::shared_ptr<::yugawara::function::provider> function_provider,
+            std::shared_ptr<::yugawara::aggregate::provider> aggregate_function_provider,
             std::shared_ptr<::yugawara::variable::provider const> host_variable_provider = {});
+
+    /**
+     * @brief returns the target schema.
+     * @return the target schema
+     */
+    [[nodiscard]] ::yugawara::schema::declaration const& schema() const noexcept;
+
+    /**
+     * @brief returns the target schema.
+     * @return the target schema as shared pointer
+     */
+    [[nodiscard]] std::shared_ptr<::yugawara::schema::declaration> shared_schema() const noexcept;
 
     /**
      * @brief returns the storage element provider.
@@ -65,10 +89,7 @@ public:
     [[nodiscard]] ::yugawara::variable::provider const& host_variable_provider() const noexcept;
 
 private:
-    std::shared_ptr<::yugawara::storage::provider const> storage_provider_;
-    std::shared_ptr<::yugawara::variable::provider const> variable_provider_;
-    std::shared_ptr<::yugawara::function::provider const> function_provider_;
-    std::shared_ptr<::yugawara::aggregate::provider const> aggregate_function_provider_;
+    std::shared_ptr<::yugawara::schema::declaration> schema_;
     std::shared_ptr<::yugawara::variable::provider const> host_variable_provider_;
 };
 

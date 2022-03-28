@@ -8,12 +8,12 @@
 
 namespace mizugaki::translator::details {
 
-class dml_statement_translator {
+class ddl_statement_translator {
 public:
     using translator_type = shakujo_translator::impl;
     using result_type = shakujo_translator_result;
 
-    explicit dml_statement_translator(translator_type& translator) noexcept;
+    explicit ddl_statement_translator(translator_type& translator) noexcept;
 
     [[nodiscard]] static bool is_supported(::shakujo::model::statement::Statement const& node);
 

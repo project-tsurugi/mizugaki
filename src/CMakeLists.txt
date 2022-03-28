@@ -154,6 +154,7 @@ add_library(mizugaki
     mizugaki/translator/details/relation_expression_translator.cpp
     mizugaki/translator/details/aggregate_analyzer.cpp
     mizugaki/translator/details/dml_statement_translator.cpp
+    mizugaki/translator/details/ddl_statement_translator.cpp
 )
 
 target_include_directories(mizugaki

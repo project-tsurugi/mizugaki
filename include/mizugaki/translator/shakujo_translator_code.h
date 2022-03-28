@@ -42,6 +42,13 @@ enum class shakujo_translator_code {
     /// @brief aggregation target column exists at wrong position.
     invalid_aggregation_column,
 
+    /// @brief table is already defined.
+    duplicate_table,
+    /// @brief primary key is already defined.
+    duplicate_primary_key,
+    /// @brief column default value is not valid.
+    invalid_default_value,
+
     /// @brief input type is not distinguished for the overloaded operations.
     ambiguous_type,
     /// @brief the set of type input is inconsistent for this operation.
@@ -75,6 +82,9 @@ inline constexpr std::string_view to_string_view(shakujo_translator_code value) 
         case kind::inconsistent_table: return "inconsistent_table"sv;
         case kind::inconsistent_columns: return "inconsistent_columns"sv;
         case kind::invalid_aggregation_column: return "invalid_aggregation_column"sv;
+        case kind::duplicate_table: return "duplicate_table"sv;
+        case kind::duplicate_primary_key: return "duplicate_primary_key"sv;
+        case kind::invalid_default_value: return "invalid_default_value"sv;
         case kind::ambiguous_type: return "ambiguous_type"sv;
         case kind::inconsistent_type: return "inconsistent_type"sv;
         case kind::unresolved_variable: return "unresolved_variable"sv;

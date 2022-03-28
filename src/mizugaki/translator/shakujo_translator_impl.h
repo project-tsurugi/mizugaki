@@ -41,8 +41,8 @@ public:
 
     [[nodiscard]] std::unique_ptr<::takatori::scalar::expression> placeholder(std::string_view name) const;
 
-    [[nodiscard]] ::takatori::util::optional_ptr<::yugawara::storage::index const> find_table(std::string_view name) const;
-    [[nodiscard]] ::takatori::util::optional_ptr<::yugawara::storage::index const> find_table(::shakujo::model::name::Name const& name) const;
+    [[nodiscard]] std::shared_ptr<::yugawara::storage::index const> find_table(std::string_view name) const;
+    [[nodiscard]] std::shared_ptr<::yugawara::storage::index const> find_table(::shakujo::model::name::Name const& name) const;
 
     [[nodiscard]] ::yugawara::util::object_repository<::takatori::type::data>& types() noexcept;
     [[nodiscard]] ::yugawara::util::object_repository<::takatori::value::data>& values() noexcept;

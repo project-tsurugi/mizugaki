@@ -43,14 +43,15 @@ namespace {
 
 class engine {
 public:
-    explicit engine(translator_type& translator) noexcept
-        : translator_(translator)
+    explicit engine(translator_type& translator) noexcept :
+            translator_ { translator }
     {}
 
-    result_type operator()(::shakujo::model::statement::Statement const& node) {
-        return report(code_type::unsupported_statement, node, string_builder {}
+    [[noreturn]] result_type operator()(::shakujo::model::statement::Statement const& node) const {
+        ::takatori::util::fail(string_builder {}
                 << "must be a DML statement: "
-                << node.kind());
+                << node.kind()
+                << string_builder::to_string);
     }
 
     result_type operator()(dml::EmitStatement const& node) {
@@ -172,7 +173,7 @@ public:
 
         auto&& w = graph->emplace<write>(
                 ::takatori::relation::write_kind::update,
-                factory()(*index),
+                factory()(std::move(index)),
                 std::move(keys),
                 std::move(columns));
         w.region() = translator_.region(node.region());
@@ -284,18 +285,18 @@ private:
         return {};
     }
 
-    [[nodiscard]] optional_ptr<::yugawara::storage::index const> find_table(::shakujo::model::name::Name const* name) {
-        auto&& index = translator_.find_table(*name);
+    [[nodiscard]] std::shared_ptr<::yugawara::storage::index const> find_table(::shakujo::model::name::Name const* name) {
+        auto index = translator_.find_table(*name);
         if (!index) {
             report(code_type::table_not_found, *name, string_builder {}
                     << "table `" << *name << "' is not found");
             return {};
         }
-        return *index;
+        return index;
     }
 
-    [[nodiscard]] optional_ptr<::yugawara::storage::index const> check_table(relation_info const& relation, ::shakujo::model::name::Name const* name) {
-        auto&& index = find_table(name);
+    [[nodiscard]] std::shared_ptr<::yugawara::storage::index const> check_table(relation_info const& relation, ::shakujo::model::name::Name const* name) {
+        auto index = find_table(name);
         if (!index) return {};
 
         if (!relation.table_index()) {
@@ -311,7 +312,7 @@ private:
                     << "expected: " << index->table().simple_name());
             return {};
         }
-        return *index;
+        return index;
     }
 
     [[nodiscard]] optional_ptr<::yugawara::storage::column const> find_column(
@@ -374,6 +375,21 @@ dml_statement_translator::dml_statement_translator(translator_type& translator) 
 result_type dml_statement_translator::process(::shakujo::model::statement::Statement const& node) {
     engine e { translator_ };
     return util::dispatch(e, node);
+}
+
+bool dml_statement_translator::is_supported(shakujo::model::statement::Statement const& node) {
+    using k = shakujo::model::statement::StatementKind;
+    switch (node.kind()) {
+        case k::EMIT_STATEMENT:
+        case k::INSERT_VALUES_STATEMENT:
+        case k::INSERT_RELATION_STATEMENT:
+        case k::UPDATE_STATEMENT:
+        case k::DELETE_STATEMENT:
+            return true;
+        default:
+            return false;
+    }
+    std::abort();
 }
 
 } // namespace mizugaki::translator::details

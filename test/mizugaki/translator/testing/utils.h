@@ -29,10 +29,10 @@ inline shakujo_translator::impl new_translator_impl() {
 }
 
 inline shakujo_translator_options new_options(
-        std::shared_ptr<::yugawara::storage::provider const> storages = {},
-        std::shared_ptr<::yugawara::variable::provider const> variables = {},
-        std::shared_ptr<::yugawara::function::provider const> functions = {},
-        std::shared_ptr<::yugawara::aggregate::provider const> aggregate_functions = {},
+        std::shared_ptr<::yugawara::storage::provider> storages = {},
+        std::shared_ptr<::yugawara::variable::provider> variables = {},
+        std::shared_ptr<::yugawara::function::provider> functions = {},
+        std::shared_ptr<::yugawara::aggregate::provider> aggregate_functions = {},
         std::shared_ptr<::yugawara::variable::provider const> host_variables = {}) {
     return {
             std::move(storages),
