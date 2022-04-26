@@ -229,6 +229,21 @@ TEST_F(relation_expression_translator_test, project_alias) {
     EXPECT_EQ(column_name(rinfo, cs[0]), "A");
 }
 
+TEST_F(relation_expression_translator_test, project_name) {
+    auto s = ir.ProjectionExpression(
+            ir.ScanExpression(ir.Name("T0")),
+            {
+                    ir.ProjectionExpressionColumn(
+                            ir.VariableReference(ir.Name("T0", "C1"))),
+            });
+    auto r = engine.process(*s, graph, rinfo);
+    ASSERT_TRUE(r);
+
+    auto&& cs = get_columns(entry, rinfo);
+    ASSERT_EQ(cs.size(), 1);
+    EXPECT_EQ(column_name(rinfo, cs[0]), "C1");
+}
+
 TEST_F(relation_expression_translator_test, project_complex) {
     auto s = ir.ProjectionExpression(
             ir.ScanExpression(ir.Name("T0")),

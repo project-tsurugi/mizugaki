@@ -358,6 +358,9 @@ private:
             if (ref.name()->kind() == ::shakujo::model::name::SimpleName::tag) {
                 return unsafe_downcast<::shakujo::model::name::SimpleName>(*ref.name()).token();
             }
+            if (ref.name()->kind() == ::shakujo::model::name::QualifiedName::tag) {
+                return unsafe_downcast<::shakujo::model::name::QualifiedName>(*ref.name()).name()->token();
+            }
         }
         return {};
     }
