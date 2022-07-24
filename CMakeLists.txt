@@ -22,7 +22,7 @@ include(force_install_rpath)
 
 find_package(takatori REQUIRED)
 find_package(yugawara REQUIRED)
-find_package(fpdecimal 3.68 REQUIRED)
+find_package(mpdecpp REQUIRED)
 find_package(shakujo REQUIRED)
 find_package(tsl-hopscotch-map 2.2 REQUIRED)
 find_package(FLEX REQUIRED)
