@@ -32,6 +32,7 @@ using translator_type = shakujo_translator::impl;
 using result_type = shakujo_translator_result;
 using code_type = shakujo_translator_code;
 
+using ::takatori::util::fail;
 using ::takatori::util::optional_ptr;
 using ::takatori::util::string_builder;
 using ::takatori::util::unsafe_downcast;
@@ -218,6 +219,8 @@ public:
                     << "InsertValuesStatement::initialize must be empty");
         }
 
+        auto insert_type = convert(node.conflict_action());
+
         auto&& index = find_table(node.table());
         if (!index) return {};
 
@@ -245,7 +248,7 @@ public:
         tuples.emplace_back(std::move(tuple));
 
         auto result = create<write>(
-                ::takatori::statement::write_kind::insert,
+                insert_type,
                 factory()(*index),
                 std::move(columns),
                 std::move(tuples));
@@ -363,6 +366,18 @@ private:
         result.region() = v->region();
         projection->columns().emplace_back(result, std::move(v));
         return result;
+    }
+
+    [[nodiscard]] static ::takatori::statement::write_kind convert(
+            ::shakujo::model::statement::dml::InsertValuesStatement::ConflictAction action) noexcept {
+        using from = ::shakujo::model::statement::dml::InsertValuesStatement::ConflictAction;
+        using to = ::takatori::statement::write_kind;
+        switch (action) {
+        case from::ERROR: return to::insert;
+        case from::SKIP: return to::insert_skip;
+        case from::REPLACE: return to::insert_overwrite;
+        }
+        fail();
     }
 };
 

@@ -16,7 +16,7 @@ git submodule update --init --recursive
 ```dockerfile
 FROM ubuntu:18.04
 
-RUN apt update -y && apt install -y git build-essential cmake flex libgflags-dev ninja-build
+RUN apt update -y && apt install -y git build-essential cmake flex libfl-dev libgflags-dev ninja-build
 ```
 
 optional packages:

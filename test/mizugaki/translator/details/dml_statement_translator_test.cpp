@@ -377,11 +377,13 @@ TEST_F(dml_statement_translator_test, delete_conditional) {
 TEST_F(dml_statement_translator_test, insert_values) {
     auto s = ir.InsertValuesStatement(
             ir.Name("T0"),
+            {},
             {
                     ir.InsertValuesStatementColumn(ir.Name("C0"), ir.Literal(tinfo::Int(32), 0)),
                     ir.InsertValuesStatementColumn(ir.Name("C1"), ir.Literal(tinfo::Int(32), 1)),
                     ir.InsertValuesStatementColumn(ir.Name("C2"), ir.Literal(tinfo::Int(32), 2)),
-            });
+            },
+            ::shakujo::model::statement::dml::InsertValuesStatement::ConflictAction::ERROR);
     auto r = engine.process(*s);
     auto&& write = downcast<statement::write>(r.element<result_kind::statement>());
 
@@ -398,6 +400,38 @@ TEST_F(dml_statement_translator_test, insert_values) {
     EXPECT_EQ(es[0], scalar::immediate(value::int4(0), type::int4()));
     EXPECT_EQ(es[1], scalar::immediate(value::int4(1), type::int4()));
     EXPECT_EQ(es[2], scalar::immediate(value::int4(2), type::int4()));
+}
+
+TEST_F(dml_statement_translator_test, insert_values_replace) {
+    auto s = ir.InsertValuesStatement(
+            ir.Name("T0"),
+            {},
+            {
+                    ir.InsertValuesStatementColumn(ir.Name("C0"), ir.Literal(tinfo::Int(32), 0)),
+                    ir.InsertValuesStatementColumn(ir.Name("C1"), ir.Literal(tinfo::Int(32), 1)),
+                    ir.InsertValuesStatementColumn(ir.Name("C2"), ir.Literal(tinfo::Int(32), 2)),
+            },
+            ::shakujo::model::statement::dml::InsertValuesStatement::ConflictAction::REPLACE);
+    auto r = engine.process(*s);
+    auto&& write = downcast<statement::write>(r.element<result_kind::statement>());
+
+    EXPECT_EQ(write.operator_kind(), relation::write_kind::insert_overwrite);
+}
+
+TEST_F(dml_statement_translator_test, insert_values_skip) {
+    auto s = ir.InsertValuesStatement(
+            ir.Name("T0"),
+            {},
+            {
+                    ir.InsertValuesStatementColumn(ir.Name("C0"), ir.Literal(tinfo::Int(32), 0)),
+                    ir.InsertValuesStatementColumn(ir.Name("C1"), ir.Literal(tinfo::Int(32), 1)),
+                    ir.InsertValuesStatementColumn(ir.Name("C2"), ir.Literal(tinfo::Int(32), 2)),
+            },
+            ::shakujo::model::statement::dml::InsertValuesStatement::ConflictAction::SKIP);
+    auto r = engine.process(*s);
+    auto&& write = downcast<statement::write>(r.element<result_kind::statement>());
+
+    EXPECT_EQ(write.operator_kind(), relation::write_kind::insert_skip);
 }
 
 } // namespace mizugaki::translator::details

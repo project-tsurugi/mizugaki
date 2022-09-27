@@ -157,6 +157,8 @@ add_library(mizugaki
     mizugaki/translator/details/ddl_statement_translator.cpp
 )
 
+message(STATUS ${FLEX_INCLUDE_DIRS})
+
 target_include_directories(mizugaki
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
     PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
@@ -169,6 +171,7 @@ target_link_libraries(mizugaki
     PUBLIC yugawara
     PUBLIC shakujo-model # FIXME:transitive
     PRIVATE tsl::hopscotch_map
+    PRIVATE Threads::Threads
 )
 
 set_target_properties(mizugaki
