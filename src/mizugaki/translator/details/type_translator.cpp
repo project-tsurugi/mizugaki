@@ -1,7 +1,14 @@
 #include "type_translator.h"
 
 #include <takatori/type/primitive.h>
+#include <takatori/type/decimal.h>
+
 #include <takatori/type/character.h>
+#include <takatori/type/octet.h>
+
+#include <takatori/type/date.h>
+#include <takatori/type/time_of_day.h>
+#include <takatori/type/time_point.h>
 
 #include <takatori/util/string_builder.h>
 
@@ -50,6 +57,29 @@ public:
         return translator_.types().get(type::float8 {});
     }
 
+    result_type operator()(::shakujo::model::type::DecimalType const& node) {
+        std::optional<std::size_t> precision {};
+        if (auto v = node.precision()) {
+            if (*v != ::shakujo::model::type::DecimalType::dont_care) {
+                precision.emplace(*v);
+            }
+        } else {
+            precision = translator_.options().default_decimal_precision();
+        }
+        std::optional<std::size_t> scale {};
+        if (auto v = node.scale()) {
+            if (*v != ::shakujo::model::type::DecimalType::dont_care) {
+                scale.emplace(*v);
+            }
+        } else {
+            scale.emplace(0);
+        }
+        return translator_.types().get(type::decimal {
+                precision,
+                scale,
+        });
+    }
+
     result_type operator()(::shakujo::model::type::CharType const& node) {
         return translator_.types().get(type::character {
                 ~type::varying,
@@ -58,6 +88,9 @@ public:
     }
 
     result_type operator()(::shakujo::model::type::VarCharType const& node) {
+        if (node.size() == ::shakujo::model::type::VarCharType::dont_care) {
+            return translator_.types().get(type::character { type::varying });
+        }
         return translator_.types().get(type::character {
                 type::varying,
                 node.size(),
@@ -66,6 +99,39 @@ public:
 
     result_type operator()(::shakujo::model::type::StringType const&) {
         return translator_.types().get(type::character { type::varying });
+    }
+
+    result_type operator()(::shakujo::model::type::BinaryType const& node) {
+        return translator_.types().get(type::octet {
+                ~type::varying,
+                node.size(),
+        });
+    }
+
+    result_type operator()(::shakujo::model::type::VarBinaryType const& node) {
+        if (node.size() == ::shakujo::model::type::VarBinaryType::dont_care) {
+            return translator_.types().get(type::octet { type::varying });
+        }
+        return translator_.types().get(type::octet {
+                type::varying,
+                node.size(),
+        });
+    }
+
+    result_type operator()(::shakujo::model::type::DateType const&) {
+        return translator_.types().get(type::date {});
+    }
+
+    result_type operator()(::shakujo::model::type::TimeType const& node) {
+        return translator_.types().get(type::time_of_day {
+                type::with_time_zone_t { node.has_time_zone() }
+        });
+    }
+
+    result_type operator()(::shakujo::model::type::TimestampType const& node) {
+        return translator_.types().get(type::time_point {
+                type::with_time_zone_t { node.has_time_zone() }
+        });
     }
 
     result_type operator()(::shakujo::model::type::NullType const&) {

@@ -20,6 +20,15 @@ namespace mizugaki::translator {
  */
 class shakujo_translator_options {
 public:
+    /// @brief the size type.
+    using size_type = std::size_t;
+
+    /**
+     * @brief the default value of default precision of decimals.
+     * @see default_decimal_precision()
+     */
+    static constexpr std::optional<size_type> default_default_decimal_precision = 34;
+
     /**
      * @brief creates a new instance.
      * @param schema the target schema
@@ -88,9 +97,25 @@ public:
      */
     [[nodiscard]] ::yugawara::variable::provider const& host_variable_provider() const noexcept;
 
+    /**
+     * @brief returns the default decimal precision.
+     * @return the default decimal precision
+     * @see #default_default_decimal_precision
+     */
+    [[nodiscard]] std::optional<size_type>& default_decimal_precision() noexcept {
+        return default_decimal_precision_;
+    }
+
+    /// @copydoc default_decimal_precision()
+    [[nodiscard]] std::optional<size_type> const& default_decimal_precision() const noexcept {
+        return default_decimal_precision_;
+    }
+
 private:
     std::shared_ptr<::yugawara::schema::declaration> schema_;
     std::shared_ptr<::yugawara::variable::provider const> host_variable_provider_;
+
+    std::optional<size_type> default_decimal_precision_ { default_default_decimal_precision };
 };
 
 } // namespace mizugaki::translator
