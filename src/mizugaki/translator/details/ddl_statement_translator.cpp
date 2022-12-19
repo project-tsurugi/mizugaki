@@ -98,7 +98,8 @@ public:
                     source_column->name()->token(),
                     std::move(type),
                     std::move(criteria),
-                    std::move(default_value));
+                    std::move(default_value),
+                    ::yugawara::storage::column::feature_set_type {});
 
             if (attrs.find(ColumnAttr::PRIMARY_KEY) != attrs.end()) {
                 if (primary_key_column) {
