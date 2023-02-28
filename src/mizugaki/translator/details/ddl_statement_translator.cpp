@@ -3,7 +3,9 @@
 #include <takatori/scalar/immediate.h>
 
 #include <takatori/statement/create_table.h>
+#include <takatori/statement/create_index.h>
 #include <takatori/statement/drop_table.h>
+#include <takatori/statement/drop_index.h>
 #include <takatori/statement/empty.h>
 
 #include <takatori/util/assertion.h>
@@ -25,6 +27,7 @@ using translator_type = shakujo_translator::impl;
 using result_type = shakujo_translator_result;
 using code_type = shakujo_translator_code;
 
+using ::takatori::util::downcast;
 using ::takatori::util::fail;
 using ::takatori::util::optional_ptr;
 using ::takatori::util::string_builder;
@@ -138,7 +141,7 @@ public:
                                     << "primary key column \"" << column_name << "\" is not found");
                     return {};
                 }
-                auto direction = convert(source_key->direction());
+                auto direction = convert_direction(source_key->direction());
                 primary_keys.emplace_back(*found, direction);
             }
         } else if (primary_key_column) {
@@ -160,6 +163,71 @@ public:
                 build(std::move(schema), qualifier(node.table())),
                 build(std::move(new_table), last_name(node.table())),
                 build(std::move(new_primary_index), node.table()));
+        result->region() = translator_.region(node.region());
+
+        return { std::move(result) };
+    }
+
+    result_type operator()(ddl::CreateIndexStatement const& node) {
+        auto schema = find_schema_from_element_name(node.table());
+        if (!schema) return {};
+
+        auto table = translator_.find_table(*node.table());
+        if (!table) {
+            report(code_type::table_not_found, *last_name(node.table()), string_builder {}
+                    << "table `" << *node.table() << "' is not found");
+            return {};
+        }
+
+        std::string name {};
+        if (node.index() != nullptr) {
+            auto existing = translator_.find_index(*node.index());
+            auto&& attrs = node.attributes();
+            if (existing) {
+                if (attrs.find(ddl::CreateIndexStatement::Attribute::IF_NOT_EXISTS) != attrs.end()) {
+                    // target index is already present; we return empty statement for "create index if not exists"
+                    auto result = create<::takatori::statement::empty>();
+                    result->region() = translator_.region(node.region());
+                    return { std::move(result) };
+                }
+                report(code_type::duplicate_index, *last_name(node.table()), string_builder {}
+                        << "index `" << *node.index() << "' is already defined");
+                return {};
+            }
+            name = last_name(node.index())->token();
+        }
+
+        std::vector<::yugawara::storage::index::key> index_keys {};
+        index_keys.reserve(node.columns().size());
+        auto&& table_columns = table->table().columns();
+        for (auto const* source_key : node.columns()) {
+            auto&& column_name = source_key->name()->token();
+            auto found = std::find_if(
+                    table_columns.begin(),
+                    table_columns.end(),
+                    [&](auto&& column) { return column.simple_name() == column_name; });
+            if (found == table_columns.end()) {
+                report(shakujo_translator_code::column_not_found, *source_key->name(),
+                        string_builder {}
+                                << "index key column \"" << column_name << "\" is not found in \""
+                                << table->table().simple_name() << "\"");
+                return {};
+            }
+            auto direction = convert_direction(source_key->direction());
+            index_keys.emplace_back(*found, direction);
+        }
+        auto new_index = std::make_shared<::yugawara::storage::index>(
+                std::nullopt,
+                table->shared_table(),
+                std::move(name),
+                std::move(index_keys),
+                std::vector<::yugawara::storage::index::column_ref> {},
+                ::yugawara::storage::index_feature_set {});
+
+        using ::takatori::statement::create_index;
+        auto result = create<create_index>(
+                build(std::move(schema), qualifier(node.table())),
+                build(std::move(new_index), std::addressof(node)));
         result->region() = translator_.region(node.region());
 
         return { std::move(result) };
@@ -187,6 +255,33 @@ public:
         auto result = create<drop_table>(
                 build(std::move(schema), last_name(node.table())),
                 build(index->shared_table(), qualifier(node.table())));
+        result->region() = translator_.region(node.region());
+
+        return { std::move(result) };
+    }
+
+    result_type operator()(ddl::DropIndexStatement const& node) {
+        auto schema = find_schema_from_element_name(node.index());
+        if (!schema) return {};
+
+        auto index = translator_.find_index(*node.index());
+        if(!index) {
+            if (node.attributes().find(ddl::DropIndexStatement::Attribute::IF_EXISTS) != node.attributes().end()) {
+                // target index is absent; we return empty statement for "drop if exists"
+                auto result = create<::takatori::statement::empty>();
+                result->region() = translator_.region(node.region());
+                return { std::move(result) };
+            }
+            report(code_type::index_not_found, *last_name(node.index()), string_builder {}
+                    << "index `" << *node.index() << "' is not found");
+            return {};
+        }
+        if (!index) return {};
+
+        using ::takatori::statement::drop_index;
+        auto result = create<drop_index>(
+                build(std::move(schema), last_name(node.index())),
+                build(std::move(index), qualifier(node.index())));
         result->region() = translator_.region(node.region());
 
         return { std::move(result) };
@@ -268,9 +363,9 @@ private:
         return index;
     }
 
-    [[nodiscard]] static ::yugawara::storage::index::key::direction_type convert(
-            ddl::CreateTableStatement::PrimaryKey::Direction direction) noexcept {
-        using k = ddl::CreateTableStatement::PrimaryKey::Direction;
+    template<class T>
+    [[nodiscard]] static ::yugawara::storage::index::key::direction_type convert_direction(T direction) noexcept {
+        using k = T;
         switch (direction) {
             case k::DONT_CARE:
             case k::ASCENDANT:

@@ -25,6 +25,8 @@ enum class shakujo_translator_code {
 
     /// @brief there is no such the table.
     table_not_found,
+    /// @brief there is no such the index.
+    index_not_found,
     /// @brief there is no such the column.
     column_not_found,
     /// @brief there is no such the variable.
@@ -44,6 +46,10 @@ enum class shakujo_translator_code {
 
     /// @brief table is already defined.
     duplicate_table,
+    /// @brief index is already defined.
+    duplicate_index,
+    /// @brief column is already defined.
+    duplicate_column,
     /// @brief primary key is already defined.
     duplicate_primary_key,
     /// @brief column default value is not valid.
@@ -75,6 +81,7 @@ inline constexpr std::string_view to_string_view(shakujo_translator_code value) 
         case kind::unsupported_scalar_expression: return "unsupported_scalar_expression"sv;
         case kind::unsupported_relational_operator: return "unsupported_relational_operator"sv;
         case kind::table_not_found: return "table_not_found"sv;
+        case kind::index_not_found: return "index_not_found"sv;
         case kind::column_not_found: return "column_not_found"sv;
         case kind::variable_not_found: return "variable_not_found"sv;
         case kind::function_not_found: return "function_not_found"sv;
@@ -83,6 +90,8 @@ inline constexpr std::string_view to_string_view(shakujo_translator_code value) 
         case kind::inconsistent_columns: return "inconsistent_columns"sv;
         case kind::invalid_aggregation_column: return "invalid_aggregation_column"sv;
         case kind::duplicate_table: return "duplicate_table"sv;
+        case kind::duplicate_index: return "duplicate_index"sv;
+        case kind::duplicate_column: return "duplicate_column"sv;
         case kind::duplicate_primary_key: return "duplicate_primary_key"sv;
         case kind::invalid_default_value: return "invalid_default_value"sv;
         case kind::ambiguous_type: return "ambiguous_type"sv;
