@@ -27,7 +27,6 @@ using translator_type = shakujo_translator::impl;
 using result_type = shakujo_translator_result;
 using code_type = shakujo_translator_code;
 
-using ::takatori::util::downcast;
 using ::takatori::util::fail;
 using ::takatori::util::optional_ptr;
 using ::takatori::util::string_builder;
@@ -190,7 +189,7 @@ public:
                     result->region() = translator_.region(node.region());
                     return { std::move(result) };
                 }
-                report(code_type::duplicate_index, *last_name(node.table()), string_builder {}
+                report(code_type::duplicate_index, *last_name(node.index()), string_builder {}
                         << "index `" << *node.index() << "' is already defined");
                 return {};
             }
