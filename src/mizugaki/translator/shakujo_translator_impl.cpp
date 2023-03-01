@@ -124,6 +124,18 @@ std::shared_ptr<::yugawara::storage::index const> impl::find_table(::shakujo::mo
     return {};
 }
 
+std::shared_ptr<::yugawara::storage::index const> impl::find_index(std::string_view name) const {
+    return options().storage_provider().find_index(name);
+}
+
+std::shared_ptr<::yugawara::storage::index const> impl::find_index(::shakujo::model::name::Name const& name) const {
+    if (auto const* n = downcast<::shakujo::model::name::SimpleName>(&name); n != nullptr) {
+        return find_index(n->token());
+    }
+    // FIXME: qualified index name
+    return {};
+}
+
 ::yugawara::util::object_repository<::takatori::type::data>& impl::types() noexcept {
     return types_;
 }

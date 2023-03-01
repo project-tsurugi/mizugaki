@@ -9,7 +9,9 @@
 #include <takatori/scalar/immediate.h>
 
 #include <takatori/statement/create_table.h>
+#include <takatori/statement/create_index.h>
 #include <takatori/statement/drop_table.h>
+#include <takatori/statement/drop_index.h>
 #include <takatori/statement/empty.h>
 
 #include <yugawara/binding/factory.h>
@@ -86,6 +88,18 @@ public:
                     ::yugawara::storage::index_feature::scan,
                     ::yugawara::storage::index_feature::unique,
                     ::yugawara::storage::index_feature::primary,
+            },
+    });
+    std::shared_ptr<::yugawara::storage::index> i0s = storages->add_index({
+            t0,
+            "I0S",
+            {
+                    t0->columns()[1],
+            },
+            {},
+            {
+                    ::yugawara::storage::index_feature::find,
+                    ::yugawara::storage::index_feature::scan,
             },
     });
 
@@ -366,6 +380,161 @@ TEST_F(ddl_statement_translator_test, create_table_primary_key_constraint_confli
     ASSERT_FALSE(r);
 }
 
+
+TEST_F(ddl_statement_translator_test, create_index) {
+    auto s = ir.CreateIndexStatement(
+            {},
+            ir.Name("T1"),
+            {
+                    ir.CreateIndexStatementColumn(
+                            ir.Name("C1"),
+                            ddl::CreateIndexStatement::Column::Direction::DONT_CARE),
+            },
+            {});
+    auto r = engine.process(*s);
+    auto&& stmt = downcast<statement::create_index>(r.element<result_kind::statement>());
+
+    auto schema = extract_shared(stmt.schema());
+    EXPECT_EQ(schema.get(), options.shared_schema().get());
+
+    auto index = extract_shared<::yugawara::storage::index>(stmt.definition());
+    EXPECT_FALSE(index->definition_id());
+    EXPECT_EQ(&index->table(), t1.get());
+    EXPECT_EQ(index->simple_name(), "");
+    {
+        auto&& cols = index->keys();
+        ASSERT_EQ(cols.size(), 1);
+
+        EXPECT_EQ(cols[0].column(), t1->columns()[1]);
+        EXPECT_EQ(cols[0].direction(), ::yugawara::storage::sort_direction::ascendant);
+    }
+}
+
+TEST_F(ddl_statement_translator_test, create_index_columns) {
+    auto s = ir.CreateIndexStatement(
+            {},
+            ir.Name("T0"),
+            {
+                    ir.CreateIndexStatementColumn(
+                            ir.Name("C0"),
+                            ddl::CreateIndexStatement::Column::Direction::DONT_CARE),
+                    ir.CreateIndexStatementColumn(
+                            ir.Name("C1"),
+                            ddl::CreateIndexStatement::Column::Direction::DONT_CARE),
+                    ir.CreateIndexStatementColumn(
+                            ir.Name("C2"),
+                            ddl::CreateIndexStatement::Column::Direction::DONT_CARE),
+            },
+            {});
+    auto r = engine.process(*s);
+    auto&& stmt = downcast<statement::create_index>(r.element<result_kind::statement>());
+
+    auto index = extract_shared<::yugawara::storage::index>(stmt.definition());
+    {
+        auto&& cols = index->keys();
+        ASSERT_EQ(cols.size(), 3);
+
+        EXPECT_EQ(cols[0].column(), t0->columns()[0]);
+        EXPECT_EQ(cols[0].direction(), ::yugawara::storage::sort_direction::ascendant);
+
+        EXPECT_EQ(cols[1].column(), t0->columns()[1]);
+        EXPECT_EQ(cols[1].direction(), ::yugawara::storage::sort_direction::ascendant);
+
+        EXPECT_EQ(cols[2].column(), t0->columns()[2]);
+        EXPECT_EQ(cols[2].direction(), ::yugawara::storage::sort_direction::ascendant);
+    }
+}
+
+TEST_F(ddl_statement_translator_test, create_index_column_direction) {
+    auto s = ir.CreateIndexStatement(
+            {},
+            ir.Name("T0"),
+            {
+                    ir.CreateIndexStatementColumn(
+                            ir.Name("C2"),
+                            ddl::CreateIndexStatement::Column::Direction::ASCENDANT),
+                    ir.CreateIndexStatementColumn(
+                            ir.Name("C1"),
+                            ddl::CreateIndexStatement::Column::Direction::DESCENDANT),
+            },
+            {});
+    auto r = engine.process(*s);
+    auto&& stmt = downcast<statement::create_index>(r.element<result_kind::statement>());
+
+    auto index = extract_shared<::yugawara::storage::index>(stmt.definition());
+    {
+        auto&& cols = index->keys();
+        ASSERT_EQ(cols.size(), 2);
+
+        EXPECT_EQ(cols[0].column(), t0->columns()[2]);
+        EXPECT_EQ(cols[0].direction(), ::yugawara::storage::sort_direction::ascendant);
+
+        EXPECT_EQ(cols[1].column(), t0->columns()[1]);
+        EXPECT_EQ(cols[1].direction(), ::yugawara::storage::sort_direction::descendant);
+    }
+}
+
+TEST_F(ddl_statement_translator_test, create_index_conflict) {
+    auto s = ir.CreateIndexStatement(
+            ir.Name(i0s->simple_name()),
+            ir.Name("T1"),
+            {
+                    ir.CreateIndexStatementColumn(
+                            ir.Name("C1"),
+                            ddl::CreateIndexStatement::Column::Direction::DONT_CARE),
+            },
+            {});
+    auto r = engine.process(*s);
+    ASSERT_FALSE(r);
+}
+
+TEST_F(ddl_statement_translator_test, create_index_if_not_exists) {
+    auto s = ir.CreateIndexStatement(
+            ir.Name(i0s->simple_name()),
+            ir.Name("T1"),
+            {
+                    ir.CreateIndexStatementColumn(
+                            ir.Name("C1"),
+                            ddl::CreateIndexStatement::Column::Direction::DONT_CARE),
+            },
+            { ddl::CreateIndexStatement::Attribute::IF_NOT_EXISTS });
+    auto r = engine.process(*s);
+    ASSERT_TRUE(r);
+    EXPECT_EQ(r.element<result_kind::statement>().kind(), statement::empty::tag);
+}
+
+TEST_F(ddl_statement_translator_test, create_index_missing_column) {
+    auto s = ir.CreateIndexStatement(
+            ir.Name(i0s->simple_name()),
+            ir.Name("T1"),
+            {
+                    ir.CreateIndexStatementColumn(
+                            ir.Name("C_MISSING"),
+                            ddl::CreateIndexStatement::Column::Direction::DONT_CARE),
+            },
+            {});
+    auto r = engine.process(*s);
+    ASSERT_FALSE(r);
+}
+
+TEST_F(ddl_statement_translator_test, create_index_conflict_column) {
+    auto s = ir.CreateIndexStatement(
+            ir.Name(i0s->simple_name()),
+            ir.Name("T1"),
+            {
+                    ir.CreateIndexStatementColumn(
+                            ir.Name("C1"),
+                            ddl::CreateIndexStatement::Column::Direction::ASCENDANT),
+                    ir.CreateIndexStatementColumn(
+                            ir.Name("C2"),
+                            ddl::CreateIndexStatement::Column::Direction::DESCENDANT),
+            },
+            {});
+    auto r = engine.process(*s);
+    ASSERT_FALSE(r);
+}
+
+
 TEST_F(ddl_statement_translator_test, drop_table) {
     auto s = ir.DropTableStatement(
             ir.Name(t0->simple_name()),
@@ -392,6 +561,37 @@ TEST_F(ddl_statement_translator_test, drop_table_if_exists) {
     auto s = ir.DropTableStatement(
             ir.Name("MISSING"),
             { ddl::DropTableStatement::Attribute::IF_EXISTS });
+    auto r = engine.process(*s);
+    ASSERT_TRUE(r);
+    EXPECT_EQ(r.element<result_kind::statement>().kind(), statement::empty::tag);
+}
+
+TEST_F(ddl_statement_translator_test, drop_index) {
+    auto s = ir.DropIndexStatement(
+            ir.Name(i0s->simple_name()),
+            {});
+    auto r = engine.process(*s);
+    auto&& stmt = downcast<statement::drop_index>(r.element<result_kind::statement>());
+
+    auto schema = extract_shared(stmt.schema());
+    EXPECT_EQ(schema.get(), options.shared_schema().get());
+
+    auto index = extract_shared<::yugawara::storage::index>(stmt.target());
+    EXPECT_EQ(index.get(), i0s.get());
+}
+
+TEST_F(ddl_statement_translator_test, drop_index_missing) {
+    auto s = ir.DropIndexStatement(
+            ir.Name("MISSING"),
+            {});
+    auto r = engine.process(*s);
+    ASSERT_FALSE(r);
+}
+
+TEST_F(ddl_statement_translator_test, drop_index_if_exists) {
+    auto s = ir.DropIndexStatement(
+            ir.Name("MISSING"),
+            { ddl::DropIndexStatement::Attribute::IF_EXISTS });
     auto r = engine.process(*s);
     ASSERT_TRUE(r);
     EXPECT_EQ(r.element<result_kind::statement>().kind(), statement::empty::tag);
