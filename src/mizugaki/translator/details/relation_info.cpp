@@ -55,7 +55,9 @@ relation_info::build_column_map(yugawara::storage::index const& index) {
     auto&& cols = index.table().columns();
     result.reserve(index.table().columns().size());
     for (auto&& col : cols) {
-        result.emplace(col.simple_name(), std::addressof(col));
+        if (!col.features().contains(::yugawara::storage::column_feature::hidden)) {
+            result.emplace(col.simple_name(), std::addressof(col));
+        }
     }
     return result;
 }

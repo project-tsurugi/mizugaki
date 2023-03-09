@@ -224,19 +224,15 @@ public:
         auto&& index = find_table(node.table());
         if (!index) return {};
 
-        relation_info table { *index };
-
         using ::takatori::statement::write;
 
-        std::vector<write::column> columns {};
+        auto columns = collect_insert_columns(index, node);
+        if (columns.size() != node.columns().size()) {
+            return {};
+        }
         write::tuple tuple {};
-        columns.reserve(node.columns().size());
         tuple.elements().reserve(node.columns().size());
         for (auto&& column : node.columns()) {
-            auto c = table.find_table_column(*column->name());
-            if (!c) return {};
-            columns.emplace_back(factory()(*c));
-
             scalar_expression_translator t { translator_ };
             auto v = t.process(*column->value(), { translator_.options(), {} });
             if (!v) return {};
@@ -378,6 +374,53 @@ private:
         case from::REPLACE: return to::insert_overwrite;
         }
         fail();
+    }
+
+    std::vector<::takatori::statement::write::column> collect_insert_columns(
+            std::shared_ptr<::yugawara::storage::index const> const& index,
+            dml::InsertValuesStatement const& node) {
+        if (node.columns().empty()) {
+            return {};
+        }
+        std::vector<::takatori::statement::write::column> results {};
+        results.reserve(node.columns().size());
+        if (node.columns()[0]->name() != nullptr) {
+            // explicit results
+            relation_info table { *index };
+            for (auto&& column : node.columns()) {
+                if (column->name() == nullptr) {
+                    report(code_type::inconsistent_columns, *node.table(), string_builder {}
+                            << "unmatched inserting value");
+                    return {};
+                }
+                if (column->value() == nullptr) {
+                    report(code_type::inconsistent_columns, *node.table(), string_builder {}
+                            << "too short number of inserting values");
+                    return {};
+                }
+                auto c = table.find_table_column(*column->name());
+                if (!c) return {};
+                results.emplace_back(factory()(*c));
+            }
+        } else {
+            // implicit results
+            for (auto&& col : index->table().columns()) {
+                if (!col.features().contains(::yugawara::storage::column_feature::hidden)) {
+                    results.emplace_back(factory()(col));
+                }
+            }
+            if (node.columns().size() < results.size()) {
+                report(code_type::inconsistent_columns, *node.table(), string_builder {}
+                        << "too short number of inserting values");
+                return {};
+            }
+            if (node.columns().size() > results.size()) {
+                report(code_type::inconsistent_columns, *node.columns()[results.size()]->value(), string_builder {}
+                        << "unmatched inserting value");
+                return {};
+            }
+        }
+        return results;
     }
 };
 
