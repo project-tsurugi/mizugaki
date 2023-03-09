@@ -66,6 +66,23 @@ public:
                     { "C2", type::int4() },
             },
     });
+    std::shared_ptr<::yugawara::storage::table> t2 = storages->add_table({
+            "T2",
+            {
+                    {
+                            "C0",
+                            type::int4(),
+                            {},
+                            value::int4 { 0 },
+                            {
+                                ::yugawara::storage::column_feature::synthesized,
+                                ::yugawara::storage::column_feature::hidden,
+                            },
+                    },
+                    { "C1", type::int4() },
+                    { "C2", type::int4() },
+            },
+    });
 
     std::shared_ptr<::yugawara::storage::index> i0 = storages->add_index({
             t0,
@@ -88,6 +105,23 @@ public:
                     t1->columns()[0],
             },
             {},
+            {
+                    ::yugawara::storage::index_feature::find,
+                    ::yugawara::storage::index_feature::scan,
+                    ::yugawara::storage::index_feature::unique,
+                    ::yugawara::storage::index_feature::primary,
+            },
+    });
+    std::shared_ptr<::yugawara::storage::index> i2 = storages->add_index({
+            t2,
+            "I2",
+            {
+                    t2->columns()[0],
+            },
+            {
+                    t2->columns()[1],
+                    t2->columns()[2],
+            },
             {
                     ::yugawara::storage::index_feature::find,
                     ::yugawara::storage::index_feature::scan,
@@ -432,6 +466,119 @@ TEST_F(dml_statement_translator_test, insert_values_skip) {
     auto&& write = downcast<statement::write>(r.element<result_kind::statement>());
 
     EXPECT_EQ(write.operator_kind(), relation::write_kind::insert_skip);
+}
+
+TEST_F(dml_statement_translator_test, insert_values_omit_columns) {
+    auto s = ir.InsertValuesStatement(
+            ir.Name("T0"),
+            {},
+            {
+                    ir.InsertValuesStatementColumn({}, ir.Literal(tinfo::Int(32), 0)),
+                    ir.InsertValuesStatementColumn({}, ir.Literal(tinfo::Int(32), 1)),
+                    ir.InsertValuesStatementColumn({}, ir.Literal(tinfo::Int(32), 2)),
+            },
+            ::shakujo::model::statement::dml::InsertValuesStatement::ConflictAction::ERROR);
+    auto r = engine.process(*s);
+    auto&& write = downcast<statement::write>(r.element<result_kind::statement>());
+
+    EXPECT_EQ(write.operator_kind(), relation::write_kind::insert);
+
+    ASSERT_EQ(write.columns().size(), 3);
+    EXPECT_EQ(write.columns()[0], bindings(t0->columns()[0]));
+    EXPECT_EQ(write.columns()[1], bindings(t0->columns()[1]));
+    EXPECT_EQ(write.columns()[2], bindings(t0->columns()[2]));
+
+    ASSERT_EQ(write.tuples().size(), 1);
+    auto&& es = write.tuples()[0].elements();
+    ASSERT_EQ(es.size(), 3);
+    EXPECT_EQ(es[0], scalar::immediate(value::int4(0), type::int4()));
+    EXPECT_EQ(es[1], scalar::immediate(value::int4(1), type::int4()));
+    EXPECT_EQ(es[2], scalar::immediate(value::int4(2), type::int4()));
+}
+
+TEST_F(dml_statement_translator_test, insert_values_omit_columns_hidden) {
+    auto s = ir.InsertValuesStatement(
+            ir.Name("T2"),
+            {},
+            {
+                    ir.InsertValuesStatementColumn({}, ir.Literal(tinfo::Int(32), 1)),
+                    ir.InsertValuesStatementColumn({}, ir.Literal(tinfo::Int(32), 2)),
+            },
+            ::shakujo::model::statement::dml::InsertValuesStatement::ConflictAction::ERROR);
+    auto r = engine.process(*s);
+    auto&& write = downcast<statement::write>(r.element<result_kind::statement>());
+
+    EXPECT_EQ(write.operator_kind(), relation::write_kind::insert);
+
+    ASSERT_EQ(write.columns().size(), 2);
+    EXPECT_EQ(write.columns()[0], bindings(t2->columns()[1]));
+    EXPECT_EQ(write.columns()[1], bindings(t2->columns()[2]));
+
+    ASSERT_EQ(write.tuples().size(), 1);
+    auto&& es = write.tuples()[0].elements();
+    ASSERT_EQ(es.size(), 2);
+    EXPECT_EQ(es[0], scalar::immediate(value::int4(1), type::int4()));
+    EXPECT_EQ(es[1], scalar::immediate(value::int4(2), type::int4()));
+}
+
+TEST_F(dml_statement_translator_test, insert_values_extra_columns_explicit) {
+    auto s = ir.InsertValuesStatement(
+            ir.Name("T0"),
+            {},
+            {
+                    ir.InsertValuesStatementColumn(ir.Name("C0"), ir.Literal(tinfo::Int(32), 0)),
+                    ir.InsertValuesStatementColumn(ir.Name("C1"), ir.Literal(tinfo::Int(32), 1)),
+                    ir.InsertValuesStatementColumn(ir.Name("C2"), nullptr),
+            },
+            ::shakujo::model::statement::dml::InsertValuesStatement::ConflictAction::ERROR);
+    auto r = engine.process(*s);
+    EXPECT_FALSE(r);
+    EXPECT_TRUE(occurred(code::inconsistent_columns, entry.diagnostics()));
+}
+
+TEST_F(dml_statement_translator_test, insert_values_extra_values_explicit) {
+    auto s = ir.InsertValuesStatement(
+            ir.Name("T0"),
+            {},
+            {
+                    ir.InsertValuesStatementColumn(ir.Name("C0"), ir.Literal(tinfo::Int(32), 0)),
+                    ir.InsertValuesStatementColumn(ir.Name("C1"), ir.Literal(tinfo::Int(32), 1)),
+                    ir.InsertValuesStatementColumn({}, ir.Literal(tinfo::Int(32), 2)),
+            },
+            ::shakujo::model::statement::dml::InsertValuesStatement::ConflictAction::ERROR);
+    auto r = engine.process(*s);
+    EXPECT_FALSE(r);
+    EXPECT_TRUE(occurred(code::inconsistent_columns, entry.diagnostics()));
+}
+
+TEST_F(dml_statement_translator_test, insert_values_extra_columns_implicit) {
+    auto s = ir.InsertValuesStatement(
+            ir.Name("T0"),
+            {},
+            {
+                    ir.InsertValuesStatementColumn({}, ir.Literal(tinfo::Int(32), 0)),
+                    ir.InsertValuesStatementColumn({}, ir.Literal(tinfo::Int(32), 1)),
+            },
+            ::shakujo::model::statement::dml::InsertValuesStatement::ConflictAction::ERROR);
+    auto r = engine.process(*s);
+    EXPECT_FALSE(r);
+    EXPECT_TRUE(occurred(code::inconsistent_columns, entry.diagnostics()));
+}
+
+TEST_F(dml_statement_translator_test, insert_values_extra_values_implicit) {
+    auto s = ir.InsertValuesStatement(
+            ir.Name("T0"),
+            {},
+            {
+                    ir.InsertValuesStatementColumn({}, ir.Literal(tinfo::Int(32), 0)),
+                    ir.InsertValuesStatementColumn({}, ir.Literal(tinfo::Int(32), 1)),
+                    ir.InsertValuesStatementColumn({}, ir.Literal(tinfo::Int(32), 2)),
+                    ir.InsertValuesStatementColumn({}, ir.Literal(tinfo::Int(32), 3)),
+            },
+            ::shakujo::model::statement::dml::InsertValuesStatement::ConflictAction::ERROR);
+    auto r = engine.process(*s);
+    EXPECT_FALSE(r);
+    EXPECT_TRUE(occurred(code::inconsistent_columns, entry.diagnostics()));
 }
 
 } // namespace mizugaki::translator::details
