@@ -391,7 +391,9 @@ bool ddl_statement_translator::is_supported(shakujo::model::statement::Statement
     using k = shakujo::model::statement::StatementKind;
     switch (node.kind()) {
         case k::CREATE_TABLE_STATEMENT:
+        case k::CREATE_INDEX_STATEMENT:
         case k::DROP_TABLE_STATEMENT:
+        case k::DROP_INDEX_STATEMENT:
             return true;
         default:
             return false;
