@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include <takatori/util/clone_tag.h>
 
 #include <mizugaki/ast/common/regioned.h>
