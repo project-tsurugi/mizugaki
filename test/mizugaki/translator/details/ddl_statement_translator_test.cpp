@@ -279,6 +279,7 @@ TEST_F(ddl_statement_translator_test, create_table_primary_key_column) {
         auto&& keys = index->keys();
         ASSERT_EQ(keys.size(), 1);
         EXPECT_EQ(keys[0].column(), columns[0]);
+        EXPECT_EQ(keys[0].column().criteria().nullity(), ~::yugawara::variable::nullable);
     }
 }
 
@@ -347,9 +348,11 @@ TEST_F(ddl_statement_translator_test, create_table_primary_key_constraint) {
 
         EXPECT_EQ(keys[0].column(), columns[0]);
         EXPECT_EQ(keys[0].direction(), sort_direction::ascendant);
+        EXPECT_EQ(keys[0].column().criteria().nullity(), ~::yugawara::variable::nullable);
 
         EXPECT_EQ(keys[1].column(), columns[1]);
         EXPECT_EQ(keys[1].direction(), sort_direction::descendant);
+        EXPECT_EQ(keys[1].column().criteria().nullity(), ~::yugawara::variable::nullable);
     }
 }
 

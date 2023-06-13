@@ -142,10 +142,12 @@ public:
                 }
                 auto direction = convert_direction(source_key->direction());
                 primary_keys.emplace_back(*found, direction);
+                found->criteria().nullity(~::yugawara::variable::nullable);
             }
         } else if (primary_key_column) {
             primary_keys.reserve(1);
             primary_keys.emplace_back(*primary_key_column);
+            primary_key_column->criteria().nullity(~::yugawara::variable::nullable);
         }
         auto new_primary_index = std::make_shared<::yugawara::storage::index>(
                 std::nullopt,
