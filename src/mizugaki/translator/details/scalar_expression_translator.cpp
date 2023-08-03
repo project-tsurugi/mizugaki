@@ -191,6 +191,7 @@ public:
                 << node.name());
     }
 
+    // NOLINTNEXTLINE(readability-function-cognitive-complexity)
     result_type operator()(::shakujo::model::expression::FunctionCall const& node) {
         auto name = as_simple_name(node.name());
         if (name.empty()) {
