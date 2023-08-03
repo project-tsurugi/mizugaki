@@ -65,7 +65,7 @@ name::identifier_type const& qualified::last_identifier() const noexcept {
 }
 
 optional_ptr<name const> qualified::optional_qualifier() const noexcept {
-    return takatori::util::optional_ptr<name const>();
+    return takatori::util::optional_ptr<name const>(); // NOLINT(modernize-return-braced-init-list) sometimes misinfer
 }
 
 std::unique_ptr<name>& qualified::qualifier() noexcept {

@@ -14,7 +14,7 @@ git submodule update --init --recursive
 ### Dockerfile
 
 ```dockerfile
-FROM ubuntu:18.04
+FROM ubuntu:22.04
 
 RUN apt update -y && apt install -y git build-essential cmake flex libfl-dev libgflags-dev ninja-build
 ```
@@ -24,7 +24,7 @@ optional packages:
 * `bison` (only `>= 3.5`)
 * `doxygen`
 * `graphviz`
-* `clang-tidy-9`
+* `clang-tidy-14`
 
 ### Install modules
 

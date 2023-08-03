@@ -49,6 +49,7 @@ public:
                 << string_builder::to_string);
     }
 
+    // NOLINTNEXTLINE(readability-function-cognitive-complexity)
     result_type operator()(ddl::CreateTableStatement const& node) {
         auto schema = find_schema_from_element_name(node.table());
         if (!schema) return {};

@@ -30,6 +30,7 @@ llvm-*,\
 -llvm-header-guard,\
 -llvm-namespace-comment,\
 misc-*,\
+-misc-no-recursion,\
 -misc-unused-parameters,\
 modernize-*,\
 -modernize-use-trailing-return-type,\
