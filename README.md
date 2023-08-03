@@ -2,7 +2,7 @@
 
 ## Requirements
 
-* CMake `>= 3.10`
+* CMake `>= 3.16`
 * C++ Compiler `>= C++17`
 * and see *Dockerfile* section
 
