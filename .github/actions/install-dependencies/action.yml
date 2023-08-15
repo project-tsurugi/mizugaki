@@ -1,0 +1,76 @@
+name: Mizugaki-Install-Dependencies
+
+inputs:
+  token:
+    description: token for checkout private repo
+    required: true
+
+runs:
+  using: "composite"
+
+  steps:
+    - name: Checkout_Takatori
+      uses: actions/checkout@v3
+      with:
+        repository: project-tsurugi/takatori
+        path: build-deps/takatori
+        ref: master
+        token: ${{ inputs.token }}
+
+    - name: Checkout_Yugawara
+      uses: actions/checkout@v3
+      with:
+        repository: project-tsurugi/yugawara
+        path: build-deps/yugawara
+        ref: master
+        submodules: true
+        token: ${{ inputs.token }}
+
+    - name: Checkout_Shakujo
+      uses: actions/checkout@v3
+      with:
+        repository: project-tsurugi/shakujo
+        path: build-deps/shakujo
+        ref: master
+        submodules: recursive
+        token: ${{ inputs.token }}
+
+    - name: Install_Takatori
+      run: |
+        cd build-deps/takatori
+        rm -fr build
+        mkdir build
+        cd build
+        cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DBUILD_TESTS=OFF -DBUILD_DOCUMENTS=OFF -DFORCE_INSTALL_RPATH=ON -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/.local ..
+        cmake --build . --target install --clean-first
+      shell: bash
+
+    - name: Install_hopscotch-map
+      run: |
+        cd build-deps/yugawara/third_party/hopscotch-map
+        rm -fr ../../build-hopscotch-map
+        mkdir ../../build-hopscotch-map
+        cd ../../build-hopscotch-map
+        cmake -G Ninja -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/.local ../third_party/hopscotch-map
+        cmake --build . --target install
+      shell: bash
+
+    - name: Install_Yugawara
+      run: |
+        cd build-deps/yugawara
+        rm -fr build
+        mkdir build
+        cd build
+        cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DBUILD_TESTS=OFF -DBUILD_DOCUMENTS=OFF -DFORCE_INSTALL_RPATH=ON -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/.local ..
+        cmake --build . --target install --clean-first
+      shell: bash
+
+    - name: Install_Shakujo
+      run: |
+        cd build-deps/shakujo
+        rm -fr build
+        mkdir build
+        cd build
+        cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DBUILD_TESTS=OFF -DBUILD_DOCUMENTS=OFF -DBUILD_EXAMPLES=OFF -DFORCE_INSTALL_RPATH=ON -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/.local ..
+        cmake --build . --target install --clean-first
+      shell: bash
