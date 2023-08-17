@@ -102,7 +102,7 @@ jobs:
       - id: Clang-Tidy
         name: Clang-Tidy
         run: |
-          python tools/bin/run-clang-tidy.py -quiet -export-fixes=build/clang-tidy-fix.yaml -p build -extra-arg=-Wno-unknown-warning-option -header-filter=$(pwd)'/(include|src|examples)/.*\.h$' $(pwd)'/(src|examples)/.*' 2>&1 | awk '!a[$0]++{print > "build/clang-tidy.log"}'
+          python tools/bin/run-clang-tidy.py -quiet -export-fixes=build/clang-tidy-fix.yaml -p build -extra-arg=-Wno-unknown-warning-option -header-filter=$(pwd)'/(include|src|examples)/.*\.h$' -exclude='sql_(parser|scanner)\.cpp$' $(pwd)'/(src|examples)/.*' 2>&1 | awk '!a[$0]++{print > "build/clang-tidy.log"}'
         if: matrix.container-tag == 'ubuntu-22.04'
 
       - id: Doxygen
