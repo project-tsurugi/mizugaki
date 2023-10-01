@@ -4,6 +4,12 @@ inputs:
   token:
     description: token for checkout private repo
     required: true
+  checkout:
+    description: Skip checkout if false
+    default: true
+  path:
+    description: Relative path under $GITHUB_WORKSPACE to place the repository
+    default: build-deps
 
 runs:
   using: "composite"
@@ -11,33 +17,36 @@ runs:
   steps:
     - name: Checkout_Takatori
       uses: actions/checkout@v3
+      if: ${{ inputs.checkout == 'true' }}
       with:
         repository: project-tsurugi/takatori
-        path: build-deps/takatori
+        path: ${{ inputs.path }}/takatori
         ref: master
         token: ${{ inputs.token }}
 
     - name: Checkout_Yugawara
+      if: ${{ inputs.checkout == 'true' }}
       uses: actions/checkout@v3
       with:
         repository: project-tsurugi/yugawara
-        path: build-deps/yugawara
+        path: ${{ inputs.path }}/yugawara
         ref: master
         submodules: true
         token: ${{ inputs.token }}
 
     - name: Checkout_Shakujo
+      if: ${{ inputs.checkout == 'true' }}
       uses: actions/checkout@v3
       with:
         repository: project-tsurugi/shakujo
-        path: build-deps/shakujo
+        path: ${{ inputs.path }}/shakujo
         ref: master
         submodules: recursive
         token: ${{ inputs.token }}
 
     - name: Install_Takatori
       run: |
-        cd build-deps/takatori
+        cd ${{ inputs.path }}/takatori
         rm -fr build
         mkdir build
         cd build
@@ -47,7 +56,7 @@ runs:
 
     - name: Install_hopscotch-map
       run: |
-        cd build-deps/yugawara/third_party/hopscotch-map
+        cd ${{ inputs.path }}/yugawara/third_party/hopscotch-map
         rm -fr ../../build-hopscotch-map
         mkdir ../../build-hopscotch-map
         cd ../../build-hopscotch-map
@@ -57,7 +66,7 @@ runs:
 
     - name: Install_Yugawara
       run: |
-        cd build-deps/yugawara
+        cd ${{ inputs.path }}/yugawara
         rm -fr build
         mkdir build
         cd build
@@ -67,7 +76,7 @@ runs:
 
     - name: Install_Shakujo
       run: |
-        cd build-deps/shakujo
+        cd ${{ inputs.path }}/shakujo
         rm -fr build
         mkdir build
         cd build
