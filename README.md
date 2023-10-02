@@ -28,17 +28,16 @@ optional packages:
 
 ### Install modules
 
-#### `third_party/yugawara`
+#### tsurugidb modules
 
-see [README](https://github.com/project-tsurugi/yugawara/blob/master/README.md).
+This requires below [tsurugidb](https://github.com/project-tsurugi/tsurugidb) modules to be installed.
 
-#### `third_party/shakujo` (transitive)
-
-see [README](https://github.com/project-tsurugi/shakujo/blob/master/README.md).
+* [yugawara](https://github.com/project-tsurugi/yugawara)
+* [shakujo](https://github.com/project-tsurugi/shakujo) (transitive)
 
 #### `third_party/hopscotch-map`
 
-NOTE: `third_party/yugawara` also requires to install this module.
+NOTE: hopscotch-map will be already installed because [yugawara](https://github.com/project-tsurugi/yugawara) also requires it.
 
 ```sh
 mkdir -p build-third_party/hopscotch-map
