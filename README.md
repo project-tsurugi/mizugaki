@@ -43,7 +43,7 @@ NOTE: hopscotch-map will be already installed because [yugawara](https://github.
 mkdir -p build-third_party/hopscotch-map
 cd build-third_party/hopscotch-map
 cmake -G Ninja -DCMAKE_INSTALL_PREFIX=[/path/to/install-prefix] ../../third_party/hopscotch-map
-cmake --build . --target install
+ninja install
 ```
 
 see https://github.com/Tessil/hopscotch-map
@@ -73,7 +73,7 @@ If you install the above to a non-standard path, please specify `-DCMAKE_PREFIX_
 mkdir -p build
 cd build
 cmake -G Ninja -DCMAKE_BUILD_TYPE=Release ..
-cmake --build .
+ninja
 ```
 
 available options:
@@ -90,7 +90,7 @@ available options:
 ### install
 
 ```sh
-cmake --build . --target install
+ninja install
 ```
 
 ### run tests
