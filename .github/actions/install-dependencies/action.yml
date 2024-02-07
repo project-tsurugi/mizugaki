@@ -13,7 +13,7 @@ runs:
 
   steps:
     - name: Checkout_Takatori
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       if: ${{ inputs.checkout == 'true' }}
       with:
         repository: project-tsurugi/takatori
@@ -22,7 +22,7 @@ runs:
 
     - name: Checkout_Yugawara
       if: ${{ inputs.checkout == 'true' }}
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         repository: project-tsurugi/yugawara
         path: ${{ inputs.path }}/yugawara
@@ -31,7 +31,7 @@ runs:
 
     - name: Checkout_Shakujo
       if: ${{ inputs.checkout == 'true' }}
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         repository: project-tsurugi/shakujo
         path: ${{ inputs.path }}/shakujo
