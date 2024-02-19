@@ -174,11 +174,6 @@ target_link_libraries(mizugaki
     PRIVATE Threads::Threads
 )
 
-set_target_properties(mizugaki
-    PROPERTIES
-        SOVERSION ${PROJECT_VERSION}
-)
-
 if (FORCE_INSTALL_RPATH)
     force_install_rpath(mizugaki)
 endif (FORCE_INSTALL_RPATH)
