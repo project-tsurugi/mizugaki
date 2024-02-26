@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(mizugaki-project
-    VERSION 0.1.0
+    VERSION 1.0.0
     DESCRIPTION "Mizugaki - A SQL compiler front end"
     LANGUAGES C CXX)
 
