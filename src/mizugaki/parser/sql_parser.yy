@@ -17,6 +17,7 @@
 %code requires {
     #include <memory>
     #include <string>
+    #include <utility>
 
     #include <mizugaki/ast/node_region.h>
     #include <mizugaki/ast/common/vector.h>
@@ -28,6 +29,22 @@
     #include <mizugaki/ast/statement/insert_statement.h>
     #include <mizugaki/ast/statement/update_statement.h>
     #include <mizugaki/ast/statement/delete_statement.h>
+    #include <mizugaki/ast/statement/table_definition.h>
+    #include <mizugaki/ast/statement/index_definition.h>
+    #include <mizugaki/ast/statement/view_definition.h>
+    #include <mizugaki/ast/statement/sequence_definition.h>
+    #include <mizugaki/ast/statement/schema_definition.h>
+    #include <mizugaki/ast/statement/drop_statement.h>
+    #include <mizugaki/ast/statement/table_element.h>
+    #include <mizugaki/ast/statement/column_definition.h>
+    #include <mizugaki/ast/statement/table_constraint_definition.h>
+    #include <mizugaki/ast/statement/column_constraint_definition.h>
+    #include <mizugaki/ast/statement/constraint.h>
+    #include <mizugaki/ast/statement/simple_constraint.h>
+    #include <mizugaki/ast/statement/expression_constraint.h>
+    #include <mizugaki/ast/statement/key_constraint.h>
+    #include <mizugaki/ast/statement/referential_constraint.h>
+    #include <mizugaki/ast/statement/identity_constraint.h>
 
     #include <mizugaki/ast/query/query.h>
     #include <mizugaki/ast/query/table_reference.h>
@@ -86,6 +103,7 @@
     #include <mizugaki/ast/type/simple.h>
     #include <mizugaki/ast/type/character_string.h>
     #include <mizugaki/ast/type/bit_string.h>
+    #include <mizugaki/ast/type/octet_string.h>
     #include <mizugaki/ast/type/decimal.h>
     #include <mizugaki/ast/type/binary_numeric.h>
     #include <mizugaki/ast/type/datetime.h>
@@ -99,6 +117,9 @@
     #include <mizugaki/ast/name/qualified.h>
 
     #include <mizugaki/parser/sql_parser_result.h>
+
+    #include <mizugaki/parser/details/sequence_option_field.h>
+    #include <mizugaki/parser/details/sequence_options.h>
 
     namespace mizugaki::parser {
 
@@ -499,7 +520,7 @@
 %token NO "NO"
 %token NONE "NONE"
 %token NOT "NOT"
-%token NULL_ "NULL"
+%token NULL_ "NULL_"
 %token NUMERIC "NUMERIC"
 %token OBJECT "OBJECT"
 %token OF "OF"
@@ -622,13 +643,32 @@
 %token YEAR "YEAR"
 %token ZONE "ZONE"
 
+// SQL-2003 keywords
+%token ALWAYS "ALWAYS"
+%token MAXVALUE "MAXVALUE"
+%token MINVALUE "MINVALUE"
+%token INCREMENT "INCREMENT"
+
 // extra operators
 %token CONTAINS_OPERATOR "<@"
 %token IS_CONTAINED_BY_OPERATOR "@>"
 %token OVERLAPS_OPERATOR "&&"
 
 // extra keywords
+%token IF "IF"
+%token INDEX "INDEX"
+
+%token INCLUDE "INCLUDE"
+%token NULLS "NULLS"
+%token REPLACE "REPLACE"
+%token OWNED "OWNED"
 %token PLACING "PLACING"
+
+%token BYTE "BYTE"
+%token BYTEVAR "BYTEVAR"
+
+%token VARBIT "VARBIT"
+%token VARBYTE "VARBYTE"
 
 %token TINYINT "TINYINT"
 %token BIGINT "BIGINT"
@@ -661,6 +701,42 @@
 %nterm <node_ptr<ast::statement::statement>> statement
 %nterm <node_vector<ast::statement::statement>> statement_list
 
+%nterm <std::optional<ast::common::regioned<ast::statement::insert_statement_option>>> insert_operation
+%nterm <node_ptr<ast::query::expression>> insert_source
+
+%nterm <node_ptr<ast::name::simple>> schema_authorization_opt
+%nterm <node_vector<ast::statement::statement>> schema_element_list_opt
+%nterm <node_ptr<ast::statement::statement>> schema_element
+%nterm <node_ptr<ast::statement::table_element>> table_element
+%nterm <node_vector<ast::statement::table_element>> table_element_list
+%nterm <node_vector<ast::statement::table_element>> table_element_list_opt
+
+%nterm <node_ptr<ast::statement::constraint>> table_constraint_body
+
+%nterm <element_vector<ast::statement::column_constraint_definition>> column_constraint_definition_list
+%nterm <ast::statement::column_constraint_definition> column_constraint_definition
+%nterm <node_ptr<ast::statement::constraint>> column_constraint_body
+
+%nterm <node_vector<ast::scalar::expression>> index_value_list_opt
+%nterm <node_vector<ast::scalar::expression>> index_value_list_body_opt
+%nterm <node_vector<ast::scalar::expression>> index_value_list_body
+
+%nterm <std::tuple<std::optional<regioned<ast::statement::referential_action>>, std::optional<regioned<ast::statement::referential_action>>>> referential_actions
+%nterm <regioned<ast::statement::referential_action>> referential_action_kind
+
+%nterm <details::sequence_options> sequence_options
+%nterm <details::sequence_option_field> sequence_option
+%nterm <details::sequence_options> common_sequence_options
+%nterm <details::sequence_options> common_sequence_options_opt
+%nterm <details::sequence_option_field> common_sequence_option
+%nterm <details::sequence_option_field> basic_sequence_option
+
+%nterm <element_vector<ast::statement::storage_parameter>> storage_parameter_list_opt
+%nterm <element_vector<ast::statement::storage_parameter>> storage_parameter_list_body_opt
+%nterm <element_vector<ast::statement::storage_parameter>> storage_parameter_list_body
+%nterm <ast::statement::storage_parameter> storage_parameter
+%nterm <node_ptr<ast::scalar::expression>> storage_parameter_value
+
 %nterm <node_ptr<ast::name::name>> target_table
 
 %nterm <element_vector<ast::statement::set_element>> set_clause_list
@@ -668,13 +744,19 @@
 
 %nterm <node_ptr<ast::scalar::expression>> manipulate_where_clause_opt
 
+%nterm <ast::common::regioned<bool>> temporary_opt
+%nterm <ast::common::regioned<bool>> unique_opt
+%nterm <ast::common::regioned<bool>> if_exists_opt
+%nterm <ast::common::regioned<bool>> if_not_exists_opt
+%nterm <std::optional<ast::common::regioned<ast::statement::drop_statement_option>>> drop_behavior_opt
+
 %nterm <node_ptr<ast::query::expression>> query_expression
 %nterm <node_ptr<ast::query::expression>> query_expression_body
 %nterm <node_ptr<ast::query::expression>> query_expression_primary
 
 %nterm <element_vector<ast::query::with_element>> with_list
 %nterm <ast::query::with_element> with_element
-%nterm <node_vector<ast::name::simple>> with_column_list_opt
+%nterm <node_vector<ast::name::simple>> column_list_opt
 
 %nterm <ast::common::regioned<bool>> recursive_opt
 
@@ -694,6 +776,7 @@
 %nterm <element_vector<ast::common::sort_element>> sort_specification_list
 %nterm <ast::common::sort_element> sort_specification
 %nterm <std::optional<ast::common::regioned<ast::common::ordering_specification>>> ordering_specification_opt
+%nterm <std::optional<ast::common::regioned<ast::common::null_ordering_specification>>> null_ordering_specification_opt
 %nterm <node_ptr<ast::scalar::expression>> limit_clause_opt
 
 %nterm <regioned<ast::table::join_type>> join_type
@@ -707,7 +790,6 @@
 %nterm <ast::table::correlation_clause> correlation_clause
 %nterm <std::optional<ast::table::correlation_clause>> correlation_clause_opt
 %nterm <node_ptr<ast::name::simple>> correlation_name
-%nterm <node_vector<ast::name::simple>> derived_column_list_opt
 %nterm <ast::common::regioned<bool>> with_ordinality_opt
 
 %nterm <node_vector<ast::scalar::expression>> explicit_row_value_expression_list
@@ -725,6 +807,7 @@
 %nterm <ast::common::regioned<bool>> not_opt
 %nterm <std::optional<ast::common::regioned<ast::scalar::between_operator>>> symmetric_opt
 %nterm <node_ptr<ast::scalar::expression>> escape_opt
+%nterm <node_ptr<ast::scalar::expression>> signed_value_expression_primary
 
 %nterm <node_ptr<ast::scalar::expression>> value_expression_primary
 
@@ -769,6 +852,9 @@
 %nterm <ast::common::regioned<ast::type::kind>> decimal_type_name
 %nterm integer_type_name
 
+%nterm bit_varying_type_name
+%nterm octet_varying_type_name
+
 %nterm <std::optional<ast::common::regioned<std::size_t>>> parenthesized_size_maybe_flexible_opt
 %nterm <std::optional<ast::common::regioned<std::size_t>>> parenthesized_size_opt
 %nterm <std::optional<ast::common::regioned<std::size_t>>> size_maybe_flexible_opt
@@ -780,13 +866,19 @@
 %nterm <ast::type::field_definition> field_definition
 %nterm <element_vector<ast::type::field_definition>> field_definition_list
 
+%nterm <node_vector<ast::name::simple>> column_name_list_opt
 %nterm <node_vector<ast::name::simple>> column_name_list
 
 %nterm <node_ptr<ast::name::simple>> query_name
 %nterm <node_ptr<ast::name::name>> table_name
+%nterm <node_ptr<ast::name::name>> table_name_opt
+%nterm <node_ptr<ast::name::name>> schema_name
+%nterm <node_ptr<ast::name::name>> schema_name_opt
+%nterm <node_ptr<ast::name::name>> constraint_name
 %nterm <node_ptr<ast::name::simple>> column_name
 %nterm <node_ptr<ast::name::simple>> field_name
 %nterm <node_ptr<ast::name::simple>> cursor_name
+%nterm <node_ptr<ast::name::simple>> user_identifier
 
 %nterm <node_ptr<ast::name::simple>> host_parameter_name
 
@@ -795,7 +887,7 @@
 %nterm <node_ptr<ast::name::simple>> contextual_identifier
 
 // query expression
-%left "UNION" "EXCEPT"
+%left "UNION" "EXCEPT" "OUTER"
 %left "INTERSECT"
 
 // predicate expression
@@ -820,55 +912,55 @@ program
     ;
 
 statement_list
-    : statement_list[L] statement[s]
+    : statement_list[L] ";" statement[s]
         {
-            $$ = $L; $$.emplace_back($s);
+            $$ = $L;
+            $$.emplace_back($s);
         }
-    | %empty
+    | statement[s]
         {
             $$ = driver.node_vector<ast::statement::statement>();
+            $$.emplace_back($s);
         }
     ;
 
 statement
-    : ";"
-        {
-            $$ = driver.node<ast::statement::empty_statement>(@$);
-        }
-    | query_expression[e] ";"
+    : query_expression[e]
         {
             $$ = driver.node<ast::statement::select_statement>(
                     $e,
                     driver.element_vector<ast::statement::target_element>(),
                     @$);
         }
-    | "INSERT" "INTO" table_name[n] "DEFAULT" "VALUES" ";"
+    | insert_operation INTO table_name[n] insert_source[s]
         {
+            auto options = driver.element_vector<ast::statement::insert_statement::option_type>();
+            if (auto elem = $insert_operation) {
+                options.emplace_back(*elem);
+            }
             $$ = driver.node<ast::statement::insert_statement>(
                     $n,
                     driver.node_vector<ast::name::simple>(),
-                    nullptr,
+                    $s,
+                    std::move(options),
                     @$);
         }
-    | "INSERT" "INTO" table_name[n] query_expression[e] ";"
-        {
-            $$ = driver.node<ast::statement::insert_statement>(
-                    $n,
-                    driver.node_vector<ast::name::simple>(),
-                    $e,
-                    @$);
-        }
-    | "INSERT" "INTO" table_name[n] "(" column_name_list[c] ")" query_expression[e] ";"
+    | insert_operation INTO table_name[n] "(" column_name_list[c] ")" insert_source[s]
         {
             // NOTE: don't insert reduce point before left paren
             //       because both insert column list and query expression accepts it
+            auto options = driver.element_vector<ast::statement::insert_statement::option_type>();
+            if (auto elem = $insert_operation) {
+                options.emplace_back(*elem);
+            }
             $$ = driver.node<ast::statement::insert_statement>(
                     $n,
                     $c,
-                    $e,
+                    $s,
+                    std::move(options),
                     @$);
         }
-    | "UPDATE" target_table[t] "SET" set_clause_list[s] manipulate_where_clause_opt[w] ";"
+    | UPDATE target_table[t] SET set_clause_list[s] manipulate_where_clause_opt[w]
         {
             $$ = driver.node<ast::statement::update_statement>(
                     $t,
@@ -876,12 +968,796 @@ statement
                     $w,
                     @$);
         }
-    | "DELETE" "FROM" target_table[t] manipulate_where_clause_opt[w] ";"
+    | DELETE FROM target_table[t] manipulate_where_clause_opt[w]
         {
             $$ = driver.node<ast::statement::delete_statement>(
                     $t,
                     $w,
                     @$);
+        }
+    | CREATE SCHEMA if_not_exists_opt schema_name_opt[name]
+            schema_authorization_opt[authorization]
+            schema_element_list_opt[elements]
+        {
+            auto options = driver.element_vector<ast::statement::schema_definition::option_type>();
+            if (auto elem = $if_not_exists_opt) {
+                options.emplace_back(ast::statement::schema_definition_option::if_not_exists, elem.region());
+            }
+            $$ = driver.node<ast::statement::schema_definition>(
+                    $name,
+                    $authorization,
+                    $elements,
+                    std::move(options),
+                    @$);
+        }
+    | schema_element[d]
+        {
+            $$ = $d;
+        }
+    | DROP TABLE[k] if_exists_opt[e] table_name[n] drop_behavior_opt[b]
+        {
+            auto options = driver.element_vector<ast::statement::drop_statement::option_type>();
+            if (auto elem = $e) {
+                options.emplace_back(ast::statement::drop_statement_option::if_exists, elem.region());
+            }
+            if (auto elem = $b) {
+                options.emplace_back(std::move(*elem));
+            }
+            $$ = driver.node<ast::statement::drop_statement>(
+                    regioned { ast::statement::kind::drop_table_statement, @k },
+                    $n,
+                    std::move(options),
+                    @$);
+        }
+    | DROP INDEX[k] if_exists_opt[e] table_name[n] drop_behavior_opt[b]
+        {
+            auto options = driver.element_vector<ast::statement::drop_statement::option_type>();
+            if (auto elem = $e) {
+                options.emplace_back(ast::statement::drop_statement_option::if_exists, elem.region());
+            }
+            if (auto elem = $b) {
+                options.emplace_back(std::move(*elem));
+            }
+            $$ = driver.node<ast::statement::drop_statement>(
+                    regioned { ast::statement::kind::drop_index_statement, @k },
+                    $n,
+                    std::move(options),
+                    @$);
+        }
+    | DROP VIEW[k] if_exists_opt[e] table_name[n] drop_behavior_opt[b]
+        {
+            auto options = driver.element_vector<ast::statement::drop_statement::option_type>();
+            if (auto elem = $e) {
+                options.emplace_back(ast::statement::drop_statement_option::if_exists, elem.region());
+            }
+            if (auto elem = $b) {
+                options.emplace_back(std::move(*elem));
+            }
+            $$ = driver.node<ast::statement::drop_statement>(
+                    regioned { ast::statement::kind::drop_view_statement, @k },
+                    $n,
+                    std::move(options),
+                    @$);
+        }
+    | DROP SEQUENCE[k] if_exists_opt[e] table_name[n] drop_behavior_opt[b]
+        {
+            auto options = driver.element_vector<ast::statement::drop_statement::option_type>();
+            if (auto elem = $e) {
+                options.emplace_back(ast::statement::drop_statement_option::if_exists, elem.region());
+            }
+            if (auto elem = $b) {
+                options.emplace_back(std::move(*elem));
+            }
+            $$ = driver.node<ast::statement::drop_statement>(
+                    regioned { ast::statement::kind::drop_sequence_statement, @k },
+                    $n,
+                    std::move(options),
+                    @$);
+        }
+    | DROP SCHEMA[k] if_exists_opt[e] schema_name[n] drop_behavior_opt[b]
+        {
+            auto options = driver.element_vector<ast::statement::drop_statement::option_type>();
+            if (auto elem = $e) {
+                options.emplace_back(ast::statement::drop_statement_option::if_exists, elem.region());
+            }
+            if (auto elem = $b) {
+                options.emplace_back(std::move(*elem));
+            }
+            $$ = driver.node<ast::statement::drop_statement>(
+                    regioned { ast::statement::kind::drop_schema_statement, @k },
+                    $n,
+                    std::move(options),
+                    @$);
+        }
+    | %empty
+        {
+            $$ = driver.node<ast::statement::empty_statement>(@$);
+        }
+    ;
+
+insert_operation
+    : INSERT
+        {
+            $$ = {};
+        }
+    | INSERT OR REPLACE
+        {
+            $$ = { ast::statement::insert_statement_option::or_replace, @$ };
+        }
+    | INSERT OR IGNORE
+        {
+            $$ = { ast::statement::insert_statement_option::or_ignore, @$ };
+        }
+    | INSERT IF NOT EXISTS
+        {
+            $$ = { ast::statement::insert_statement_option::or_ignore, @$ };
+        }
+    | UPDATE OR INSERT
+        {
+            $$ = { ast::statement::insert_statement_option::or_replace, @$ };
+        }
+    ;
+
+insert_source
+    : query_expression[e]
+        {
+            $$ = $e;
+        }
+    | DEFAULT VALUES
+        {
+            $$ = {};
+        }
+    ;
+
+schema_authorization_opt
+    : AUTHORIZATION user_identifier[n]
+        {
+            $$ = $n;
+        }
+    | AUTHORIZATION CURRENT_ROLE[k]
+        {
+            $$ = driver.node<ast::name::simple>(
+                    driver.parse_regular_identifier("current_role"),
+                    @k);
+        }
+    | AUTHORIZATION CURRENT_USER[k]
+        {
+            $$ = driver.node<ast::name::simple>(
+                    driver.parse_regular_identifier("current_user"),
+                    @k);
+        }
+    | AUTHORIZATION SESSION_USER[k]
+        {
+            $$ = driver.node<ast::name::simple>(
+                    driver.parse_regular_identifier("session_user"),
+                    @k);
+        }
+    | %empty
+        {
+            $$ = {};
+        }
+    ;
+
+schema_element_list_opt
+    : schema_element_list_opt[L] schema_element[e]
+        {
+            $$ = $L;
+            $$.emplace_back($e);
+        }
+    | %empty
+        {
+            $$ = driver.node_vector<ast::statement::statement>();
+        }
+    ;
+
+schema_element
+    : CREATE temporary_opt[temporary] TABLE if_not_exists_opt[exists] table_name[n]
+            "(" table_element_list_opt[L] ")"
+            storage_parameter_list_opt[P]
+        {
+            auto options = driver.element_vector<ast::statement::table_definition::option_type>();
+            if (auto elem = $exists) {
+                options.emplace_back(ast::statement::table_definition_option::if_not_exists, elem.region());
+            }
+            if (auto elem = $temporary) {
+                options.emplace_back(ast::statement::table_definition_option::temporary, elem.region());
+            }
+            $$ = driver.node<ast::statement::table_definition>(
+                    $n,
+                    $L,
+                    std::move(options),
+                    $P,
+                    @$);
+        }
+    | CREATE unique_opt INDEX if_not_exists_opt table_name_opt[iname]
+            ON table_name[tname]
+            "(" sort_specification_list[key] ")"
+            index_value_list_opt[values]
+            storage_parameter_list_opt[parameters]
+            manipulate_where_clause_opt[predicate]
+        {
+            auto options = driver.element_vector<ast::statement::index_definition::option_type>();
+            if (auto elem = $unique_opt) {
+                options.emplace_back(ast::statement::index_definition_option::unique, elem.region());
+            }
+            if (auto elem = $if_not_exists_opt) {
+                options.emplace_back(ast::statement::index_definition_option::if_not_exists, elem.region());
+            }
+            $$ = driver.node<ast::statement::index_definition>(
+                    $iname,
+                    $tname,
+                    $key,
+                    $values,
+                    $predicate,
+                    std::move(options),
+                    $parameters,
+                    @$);
+        }
+    | CREATE temporary_opt recursive_opt VIEW if_not_exists_opt table_name[name]
+            column_list_opt[columns]
+            storage_parameter_list_opt[parameters]
+            AS query_expression[query]
+        {
+            auto options = driver.element_vector<ast::statement::view_definition::option_type>();
+            if (auto elem = $temporary_opt) {
+                options.emplace_back(ast::statement::view_definition_option::temporary, elem.region());
+            }
+            if (auto elem = $recursive_opt) {
+                options.emplace_back(ast::statement::view_definition_option::recursive, elem.region());
+            }
+            if (auto elem = $if_not_exists_opt) {
+                options.emplace_back(ast::statement::view_definition_option::if_not_exists, elem.region());
+            }
+            $$ = driver.node<ast::statement::view_definition>(
+                    $name,
+                    $columns,
+                    $query,
+                    std::move(options),
+                    $parameters,
+                    @$);
+        }
+    // note: we fork `CREATE ... VIEW` and `CREATE OR REPLACE ... VIEW` to avoid shift/reduce conflict for epsilon rules
+    | CREATE OR REPLACE[k] temporary_opt recursive_opt VIEW if_not_exists_opt table_name[name]
+            column_list_opt[columns]
+            storage_parameter_list_opt[parameters]
+            AS query_expression[query]
+        {
+            auto options = driver.element_vector<ast::statement::view_definition::option_type>();
+            options.emplace_back(ast::statement::view_definition_option::or_replace, @k);
+            if (auto elem = $temporary_opt) {
+                options.emplace_back(ast::statement::view_definition_option::temporary, elem.region());
+            }
+            if (auto elem = $recursive_opt) {
+                options.emplace_back(ast::statement::view_definition_option::recursive, elem.region());
+            }
+            if (auto elem = $if_not_exists_opt) {
+                options.emplace_back(ast::statement::view_definition_option::if_not_exists, elem.region());
+            }
+            $$ = driver.node<ast::statement::view_definition>(
+                    $name,
+                    $columns,
+                    $query,
+                    std::move(options),
+                    $parameters,
+                    @$);
+        }
+    | CREATE temporary_opt SEQUENCE if_not_exists_opt table_name[name]
+            sequence_options
+        {
+            auto sequence = $sequence_options;
+            auto options = driver.element_vector<ast::statement::sequence_definition::option_type>();
+            if (auto elem = $temporary_opt) {
+                options.emplace_back(ast::statement::sequence_definition_option::temporary, elem.region());
+            }
+            if (auto elem = $if_not_exists_opt) {
+                options.emplace_back(ast::statement::sequence_definition_option::if_not_exists, elem.region());
+            }
+            if (auto elem = sequence.cycle) {
+                if (*elem) {
+                    options.emplace_back(ast::statement::sequence_definition_option::cycle, elem->region());
+                } else {
+                    options.emplace_back(ast::statement::sequence_definition_option::no_cycle, elem->region());
+                }
+            }
+
+            $$ = driver.node<ast::statement::sequence_definition>(
+                    $name,
+                    std::move(sequence.type),
+                    std::move(sequence.initial_value),
+                    std::move(sequence.increment_value),
+                    std::move(sequence.min_value),
+                    std::move(sequence.max_value),
+                    std::move(sequence.owner),
+                    std::move(options),
+                    @$);
+        }
+    ;
+
+table_element_list_opt
+    : table_element_list[L]
+        {
+            $$ = $L;
+        }
+    | %empty
+        {
+            $$ = driver.node_vector<ast::statement::table_element>();
+        }
+
+table_element_list
+    : table_element_list[L] "," table_element[e]
+        {
+            $$ = $L;
+            $$.emplace_back($e);
+        }
+    | table_element[e]
+        {
+            $$ = driver.node_vector<ast::statement::table_element>();
+            $$.emplace_back($e);
+        }
+
+table_element
+    : column_name[n] data_type[t] column_constraint_definition_list[c]
+        {
+            $$ = driver.node<ast::statement::column_definition>(
+                    $n,
+                    $t,
+                    $c,
+                    @$);
+        }
+    | CONSTRAINT constraint_name[n] table_constraint_body[b]
+        {
+            $$ = driver.node<ast::statement::table_constraint_definition>(
+                    $n,
+                    $b,
+                    @$);
+        }
+    | table_constraint_body[b]
+        {
+            $$ = driver.node<ast::statement::table_constraint_definition>(
+                    nullptr,
+                    $b,
+                    @$);
+        }
+    ;
+
+table_constraint_body
+    : CHECK[k] "(" scalar_value_expression[e] ")"
+        {
+            $$ = driver.node<ast::statement::expression_constraint>(
+                    regioned { ast::statement::constraint_kind::check, @k },
+                    $e,
+                    @$);
+        }
+    | UNIQUE[k] "(" sort_specification_list[L] ")" index_value_list_opt[v] storage_parameter_list_opt[p]
+        {
+            $$ = driver.node<ast::statement::key_constraint>(
+                    regioned { ast::statement::constraint_kind::unique, @k },
+                    $L,
+                    $v,
+                    $p,
+                    @$);
+        }
+    | PRIMARY[k] KEY[l] "(" sort_specification_list[L] ")" index_value_list_opt[v] storage_parameter_list_opt[p]
+        {
+            $$ = driver.node<ast::statement::key_constraint>(
+                    regioned { ast::statement::constraint_kind::primary_key, @k | @l},
+                    $L,
+                    $v,
+                    $p,
+                    @$);
+        }
+    | FOREIGN KEY "(" column_name_list[L] ")"
+            REFERENCES[k] table_name[n] column_name_list_opt[c]
+            referential_actions[a]
+        {
+            auto actions = $a;
+            $$ = driver.node<ast::statement::referential_constraint>(
+                    $L,
+                    $n,
+                    $c,
+                    std::get<0>(actions),
+                    std::get<1>(actions),
+                    @$);
+        }
+    ;
+
+column_constraint_definition_list
+    : column_constraint_definition_list[L] column_constraint_definition[e]
+        {
+            $$ = $L;
+            $$.emplace_back($e);
+        }
+    | %empty
+        {
+            $$ = driver.element_vector<ast::statement::column_constraint_definition>();
+        }
+    ;
+
+column_constraint_definition
+    : CONSTRAINT constraint_name[n] column_constraint_body[b]
+        {
+            $$ = ast::statement::column_constraint_definition {
+                    $n,
+                    $b,
+                    @$
+            };
+        }
+    | column_constraint_body[b]
+        {
+            $$ = ast::statement::column_constraint_definition {
+                    {},
+                    $b,
+                    @$
+            };
+        }
+    ;
+
+column_constraint_body
+    : NULL_
+        {
+            $$ = driver.node<ast::statement::simple_constraint>(
+                    regioned { ast::statement::constraint_kind::null, @$ },
+                    @$);
+        }
+    | NOT NULL_
+        {
+            $$ = driver.node<ast::statement::simple_constraint>(
+                    regioned { ast::statement::constraint_kind::not_null, @$ },
+                    @$);
+        }
+    | CHECK[k] "(" scalar_value_expression[e] ")"
+        {
+            $$ = driver.node<ast::statement::expression_constraint>(
+                    regioned { ast::statement::constraint_kind::check, @k },
+                    $e,
+                    @$);
+        }
+    | DEFAULT[k] scalar_value_expression[e]
+        {
+            $$ = driver.node<ast::statement::expression_constraint>(
+                    regioned { ast::statement::constraint_kind::default_clause, @k },
+                    $e,
+                    @$);
+        }
+    | GENERATED[k] ALWAYS AS "(" scalar_value_expression[e] ")"
+        {
+            $$ = driver.node<ast::statement::expression_constraint>(
+                    regioned { ast::statement::constraint_kind::generation_clause, @k },
+                    $e,
+                    @$);
+        }
+    | GENERATED ALWAYS[g] AS IDENTITY
+            common_sequence_options_opt[opts]
+        {
+            auto sequence = $opts;
+            $$ = driver.node<ast::statement::identity_constraint>(
+                    regioned { ast::statement::identity_generation_type::always, @g },
+                    std::move(sequence.initial_value),
+                    std::move(sequence.increment_value),
+                    std::move(sequence.min_value),
+                    std::move(sequence.max_value),
+                    sequence.cycle,
+                    @$);
+        }
+    | GENERATED BY[g0] DEFAULT[g1] AS IDENTITY
+            common_sequence_options_opt[opts]
+        {
+            auto sequence = $opts;
+            $$ = driver.node<ast::statement::identity_constraint>(
+                    regioned { ast::statement::identity_generation_type::by_default, @g0 | @g1 },
+                    std::move(sequence.initial_value),
+                    std::move(sequence.increment_value),
+                    std::move(sequence.min_value),
+                    std::move(sequence.max_value),
+                    sequence.cycle,
+                    @$);
+        }
+    | UNIQUE[k] index_value_list_opt[v] storage_parameter_list_opt[p]
+        {
+            $$ = driver.node<ast::statement::key_constraint>(
+                    regioned { ast::statement::constraint_kind::unique, @k },
+                    std::vector<ast::common::sort_element> {}, // key
+                    $v,
+                    $p,
+                    @$);
+        }
+    | PRIMARY[k] KEY[l] index_value_list_opt[v] storage_parameter_list_opt[p]
+        {
+            $$ = driver.node<ast::statement::key_constraint>(
+                    regioned { ast::statement::constraint_kind::primary_key, @k | @l},
+                    std::vector<ast::common::sort_element> {}, // key
+                    $v,
+                    $p,
+                    @$);
+        }
+    | REFERENCES[k] table_name[n] column_name_list_opt[c] referential_actions[a]
+        {
+            auto actions = $a;
+            $$ = driver.node<ast::statement::referential_constraint>(
+                    std::vector<std::unique_ptr<ast::name::simple>> {},
+                    $n,
+                    $c,
+                    std::get<0>(actions),
+                    std::get<1>(actions),
+                    @$);
+        }
+    ;
+
+index_value_list_opt
+    : INCLUDE "(" index_value_list_body_opt[L] ")"
+        {
+            $$ = $L;
+        }
+    | %empty
+        {
+            $$ = driver.node_vector<ast::scalar::expression>();
+        }
+    ;
+
+index_value_list_body_opt
+    : index_value_list_body[L]
+        {
+            $$ = $L;
+        }
+    | %empty
+        {
+            $$ = driver.node_vector<ast::scalar::expression>();
+        }
+    ;
+
+index_value_list_body
+    : index_value_list_body[L] "," scalar_value_expression[e]
+        {
+            $$ = $L;
+            $$.emplace_back($e);
+        }
+    | scalar_value_expression[e]
+        {
+            $$ = driver.node_vector<ast::scalar::expression>();
+            $$.emplace_back($e);
+        }
+    ;
+
+referential_actions
+    : ON UPDATE referential_action_kind[u]
+        {
+            $$ = std::make_tuple($u, std::nullopt);
+        }
+    | ON DELETE referential_action_kind[d]
+        {
+            $$ = std::make_tuple(std::nullopt, $d);
+        }
+    | ON UPDATE referential_action_kind[u] ON DELETE referential_action_kind[d]
+        {
+            $$ = std::make_tuple($u, $d);
+        }
+    | ON DELETE referential_action_kind[d] ON UPDATE referential_action_kind[u]
+        {
+            $$ = std::make_tuple($u, $d);
+        }
+    | %empty
+        {
+            $$ = std::make_tuple(std::nullopt, std::nullopt);
+        }
+    ;
+
+referential_action_kind
+    : CASCADE
+        {
+            $$ = { ast::statement::referential_action::cascade, @$ };
+        }
+    | SET NULL_
+        {
+            $$ = { ast::statement::referential_action::set_null, @$ };
+        }
+    | SET DEFAULT
+        {
+            $$ = { ast::statement::referential_action::set_default, @$ };
+        }
+    | RESTRICT
+        {
+            $$ = { ast::statement::referential_action::restrict, @$ };
+        }
+    | NO ACTION
+        {
+            $$ = { ast::statement::referential_action::no_action, @$ };
+        }
+    ;
+
+sequence_options
+    : sequence_options[L] sequence_option[o]
+        {
+            $$ = $L;
+            if (!set(driver, $$, $o)) {
+                YYABORT;
+            }
+        }
+    | %empty
+        {
+            $$ = {};
+        }
+    ;
+
+sequence_option
+    : AS[k] data_type[t]
+        {
+            $$ = {
+                    details::sequence_option_field_kind::type,
+                    $t,
+                    @k,
+            };
+        }
+    | OWNED BY[k] identifier_chain[n]
+        {
+            $$ = {
+                    details::sequence_option_field_kind::owner,
+                    $n,
+                    @k,
+            };
+        }
+    | common_sequence_option[o]
+        {
+            $$ = $o;
+        }
+    ;
+
+common_sequence_options_opt
+    : "(" common_sequence_options[L] ")"
+        {
+            $$ = $L;
+        }
+    | %empty
+        {
+            $$ = {};
+        }
+    ;
+
+common_sequence_options
+    : common_sequence_options[L] common_sequence_option[o]
+        {
+            $$ = $L;
+            if (!set(driver, $$, $o)) {
+                YYABORT;
+            }
+        }
+    | %empty
+        {
+            $$ = {};
+        }
+    ;
+
+common_sequence_option
+    : START[k] WITH scalar_value_expression[e]
+        {
+            $$ = {
+                    details::sequence_option_field_kind::initial_value,
+                    $e,
+                    @k,
+            };
+        }
+    | basic_sequence_option[o]
+        {
+            $$ = $o;
+        }
+    ;
+
+basic_sequence_option
+    : INCREMENT[k] BY scalar_value_expression[e]
+        {
+            $$ = {
+                    details::sequence_option_field_kind::increment_value,
+                    $e,
+                    @k,
+            };
+        }
+    | MAXVALUE[k] scalar_value_expression[e]
+        {
+            $$ = {
+                    details::sequence_option_field_kind::max_value,
+                    $e,
+                    @k,
+            };
+        }
+    | NO MAXVALUE[k]
+        {
+            $$ = {
+                    details::sequence_option_field_kind::max_value,
+                    std::unique_ptr<ast::scalar::expression> {},
+                    @k,
+            };
+        }
+    | MINVALUE[k] scalar_value_expression[e]
+        {
+            $$ = {
+                    details::sequence_option_field_kind::min_value,
+                    $e,
+                    @k,
+            };
+        }
+    | NO MINVALUE[k]
+        {
+            $$ = {
+                    details::sequence_option_field_kind::min_value,
+                    std::unique_ptr<ast::scalar::expression> {},
+                    @k,
+            };
+        }
+    | CYCLE[k]
+        {
+            $$ = {
+                    details::sequence_option_field_kind::cycle,
+                    regioned { true, @k },
+                    @k,
+            };
+        }
+    | NO CYCLE[k]
+        {
+            $$ = {
+                    details::sequence_option_field_kind::cycle,
+                    regioned { false, @k },
+                    @k,
+            };
+        }
+    ;
+
+storage_parameter_list_opt
+    : WITH "(" storage_parameter_list_body_opt[L] ")"
+        {
+            $$ = $L;
+        }
+    | %empty
+        {
+            $$ = driver.element_vector<ast::statement::storage_parameter>();
+        }
+    ;
+
+storage_parameter_list_body_opt
+    : storage_parameter_list_body[L]
+        {
+            $$ = $L;
+        }
+    | %empty
+        {
+            $$ = driver.element_vector<ast::statement::storage_parameter>();
+        }
+    ;
+
+storage_parameter_list_body
+    : storage_parameter_list_body[L] "," storage_parameter[e]
+        {
+            $$ = $L;
+            $$.emplace_back($e);
+        }
+    | storage_parameter[e]
+        {
+            $$ = driver.element_vector<ast::statement::storage_parameter>();
+            $$.emplace_back($e);
+        }
+    ;
+
+storage_parameter
+    : identifier_chain[n]
+        {
+            $$ = ast::statement::storage_parameter {
+                    $n,
+                    {},
+                    @$,
+            };
+        }
+    | identifier_chain[n] "=" storage_parameter_value[v]
+        {
+            $$ = ast::statement::storage_parameter {
+                    $n,
+                    $v,
+                    @$,
+            };
+        }
+    ;
+
+storage_parameter_value
+    : scalar_value_expression[e]
+        {
+            $$ = $e;
         }
     ;
 
@@ -920,11 +1796,11 @@ manipulate_where_clause_opt
         {
             $$ = nullptr;
         }
-    | "WHERE" value_expression[e]
+    | WHERE value_expression[e]
         {
             $$ = $e;
         }
-    | "WHERE" "CURRENT"[c] "OF" cursor_name[n]
+    | WHERE CURRENT[c] OF cursor_name[n]
         {
             $$ = driver.node<ast::scalar::current_of_cursor>(
                     $n,
@@ -932,8 +1808,68 @@ manipulate_where_clause_opt
         }
     ;
 
+temporary_opt
+    : %empty
+        {
+            $$ = false;
+        }
+    | TEMPORARY
+        {
+            $$ = { true, @$ };
+        }
+    ;
+
+unique_opt
+    : %empty
+        {
+            $$ = false;
+        }
+    | UNIQUE
+        {
+            $$ = { true, @$ };
+        }
+    ;
+
+if_exists_opt
+    : %empty
+        {
+            $$ = false;
+        }
+    | IF EXISTS
+        {
+            $$ = { true, @$ };
+        }
+    ;
+
+if_not_exists_opt
+    : %empty
+        {
+            $$ = false;
+        }
+    | IF NOT EXISTS
+        {
+            $$ = { true, @$ };
+        }
+    ;
+
+drop_behavior_opt
+    : %empty
+        {
+            $$ = std::nullopt;
+        }
+    | CASCADE
+        {
+            $$ = { ast::statement::drop_statement_option::cascade, @$ };
+        }
+    | RESTRICT
+        {
+            $$ = { ast::statement::drop_statement_option::restrict, @$ };
+        }
+    ;
+
+
 query_expression
-    : "WITH" recursive_opt[r] with_list[w] query_expression_body[e]
+    : WITH recursive_opt[r] with_list[w] query_expression_body[e]
         {
             $$ = driver.node<ast::query::with_expression>(
                     $r,
@@ -952,7 +1888,7 @@ recursive_opt
         {
             $$ = {};
         }
-    | "RECURSIVE"
+    | RECURSIVE
         {
             $$ = { true, @$ };
         }
@@ -972,7 +1908,7 @@ with_list
     ;
 
 with_element
-    : query_name[n] with_column_list_opt[c] "AS" "(" query_expression[q] ")"
+    : query_name[n] column_list_opt[c] AS "(" query_expression[q] ")"
         {
             $$ = ast::query::with_element {
                     $n,
@@ -983,7 +1919,7 @@ with_element
         }
     ;
 
-with_column_list_opt
+column_list_opt
     : %empty
         {
             $$ = driver.node_vector<ast::name::simple>();
@@ -995,7 +1931,7 @@ with_column_list_opt
     ;
 
 query_expression_body
-    : query_expression_body[l] "UNION"[o] set_quantifier_opt[q] corresponding_spec_opt[c] query_expression_body[r]
+    : query_expression_body[l] UNION[o] set_quantifier_opt[q] corresponding_spec_opt[c] query_expression_body[r]
         {
             $$ = driver.node<ast::query::binary_expression>(
                     $l,
@@ -1005,7 +1941,17 @@ query_expression_body
                     $r,
                     @$);
         }
-    | query_expression_body[l] "EXCEPT"[o] set_quantifier_opt[q] corresponding_spec_opt[c] query_expression_body[r]
+    | query_expression_body[l] OUTER[o] UNION[u] set_quantifier_opt[q] corresponding_spec_opt[c] query_expression_body[r]
+        {
+            $$ = driver.node<ast::query::binary_expression>(
+                    $l,
+                    regioned { ast::query::binary_operator::outer_union, @o | @u },
+                    $q,
+                    $c,
+                    $r,
+                    @$);
+        }
+    | query_expression_body[l] EXCEPT[o] set_quantifier_opt[q] corresponding_spec_opt[c] query_expression_body[r]
         {
             $$ = driver.node<ast::query::binary_expression>(
                     $l,
@@ -1015,7 +1961,7 @@ query_expression_body
                     $r,
                     @$);
         }
-    | query_expression_body[l] "INTERSECT"[o] set_quantifier_opt[q] corresponding_spec_opt[c] query_expression_body[r]
+    | query_expression_body[l] INTERSECT[o] set_quantifier_opt[q] corresponding_spec_opt[c] query_expression_body[r]
         {
             $$ = driver.node<ast::query::binary_expression>(
                     $l,
@@ -1037,10 +1983,10 @@ query_expression_body
     ;
 
 query_expression_primary
-    : "SELECT"
+    : SELECT
             set_quantifier_opt[q]
             select_list[s]
-            "FROM" table_reference_list[t]
+            FROM table_reference_list[t]
             where_clause_opt[w]
             group_by_clause_opt[g]
             having_clause_opt[h]
@@ -1058,13 +2004,28 @@ query_expression_primary
                     $l,
                     @$);
         }
-    | "TABLE" table_name[n]
+    | SELECT
+            set_quantifier_opt[q]
+            select_list[s]
+        {
+            $$ = driver.node<ast::query::query>(
+                    $q,
+                    $s,
+                    driver.node_vector<ast::table::expression>(), // from
+                    nullptr, // where
+                    std::nullopt, // group_by
+                    nullptr, // having
+                    driver.element_vector<ast::common::sort_element>(), // order_by
+                    nullptr, // limit
+                    @$);
+        }
+    | TABLE table_name[n]
         {
             $$ = driver.node<ast::query::table_reference>(
                     $n,
                     @$);
         }
-    | "VALUES" explicit_row_value_expression_list[l]
+    | VALUES explicit_row_value_expression_list[l]
         {
             $$ = driver.node<ast::query::table_value_constructor>(
                     $l,
@@ -1112,7 +2073,7 @@ as_clause_opt
         {
             $$ = nullptr;
         }
-    | "AS" column_name[n]
+    | AS column_name[n]
         {
             $$ = $n;
         }
@@ -1136,7 +2097,7 @@ where_clause_opt
         {
             $$ = nullptr;
         }
-    | "WHERE" value_expression[e]
+    | WHERE value_expression[e]
         {
             $$ = $e;
         }
@@ -1147,14 +2108,14 @@ group_by_clause_opt
         {
             $$ = std::nullopt;
         }
-    | "GROUP" "BY" "(" ")"
+    | GROUP BY "(" ")"
         {
             $$ = ast::query::group_by_clause {
                     driver.node_vector<ast::query::grouping_element>(), // grand total
                     @$,
             };
         }
-    | "GROUP" "BY" grouping_column_reference_list[l]
+    | GROUP BY grouping_column_reference_list[l]
         {
             $$ = ast::query::group_by_clause {
                     $l,
@@ -1192,7 +2153,7 @@ collate_clause_opt
         {
             $$ = nullptr;
         }
-    | "COLLATE" identifier_chain[n]
+    | COLLATE identifier_chain[n]
         {
             $$ = $n;
         }
@@ -1203,7 +2164,7 @@ having_clause_opt
         {
             $$ = nullptr;
         }
-    | "HAVING" value_expression[e]
+    | HAVING value_expression[e]
         {
             $$ = $e;
         }
@@ -1214,7 +2175,7 @@ order_by_clause_opt
         {
             $$ = driver.element_vector<ast::common::sort_element>();
         }
-    | "ORDER" "BY" sort_specification_list[l]
+    | ORDER BY sort_specification_list[l]
         {
             $$ = $l;
         }
@@ -1234,12 +2195,13 @@ sort_specification_list
     ;
 
 sort_specification
-    : value_expression[e] collate_clause_opt[c] ordering_specification_opt[o]
+    : value_expression[e] collate_clause_opt[c] ordering_specification_opt[o] null_ordering_specification_opt[n]
         {
             $$ = ast::common::sort_element {
                     $e,
                     $c,
                     $o,
+                    $n,
                     @$,
             };
         }
@@ -1250,13 +2212,28 @@ ordering_specification_opt
         {
             $$ = std::nullopt;
         }
-    | "ASC"
+    | ASC
         {
             $$ = regioned { ast::common::ordering_specification::asc, @$ };
         }
-    | "DESC"
+    | DESC
         {
             $$ = regioned { ast::common::ordering_specification::desc, @$ };
+        }
+    ;
+
+null_ordering_specification_opt
+    : %empty
+        {
+            $$ = std::nullopt;
+        }
+    | NULLS FIRST
+        {
+            $$ = regioned { ast::common::null_ordering_specification::first, @$ };
+        }
+    | NULLS LAST
+        {
+            $$ = regioned { ast::common::null_ordering_specification::last, @$ };
         }
     ;
 
@@ -1265,14 +2242,14 @@ limit_clause_opt
         {
             $$ = nullptr;
         }
-    | "LIMIT" value_expression[e]
+    | LIMIT value_expression[e]
         {
             $$ = $e;
         }
     ;
 
 table_reference
-    : table_reference[l] "CROSS"[t] "JOIN"[u] table_primary[r]
+    : table_reference[l] CROSS[t] JOIN[u] table_primary[r]
         {
             $$ = driver.node<ast::table::join>(
                     $l,
@@ -1315,81 +2292,81 @@ table_reference
     ;
 
 join_type
-    : "JOIN"
+    : JOIN
         {
             $$ = regioned { ast::table::join_type::inner, @$ };
         }
-    | "INNER" "JOIN"
+    | INNER JOIN
         {
             $$ = regioned { ast::table::join_type::inner, @$ };
         }
-    | "LEFT" "JOIN"
+    | LEFT JOIN
         {
             $$ = regioned { ast::table::join_type::left_outer, @$ };
         }
-    | "LEFT" "OUTER" "JOIN"
+    | LEFT OUTER JOIN
         {
             $$ = regioned { ast::table::join_type::left_outer, @$ };
         }
-    | "RIGHT" "JOIN"
+    | RIGHT JOIN
         {
             $$ = regioned { ast::table::join_type::right_outer, @$ };
         }
-    | "RIGHT" "OUTER" "JOIN"
+    | RIGHT OUTER JOIN
         {
             $$ = regioned { ast::table::join_type::right_outer, @$ };
         }
-    | "FULL" "JOIN"
+    | FULL JOIN
         {
             $$ = regioned { ast::table::join_type::full_outer, @$ };
         }
-    | "FULL" "OUTER" "JOIN"
+    | FULL OUTER JOIN
         {
             $$ = regioned { ast::table::join_type::full_outer, @$ };
         }
     ;
 
 natural_join_type
-    : "NATURAL" "JOIN"
+    : NATURAL JOIN
         {
             $$ = regioned { ast::table::join_type::natural_inner, @$ };
         }
-    | "NATURAL" "INNER" "JOIN"
+    | NATURAL INNER JOIN
         {
             $$ = regioned { ast::table::join_type::natural_inner, @$ };
         }
-    | "NATURAL" "LEFT" "JOIN"
+    | NATURAL LEFT JOIN
         {
             $$ = regioned { ast::table::join_type::natural_left_outer, @$ };
         }
-    | "NATURAL" "LEFT" "OUTER" "JOIN"
+    | NATURAL LEFT OUTER JOIN
         {
             $$ = regioned { ast::table::join_type::natural_left_outer, @$ };
         }
-    | "NATURAL" "RIGHT" "JOIN"
+    | NATURAL RIGHT JOIN
         {
             $$ = regioned { ast::table::join_type::natural_right_outer, @$ };
         }
-    | "NATURAL" "RIGHT" "OUTER" "JOIN"
+    | NATURAL RIGHT OUTER JOIN
         {
             $$ = regioned { ast::table::join_type::natural_right_outer, @$ };
         }
-    | "NATURAL" "FULL" "JOIN"
+    | NATURAL FULL JOIN
         {
             $$ = regioned { ast::table::join_type::natural_full_outer, @$ };
         }
-    | "NATURAL" "FULL" "OUTER" "JOIN"
+    | NATURAL FULL OUTER JOIN
         {
             $$ = regioned { ast::table::join_type::natural_full_outer, @$ };
         }
     ;
 
 join_specification
-    : "ON" value_expression[e]
+    : ON value_expression[e]
         {
             $$ = driver.node<ast::table::join_condition>($e, @$);
         }
-    | "USING" "(" column_name_list[c] ")"
+    | USING "(" column_name_list[c] ")"
         {
             $$ = driver.node<ast::table::join_columns>($c, @$);
         }
@@ -1412,7 +2389,7 @@ table_primary
                     $c,
                     @$);
         }
-    | "LATERAL"[q] "(" query_expression[e] ")" correlation_clause[c]
+    | LATERAL[q] "(" query_expression[e] ")" correlation_clause[c]
         {
             $$ = driver.node<ast::table::subquery>(
                     regioned { true, @q },
@@ -1420,7 +2397,7 @@ table_primary
                     $c,
                     @$);
         }
-    | "UNNEST" "(" value_expression[e] ")" with_ordinality_opt[o] correlation_clause[c]
+    | UNNEST "(" value_expression[e] ")" with_ordinality_opt[o] correlation_clause[c]
         {
             $$ = driver.node<ast::table::unnest>(
                     $e,
@@ -1428,7 +2405,7 @@ table_primary
                     $c,
                     @$);
         }
-    | "ONLY" "(" table_name[n] ")" correlation_clause_opt[c]
+    | ONLY "(" table_name[n] ")" correlation_clause_opt[c]
         {
             $$ = driver.node<ast::table::table_reference>(
                     regioned { false },
@@ -1468,7 +2445,7 @@ with_ordinality_opt
         {
             $$ = regioned { false };
         }
-    | "WITH" "ORDINALITY"
+    | WITH ORDINALITY
         {
             $$ = regioned { true, @$ };
         }
@@ -1486,7 +2463,7 @@ correlation_clause_opt
     ;
 
 correlation_clause
-    : correlation_name[n] derived_column_list_opt[c]
+    : correlation_name[n] column_list_opt[c]
         {
             $$ = ast::table::correlation_clause {
                     $n,
@@ -1494,24 +2471,13 @@ correlation_clause
                     @$,
             };
         }
-    | "AS" correlation_name[n] derived_column_list_opt[c]
+    | AS correlation_name[n] column_list_opt[c]
         {
             $$ = ast::table::correlation_clause {
                     $n,
                     $c,
                     @$,
             };
-        }
-    ;
-
-derived_column_list_opt
-    : %empty
-        {
-            $$ = driver.node_vector<ast::name::simple>();
-        }
-    | "(" column_name_list[L] ")"
-        {
-            $$ = $L;
         }
     ;
 
@@ -1530,7 +2496,7 @@ explicit_row_value_expression_list
     ;
 
 explicit_row_value_expression
-    : "ROW"[k] "(" value_expression_list[e] ")"
+    : ROW[k] "(" value_expression_list[e] ")"
         {
             $$ = driver.node<ast::scalar::value_constructor>(
                     regioned { ast::scalar::value_constructor_kind::row, @k },
@@ -1564,7 +2530,7 @@ value_expression_list
     ;
 
 value_expression
-    : value_expression[l] "OR"[o] value_expression[r]
+    : value_expression[l] OR[o] value_expression[r]
         {
             $$ = driver.node<ast::scalar::binary_expression>(
                     $l,
@@ -1572,7 +2538,7 @@ value_expression
                     $r,
                     @$);
         }
-    | value_expression[l] "AND"[o] value_expression[r]
+    | value_expression[l] AND[o] value_expression[r]
         {
             $$ = driver.node<ast::scalar::binary_expression>(
                     $l,
@@ -1580,14 +2546,14 @@ value_expression
                     $r,
                     @$);
         }
-    | "NOT"[o] value_expression[e] %prec UNARY_NOT
+    | NOT[o] value_expression[e] %prec UNARY_NOT
         {
             $$ = driver.node<ast::scalar::unary_expression>(
                     regioned { ast::scalar::unary_operator::not_, @o },
                     $e,
                     @$);
         }
-    | predicate_expression[l] "IS"[o] not_opt[n] truth_literal[r]
+    | predicate_expression[l] IS[o] not_opt[n] truth_literal[r]
         {
             regioned op = { ast::scalar::binary_operator::is, @o };
             if ($n) {
@@ -1631,8 +2597,8 @@ predicate_expression
                     $r,
                     @$);
         }
-    | row_value_expression[t] not_opt[n] "BETWEEN"[o] symmetric_opt[s]
-            row_value_expression[l] "AND" row_value_expression[r]
+    | row_value_expression[t] not_opt[n] BETWEEN[o] symmetric_opt[s]
+            row_value_expression[l] AND row_value_expression[r]
         {
             $$ = driver.node<ast::scalar::between_predicate>(
                     $t,
@@ -1642,7 +2608,7 @@ predicate_expression
                     $r,
                     @$);
         }
-    | row_value_expression[l] not_opt[n] "IN"[o] table_value_expression[r]
+    | row_value_expression[l] not_opt[n] IN[o] table_value_expression[r]
         {
             $$ = driver.node<ast::scalar::in_predicate>(
                     $l,
@@ -1650,7 +2616,7 @@ predicate_expression
                     $r,
                     @$);
         }
-    | row_value_expression[m] not_opt[n] "LIKE"[o] row_value_expression[p] escape_opt[e]
+    | row_value_expression[m] not_opt[n] LIKE[o] row_value_expression[p] escape_opt[e]
         {
             $$ = driver.node<ast::scalar::pattern_match_predicate>(
                     $m,
@@ -1660,7 +2626,7 @@ predicate_expression
                     $e,
                     @$);
         }
-    | row_value_expression[m] not_opt[n] "SIMILAR"[s] "TO"[t] row_value_expression[p] escape_opt[e]
+    | row_value_expression[m] not_opt[n] SIMILAR[s] TO[t] row_value_expression[p] escape_opt[e]
         {
             $$ = driver.node<ast::scalar::pattern_match_predicate>(
                     $m,
@@ -1670,14 +2636,14 @@ predicate_expression
                     $e,
                     @$);
         }
-    | "EXISTS"[o] table_subquery[e]
+    | EXISTS[o] table_subquery[e]
         {
             $$ = driver.node<ast::scalar::table_predicate>(
                     regioned { ast::scalar::table_operator::exists, @o },
                     $e,
                     @$);
         }
-    | "UNIQUE"[o] table_subquery[e]
+    | UNIQUE[o] table_subquery[e]
         {
             $$ = driver.node<ast::scalar::table_predicate>(
                     regioned { ast::scalar::table_operator::unique, @o },
@@ -1685,7 +2651,7 @@ predicate_expression
                     @$);
         }
     // 8.12 <overlaps predicate>
-    | row_value_expression[l] "OVERLAPS"[o] row_value_expression[r]
+    | row_value_expression[l] OVERLAPS[o] row_value_expression[r]
         {
             $$ = driver.node<ast::scalar::binary_expression>(
                     $l,
@@ -1695,7 +2661,7 @@ predicate_expression
         }
     // FIXME: 8.13 <distinct predicate> - avoid conflict
 /*
-    | row_value_expression[l] "IS"[i] "DISTINCT"[d] "FROM"[f] row_value_expression[r]
+    | row_value_expression[l] IS[i] DISTINCT[d] FROM[f] row_value_expression[r]
         {
             $$ = driver.node<ast::scalar::binary_expression>(
                     $l,
@@ -1757,7 +2723,7 @@ not_opt
         {
             $$ = { false };
         }
-    | "NOT"
+    | NOT
         {
             $$ = { true, @$ };
         }
@@ -1768,11 +2734,11 @@ symmetric_opt
         {
             $$ = std::nullopt;
         }
-    | "ASYMMETRIC"
+    | ASYMMETRIC
         {
             $$ = { ast::scalar::between_operator::asymmetric, @$ };
         }
-    | "SYMMETRIC"
+    | SYMMETRIC
         {
             $$ = { ast::scalar::between_operator::symmetric, @$ };
         }
@@ -1783,7 +2749,7 @@ escape_opt
         {
             $$ = nullptr;
         }
-    | "ESCAPE" row_value_expression[e]
+    | ESCAPE row_value_expression[e]
         {
             $$ = $e;
         }
@@ -1803,14 +2769,15 @@ table_value_expression
     ;
 
 row_value_expression
-    : "ROW"[k] "(" value_expression_list[e] ")"
+    // 7.1 <row value constructor>
+    : ROW[k] "(" value_expression_list[e] ")"
         {
             $$ = driver.node<ast::scalar::value_constructor>(
                     regioned { ast::scalar::value_constructor_kind::row, @k },
                     $e,
                     @$);
         }
-    // NOTE: to avoid conflict, "row value constructor" without "ROW" was moved in value_expression_primary
+    // NOTE: to avoid conflict, "row value constructor" without ROW was moved in value_expression_primary
     | scalar_value_expression[e]
          {
              $$ = $e;
@@ -1872,11 +2839,58 @@ scalar_value_expression
                     $e,
                     @$);
         }
+    // 6.28 <datetime value expression> - <time zone>
+    | value_expression_primary[e] AT[o1] LOCAL[o2]
+        {
+            $$ = driver.node<ast::scalar::unary_expression>(
+                    regioned { ast::scalar::unary_operator::at_local, @o1 | @o2 },
+                    $e,
+                    @$);
+        }
+    // 6.28 <datetime value expression> - <time zone>
+    | value_expression_primary[l] AT[o1] TIME ZONE[o2] signed_value_expression_primary[r]
+        {
+            $$ = driver.node<ast::scalar::binary_expression>(
+                    $l,
+                    regioned { ast::scalar::binary_operator::at_time_zone, @o1 | @o2 },
+                    $r,
+                    @$);
+        }
+    // PostgreSQL style cast
+    | value_expression_primary[e] "::" data_type[t]
+        {
+            $$ = driver.node<ast::scalar::cast_expression>(
+                    regioned { ast::scalar::cast_operator::cast },
+                    $e,
+                    $t,
+                    @$);
+        }
     | value_expression_primary[e]
          {
              $$ = $e;
          }
      ;
+
+signed_value_expression_primary
+    : "+"[s] value_expression_primary[e]
+        {
+            $$ = driver.node<ast::scalar::unary_expression>(
+                    regioned { ast::scalar::unary_operator::plus, @s },
+                    $e,
+                    @$);
+        }
+    | "-"[s] value_expression_primary[e]
+        {
+            $$ = driver.node<ast::scalar::unary_expression>(
+                    regioned { ast::scalar::unary_operator::minus, @s },
+                    $e,
+                    @$);
+        }
+    | value_expression_primary[e]
+        {
+            $$ = $e;
+        }
+    ;
 
 value_expression_primary
     : literal[l]
@@ -1905,10 +2919,8 @@ value_expression_primary
         {
             auto q = $q;
             auto n = $n;
-            if (auto c = driver.try_build_identifier_chain(q, n)) {
-                $$ = driver.node<ast::scalar::variable_reference>(
-                        std::move(c),
-                        @$);
+            if (auto e = driver.try_merge_identifier_chain(q, n)) {
+                $$ = std::move(e);
             } else {
                 $$ = driver.node<ast::scalar::field_reference>(
                         std::move(q),
@@ -1991,7 +3003,7 @@ value_expression_primary
                     @$);
         }
     // 6.15 <reference resolution>
-    | "DEREF"[o] "(" value_expression[e] ")"
+    | DEREF[o] "(" value_expression[e] ")"
         {
             $$ = driver.node<ast::scalar::unary_expression>(
                     regioned { ast::scalar::unary_operator::reference_resolution, @o },
@@ -2012,7 +3024,7 @@ value_expression_primary
             $$ = $e;
         }
     // 6.21 <case expression> - <case abbreviation>
-    | "NULLIF"[f] "(" value_expression[l] "," value_expression[r] ")"
+    | NULLIF[f] "(" value_expression[l] "," value_expression[r] ")"
         {
             $$ = driver.node<ast::scalar::builtin_function_invocation>(
                     regioned { ast::scalar::builtin_function_kind::nullif, @f },
@@ -2020,7 +3032,7 @@ value_expression_primary
                     @$);
         }
     // 6.21 <case expression> - <case abbreviation>
-    | "COALESCE"[f] "(" value_expression_list[l] ")"
+    | COALESCE[f] "(" value_expression_list[l] ")"
         {
             $$ = driver.node<ast::scalar::builtin_function_invocation>(
                     regioned { ast::scalar::builtin_function_kind::coalesce, @f },
@@ -2028,7 +3040,7 @@ value_expression_primary
                     @$);
         }
     // 6.21 <case expression> - <simple case>
-    | "CASE" value_expression[e] case_when_clause_list[w] else_expression_opt[l] "END"
+    | CASE value_expression[e] case_when_clause_list[w] else_expression_opt[l] END
         {
             $$ = driver.node<ast::scalar::case_expression>(
                     $e,
@@ -2037,7 +3049,7 @@ value_expression_primary
                     @$);
         }
     // 6.21 <case expression> - <searched case>
-    | "CASE" case_when_clause_list[w] else_expression_opt[l] "END"
+    | CASE case_when_clause_list[w] else_expression_opt[l] END
         {
             $$ = driver.node<ast::scalar::case_expression>(
                     nullptr,
@@ -2046,7 +3058,7 @@ value_expression_primary
                     @$);
         }
     // 6.22 <cast specification>
-    | "CAST"[o] "(" value_expression[e] "AS" data_type[t] ")"
+    | CAST[o] "(" value_expression[e] AS data_type[t] ")"
         {
             $$ = driver.node<ast::scalar::cast_expression>(
                     regioned { ast::scalar::cast_operator::cast, @o },
@@ -2055,7 +3067,7 @@ value_expression_primary
                     @$);
         }
     // 6.24 <new specification>
-    | "NEW" data_type_user[t] "(" sql_argument_list_opt[l] ")"
+    | NEW data_type_user[t] "(" sql_argument_list_opt[l] ")"
         {
             $$ = driver.node<ast::scalar::new_invocation>(
                     $t,
@@ -2063,7 +3075,7 @@ value_expression_primary
                     @$);
         }
     // 6.25 <subtype treatment>
-    | "TREAT"[o] "(" value_expression[e] "AS" data_type[t] ")"
+    | TREAT[o] "(" value_expression[e] AS data_type[t] ")"
         {
             $$ = driver.node<ast::scalar::cast_expression>(
                     regioned { ast::scalar::cast_operator::treat, @o },
@@ -2073,7 +3085,7 @@ value_expression_primary
         }
     // FIXME: 6.29 <interval value expression> <interval qualifier>
     // 6.32 <array value constructor>
-    | "ARRAY"[o] "[" value_expression_list[l] "]"
+    | ARRAY[o] "[" value_expression_list[l] "]"
         {
                 $$ = driver.node<ast::scalar::value_constructor>(
                         regioned { ast::scalar::value_constructor_kind::array, @o },
@@ -2086,7 +3098,7 @@ value_expression_primary
             $$ = driver.node<ast::scalar::subquery>($e, @$);
         }
     // 6.11 <method invocation> - <generalized invocation>
-    | "(" value_expression[e] "AS" data_type[t] ")"
+    | "(" value_expression[e] AS data_type[t] ")"
         {
             $$ = driver.node<ast::scalar::cast_expression>(
                     regioned { ast::scalar::cast_operator::generalize },
@@ -2095,7 +3107,7 @@ value_expression_primary
                     @$);
         }
     // FIXME 6.27 <string value expression> - <collate clause>
-    // 6.28 <datetime value expression> - <time zone>
+    // 7.1 <row value constructor>
     | "(" value_expression_list[e] ")"
         {
             auto es = $e;
@@ -2107,6 +3119,15 @@ value_expression_primary
                         std::move(es),
                         @$);
             }
+        }
+    // [SQL-2003] 6.13 <next value expression>
+    | NEXT[k] VALUE FOR[l] identifier[n]
+        {
+            $$ = driver.node<ast::scalar::builtin_function_invocation>(
+                    regioned { ast::scalar::builtin_function_kind::next_value_for, @k | @l },
+                    driver.to_node_vector<ast::scalar::expression>(
+                            driver.node<ast::scalar::variable_reference>($n, @n)),
+                    @$);
         }
     ;
 
@@ -2120,14 +3141,14 @@ system_function_invocation
                     @$);
         }
     // 6.17 <numeric value function>
-    | "POSITION"[f] "(" scalar_value_expression[l] "IN" scalar_value_expression[r] ")"
+    | POSITION[f] "(" scalar_value_expression[l] IN scalar_value_expression[r] ")"
         {
             $$ = driver.node<ast::scalar::builtin_function_invocation>(
                     regioned { ast::scalar::builtin_function_kind::position, @f },
                     driver.to_node_vector<ast::scalar::expression>($l, $r),
                     @$);
         }
-    | "EXTRACT"[f] "(" extract_field[k] "FROM" scalar_value_expression[e] ")"
+    | EXTRACT[f] "(" extract_field[k] FROM scalar_value_expression[e] ")"
         {
             $$ = driver.node<ast::scalar::extract_expression>(
                     $k,
@@ -2135,24 +3156,24 @@ system_function_invocation
                     @$);
         }
     // 6.18 <string value function>
-    | "SUBSTRING"[f] "(" scalar_value_expression[l]
-            "FROM" scalar_value_expression[r] ")"
+    | SUBSTRING[f] "(" scalar_value_expression[l]
+            FROM scalar_value_expression[r] ")"
         {
             $$ = driver.node<ast::scalar::builtin_function_invocation>(
                     regioned { ast::scalar::builtin_function_kind::substring, @f },
                     driver.to_node_vector<ast::scalar::expression>($l, $r),
                     @$);
         }
-    | "SUBSTRING"[f] "(" scalar_value_expression[l]
-            "FROM" scalar_value_expression[r]
-            "FOR" scalar_value_expression[e] ")"
+    | SUBSTRING[f] "(" scalar_value_expression[l]
+            FROM scalar_value_expression[r]
+            FOR scalar_value_expression[e] ")"
         {
             $$ = driver.node<ast::scalar::builtin_function_invocation>(
                     regioned { ast::scalar::builtin_function_kind::substring, @f },
                     driver.to_node_vector<ast::scalar::expression>($l, $r, $e),
                     @$);
         }
-    | "CONVERT"[f] "(" scalar_value_expression[e] "USING" identifier_chain[n] ")"
+    | CONVERT[f] "(" scalar_value_expression[e] USING identifier_chain[n] ")"
         {
             $$ = driver.node<ast::scalar::builtin_function_invocation>(
                     regioned { ast::scalar::builtin_function_kind::convert, @f },
@@ -2161,7 +3182,7 @@ system_function_invocation
                             driver.node<ast::scalar::variable_reference>($n, @n)),
                     @$);
         }
-    | "TRANSLATE"[f] "(" scalar_value_expression[e] "USING" identifier_chain[n] ")"
+    | TRANSLATE[f] "(" scalar_value_expression[e] USING identifier_chain[n] ")"
         {
             $$ = driver.node<ast::scalar::builtin_function_invocation>(
                     regioned { ast::scalar::builtin_function_kind::translate, @f },
@@ -2170,7 +3191,7 @@ system_function_invocation
                             driver.node<ast::scalar::variable_reference>($n, @n)),
                     @$);
         }
-    | "TRIM"[f] "(" trim_specification[s] scalar_value_expression[c] "FROM" scalar_value_expression[e] ")"
+    | TRIM[f] "(" trim_specification[s] scalar_value_expression[c] FROM scalar_value_expression[e] ")"
         {
             $$ = driver.node<ast::scalar::trim_expression>(
                     $s,
@@ -2178,7 +3199,7 @@ system_function_invocation
                     $e,
                     @$);
         }
-    | "TRIM"[f] "(" trim_specification[s] "FROM" scalar_value_expression[e] ")"
+    | TRIM[f] "(" trim_specification[s] FROM scalar_value_expression[e] ")"
         {
             $$ = driver.node<ast::scalar::trim_expression>(
                     $s,
@@ -2186,7 +3207,7 @@ system_function_invocation
                     $e,
                     @$);
         }
-    | "TRIM"[f] "(" scalar_value_expression[c] "FROM" scalar_value_expression[e] ")"
+    | TRIM[f] "(" scalar_value_expression[c] FROM scalar_value_expression[e] ")"
         {
             $$ = driver.node<ast::scalar::trim_expression>(
                     std::nullopt,
@@ -2194,7 +3215,7 @@ system_function_invocation
                     $e,
                     @$);
         }
-    | "TRIM"[f] "(" "FROM" scalar_value_expression[e] ")"
+    | TRIM[f] "(" FROM scalar_value_expression[e] ")"
         {
             $$ = driver.node<ast::scalar::trim_expression>(
                     std::nullopt,
@@ -2202,7 +3223,7 @@ system_function_invocation
                     $e,
                     @$);
         }
-    | "TRIM"[f] "(" scalar_value_expression[e] ")"
+    | TRIM[f] "(" scalar_value_expression[e] ")"
         {
             $$ = driver.node<ast::scalar::trim_expression>(
                     std::nullopt,
@@ -2210,19 +3231,19 @@ system_function_invocation
                     $e,
                     @$);
         }
-    | "OVERLAY"[f] "(" scalar_value_expression[e]
-            "PLACING" scalar_value_expression[p]
-            "FROM" scalar_value_expression[u]
-            "FOR" scalar_value_expression[v] ")"
+    | OVERLAY[f] "(" scalar_value_expression[e]
+            PLACING scalar_value_expression[p]
+            FROM scalar_value_expression[u]
+            FOR scalar_value_expression[v] ")"
         {
             $$ = driver.node<ast::scalar::builtin_function_invocation>(
                     regioned { ast::scalar::builtin_function_kind::overlay, @f },
                     driver.to_node_vector<ast::scalar::expression>($e, $p, $u, $v),
                     @$);
         }
-    | "OVERLAY"[f] "(" scalar_value_expression[e]
-            "PLACING" scalar_value_expression[p]
-            "FROM" scalar_value_expression[u] ")"
+    | OVERLAY[f] "(" scalar_value_expression[e]
+            PLACING scalar_value_expression[p]
+            FROM scalar_value_expression[u] ")"
         {
             $$ = driver.node<ast::scalar::builtin_function_invocation>(
                     regioned { ast::scalar::builtin_function_kind::overlay, @f },
@@ -2230,7 +3251,7 @@ system_function_invocation
                     @$);
         }
     // 6.19 <datetime value function>
-    | "CURRENT_DATE"[f]
+    | CURRENT_DATE[f]
         {
             $$ = driver.node<ast::scalar::builtin_function_invocation>(
                     regioned { ast::scalar::builtin_function_kind::current_date, @f },
@@ -2255,114 +3276,114 @@ system_function_invocation
 
 simple_system_function_name
     // 6.17 <numeric value function>
-    : "CHAR_LENGTH"
+    : CHAR_LENGTH
         {
             $$ = { ast::scalar::builtin_function_kind::character_length, @$ };
         }
-    | "CHARACTER_LENGTH"
+    | CHARACTER_LENGTH
         {
             $$ = { ast::scalar::builtin_function_kind::character_length, @$ };
         }
-    | "OCTET_LENGTH"
+    | OCTET_LENGTH
         {
             $$ = { ast::scalar::builtin_function_kind::octet_length, @$ };
         }
-    | "BIT_LENGTH"
+    | BIT_LENGTH
         {
             $$ = { ast::scalar::builtin_function_kind::bit_length, @$ };
         }
-    | "CARDINALITY"
+    | CARDINALITY
         {
             $$ = { ast::scalar::builtin_function_kind::cardinality, @$ };
         }
-    | "ABS"
+    | ABS
         {
             $$ = { ast::scalar::builtin_function_kind::abs, @$ };
         }
-    | "MOD"
+    | MOD
         {
             $$ = { ast::scalar::builtin_function_kind::mod, @$ };
         }
     // 6.18 <string value function>
-    | "UPPER"
+    | UPPER
         {
             $$ = { ast::scalar::builtin_function_kind::upper, @$ };
         }
-    | "LOWER"
+    | LOWER
         {
             $$ = { ast::scalar::builtin_function_kind::lower, @$ };
         }
     // extensions
-    | "LENGTH"
+    | LENGTH
         {
             $$ = { ast::scalar::builtin_function_kind::length, @$ };
         }
     ;
 
 precise_system_function_name
-    : "CURRENT_TIME"
+    : CURRENT_TIME
         {
             $$ = { ast::scalar::builtin_function_kind::current_time, @$ };
         }
-    | "LOCALTIME"
+    | LOCALTIME
         {
             $$ = { ast::scalar::builtin_function_kind::localtime, @$ };
         }
-    | "CURRENT_TIMESTAMP"
+    | CURRENT_TIMESTAMP
         {
             $$ = { ast::scalar::builtin_function_kind::current_timestamp, @$ };
         }
-    | "LOCALTIMESTAMP"
+    | LOCALTIMESTAMP
         {
             $$ = { ast::scalar::builtin_function_kind::localtimestamp, @$ };
         }
     ;
 
 extract_field
-    : "YEAR"
+    : YEAR
         {
             $$ = { ast::scalar::extract_field_kind::year, @$ };
         }
-    | "MONTH"
+    | MONTH
         {
             $$ = { ast::scalar::extract_field_kind::month, @$ };
         }
-    | "DAY"
+    | DAY
         {
             $$ = { ast::scalar::extract_field_kind::day, @$ };
         }
-    | "HOUR"
+    | HOUR
         {
             $$ = { ast::scalar::extract_field_kind::hour, @$ };
         }
-    | "MINUTE"
+    | MINUTE
         {
             $$ = { ast::scalar::extract_field_kind::minute, @$ };
         }
-    | "SECOND"
+    | SECOND
         {
             $$ = { ast::scalar::extract_field_kind::second, @$ };
         }
-    | "TIMEZONE_HOUR"
+    | TIMEZONE_HOUR
         {
             $$ = { ast::scalar::extract_field_kind::timezone_hour, @$ };
         }
-    | "TIMEZONE_MINUTE"
+    | TIMEZONE_MINUTE
         {
             $$ = { ast::scalar::extract_field_kind::timezone_minute, @$ };
         }
     ;
 
 trim_specification
-    : "LEADING"
+    : LEADING
         {
             $$ = { ast::scalar::trim_specification::leading, @$ };
         }
-    | "TRAILING"
+    | TRAILING
         {
             $$ = { ast::scalar::trim_specification::trailing, @$ };
         }
-    | "BOTH"
+    | BOTH
         {
             $$ = { ast::scalar::trim_specification::both, @$ };
         }
@@ -2370,7 +3391,7 @@ trim_specification
 
 // 6.16 <set function specification>
 system_set_function_invocation
-    : "COUNT"[f] "(" "*" ")"
+    : COUNT[f] "(" "*" ")"
         {
             $$ = driver.node<ast::scalar::builtin_set_function_invocation>(
                     regioned { ast::scalar::builtin_set_function_kind::count, @f },
@@ -2378,7 +3399,7 @@ system_set_function_invocation
                     driver.node_vector<ast::scalar::expression>(),
                     @$);
         }
-    | "COUNT"[f] "(" set_quantifier_opt[q] value_expression[e] ")"
+    | COUNT[f] "(" set_quantifier_opt[q] value_expression[e] ")"
         {
             $$ = driver.node<ast::scalar::builtin_set_function_invocation>(
                     regioned { ast::scalar::builtin_set_function_kind::count, @f },
@@ -2397,39 +3418,39 @@ system_set_function_invocation
     ;
 
 computational_operation_except_count
-    : "AVG"
+    : AVG
         {
             $$ = { ast::scalar::builtin_set_function_kind::avg, @$ };
         }
-    | "MAX"
+    | MAX
         {
             $$ = { ast::scalar::builtin_set_function_kind::max, @$ };
         }
-    | "MIN"
+    | MIN
         {
             $$ = { ast::scalar::builtin_set_function_kind::min, @$ };
         }
-    | "SUM"
+    | SUM
         {
             $$ = { ast::scalar::builtin_set_function_kind::sum, @$ };
         }
-    | "EVERY"
+    | EVERY
         {
             $$ = { ast::scalar::builtin_set_function_kind::every, @$ };
         }
-    | "BIT_AND"
+    | BIT_AND
         {
             $$ = { ast::scalar::builtin_set_function_kind::bit_and, @$ };
         }
-    | "BIT_OR"
+    | BIT_OR
         {
             $$ = { ast::scalar::builtin_set_function_kind::bit_or, @$ };
         }
-    | "BOOL_AND"
+    | BOOL_AND
         {
             $$ = { ast::scalar::builtin_set_function_kind::bool_and, @$ };
         }
-    | "BOOL_OR"
+    | BOOL_OR
         {
             $$ = { ast::scalar::builtin_set_function_kind::bool_or, @$ };
         }
@@ -2437,15 +3458,15 @@ computational_operation_except_count
     ;
 
 quantifier
-    : "ALL"
+    : ALL
         {
             $$ = { ast::scalar::quantifier::all, @$ };
         }
-    | "SOME"
+    | SOME
         {
             $$ = { ast::scalar::quantifier::some, @$ };
         }
-    | "ANY"
+    | ANY
         {
             $$ = { ast::scalar::quantifier::any, @$ };
         }
@@ -2465,7 +3486,7 @@ case_when_clause_list
     ;
 
 case_when_clause
-    : "WHEN" value_expression[w] "THEN" value_expression[r]
+    : WHEN value_expression[w] THEN value_expression[r]
         {
             $$ = ast::scalar::case_when_clause {
                     $w,
@@ -2480,7 +3501,7 @@ else_expression_opt
         {
             $$ = nullptr;
         }
-    | "ELSE" value_expression[e]
+    | ELSE value_expression[e]
         {
             $$ = $e;
         }
@@ -2521,7 +3542,7 @@ sql_argument
         {
             $$ = $e;
         }
-    | value_expression[e] "AS" data_type[t]
+    | value_expression[e] AS data_type[t]
         {
             $$ = driver.node<ast::scalar::cast_expression>(
                     regioned { ast::scalar::cast_operator::generalize },
@@ -2606,28 +3627,28 @@ literal
                     $c,
                     @$);
         }
-    | "DATE"[k] CHARACTER_STRING_LITERAL[t]
+    | DATE[k] CHARACTER_STRING_LITERAL[t]
         {
             $$ = driver.node<ast::literal::datetime>(
                     regioned { ast::literal::kind::date, @k },
                     $t,
                     @$);
         }
-    | "TIME"[k] CHARACTER_STRING_LITERAL[t]
+    | TIME[k] CHARACTER_STRING_LITERAL[t]
         {
             $$ = driver.node<ast::literal::datetime>(
                     regioned { ast::literal::kind::time, @k },
                     regioned { $t, @t },
                     @$);
         }
-    | "TIMESTAMP"[k] CHARACTER_STRING_LITERAL[t]
+    | TIMESTAMP[k] CHARACTER_STRING_LITERAL[t]
         {
             $$ = driver.node<ast::literal::datetime>(
                     regioned { ast::literal::kind::timestamp, @k },
                     regioned { $t, @t },
                     @$);
         }
-    | "INTERVAL"[k] sign_opt[s] CHARACTER_STRING_LITERAL[t] // FIXME: interval qualifier
+    | INTERVAL[k] sign_opt[s] CHARACTER_STRING_LITERAL[t] // FIXME: interval qualifier
         {
             $$ = driver.node<ast::literal::interval>(
                     $s,
@@ -2638,11 +3659,11 @@ literal
         {
             $$ = $v;
         }
-    | "ARRAY" "[" "]"
+    | ARRAY "[" "]"
         {
             $$ = driver.node<ast::literal::special<ast::literal::kind::empty>>(@$);
         }
-    | "DEFAULT"
+    | DEFAULT
         {
             $$ = driver.node<ast::literal::special<ast::literal::kind::default_>>(@$);
         }
@@ -2660,19 +3681,19 @@ unsigned_integer
      ;
 
 truth_literal
-    : "TRUE"
+    : TRUE
         {
             $$ = driver.node<ast::literal::boolean>(ast::literal::boolean_kind::true_, @$);
         }
-    | "FALSE"
+    | FALSE
         {
             $$ = driver.node<ast::literal::boolean>(ast::literal::boolean_kind::false_, @$);
         }
-    | "UNKNOWN"
+    | UNKNOWN
         {
             $$ = driver.node<ast::literal::boolean>(ast::literal::boolean_kind::unknown, @$);
         }
-    | "NULL"
+    | NULL_
         {
             $$ = driver.node<ast::literal::special<ast::literal::kind::null>>(@$);
         }
@@ -2735,17 +3756,31 @@ data_type_system
                     $s,
                     @$);
         }
-    | "BIT"[k] parenthesized_size_opt[s]
+    | BIT[k] parenthesized_size_opt[s]
         {
             $$ = driver.node<ast::type::bit_string>(
                     regioned { ast::type::kind::bit, @k },
                     $s,
                     @$);
         }
-    | "BIT"[k] "VARYING"[v] parenthesized_size_maybe_flexible_opt[s]
+    | bit_varying_type_name[k] parenthesized_size_maybe_flexible_opt[s]
         {
             $$ = driver.node<ast::type::bit_string>(
-                    regioned { ast::type::kind::bit_varying, @k | @v },
+                    regioned { ast::type::kind::bit_varying, @k },
+                    $s,
+                    @$);
+        }
+    | BYTE[k] parenthesized_size_opt[s]
+        {
+            $$ = driver.node<ast::type::octet_string>(
+                    regioned { ast::type::kind::octet, @k },
+                    $s,
+                    @$);
+        }
+    | octet_varying_type_name[k] parenthesized_size_maybe_flexible_opt[s]
+        {
+            $$ = driver.node<ast::type::octet_string>(
+                    regioned { ast::type::kind::octet_varying, @k },
                     $s,
                     @$);
         }
@@ -2765,7 +3800,7 @@ data_type_system
                     std::nullopt,
                     @$);
         }
-    | decimal_type_name[k] "(" size_maybe_flexible[p] "," size[q] ")"
+    | decimal_type_name[k] "(" size_maybe_flexible[p] "," size_maybe_flexible[q] ")"
         {
             $$ = driver.node<ast::type::decimal>(
                     $k,
@@ -2777,31 +3812,31 @@ data_type_system
         {
             $$ = driver.node<ast::type::simple>(ast::type::kind::integer, @$);
         }
-    | "TINYINT"
+    | TINYINT
         {
             $$ = driver.node<ast::type::simple>(ast::type::kind::tiny_integer, @$);
         }
-    | "SMALLINT"
+    | SMALLINT
         {
             $$ = driver.node<ast::type::simple>(ast::type::kind::small_integer, @$);
         }
-    | "BIGINT"
+    | BIGINT
         {
             $$ = driver.node<ast::type::simple>(ast::type::kind::big_integer, @$);
         }
-    | "FLOAT"
+    | FLOAT
         {
             $$ = driver.node<ast::type::simple>(ast::type::kind::float_, @$);
         }
-    | "REAL"
+    | REAL
         {
             $$ = driver.node<ast::type::simple>(ast::type::kind::real, @$);
         }
-    | "DOUBLE" "PRECISION"
+    | DOUBLE PRECISION
         {
             $$ = driver.node<ast::type::simple>(ast::type::kind::double_precision, @$);
         }
-    | "DOUBLE"
+    | DOUBLE
         {
             $$ = driver.node<ast::type::simple>(ast::type::kind::double_precision, @$);
         }
@@ -2812,36 +3847,36 @@ data_type_system
                     $s,
                     @$);
         }
-    | "FLOAT"[k] "(" size[s] ")"
+    | FLOAT[k] "(" size[s] ")"
         {
             $$ = driver.node<ast::type::binary_numeric>(
                     regioned { ast::type::kind::binary_float, @k },
                     $s,
                     @$);
         }
-    | "BOOLEAN"
+    | BOOLEAN
         {
             $$ = driver.node<ast::type::simple>(ast::type::kind::boolean, @$);
         }
-    | "DATE"
+    | DATE
         {
             $$ = driver.node<ast::type::simple>(ast::type::kind::date, @$);
         }
-    | "TIME"[k] with_or_without_time_zone_opt[z]
+    | TIME[k] with_or_without_time_zone_opt[z]
         {
             $$ = driver.node<ast::type::datetime>(
                     regioned { ast::type::kind::time, @k },
                     $z,
                     @$);
         }
-    | "TIMESTAMP"[k] with_or_without_time_zone_opt[z]
+    | TIMESTAMP[k] with_or_without_time_zone_opt[z]
         {
             $$ = driver.node<ast::type::datetime>(
                     regioned { ast::type::kind::timestamp, @k },
                     $z,
                     @$);
         }
-    | "INTERVAL" // FIXME: qualifier
+    | INTERVAL // FIXME: qualifier
         {
             $$ = driver.node<ast::type::interval>(@$);
         }
@@ -2849,13 +3884,13 @@ data_type_system
     ;
 
 data_type_composite
-    : "ROW" "(" field_definition_list[l] ")"
+    : ROW "(" field_definition_list[l] ")"
         {
             $$ = driver.node<ast::type::row>(
                     $l,
                     @$);
         }
-    | data_type[c] "ARRAY" "[" size_maybe_flexible_opt[s] "]"
+    | data_type[c] ARRAY "[" size_maybe_flexible_opt[s] "]"
         {
             $$ = driver.node<ast::type::collection>(
                     $c,
@@ -2881,34 +3916,46 @@ data_type_user
     ;
 
 character_type_name
-    : "CHARACTER"
-    | "CHAR"
+    : CHARACTER
+    | CHAR
     ;
 
 character_varying_type_name
-    : "CHARACTER" "VARYING"
-    | "CHAR" "VARYING"
-    | "VARCHAR"
+    : CHARACTER VARYING
+    | CHAR VARYING
+    | VARCHAR
+    ;
+
+bit_varying_type_name
+    : BIT VARYING
+    | BITVAR
+    | VARBIT
+    ;
+
+octet_varying_type_name
+    : BYTE VARYING
+    | BYTEVAR
+    | VARBYTE
     ;
 
 decimal_type_name
-    : "DECIMAL"
+    : DECIMAL
         {
             $$ = { ast::type::kind::decimal, @$ };
         }
-    | "DEC"
+    | DEC
         {
             $$ = { ast::type::kind::decimal, @$ };
         }
-    | "NUMERIC"
+    | NUMERIC
         {
             $$ = { ast::type::kind::numeric, @$ };
         }
     ;
 
 integer_type_name
-    : "INT"
-    | "INTEGER"
+    : INT
+    | INTEGER
     ;
 
 parenthesized_size_maybe_flexible_opt
@@ -2967,11 +4014,11 @@ with_or_without_time_zone_opt
         {
             $$ = std::nullopt;
         }
-    | "WITH" "TIME" "ZONE"
+    | WITH TIME ZONE
         {
             $$ = { true, @$ };
         }
-    | "WITHOUT" "TIME" "ZONE"
+    | WITHOUT TIME ZONE
         {
             $$ = { false, @$ };
         }
@@ -2982,11 +4029,11 @@ set_quantifier_opt
         {
             $$ = {};
         }
-    | "ALL"
+    | ALL
         {
             $$ = { ast::scalar::set_quantifier::all, @$ };
         }
-    | "DISTINCT"
+    | DISTINCT
         {
             $$ = { ast::scalar::set_quantifier::distinct, @$ };
         }
@@ -2997,19 +4044,30 @@ corresponding_spec_opt
         {
             $$ = {};
         }
-    | "CORRESPONDING" "BY" "(" column_name_list[L] ")"
+    | CORRESPONDING BY "(" column_name_list[L] ")"
         {
             $$ = ast::query::corresponding_clause {
                     $L,
                     @$,
             };
         }
-    | "CORRESPONDING"
+    | CORRESPONDING
         {
             $$ = ast::query::corresponding_clause {
                     driver.node_vector<ast::name::simple>(),
                     @$,
             };
+        }
+    ;
+
+column_name_list_opt
+    : "(" column_name_list[L] ")"
+        {
+            $$ = $L;
+        }
+    | %empty
+        {
+            $$ = driver.node_vector<ast::name::simple>();
         }
     ;
 
@@ -3040,8 +4098,44 @@ table_name
         }
     ;
 
+table_name_opt
+    : table_name[n]
+        {
+            $$ = $n;
+        }
+    | %empty
+        {
+            $$ = {};
+        }
+    ;
+
+schema_name
+    : identifier_chain[n]
+        {
+            $$ = $n;
+        }
+    ;
+
+schema_name_opt
+    : schema_name[n]
+        {
+            $$ = $n;
+        }
+    | %empty
+        {
+            $$ = {};
+        }
+    ;
+
 correlation_name
     : identifier[n]
+        {
+            $$ = $n;
+        }
+    ;
+
+constraint_name
+    : identifier_chain[n]
         {
             $$ = $n;
         }
@@ -3068,10 +4162,20 @@ cursor_name
         }
     ;
 
+user_identifier
+    : identifier[n]
+        {
+            $$ = $n;
+        }
+    ;
+
 host_parameter_name
     : HOST_PARAMETER_NAME[t]
         {
-            $$ = driver.node<ast::name::simple>($t, @$);
+            $$ = driver.node<ast::name::simple>(
+                    $t,
+                    ast::name::simple::identifier_kind_type::regular,
+                    @$);
         }
     ;
 
@@ -3090,14 +4194,8 @@ identifier_chain
     ;
 
 identifier
-    : REGULAR_IDENTIFIER[t]
-        {
-            $$ = driver.node<ast::name::simple>($t, @$);
-        }
-    | DELIMITED_IDENTIFIER[t]
-        {
-            $$ = driver.node<ast::name::simple>(driver.parse_delimited_identifier($t), @$);
-        }
+    : REGULAR_IDENTIFIER[t] { $$ = driver.to_regular_identifier($t, @$); }
+    | DELIMITED_IDENTIFIER[t] { $$ = driver.to_delimited_identifier($t, @$); }
     // FIXME: move to individual name
     | contextual_identifier[n]
         {
@@ -3106,14 +4204,14 @@ identifier
     ;
 
 contextual_identifier
-    : "ADA"[t] { $$ = driver.node<ast::name::simple>($t, @$); }
-    | "C"[t] { $$ = driver.node<ast::name::simple>($t, @$); }
-    | "COBOL"[t] { $$ = driver.node<ast::name::simple>($t, @$); }
-    | "FORTRAN"[t] { $$ = driver.node<ast::name::simple>($t, @$); }
-    | "G"[t] { $$ = driver.node<ast::name::simple>($t, @$); }
-    | "K"[t] { $$ = driver.node<ast::name::simple>($t, @$); }
-    | "M"[t] { $$ = driver.node<ast::name::simple>($t, @$); }
-    | "MUMPS"[t] { $$ = driver.node<ast::name::simple>($t, @$); }
-    | "PASCAL"[t] { $$ = driver.node<ast::name::simple>($t, @$); }
-    | "PLI"[t] { $$ = driver.node<ast::name::simple>($t, @$); }
+    : ADA[t] { $$ = driver.to_regular_identifier($t, @$); }
+    | C[t] { $$ = driver.to_regular_identifier($t, @$); }
+    | COBOL[t] { $$ = driver.to_regular_identifier($t, @$); }
+    | FORTRAN[t] { $$ = driver.to_regular_identifier($t, @$); }
+    | G[t] { $$ = driver.to_regular_identifier($t, @$); }
+    | K[t] { $$ = driver.to_regular_identifier($t, @$); }
+    | M[t] { $$ = driver.to_regular_identifier($t, @$); }
+    | MUMPS[t] { $$ = driver.to_regular_identifier($t, @$); }
+    | PASCAL[t] { $$ = driver.to_regular_identifier($t, @$); }
+    | PLI[t] { $$ = driver.to_regular_identifier($t, @$); }
     ;

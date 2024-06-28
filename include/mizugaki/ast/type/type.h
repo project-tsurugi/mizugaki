@@ -6,8 +6,6 @@
 
 namespace mizugaki::ast::type {
 
-class simple;
-
 /**
  * @brief an abstract super interface of type models.
  */

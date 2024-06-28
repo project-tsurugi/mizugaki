@@ -79,10 +79,10 @@ public:
     [[nodiscard]] node_kind_type node_kind() const noexcept override;
 
     /**
-     * @brief returns a container of the qualified identifier.
-     * @return the qualified identifier
+     * @brief returns the last name of this.
+     * @return the last name
      */
-    [[nodiscard]] identifier_type const& last_identifier() const noexcept override;
+    [[nodiscard]] simple const& last_name() const noexcept override;
 
     /// @copydoc qualifier()
     [[nodiscard]] ::takatori::util::optional_ptr<name const> optional_qualifier() const noexcept override;

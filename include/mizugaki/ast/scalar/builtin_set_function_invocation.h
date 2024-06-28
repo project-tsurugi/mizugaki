@@ -90,10 +90,10 @@ public:
      * @brief returns the quantifier.
      * @return the quantifier
      */
-    [[nodiscard]] constexpr std::optional<quantifier_type>& quantifier() noexcept;
+    [[nodiscard]] std::optional<quantifier_type>& quantifier() noexcept;
 
     /// @copydoc quantifier()
-    [[nodiscard]] constexpr std::optional<quantifier_type> const& quantifier() const noexcept;
+    [[nodiscard]] std::optional<quantifier_type> const& quantifier() const noexcept;
 
     /**
      * @brief returns the function argument list.

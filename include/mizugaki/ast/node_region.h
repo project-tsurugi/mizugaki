@@ -61,6 +61,15 @@ struct node_region {
     }
 
     /**
+     * @brief returns whether or not this region is valid.
+     * @return true if the region is valid
+     * @return false if begin or end is not valid
+     */
+    [[nodiscard]] explicit operator bool() const noexcept {
+        return begin != npos && end != npos;
+    }
+
+    /**
      * @brief returns the beginning position of this region.
      * @return the beginning position (inclusive)
      */

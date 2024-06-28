@@ -32,6 +32,8 @@ inline std::string diagnostics(sql_parser_result const& result) {
         return string_builder {}
                 << d.message()
                 << " : "
+                << d.document()->contents(0, d.region().first())
+                << " >>> "
                 << d.document()->contents(d.region().first(), d.region().size())
                 << string_builder::to_string;
     }

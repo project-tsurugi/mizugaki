@@ -18,12 +18,19 @@ sql_parser& sql_parser::set_debug(int level) noexcept {
 }
 
 sql_parser::result_type sql_parser::operator()(std::string location, std::string contents) const {
-    std::istringstream input { contents };
+    auto document = std::make_shared<basic_document>(std::move(location), std::move(contents));
+    return operator()(std::move(document));
+}
+
+sql_parser::result_type sql_parser::operator()(takatori::util::maybe_shared_ptr<document_type const> document) const {
+    std::istringstream input {
+            std::string {
+                    document->contents(0, document->size()),
+            },
+    };
     sql_scanner scanner { input };
 
-    auto document = std::make_shared<basic_document>(std::move(location), std::move(contents));
     sql_driver driver { std::move(document) };
-
     sql_parser_generated parser { scanner, driver };
 
 #if YYDEBUG

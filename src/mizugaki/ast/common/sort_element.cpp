@@ -14,22 +14,26 @@ sort_element::sort_element(
         std::unique_ptr<scalar::expression> key,
         std::unique_ptr<name::name> collation,
         std::optional<direction_type> direction,
+        std::optional<null_location_type> null_location,
         element::region_type region) noexcept :
     element { region },
     key_ { std::move(key) },
     collation_ { std::move(collation) },
-    direction_ { direction }
+    direction_ { direction },
+    null_location_ { null_location }
 {}
 
 sort_element::sort_element(
         scalar::expression&& key,
         rvalue_ptr<name::name> collation,
         std::optional<direction_type> direction,
+        std::optional<null_location_type> null_location,
         region_type region) :
     sort_element {
             clone_unique(std::move(key)),
             clone_unique(collation),
             direction,
+            null_location,
             region,
     }
 {}
@@ -37,11 +41,13 @@ sort_element::sort_element(
 sort_element::sort_element(
         scalar::expression&& key,
         direction_type direction,
+        std::optional<null_location_type> null_location,
         region_type region) noexcept :
     sort_element {
             clone_unique(std::move(key)),
             nullptr,
             direction,
+            null_location,
             region,
     }
 {}
@@ -55,11 +61,13 @@ sort_element::sort_element(
         name::name&& key,
         rvalue_ptr<name::name> collation,
         std::optional<direction_type> direction,
+        std::optional<null_location_type> null_location,
         region_type region) noexcept :
     sort_element {
             to_expr(std::move(key)),
             clone_unique(collation),
             direction,
+            null_location,
             region,
     }
 {}
@@ -67,11 +75,13 @@ sort_element::sort_element(
 sort_element::sort_element(
         name::name&& key,
         direction_type direction,
+        std::optional<null_location_type> null_location,
         region_type region) noexcept :
     sort_element {
             to_expr(std::move(key)),
             nullptr,
             direction,
+            null_location,
             region,
     }
 {}
@@ -81,6 +91,7 @@ sort_element::sort_element(::takatori::util::clone_tag_t, sort_element const& ot
             clone_unique(*other.key_),
             clone_unique(*other.collation_),
             other.direction_,
+            other.null_location_,
             other.region(),
     }
 {}
@@ -90,6 +101,7 @@ sort_element::sort_element(::takatori::util::clone_tag_t, sort_element&& other) 
             clone_unique(std::move(*other.key_)),
             clone_unique(std::move(*other.collation_)),
             other.direction_,
+            other.null_location_,
             other.region(),
     }
 {}
@@ -118,13 +130,22 @@ std::optional<sort_element::direction_type> const& sort_element::direction() con
     return direction_;
 }
 
+std::optional<sort_element::null_location_type>& sort_element::null_location() noexcept {
+    return null_location_;
+}
+
+std::optional<sort_element::null_location_type> const& sort_element::null_location() const noexcept {
+    return null_location_;
+}
+
 bool operator==(sort_element const& a, sort_element const& b) noexcept {
     if (std::addressof(a) == std::addressof(b)) {
         return false;
     }
     return eq(*a.key_, *b.key_)
         && eq(*a.collation_, *b.collation_)
-        && eq(a.direction_, b.direction_);
+        && eq(a.direction_, b.direction_)
+        && eq(a.null_location_, b.null_location_);
 }
 
 bool operator!=(sort_element const& a, sort_element const& b) noexcept {
@@ -138,6 +159,7 @@ bool operator!=(sort_element const& a, sort_element const& b) noexcept {
     property(acceptor, "key"sv, *value.key_);
     property(acceptor, "collation"sv, *value.collation_);
     property(acceptor, "direction"sv, value.direction_);
+    property(acceptor, "null_location"sv, value.null_location_);
     region_property(acceptor, value);
     return acceptor;
 }

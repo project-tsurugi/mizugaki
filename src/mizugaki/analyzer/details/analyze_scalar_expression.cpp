@@ -1,0 +1,601 @@
+#include <mizugaki/analyzer/details/analyze_scalar_expression.h>
+
+#include <vector>
+
+#include <takatori/type/boolean.h>
+
+#include <takatori/scalar/cast.h>
+#include <takatori/scalar/unary.h>
+#include <takatori/scalar/binary.h>
+#include <takatori/scalar/compare.h>
+#include <takatori/scalar/variable_reference.h>
+
+#include <takatori/util/string_builder.h>
+#include <takatori/util/downcast.h>
+
+#include <yugawara/binding/factory.h>
+#include <yugawara/type/conversion.h>
+
+#include <yugawara/extension/scalar/aggregate_function_call.h>
+
+#include <mizugaki/ast/scalar/dispatch.h>
+#include <mizugaki/ast/literal/boolean.h>
+
+#include <mizugaki/analyzer/details/analyze_literal.h>
+#include <mizugaki/analyzer/details/analyze_name.h>
+#include <mizugaki/analyzer/details/analyze_type.h>
+
+namespace mizugaki::analyzer::details {
+
+namespace tscalar = ::takatori::scalar;
+namespace ttype = ::takatori::type;
+
+using ::takatori::util::unsafe_downcast;
+using ::takatori::util::string_builder;
+
+using result_type = analyze_scalar_expression_result;
+
+namespace {
+
+class engine {
+public:
+    explicit engine(
+            analyzer_context& context,
+            query_scope const& scope) noexcept :
+        context_ { context },
+        scope_ { scope }
+    {}
+
+    [[nodiscard]] result_type process(
+            ast::scalar::expression const& expression,
+            value_context const& value_context) {
+        auto r = dispatch(expression, value_context);
+        if (r) {
+            return result_type {
+                    std::move(r),
+                    saw_aggregate_,
+            };
+        }
+        return {};
+    }
+
+    [[nodiscard]] std::unique_ptr<tscalar::expression> operator()(
+            ast::scalar::expression const& expr,
+            value_context const&) {
+        context_.report(
+                sql_analyzer_code::unsupported_feature,
+                string_builder {}
+                        << "unsupported scalar expression: " << expr
+                        << string_builder::to_string,
+                expr.region());
+        return {};
+    }
+
+    [[nodiscard]] std::unique_ptr<tscalar::expression> operator()(
+            ast::scalar::literal_expression const& expr,
+            value_context const& val) {
+        return analyze_literal(context_, *expr.value(), val.find(0));
+    }
+
+    [[nodiscard]] std::unique_ptr<tscalar::expression> operator()(
+            ast::scalar::variable_reference const& expr,
+            value_context const&) {
+        return analyze_variable_name(context_, *expr.name(), scope_);
+    }
+
+    [[nodiscard]] std::unique_ptr<tscalar::expression> operator()(
+            ast::scalar::host_parameter_reference const& expr,
+            value_context const&) {
+        // NOTE: keep the case of host parameter names
+        std::string_view identifier = expr.name()->identifier();
+        if (!context_.options()->host_parameter_declaration_starts_with_colon()) {
+            // The host parameter looking for does not start with colon.
+            // We try to trim the leading colon in the expression.
+            if (!identifier.empty() && identifier[0] == ':') {
+                identifier.remove_prefix(1);
+            }
+        }
+        if (auto placeholders = context_.placeholders()) {
+            if (auto value = placeholders->find(identifier)) {
+                auto result = value->resolve();
+                result->region() = context_.convert(expr.region());
+                return result;
+            }
+        }
+        if (auto host_parameters = context_.host_parameters()) {
+            if (auto variable = host_parameters->find(identifier)) {
+                auto descriptor = context_.bless(factory_(std::move(variable)), expr.region());
+                return context_.create<tscalar::variable_reference>(
+                        expr.region(),
+                        std::move(descriptor));
+            }
+        }
+        context_.report(
+                sql_analyzer_code::variable_not_found,
+                string_builder {}
+                        << "placeholder is not found: "
+                        << expr.name()->identifier()
+                        << string_builder::to_string,
+                expr.region());
+        return {};
+    }
+
+    // FIXME: impl field reference
+    // FIXME: impl case expression
+
+    [[nodiscard]] std::unique_ptr<tscalar::expression> operator()(
+            ast::scalar::cast_expression const& expr,
+            value_context const&) {
+        if (expr.operator_kind() != ast::scalar::cast_operator::cast) {
+            context_.report(
+                    sql_analyzer_code::unsupported_feature,
+                    string_builder {}
+                            << "unsupported cast type: "
+                            << expr.operator_kind()
+                            << string_builder::to_string,
+                    expr.operator_kind().region());
+        }
+        auto type = analyze_type(context_, *expr.type());
+        if (!type) {
+            return {};
+        }
+        auto operand = process(*expr.operand(), {});
+        if (!operand) {
+            return {};
+        }
+        auto result = context_.create<tscalar::cast>(
+                expr.operand()->region(),
+                std::move(type),
+                tscalar::cast::loss_policy_type::ignore,
+                operand.release());
+        return result;
+    }
+
+    // FIXME: impl unary AT LOCAL
+    // FIXME: impl unary DEFEF
+
+    [[nodiscard]] std::unique_ptr<tscalar::expression> operator()(
+            ast::scalar::unary_expression const& expr,
+            value_context const&) {
+        auto operator_ = convert(expr.operator_kind());
+        if (!operator_) {
+            return {};
+        }
+        auto operand = process(*expr.operand(), {});
+        if (!operand) {
+            return {};
+        }
+        auto result = context_.create<tscalar::unary>(
+                expr.region(),
+                *operator_,
+                operand.release());
+        return result;
+    }
+
+    [[nodiscard]] std::optional<tscalar::unary_operator> convert(
+            ast::common::regioned<ast::scalar::unary_operator> const& source) {
+        using from = ast::scalar::unary_operator;
+        using to = tscalar::unary_operator;
+        switch (*source) {
+            case from::plus:
+                return to::plus;
+            case from::minus:
+                return to::sign_inversion;
+            case from::not_:
+                return to::conditional_not;
+            default:
+                break;
+        }
+        context_.report(
+                sql_analyzer_code::unsupported_feature,
+                string_builder {}
+                        << "unsupported unary operator: " << source
+                        << string_builder::to_string,
+                source.region());
+        return {};
+    }
+
+    // FIXME: impl binary []
+    // FIXME: impl AT TIME ZONE
+
+    [[nodiscard]] std::unique_ptr<tscalar::expression> operator()(
+            ast::scalar::binary_expression const& expr,
+            value_context const&) {
+        if (expr.operator_kind() == ast::scalar::binary_operator::is ||
+                expr.operator_kind() == ast::scalar::binary_operator::is_not) {
+            return process_is(expr, {});
+        }
+
+        auto operator_ = convert(expr.operator_kind());
+        if (!operator_) {
+            return {};
+        }
+        auto left = process(*expr.left(), {});
+        if (!left) {
+            return {};
+        }
+        auto right = process(*expr.right(), {});
+        if (!right) {
+            return {};
+        }
+        auto result = context_.create<tscalar::binary>(
+                expr.region(),
+                *operator_,
+                left.release(),
+                right.release());
+        return result;
+    }
+
+    [[nodiscard]] std::optional<tscalar::binary_operator> convert(
+            ast::common::regioned<ast::scalar::binary_operator> const& source) {
+        using from = ast::scalar::binary_operator;
+        using to = tscalar::binary_operator;
+        switch (*source) {
+            case from::plus:
+                return to::add;
+            case from::minus:
+                return to::subtract;
+            case from::asterisk:
+                return to::multiply;
+            case from::solidus:
+                return to::divide;
+            case from::concatenation:
+                return to::concat;
+            case from::and_:
+                return to::conditional_and;
+            case from::or_:
+                return to::conditional_or;
+            default:
+                break;
+        }
+        context_.report(
+                sql_analyzer_code::unsupported_feature,
+                string_builder {}
+                        << "unsupported unary operator: " << source
+                        << string_builder::to_string,
+                source.region());
+        return {};
+    }
+
+    [[nodiscard]] std::unique_ptr<tscalar::expression> process_is(
+            ast::scalar::binary_expression const& expr,
+            value_context const&) {
+        auto&& right = *expr.right();
+        if (right.node_kind() != ast::scalar::kind::literal_expression) {
+            context_.report(
+                    sql_analyzer_code::unsupported_feature,
+                    string_builder {}
+                            << "unsupported right operand for IS/IS NOT: "
+                            << right.node_kind()
+                            << string_builder::to_string,
+                    right.region());
+            return {};
+        }
+        auto&& literal = unsafe_downcast<ast::scalar::literal_expression>(right);
+        auto operator_ = convert_is_right(*literal.value());
+        if (!operator_) {
+            return {};
+        }
+        auto left = process(*expr.left(), {});
+        if (!left) {
+            return {};
+        }
+        auto result = context_.create<tscalar::unary>(
+                expr.region(),
+                *operator_,
+                left.release());
+        if (expr.operator_kind() == ast::scalar::binary_operator::is_not) {
+            // negate the logic
+            result = context_.create<tscalar::unary>(
+                    expr.region(),
+                    tscalar::unary_operator::conditional_not,
+                    std::move(result));
+        }
+        return result;
+    }
+
+    [[nodiscard]] std::optional<tscalar::unary_operator> convert_is_right(
+            ast::literal::literal const& source) {
+        using from = ast::literal::kind;
+        using to = tscalar::unary_operator;
+        switch (source.node_kind()) {
+            case from::null:
+                return to::is_null;
+            case from::boolean:
+                {
+                    auto&& value = unsafe_downcast<ast::literal::boolean>(source);
+                    switch (value.value()) {
+                        case ast::literal::boolean_kind::true_:
+                            return to::is_true;
+                        case ast::literal::boolean_kind::false_:
+                            return to::is_false;
+                        case ast::literal::boolean_kind::unknown:
+                            return to::is_unknown;
+                        default:
+                            break;
+                    }
+                }
+                break;
+            default:
+                break;
+        }
+        context_.report(
+                sql_analyzer_code::malformed_syntax,
+                string_builder {}
+                        << "unsupported right operand for IS/IS NOT: "
+                        << source.node_kind()
+                        << string_builder::to_string,
+                source.region());
+        return {};
+    }
+
+    // FIXME: impl OVERLAPS
+    // FIXME: impl DISTINCT FROM
+    // FIXME: impl <@
+    // FIXME: impl @>
+    // FIXME: impl &&
+
+    // FIXME: impl extract_expression
+    // FIXME: impl trim_expression
+    // FIXME: impl value_constructor
+    // FIXME: impl subquery (scalar/row)
+
+    [[nodiscard]] std::unique_ptr<tscalar::expression> operator()(
+            ast::scalar::comparison_predicate const& expr,
+            value_context const&) {
+        auto operator_ = convert(expr.operator_kind());
+        if (!operator_) {
+            return {};
+        }
+        auto left = process(*expr.left(), {});
+        if (!left) {
+            return {};
+        }
+        auto right = process(*expr.right(), {});
+        if (!right) {
+            return {};
+        }
+        auto result = context_.create<tscalar::compare>(
+                expr.region(),
+                *operator_,
+                left.release(),
+                right.release());
+        return result;
+    }
+
+    [[nodiscard]] std::optional<tscalar::comparison_operator> convert(
+            ast::common::regioned<ast::scalar::comparison_operator> const& source) {
+        using from = ast::scalar::comparison_operator;
+        using to = tscalar::comparison_operator;
+        switch (*source) {
+            case from::equals:
+                return to::equal;
+            case from::not_equals:
+                return to::not_equal;
+            case from::less_than:
+                return to::less;
+            case from::less_than_or_equals:
+                return to::less_equal;
+            case from::greater_than:
+                return to::greater;
+            case from::greater_than_or_equals:
+                return to::greater_equal;
+            default:
+                break;
+        }
+        context_.report(
+                sql_analyzer_code::unsupported_feature,
+                string_builder {}
+                        << "unsupported comparison operator: " << source
+                        << string_builder::to_string,
+                source.region());
+        return {};
+    }
+
+    // FIXME: impl quantified_comparison_predicate,
+    // FIXME: impl between_predicate,
+    // FIXME: impl in_predicate,
+    // FIXME: impl pattern_match_predicate,
+    // FIXME: impl table_predicate,
+    // FIXME: impl <match predicate>
+    // FIXME: impl <type predicate>
+    // FIXME: impl function_invocation,
+    // FIXME: impl builtin_function_invocation,
+
+    [[nodiscard]] std::unique_ptr<tscalar::expression> operator()(
+            ast::scalar::builtin_set_function_invocation const& expr,
+            value_context const&) {
+        std::string function_name { to_string_view(*expr.function()) };
+        if (expr.quantifier() == ast::scalar::set_quantifier::distinct) {
+            function_name.append(yugawara::aggregate::declaration::name_suffix_distinct);
+        }
+
+        ::takatori::util::reference_vector<tscalar::expression> arguments {};
+        arguments.reserve(expr.arguments().size());
+        std::vector<std::shared_ptr<ttype::data const>> argument_types {};
+        argument_types.reserve(expr.arguments().size());
+        for (auto&& arg : expr.arguments()) {
+            auto value = process(*arg, {});
+            if (!value) {
+                return {};
+            }
+            auto type = context_.resolve(*value);
+            if (!type) {
+                return {};
+            }
+            arguments.push_back(value.release());
+            argument_types.emplace_back(type);
+        }
+
+        auto&& path = context_.options()->schema_search_path();
+        std::vector<std::shared_ptr<::yugawara::aggregate::declaration const>> candidates {};
+        for (auto&& schema : path.elements()) {
+            // FIXME: consider override over schemas
+            schema->set_function_provider().each(
+                    function_name,
+                    expr.arguments().size(),
+                    [&](std::shared_ptr<::yugawara::aggregate::declaration const> const& ptr) -> void {
+                        if (is_callable(ptr->shared_parameter_types(), argument_types)) {
+                            candidates.emplace_back(ptr);
+                        }
+                    });
+        }
+
+        if (candidates.empty()) {
+            string_builder buffer {};
+            buffer << "set function not found: "
+                   << expr.function();
+            if (expr.quantifier()) {
+                buffer << "[" << *expr.quantifier() << "]";
+            }
+            append_string(buffer, argument_types);
+            context_.report(
+                    sql_analyzer_code::function_not_found,
+                    buffer << string_builder::to_string,
+                    expr.region());
+            return {};
+        }
+        auto target = resolve_overload(expr.function(), candidates);
+        if (!target) {
+            return {};
+        }
+
+        auto result = context_.create<::yugawara::extension::scalar::aggregate_function_call>(
+                expr.region(),
+                factory_(std::move(target)),
+                std::move(arguments));
+
+        saw_aggregate_ = true;
+        return result;
+    }
+
+    [[nodiscard]] static bool is_callable(
+            std::vector<std::shared_ptr<::takatori::type::data const>> const& params,
+            std::vector<std::shared_ptr<::takatori::type::data const>> const& args) {
+        for (std::size_t i = 0, n = params.size(); i < n; ++i) {
+            if (*args[i] == *params[i]) {
+                continue;
+            }
+            auto r = ::yugawara::type::is_widening_convertible(*args[i], *params[i]);
+            if (r != true) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    template<class T>
+    [[nodiscard]] std::shared_ptr<::yugawara::aggregate::declaration const> resolve_overload(
+            ast::common::regioned<T> const& title,
+            std::vector<std::shared_ptr<::yugawara::aggregate::declaration const>> const& candidates) {
+        std::size_t result_at = 0;
+        for (std::size_t i = 1, n = candidates.size(); i < n; ++i) {
+            auto const* left = candidates[result_at].get();
+            auto const* right = candidates[i].get();
+            auto lw = left->has_wider_parameters(*right);
+            auto rw = right->has_wider_parameters(*left);
+            if (lw == rw) {
+                string_builder builder {};
+                builder << "ambiguous function overload: "
+                        << left->name()
+                        << " - ";
+                append_string(builder, left->shared_parameter_types());
+                builder << " and ";
+                append_string(builder, right->shared_parameter_types());
+                context_.report(
+                        sql_analyzer_code::function_ambiguous,
+                        builder << string_builder::to_string,
+                        title.region());
+                return {};
+            }
+            if (lw) {
+                result_at = i;
+            }
+        }
+        return candidates[result_at];
+    }
+
+    static void append_string(
+            string_builder& destination,
+            std::vector<std::shared_ptr<ttype::data const>> const& types) {
+        destination << "(";
+        for (std::size_t i = 0, n = types.size(); i < n; ++i) {
+            if (i != 0) {
+                destination << ", ";
+            }
+            destination << *types[i];
+        }
+        destination << ")";
+    }
+
+    // FIXME: impl new_invocation,
+    // FIXME: impl method_invocation,
+    // FIXME: impl static_method_invocation,
+    // FIXME: impl current_of_cursor,
+
+private:
+    analyzer_context& context_;
+    query_scope const& scope_;
+
+    ::yugawara::binding::factory factory_;
+
+    bool saw_aggregate_ { false };
+
+    [[nodiscard]] std::unique_ptr<tscalar::expression> dispatch(
+            ast::scalar::expression const& expression,
+            value_context const& value_context) {
+        return ast::scalar::dispatch(*this, expression, value_context);
+    }
+};
+
+} // namespace
+
+analyze_scalar_expression_result::analyze_scalar_expression_result(
+        std::unique_ptr<tscalar::expression> expression,
+        bool saw_aggregate) noexcept :
+    expression_ { std::move(expression) },
+    saw_aggregate_ { saw_aggregate }
+{}
+
+bool analyze_scalar_expression_result::has_value() const noexcept {
+    return expression_ != nullptr;
+}
+
+analyze_scalar_expression_result::operator bool() const noexcept {
+    return has_value();
+}
+
+tscalar::expression& analyze_scalar_expression_result::value() {
+    return *expression_;
+}
+
+tscalar::expression const& analyze_scalar_expression_result::value() const {
+    return *expression_;
+}
+
+tscalar::expression& analyze_scalar_expression_result::operator*() {
+    return value();
+}
+
+tscalar::expression const& analyze_scalar_expression_result::operator*() const {
+    return value();
+}
+
+std::unique_ptr<tscalar::expression> analyze_scalar_expression_result::release() {
+    return std::move(expression_);
+}
+
+bool analyze_scalar_expression_result::saw_aggregate() const noexcept {
+    return saw_aggregate_;
+}
+
+result_type analyze_scalar_expression(
+        analyzer_context& context,
+        ast::scalar::expression const& expression,
+        query_scope const& scope,
+        value_context const& value_context) {
+    engine e { context, scope };
+    return e.process(expression, value_context);
+}
+
+} // namespace mizugaki::analyzer::details

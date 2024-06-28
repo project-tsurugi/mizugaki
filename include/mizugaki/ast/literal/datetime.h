@@ -59,7 +59,7 @@ public:
             region_type region = {}) :
         datetime {
                 value_kind,
-                value_type { std::forward<T>(value) },
+                value_type { common::chars { std::forward<T>(value) } },
                 region,
         }
     {}
