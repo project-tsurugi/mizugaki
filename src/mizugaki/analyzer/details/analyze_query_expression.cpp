@@ -164,7 +164,7 @@ public:
             output = project.output();
             select_columns = project;
 
-            scope.add(info);
+            // scope.add(info);
         }
 
         // SELECT DISTINCT
