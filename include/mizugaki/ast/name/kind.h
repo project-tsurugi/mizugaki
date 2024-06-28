@@ -4,6 +4,8 @@
 #include <string>
 #include <string_view>
 
+#include <takatori/util/meta_type.h>
+
 namespace mizugaki::ast::name {
 
 class simple;

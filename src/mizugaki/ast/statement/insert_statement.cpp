@@ -3,6 +3,7 @@
 #include <takatori/util/clonable.h>
 
 #include <mizugaki/ast/common/serializers.h>
+#include <mizugaki/ast/common/vector.h>
 
 #include <mizugaki/ast/compare_utils.h>
 
@@ -18,22 +19,26 @@ insert_statement::insert_statement(
         std::unique_ptr<name::name> table_name,
         std::vector<std::unique_ptr<name::simple>> columns,
         std::unique_ptr<query::expression> expression,
+        std::vector<option_type> options,
         region_type region) noexcept :
     super { region },
     table_name_ { std::move(table_name) },
     columns_ { std::move(columns) },
-    expression_ { std::move(expression) }
+    expression_ { std::move(expression) },
+    options_ {std::move(options) }
 {}
 
 insert_statement::insert_statement(
         name::name&& table_name,
         common::rvalue_list<name::simple> columns,
         rvalue_ptr<query::expression> expression,
+        std::initializer_list<option_type> options,
         region_type region) :
     insert_statement {
             clone_unique(std::move(table_name)),
             to_vector(columns),
             clone_unique(expression),
+            options,
             region,
     }
 {}
@@ -43,6 +48,7 @@ insert_statement::insert_statement(::takatori::util::clone_tag_t, insert_stateme
             clone_unique(other.table_name_),
             clone_vector(other.columns_),
             clone_unique(other.expression_),
+            other.options_,
             other.region(),
     }
 {}
@@ -52,6 +58,7 @@ insert_statement::insert_statement(::takatori::util::clone_tag_t, insert_stateme
             clone_unique(std::move(other.table_name_)),
             clone_vector(std::move(other.columns_)),
             clone_unique(std::move(other.expression_)),
+            std::move(other.options_),
             other.region(),
     }
 {}
@@ -92,13 +99,22 @@ std::unique_ptr<query::expression> const& insert_statement::expression() const n
     return expression_;
 }
 
+std::vector<insert_statement::option_type>& insert_statement::options() noexcept {
+    return options_;
+}
+
+std::vector<insert_statement::option_type> const& insert_statement::options() const noexcept {
+    return options_;
+}
+
 bool operator==(insert_statement const& a, insert_statement const& b) noexcept {
     if (std::addressof(a) == std::addressof(b)) {
         return true;
     }
     return eq(a.table_name_, b.table_name_)
         && eq(a.columns_, b.columns_)
-        && eq(a.expression_, b.expression_);
+        && eq(a.expression_, b.expression_)
+        && eq(a.options_, b.options_);
 }
 
 bool operator!=(insert_statement const& a, insert_statement const& b) noexcept {
@@ -117,6 +133,7 @@ void insert_statement::serialize(takatori::serializer::object_acceptor& acceptor
     property(acceptor, "table_name"sv, table_name_);
     property(acceptor, "columns"sv, columns_);
     property(acceptor, "expression"sv, expression_);
+    property(acceptor, "options"sv, options_);
     region_property(acceptor, *this);
 }
 

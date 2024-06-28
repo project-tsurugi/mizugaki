@@ -34,6 +34,24 @@ public:
 
     /**
      * @brief creates a new instance.
+     * @param value the boolean value
+     * @param region the node region
+     */
+    explicit boolean(
+            bool value,
+            region_type region = {}) noexcept;
+
+    /**
+     * @brief creates a new instance.
+     * @param value always nullptr that represents unknown
+     * @param region the node region
+     */
+    explicit boolean(
+            std::nullptr_t value,
+            region_type region = {}) noexcept;
+
+    /**
+     * @brief creates a new instance.
      * @param other the copy source
      */
     explicit boolean(::takatori::util::clone_tag_t, boolean const& other) noexcept;

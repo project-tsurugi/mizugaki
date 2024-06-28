@@ -214,7 +214,7 @@ public:
      * @brief appends string representation of the given value.
      * @param out the target output
      * @param value the target value
-2     * @return the output stream
+     * @return the output stream
      */
     friend std::ostream& operator<<(std::ostream& out, shakujo_translator_result const& value);
 

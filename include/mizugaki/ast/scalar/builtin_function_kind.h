@@ -170,13 +170,60 @@ enum class builtin_function_kind {
      * @note format: `(:0 [, :1 [, :2 [, ...]]]])`
      */
     coalesce,
+
+    /**
+     * @brief `NEXT VALUE FOR`
+     * @note `[SQL-2003] 6.13 <next value expression>`
+     * @note format: `:0`, where `:0` must be a sequence name
+     */
+    next_value_for,
+
+    /**
+     * @brief `USER`
+     * @note This is pseudo-function only used in default clause of column definitions.
+     * @note `11.5 <default clause>` - `<default option>`
+     * @note format: empty
+     */
+    user,
+
+    /**
+     * @brief `CURRENT_USER`
+     * @note This is pseudo-function only used in default clause of column definitions.
+     * @note `11.5 <default clause>` - `<default option>`
+     * @note format: empty
+     */
+    current_user,
+
+    /**
+     * @brief `CURRENT_ROLE`
+     * @note This is pseudo-function only used in default clause of column definitions.
+     * @note `11.5 <default clause>` - `<default option>`
+     * @note format: empty
+     */
+    current_role,
+
+    /**
+     * @brief `SYSTEM_USER`
+     * @note This is pseudo-function only used in default clause of column definitions.
+     * @note `11.5 <default clause>` - `<default option>`
+     * @note format: empty
+     */
+    system_user,
+
+    /**
+     * @brief `CURRENT_PATH`
+     * @note This is pseudo-function only used in default clause of column definitions.
+     * @note `11.5 <default clause>` - `<default option>`
+     * @note format: empty
+     */
+    current_path,
 };
 
 /// @brief set of builtin_function_kind kind.
 using builtin_function_kind_set = ::takatori::util::enum_set<
         builtin_function_kind,
         builtin_function_kind::position,
-        builtin_function_kind::coalesce>;
+        builtin_function_kind::current_path>;
 
 /**
  * @brief returns string representation of the value.
@@ -208,6 +255,12 @@ inline constexpr std::string_view to_string_view(builtin_function_kind value) no
         case kind::localtimestamp: return "localtimestamp"sv;
         case kind::nullif: return "nullif"sv;
         case kind::coalesce: return "coalesce"sv;
+        case kind::next_value_for: return "next_value_for"sv;
+        case kind::user: return "user"sv;
+        case kind::current_user: return "current_user"sv;
+        case kind::current_role: return "current_role"sv;
+        case kind::system_user: return "system_user"sv;
+        case kind::current_path: return "current_path"sv;
     }
     std::abort();
 }

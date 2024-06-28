@@ -73,7 +73,7 @@ public:
      */
     query(
             common::rvalue_list<select_element> elements,
-            common::rvalue_list<table::expression> from,
+            common::rvalue_list<table::expression> from = {},
             ::takatori::util::rvalue_ptr<scalar::expression> where = {},
             std::optional<group_by_clause> group_by = {},
             ::takatori::util::rvalue_ptr<scalar::expression> having = {},
@@ -134,6 +134,7 @@ public:
     /**
      * @brief returns the `FROM` clause.
      * @return the `FROM` clause
+     * @return empty if it is not specified
      * @note `7.5 <from clause>`
      */
     [[nodiscard]] std::vector<std::unique_ptr<table::expression>>& from() noexcept;

@@ -47,7 +47,11 @@ static scalar::expression const& extract(sql_parser::result_type const& result) 
     auto&& select = downcast<statement::select_statement>(*stmt);
     auto&& tv = downcast<query::table_value_constructor>(*select.expression());
     auto&& rv = downcast<scalar::value_constructor>(*tv.elements()[0]);
-    return *rv.elements()[0];
+    auto&& sv = rv.elements()[0];
+    if (!sv) {
+        throw std::domain_error("expression is null");
+    }
+    return *sv;
 }
 
 TEST_F(sql_parser_scalar_test, literal_expression) {
@@ -71,7 +75,7 @@ TEST_F(sql_parser_scalar_test, variable_reference_delimited) {
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (scalar::variable_reference {
-            name::simple { R"(Hello, "world"!)" },
+            name::simple { R"(Hello, "world"!)" }.delimited(),
     }));
 }
 
@@ -404,6 +408,45 @@ TEST_F(sql_parser_scalar_test, binary_expression_concatenation) {
     }));
 }
 
+TEST_F(sql_parser_scalar_test, binary_expression_at_time_zone) {
+    auto result = parse("a at time zone b");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (scalar::binary_expression {
+            v("a"),
+            scalar::binary_operator::at_time_zone,
+            v("b"),
+    }));
+}
+
+TEST_F(sql_parser_scalar_test, binary_expression_at_time_zone_plus) {
+    auto result = parse("a at time zone +b");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (scalar::binary_expression {
+            v("a"),
+            scalar::binary_operator::at_time_zone,
+            scalar::unary_expression {
+                    scalar::unary_operator::plus,
+                    v("b"),
+            },
+    }));
+}
+
+TEST_F(sql_parser_scalar_test, binary_expression_at_time_zone_minus) {
+    auto result = parse("a at time zone -b");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (scalar::binary_expression {
+            v("a"),
+            scalar::binary_operator::at_time_zone,
+            scalar::unary_expression {
+                    scalar::unary_operator::minus,
+                    v("b"),
+            },
+    }));
+}
+
 TEST_F(sql_parser_scalar_test, unary_expression_plus) {
     auto result = parse("+a");
     ASSERT_TRUE(result) << diagnostics(result);
@@ -420,6 +463,16 @@ TEST_F(sql_parser_scalar_test, unary_expression_minus) {
 
     EXPECT_EQ(extract(result), (scalar::unary_expression {
             scalar::unary_operator::minus,
+            v("a"),
+    }));
+}
+
+TEST_F(sql_parser_scalar_test, unary_expression_at_local) {
+    auto result = parse("a at local");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (scalar::unary_expression {
+            scalar::unary_operator::at_local,
             v("a"),
     }));
 }

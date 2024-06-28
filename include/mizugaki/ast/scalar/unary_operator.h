@@ -33,6 +33,12 @@ enum class unary_operator {
     not_,
 
     /**
+     * @brief at local operator (`AT LOCAL`).
+     * @see `6.28 <datetime value expression>`
+     */
+    at_local,
+
+    /**
      * @brief reference resolution (`DEREF`).
      * @note `6.15 <reference resolution>`
      */
@@ -57,6 +63,7 @@ inline constexpr std::string_view to_string_view(unary_operator value) noexcept 
         case kind::plus: return "plus"sv;
         case kind::minus: return "minus"sv;
         case kind::not_: return "not"sv;
+        case kind::at_local: return "at_local"sv;
         case kind::reference_resolution: return "reference_resolution"sv;
     }
     std::abort();

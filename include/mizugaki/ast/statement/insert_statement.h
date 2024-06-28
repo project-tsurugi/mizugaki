@@ -1,17 +1,19 @@
 #pragma once
 
 #include <optional>
+#include <vector>
 
 #include <takatori/util/clone_tag.h>
 #include <takatori/util/rvalue_ptr.h>
 
-#include <mizugaki/ast/common/vector.h>
+#include <mizugaki/ast/common/regioned.h>
 #include <mizugaki/ast/common/rvalue_list.h>
 #include <mizugaki/ast/name/name.h>
 #include <mizugaki/ast/name/simple.h>
 #include <mizugaki/ast/query/expression.h>
 
 #include "statement.h"
+#include "insert_statement_option.h"
 
 namespace mizugaki::ast::statement {
 
@@ -27,11 +29,15 @@ public:
     /// @brief the node kind of this.
     static constexpr node_kind_type tag = node_kind_type::insert_statement;
 
+    /// @brief option type with element region information.
+    using option_type = common::regioned<insert_statement_option>;
+
     /**
      * @brief creates a new instance.
      * @param table_name the target table name
      * @param columns the target columns
      * @param expression the source table expression, or empty if insert a row with default values
+     * @param options the declared options
      * @param region the node region
      */
     explicit insert_statement(
@@ -39,6 +45,7 @@ public:
             std::vector<std::unique_ptr<name::simple>> columns,
             // FIXME: overriding clause
             std::unique_ptr<query::expression> expression,
+            std::vector<option_type> options = {},
             region_type region = {}) noexcept;
 
     /**
@@ -46,6 +53,7 @@ public:
      * @param table_name the target table name
      * @param columns the target columns
      * @param expression the source table expression, or empty if insert a row with default values
+     * @param options the declared options
      * @param region the node region
      * @attention this will take copy of arguments
      */
@@ -53,6 +61,7 @@ public:
             name::name&& table_name,
             common::rvalue_list<name::simple> columns,
             ::takatori::util::rvalue_ptr<query::expression> expression,
+            std::initializer_list<option_type> options = {},
             region_type region = {});
 
     /**
@@ -100,7 +109,16 @@ public:
 
     /// @brief expression()
     [[nodiscard]] std::unique_ptr<query::expression> const& expression() const noexcept;
-    
+
+    /**
+     * @brief returns list of declared options.
+     * @return declared options
+     */
+    [[nodiscard]] std::vector<option_type>& options() noexcept;
+
+    /// @copydoc options()
+    [[nodiscard]] std::vector<option_type> const& options() const noexcept;
+
     /**
      * @brief compares two values.
      * @param a the first value
@@ -128,6 +146,7 @@ private:
     std::unique_ptr<name::name> table_name_;
     std::vector<std::unique_ptr<name::simple>> columns_;
     std::unique_ptr<query::expression> expression_;
+    std::vector<option_type> options_;
 };
 
 /**

@@ -56,6 +56,13 @@ enum class binary_operator {
     element_reference,
 
     /**
+     * @brief at time zone operator (`AT TIME ZONE`).
+     * @note `AT LOCAL` is declared as unary_operator::at_local.
+     * @see `6.28 <datetime value expression>`
+     */
+    at_time_zone,
+
+    /**
      * @brief conditional `AND`.
      * @note `6.30 <boolean value expression>`
      */
@@ -131,6 +138,7 @@ inline constexpr std::string_view to_string_view(binary_operator value) noexcept
         case kind::solidus: return "solidus"sv;
         case kind::concatenation: return "concatenation"sv;
         case kind::element_reference: return "element_reference"sv;
+        case kind::at_time_zone: return "at_time_zone"sv;
         case kind::and_: return "and"sv;
         case kind::or_: return "or"sv;
         case kind::is: return "is"sv;

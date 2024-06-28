@@ -60,12 +60,12 @@ name::node_kind_type qualified::node_kind() const noexcept {
     return tag;
 }
 
-name::identifier_type const& qualified::last_identifier() const noexcept {
-    return last()->identifier();
+simple const& qualified::last_name() const noexcept {
+    return *last_;
 }
 
 optional_ptr<name const> qualified::optional_qualifier() const noexcept {
-    return takatori::util::optional_ptr<name const>(); // NOLINT(modernize-return-braced-init-list) sometimes misinfer
+    return takatori::util::optional_ptr { qualifier_.get() };
 }
 
 std::unique_ptr<name>& qualified::qualifier() noexcept {

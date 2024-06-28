@@ -12,6 +12,7 @@
 #include <mizugaki/ast/type/simple.h>
 #include <mizugaki/ast/type/character_string.h>
 #include <mizugaki/ast/type/bit_string.h>
+#include <mizugaki/ast/type/octet_string.h>
 #include <mizugaki/ast/type/decimal.h>
 #include <mizugaki/ast/type/binary_numeric.h>
 #include <mizugaki/ast/type/datetime.h>
@@ -150,6 +151,45 @@ TEST_F(sql_parser_type_test, bit_varying_flexible) {
     EXPECT_EQ(extract(result), (type::bit_string {
             type::kind::bit_varying,
             type::bit_string::flexible_length,
+    }));
+}
+
+TEST_F(sql_parser_type_test, octet) {
+    auto result = parse("BYTE");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (type::octet_string {
+            type::kind::octet,
+    }));
+}
+
+TEST_F(sql_parser_type_test, octet_length) {
+    auto result = parse("BYTE(16)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (type::octet_string {
+            type::kind::octet,
+            16,
+    }));
+}
+
+TEST_F(sql_parser_type_test, octet_varying) {
+    auto result = parse("BYTE VARYING(256)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (type::octet_string {
+            type::kind::octet_varying,
+            256,
+    }));
+}
+
+TEST_F(sql_parser_type_test, octet_varying_flexible) {
+    auto result = parse("VARBYTE(*)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (type::octet_string {
+            type::kind::octet_varying,
+            type::octet_string::flexible_length,
     }));
 }
 
