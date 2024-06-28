@@ -105,8 +105,13 @@ std::shared_ptr<::yugawara::storage::table const> test_parent::install_table(std
     return table;
 }
 
-::takatori::descriptor::variable test_parent::vd(std::string_view name) {
-    return ::yugawara::binding::factory {}.stream_variable(name);
+::takatori::descriptor::variable
+test_parent::vd(std::string_view name, ::takatori::util::rvalue_ptr<ttype::data> type) {
+    auto result = ::yugawara::binding::factory {}.stream_variable(name);
+    if (type) {
+        context_.resolve_as(result, type.value());
+    }
+    return result;
 }
 
 } // namespace mizugaki::analyzer::details

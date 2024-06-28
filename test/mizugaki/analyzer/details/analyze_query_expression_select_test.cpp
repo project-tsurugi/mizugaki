@@ -53,7 +53,7 @@ TEST_F(analyze_query_expression_select_test, simple) {
             },
             {},
             {});
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
     EXPECT_EQ(graph.size(), 2);
     EXPECT_FALSE(r.output().opposite());
 
@@ -180,7 +180,7 @@ TEST_F(analyze_query_expression_select_test, select_multiple_select_element) {
             },
             {},
             {});
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
     EXPECT_EQ(graph.size(), 2);
     EXPECT_FALSE(r.output().opposite());
 
@@ -234,7 +234,7 @@ TEST_F(analyze_query_expression_select_test, select_relation_name) {
             },
             {},
             {});
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
     EXPECT_EQ(graph.size(), 2);
     EXPECT_FALSE(r.output().opposite());
 
@@ -279,7 +279,7 @@ TEST_F(analyze_query_expression_select_test, select_corelation_name) {
             },
             {},
             {});
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
     EXPECT_EQ(graph.size(), 2);
     EXPECT_FALSE(r.output().opposite());
 
@@ -330,7 +330,7 @@ TEST_F(analyze_query_expression_select_test, where) {
             },
             {},
             {});
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
     EXPECT_EQ(graph.size(), 3);
     EXPECT_FALSE(r.output().opposite());
 
@@ -386,7 +386,7 @@ TEST_F(analyze_query_expression_select_test, distinct) {
             },
             {},
             {});
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
 
     // select - project - distinct -
     EXPECT_EQ(graph.size(), 3);
@@ -444,7 +444,7 @@ TEST_F(analyze_query_expression_select_test, distinct_multiple_columns) {
             },
             {},
             {});
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
 
     // select - project - distinct -
     EXPECT_EQ(graph.size(), 3);
@@ -508,7 +508,7 @@ TEST_F(analyze_query_expression_select_test, order_by) {
             },
             {},
             {});
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
 
     EXPECT_EQ(graph.size(), 4);
     EXPECT_FALSE(r.output().opposite());
@@ -589,7 +589,7 @@ TEST_F(analyze_query_expression_select_test, order_by_multiple_columns) {
             },
             {},
             {});
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
 
     EXPECT_EQ(graph.size(), 4);
     EXPECT_FALSE(r.output().opposite());
@@ -672,7 +672,7 @@ TEST_F(analyze_query_expression_select_test, order_by_expression) {
             },
             {},
             {});
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
 
     EXPECT_EQ(graph.size(), 4);
     EXPECT_FALSE(r.output().opposite());
@@ -742,7 +742,7 @@ TEST_F(analyze_query_expression_select_test, limit) {
             },
             {},
             {});
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
 
     // select - project - limit -
     EXPECT_EQ(graph.size(), 3);
@@ -807,7 +807,7 @@ TEST_F(analyze_query_expression_select_test, order_by_limit) {
             },
             {},
             {});
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
 
     EXPECT_EQ(graph.size(), 4);
     EXPECT_FALSE(r.output().opposite());

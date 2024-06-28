@@ -4,7 +4,14 @@
 
 #include <takatori/type/data.h>
 #include <takatori/value/data.h>
+
+#include <takatori/scalar/expression.h>
+
+#include <takatori/relation/expression.h>
+
 #include <takatori/util/finalizer.h>
+
+#include <yugawara/analyzer/expression_analyzer.h>
 
 #include <yugawara/util/object_repository.h>
 
@@ -61,16 +68,16 @@ public:
         return values_;
     }
 
-    [[nodiscard]] ::takatori::document::region convert(ast::node_region region) const {
-        if (source_) {
-            return diagnostic_type::location_type {
-                    *source_,
-                    region.begin,
-                    region.end,
-            };
-        }
-        return {};
-    }
+    [[nodiscard]] std::shared_ptr<::takatori::type::data const> resolve(
+            ::takatori::scalar::expression const& expression);
+
+    [[nodiscard]] bool resolve(::takatori::relation::expression const& expression);
+
+    void resolve_as(
+            ::takatori::descriptor::variable const& variable,
+            ::yugawara::analyzer::variable_resolution resolution);
+
+    [[nodiscard]] ::takatori::document::region convert(ast::node_region region) const;
 
     template<class T>
     [[nodiscard]] T bless(T t, ast::node_region region) const {
@@ -81,16 +88,12 @@ public:
     void report(
             diagnostic_type::code_type code,
             diagnostic_type::message_type message,
-            ::takatori::document::region region) {
-        diagnostics_.emplace_back(code, std::move(message), region);
-    }
+            ::takatori::document::region region);
 
     void report(
             diagnostic_type::code_type code,
             diagnostic_type::message_type message,
-            ast::node_region region) {
-        diagnostics_.emplace_back(code, std::move(message), convert(region));
-    }
+            ast::node_region region);
 
     template<class T, class... Args>
     [[nodiscard]] std::unique_ptr<T> create(::takatori::document::region region, Args&&... args) const {
@@ -116,8 +119,13 @@ private:
     std::vector<diagnostic_type> diagnostics_ {};
     ::yugawara::util::object_repository<::takatori::type::data> types_ {};
     ::yugawara::util::object_repository<::takatori::value::data> values_ {};
+    ::yugawara::analyzer::expression_analyzer expression_analyzer_ {};
 
     void finalize();
+
+    static sql_analyzer_code convert_code(
+            ::yugawara::analyzer::expression_analyzer_code code) noexcept;
+
 };
 
 } // namespace mizugaki::analyzer::details

@@ -265,18 +265,24 @@ bool set_function_processor::process(ownership_reference<::takatori::scalar::exp
     return e.process(std::move(expression));
 }
 
-output_port_type& set_function_processor::install(output_port_type& port) {
+optional_ptr<output_port_type> set_function_processor::install(output_port_type& port) {
     auto next = port.opposite();
     if (next) {
         next->disconnect_from(port);
     }
     optional_ptr<output_port_type> current { port };
     if (arguments_) {
+        if (!context_.resolve(*arguments_)) {
+            return {};
+        }
         arguments_->input().connect_to(*current);
         current = arguments_->output();
         arguments_.reset();
     }
     if (aggregations_) {
+        if (!context_.resolve(*aggregations_)) {
+            return {};
+        }
         aggregations_->input().connect_to(*current);
         current = aggregations_->output();
         aggregations_.reset();

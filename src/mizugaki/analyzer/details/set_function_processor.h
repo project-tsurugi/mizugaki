@@ -41,7 +41,8 @@ public:
 
     [[nodiscard]] bool process(::takatori::util::ownership_reference<::takatori::scalar::expression> expression);
 
-    ::takatori::relation::expression::output_port_type& install(::takatori::relation::expression::output_port_type& port);
+    ::takatori::util::optional_ptr<::takatori::relation::expression::output_port_type> install(
+            ::takatori::relation::expression::output_port_type& port);
 
     void consume(::takatori::util::ownership_reference<::takatori::scalar::expression> expression);
 

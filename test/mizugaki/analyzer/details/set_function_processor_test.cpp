@@ -22,6 +22,8 @@ namespace mizugaki::analyzer::details {
 
 using namespace ::mizugaki::analyzer::testing;
 
+namespace tdescriptor = ::takatori::descriptor;
+
 using ::takatori::util::clone_unique;
 using ::takatori::util::ownership_reference;
 
@@ -31,9 +33,6 @@ using ::yugawara::binding::extract;
 using ::yugawara::extension::scalar::aggregate_function_call;
 
 class set_function_processor_test : public test_parent {
-public:
-
-
 protected:
     ::takatori::relation::graph_type graph_;
     ::yugawara::binding::factory factory_;
@@ -74,7 +73,8 @@ TEST_F(set_function_processor_test, simple) {
 
     trelation::values values { {}, {} };
     auto&& output = processor.install(values.output());
-    EXPECT_FALSE(output.opposite());
+    ASSERT_TRUE(output);
+    EXPECT_FALSE(output->opposite());
 
     auto&& aggregate = find_next<trelation::intermediate::aggregate>(values);
     ASSERT_TRUE(aggregate);
@@ -108,7 +108,8 @@ TEST_F(set_function_processor_test, function_arguments) {
 
     trelation::values values { {}, {} };
     auto&& output = processor.install(values.output());
-    EXPECT_FALSE(output.opposite());
+    ASSERT_TRUE(output);
+    EXPECT_FALSE(output->opposite());
 
     auto&& arguments = find_next<trelation::project>(values);
     ASSERT_TRUE(arguments);
@@ -135,14 +136,15 @@ TEST_F(set_function_processor_test, grouping) {
 
     EXPECT_FALSE(processor.active());
 
-    auto va = factory_.stream_variable("a");
+    auto va = vd("a", ttype::int8 {});
 
     processor.add_group_key(va);
     EXPECT_TRUE(processor.active());
 
     trelation::values values { {}, {} };
     auto&& output = processor.install(values.output());
-    EXPECT_FALSE(output.opposite());
+    ASSERT_TRUE(output);
+    EXPECT_FALSE(output->opposite());
 
     auto&& aggregate = find_next<trelation::intermediate::aggregate>(values);
     ASSERT_TRUE(aggregate);
@@ -158,8 +160,8 @@ TEST_F(set_function_processor_test, grouping_function) {
     set_function_processor processor { context(), graph_ };
 
 
-    auto vk = factory_.stream_variable("k");
-    auto vv = factory_.stream_variable("v");
+    auto vk = vd("a", ttype::int8 {});
+    auto vv = vd("v", ttype::int8 {});
 
     std::unique_ptr<tscalar::expression> expr = clone_unique(aggregate_function_call {
             factory_(count_value),
@@ -176,7 +178,8 @@ TEST_F(set_function_processor_test, grouping_function) {
 
     trelation::values values { {}, {} };
     auto&& output = processor.install(values.output());
-    EXPECT_FALSE(output.opposite());
+    ASSERT_TRUE(output);
+    EXPECT_FALSE(output->opposite());
 
     auto&& arguments = find_next<trelation::project>(values);
     ASSERT_TRUE(arguments);
@@ -204,7 +207,7 @@ TEST_F(set_function_processor_test, top_grouping) {
     // SELECT g GROUP BY g
     set_function_processor processor { context(), graph_ };
 
-    auto vg = factory_.stream_variable("vg");
+    auto vg = vd("g", ttype::int8 {});
     processor.add_group_key(vg);
 
     std::unique_ptr<tscalar::expression> expr = clone_unique(vref(vg));
@@ -215,7 +218,8 @@ TEST_F(set_function_processor_test, top_grouping) {
 
     trelation::values values { {}, {} };
     auto&& output = processor.install(values.output());
-    EXPECT_FALSE(output.opposite());
+    ASSERT_TRUE(output);
+    EXPECT_FALSE(output->opposite());
 
     auto&& aggregate = find_next<trelation::intermediate::aggregate>(values);
     ASSERT_TRUE(aggregate);
@@ -228,10 +232,10 @@ TEST_F(set_function_processor_test, top_aggregated) {
     // SELECT g GROUP BY g
     set_function_processor processor { context(), graph_ };
 
-    auto vg = factory_.stream_variable("vg");
+    auto vg = vd("g", ttype::int8 {});
     processor.add_group_key(vg);
 
-    auto va = factory_.stream_variable("va");
+    auto va = vd("a", ttype::int8 {});
     processor.add_aggregated(va);
 
     std::unique_ptr<tscalar::expression> expr = clone_unique(vref(va));
@@ -242,7 +246,8 @@ TEST_F(set_function_processor_test, top_aggregated) {
 
     trelation::values values { {}, {} };
     auto&& output = processor.install(values.output());
-    EXPECT_FALSE(output.opposite());
+    ASSERT_TRUE(output);
+    EXPECT_FALSE(output->opposite());
 
     auto&& aggregate = find_next<trelation::intermediate::aggregate>(values);
     ASSERT_TRUE(aggregate);
@@ -255,10 +260,10 @@ TEST_F(set_function_processor_test, top_plain_invalid) {
     // SELECT g GROUP BY g
     set_function_processor processor { context(), graph_ };
 
-    auto vg = factory_.stream_variable("p");
+    auto vg = vd("p", ttype::int8 {});
     processor.add_group_key(vg);
 
-    auto vp = factory_.stream_variable("p");
+    auto vp = vd("p", ttype::int8 {});
 
     std::unique_ptr<tscalar::expression> expr = clone_unique(vref(vp));
     bool result = processor.process(ownership_reference { expr });
@@ -271,7 +276,7 @@ TEST_F(set_function_processor_test, inner_plain) {
 
     EXPECT_FALSE(processor.active());
 
-    auto vp = factory_.stream_variable("p");
+    auto vp = vd("p", ttype::int8 {});
 
     std::unique_ptr<tscalar::expression> expr = clone_unique(aggregate_function_call {
             factory_(count_value),
@@ -287,7 +292,8 @@ TEST_F(set_function_processor_test, inner_plain) {
 
     trelation::values values { {}, {} };
     auto&& output = processor.install(values.output());
-    EXPECT_FALSE(output.opposite());
+    ASSERT_TRUE(output);
+    EXPECT_FALSE(output->opposite());
 
     auto&& arguments = find_next<trelation::project>(values);
     ASSERT_TRUE(arguments);
@@ -304,7 +310,7 @@ TEST_F(set_function_processor_test, inner_grouping) {
     set_function_processor processor { context(), graph_ };
 
 
-    auto vg = factory_.stream_variable("vg");
+    auto vg = vd("g", ttype::int8 {});
 
     std::unique_ptr<tscalar::expression> expr = clone_unique(aggregate_function_call {
             factory_(count_value),
@@ -321,7 +327,8 @@ TEST_F(set_function_processor_test, inner_grouping) {
 
     trelation::values values { {}, {} };
     auto&& output = processor.install(values.output());
-    EXPECT_FALSE(output.opposite());
+    ASSERT_TRUE(output);
+    EXPECT_FALSE(output->opposite());
 
     auto&& arguments = find_next<trelation::project>(values);
     ASSERT_TRUE(arguments);
@@ -338,8 +345,8 @@ TEST_F(set_function_processor_test, inner_aggregated_invalid) {
     set_function_processor processor { context(), graph_ };
 
 
-    auto vg = factory_.stream_variable("vg");
-    auto va = factory_.stream_variable("va");
+    auto vg = vd("g", ttype::int8 {});
+    auto va = vd("a", ttype::int8 {});
 
     std::unique_ptr<tscalar::expression> expr = clone_unique(aggregate_function_call {
             factory_(count_value),
@@ -377,7 +384,8 @@ TEST_F(set_function_processor_test, column_unary) {
 
     trelation::values values { {}, {} };
     auto&& output = processor.install(values.output());
-    EXPECT_FALSE(output.opposite());
+    ASSERT_TRUE(output);
+    EXPECT_FALSE(output->opposite());
 
     auto&& arguments = find_next<trelation::project>(values);
     ASSERT_TRUE(arguments);

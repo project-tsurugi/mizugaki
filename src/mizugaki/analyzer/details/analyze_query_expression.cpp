@@ -111,6 +111,9 @@ public:
             }
             auto&& filter = graph_.emplace<trelation::filter>(
                     predicate.release());
+            if (!context_.resolve(filter)) {
+                return {};
+            }
             filter.region() = context_.convert(expr.where()->region());
             filter.input().connect_to(*output);
             output = filter.output();
@@ -140,6 +143,9 @@ public:
             if (!set_functions.process(filter.ownership_condition())) {
                 return {};
             }
+            if (!context_.resolve(filter)) {
+                return {};
+            }
             filter.input().connect_to(*output);
             output = filter.output();
         }
@@ -163,6 +169,9 @@ public:
                     set_functions.activate();
                 }
             }
+            if (!context_.resolve(project)) {
+                return {};
+            }
             // NOTE: we never omit `SELECT *`, then later option may reduce it
             project.input().connect_to(*output);
             output = project.output();
@@ -180,6 +189,9 @@ public:
             }
             auto&& distinct = graph_.emplace<trelation::intermediate::distinct>(std::move(keys));
             distinct.region() = context_.convert(expr.quantifier()->region());
+            if (!context_.resolve(distinct)) {
+                return {};
+            }
             distinct.input().connect_to(*output);
             output = distinct.output();
         }
@@ -221,18 +233,18 @@ public:
                 project.columns().emplace_back(variable, result.release());
                 sort_keys.emplace_back(std::move(variable), *direction);
             }
-            if (set_functions.active()) {
-                for (auto&& column : project.columns()) {
-                    if (!set_functions.process(column.ownership_value())) {
-                        return {};
-                    }
-                }
+            if (!context_.resolve(project)) {
+                return {};
             }
             auto&& limit = graph_.insert(context_.create<trelation::intermediate::limit>(
                     specs.front().region() | specs.back().region(),
                     std::nullopt,
                     std::vector<tdescriptor::variable> {},
                     std::move(sort_keys)));
+            if (!context_.resolve(limit)) {
+                return {};
+            }
+
             project.input().connect_to(*output);
             limit.input().connect_to(project.output());
             output = limit.output();
@@ -261,6 +273,9 @@ public:
                         nrows,
                         create_vector<tdescriptor::variable>(),
                         create_vector<trelation::intermediate::limit::sort_key>()));
+                if (!context_.resolve(limit)) {
+                    return {};
+                }
                 limit.input().connect_to(*output);
                 output = limit.output();
             }
@@ -282,8 +297,22 @@ public:
                     set_functions.add_aggregated(column.variable());
                 }
             }
-            auto&& aggregate_output = set_functions.install(*set_function_entry);
-            if (!aggregate_output.opposite()) {
+            auto aggregate_output = set_functions.install(*set_function_entry);
+            if (!aggregate_output) {
+                return {};
+            }
+            if (auto project = select_columns) {
+                if (!context_.resolve(*project)) {
+                    return {};
+                }
+            }
+            if (auto project = sort_columns) {
+                if (!context_.resolve(*project)) {
+                    return {};
+                }
+            }
+
+            if (!aggregate_output->opposite()) {
                 // it seems the aggregate output is tail - consider it as the query output
                 output = aggregate_output;
             }
@@ -365,6 +394,9 @@ public:
                 trelation::scan::endpoint {},
                 std::nullopt);
         op.region() = context_.convert(expr.region());
+        if (!context_.resolve(op)) {
+            return {};
+        }
 
         return { op.output(), std::move(info) };
     }
@@ -427,6 +459,9 @@ public:
                 std::move(columns),
                 std::move(rows));
         op.region() = context_.convert(expr.region());
+        if (!context_.resolve(op)) {
+            return {};
+        }
 
         relation_info info {};
         info.reserve(ncols, false);
@@ -490,6 +525,9 @@ public:
                 trelation::scan::endpoint {},
                 std::nullopt);
         op.region() = context_.convert(expr.region());
+        if (!context_.resolve(op)) {
+            return {};
+        }
 
         if (auto corr = expr.correlation()) {
             if (!rebuild_relation_info(info, *corr)) {
@@ -879,6 +917,9 @@ private:
             auto&& op = graph_.emplace<trelation::values>(
                     create_vector<trelation::values::column>(),
                     std::move(rows));
+            if (!context_.resolve(op)) {
+                return {};
+            }
             scope.add({});
             return op.output();
         }
@@ -894,6 +935,9 @@ private:
             } else {
                 // cross join
                 auto&& join = graph_.emplace<trelation::intermediate::join>(trelation::join_kind::inner);
+                if (!context_.resolve(join)) {
+                    return {};
+                }
                 join.left().connect_to(*output);
                 join.right().connect_to(*next);
                 output = join.output();
@@ -964,6 +1008,9 @@ private:
                 join_type,
                 std::move(condition));
         op.region() = context_.convert(expr.region());
+        if (!context_.resolve(op)) {
+            return {};
+        }
         op.left().connect_to(*left);
         op.right().connect_to(*right);
         return op.output();
@@ -1027,6 +1074,10 @@ private:
                 trelation::set_quantifier::all,
                 std::move(mappings));
         op.region() = context_.convert(expr.region());
+        if (!context_.resolve(op)) {
+            return {};
+        }
+
         op.left().connect_to(*left);
         op.right().connect_to(*right);
         return op.output();

@@ -2,6 +2,8 @@
 
 #include <gtest/gtest.h>
 
+#include <takatori/type/data.h>
+
 #include <yugawara/schema/catalog.h>
 
 #include <yugawara/schema/declaration.h>
@@ -33,7 +35,9 @@ public:
 
     std::shared_ptr<::yugawara::storage::table const> install_table(std::string_view name);
 
-    ::takatori::descriptor::variable vd(std::string_view name = "id");
+    ::takatori::descriptor::variable vd(
+            std::string_view name = "id",
+            ::takatori::util::rvalue_ptr<::takatori::type::data> type = {});
 
 protected:
     std::shared_ptr<::yugawara::storage::configurable_provider> storages_;

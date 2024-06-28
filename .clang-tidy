@@ -46,6 +46,7 @@ readability-*,\
 -readability-named-parameter,\
 -readability-magic-numbers,\
 -readability-qualified-auto,\
+-readability-redundant-member-init,\
 "
 CheckOptions:
   - key: readability-implicit-bool-conversion.AllowPointerConditions

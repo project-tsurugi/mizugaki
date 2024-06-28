@@ -16,8 +16,6 @@
 #include <yugawara/binding/factory.h>
 #include <yugawara/type/conversion.h>
 
-#include <yugawara/analyzer/expression_analyzer.h>
-
 #include <yugawara/extension/scalar/aggregate_function_call.h>
 
 #include <mizugaki/ast/scalar/dispatch.h>
@@ -412,7 +410,6 @@ public:
             function_name.append(yugawara::aggregate::declaration::name_suffix_distinct);
         }
 
-        ::yugawara::analyzer::expression_analyzer analyzer {};
         ::takatori::util::reference_vector<tscalar::expression> arguments {};
         arguments.reserve(expr.arguments().size());
         std::vector<std::shared_ptr<ttype::data const>> argument_types {};
@@ -422,11 +419,8 @@ public:
             if (!value) {
                 return {};
             }
-            auto type = analyzer.resolve(*value);
-            if (!type || analyzer.has_diagnostics()) {
-                for (auto&& d : analyzer.diagnostics()) {
-                    context_.report(convert(d.code()), d.message(), d.location());
-                }
+            auto type = context_.resolve(*value);
+            if (!type) {
                 return {};
             }
             arguments.push_back(value.release());
@@ -475,23 +469,13 @@ public:
         return result;
     }
 
-    static sql_analyzer_code convert(::yugawara::analyzer::expression_analyzer_code code) noexcept {
-        using kind = decltype(code);
-        switch (code) {
-            case kind::unknown: return sql_analyzer_code::unknown;
-            case kind::unsupported_type: return sql_analyzer_code::unsupported_feature;
-            case kind::ambiguous_type: return sql_analyzer_code::ambiguous_type;
-            case kind::inconsistent_type: return sql_analyzer_code::inconsistent_type;
-            case kind::unresolved_variable: return sql_analyzer_code::unresolved_variable;
-            case kind::inconsistent_elements: return sql_analyzer_code::inconsistent_elements;
-        }
-        return sql_analyzer_code::unknown;
-    }
-
     [[nodiscard]] static bool is_callable(
             std::vector<std::shared_ptr<::takatori::type::data const>> const& params,
             std::vector<std::shared_ptr<::takatori::type::data const>> const& args) {
         for (std::size_t i = 0, n = params.size(); i < n; ++i) {
+            if (*args[i] == *params[i]) {
+                continue;
+            }
             auto r = ::yugawara::type::is_widening_convertible(*args[i], *params[i]);
             if (r != true) {
                 return false;
@@ -539,7 +523,7 @@ public:
             if (i != 0) {
                 destination << ", ";
             }
-            destination << types[i];
+            destination << *types[i];
         }
         destination << ")";
     }
