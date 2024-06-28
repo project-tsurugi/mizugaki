@@ -126,6 +126,35 @@ TEST_F(analyze_literal_test, unsigned_decimal) {
     }));
 }
 
+TEST_F(analyze_literal_test, unsigned_approx_numeric) {
+    auto r = analyze_literal(
+            context(),
+            ast::literal::numeric {
+                    ast::literal::kind::approximate_numeric,
+                    "1.25E0",
+            });
+    ASSERT_TRUE(r);
+    EXPECT_EQ(*r, (tscalar::immediate {
+            tvalue::float8 { 1.25 },
+            ttype::float8 {},
+    }));
+}
+
+TEST_F(analyze_literal_test, signed_approx_numeric) {
+    auto r = analyze_literal(
+            context(),
+            ast::literal::numeric {
+                    ast::literal::kind::approximate_numeric,
+                    { ast::literal::sign::minus },
+                    { "125E-2" },
+            });
+    ASSERT_TRUE(r);
+    EXPECT_EQ(*r, (tscalar::immediate {
+            tvalue::float8 { -1.25 },
+            ttype::float8 {},
+    }));
+}
+
 TEST_F(analyze_literal_test, character_string) {
     auto r = analyze_literal(
             context(),

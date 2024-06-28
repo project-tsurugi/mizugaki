@@ -25,6 +25,10 @@ enum class sql_analyzer_code {
     missing_context_of_null,
     /// @brief the decimal value is unsupported range.
     unsupported_decimal_value,
+    /// @brief the approximate number is malformed.
+    malformed_approximate_number,
+    /// @brief the number is out of range.
+    unsupported_approximate_number,
     /// @brief the quoted string is malformed.
     malformed_quoted_string,
     /// @brief the string value is too long.
@@ -127,6 +131,8 @@ inline constexpr std::string_view to_string_view(sql_analyzer_code value) noexce
         case kind::missing_context_of_default_value: return "missing_context_of_default_value"sv;
         case kind::missing_context_of_null: return "missing_context_of_null"sv;
         case kind::unsupported_decimal_value: return "unsupported_decimal_value"sv;
+        case kind::malformed_approximate_number: return "malformed_approximate_number"sv;
+        case kind::unsupported_approximate_number: return "unsupported_approximate_number"sv;
         case kind::malformed_quoted_string: return "malformed_quoted_string"sv;
         case kind::unsupported_string_value: return "unsupported_string_value"sv;
 

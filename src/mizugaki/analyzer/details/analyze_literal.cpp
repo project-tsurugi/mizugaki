@@ -69,6 +69,7 @@ public:
         using ast::literal::kind;
         switch (value.node_kind()) {
             case kind::exact_numeric: return process_exact_numeric(value);
+            case kind::approximate_numeric: return process_approximate_numeric(value);
             default:
                 break;
         }
@@ -236,7 +237,7 @@ private:
                         return adapt(context_.create<tscalar::immediate>(
                                 value.region(),
                                 context_.values().get(tvalue::int4 { *r }),
-                                context_.types().get(ttype::int1 {})));
+                                context_.types().get(ttype::int4 {})));
                     }
                 }
                 return adapt(context_.create<tscalar::immediate>(
@@ -256,6 +257,47 @@ private:
                         precision,
                         static_cast<std::size_t>(v.exponent()),
                 })));
+    }
+
+    [[nodiscard]] std::unique_ptr<tscalar::expression> process_approximate_numeric(ast::literal::numeric const& value) {
+        // FIXME: more accurate values for fp
+        std::size_t index {};
+        double result {};
+        try {
+            result = std::stod(*value.unsigned_value(), &index);
+            if (value.sign() == ast::literal::sign::minus) {
+                result = -result;
+            }
+            if (index != value.unsigned_value().value().size()) {
+                context_.report(sql_analyzer_code::invalid_numeric_scale,
+                        string_builder {}
+                                << "invalid numeric value: "
+                                << value.unsigned_value()
+                                << string_builder::to_string,
+                        value.region());
+                return {};
+            }
+        } catch (std::invalid_argument& e) {
+            context_.report(sql_analyzer_code::invalid_numeric_scale,
+                    string_builder {}
+                            << "invalid numeric value: "
+                            << value.unsigned_value()
+                            << string_builder::to_string,
+                    value.region());
+            return {};
+        } catch (std::out_of_range& e) {
+            context_.report(sql_analyzer_code::unsupported_approximate_number,
+                    string_builder {}
+                            << "out of range numeric value :"
+                            << value.unsigned_value()
+                            << string_builder::to_string,
+                    value.region());
+            return {};
+        }
+        return adapt(context_.create<tscalar::immediate>(
+                value.region(),
+                context_.values().get(tvalue::float8 { result }),
+                context_.types().get(ttype::float8 {})));
     }
 
     [[nodiscard]] std::optional<std::size_t> count_characters(ast::literal::string::value_type const& string) {
