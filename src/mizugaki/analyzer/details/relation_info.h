@@ -25,7 +25,7 @@ public:
 
     relation_info(
             ::takatori::util::optional_ptr<::yugawara::storage::relation const> declaration,
-            std::string identifier) noexcept;
+            std::string identifier);
 
     [[nodiscard]] ::takatori::util::optional_ptr<::yugawara::storage::relation const>& declaration() noexcept;
     [[nodiscard]] ::takatori::util::optional_ptr<::yugawara::storage::relation const> declaration() const noexcept;

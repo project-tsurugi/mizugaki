@@ -18,7 +18,7 @@ public:
     using position_type = std::size_t;
 
     query_scope() = default;
-    explicit query_scope(::takatori::util::optional_ptr<query_scope const> parent) noexcept;
+    explicit query_scope(::takatori::util::optional_ptr<query_scope const> parent);
 
     [[nodiscard]] ::takatori::util::optional_ptr<query_scope const>& parent() noexcept;
     [[nodiscard]] ::takatori::util::optional_ptr<query_scope const> parent() const noexcept;

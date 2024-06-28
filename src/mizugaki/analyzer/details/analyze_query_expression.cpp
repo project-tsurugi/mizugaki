@@ -77,7 +77,7 @@ public:
 
     [[nodiscard]] result_type operator()(
             ast::query::expression const& expr,
-            optional_ptr<query_scope const>,
+            optional_ptr<query_scope const> const&,
             row_value_context const&) {
         context_.report(
                 sql_analyzer_code::unsupported_feature,
@@ -323,7 +323,7 @@ public:
 
     [[nodiscard]] result_type operator()(
             ast::query::table_reference const& expr,
-            optional_ptr<query_scope const>,
+            optional_ptr<query_scope const> const&,
             row_value_context const&) {
         auto r = analyze_relation_name(context_, *expr.name());
         if (!r) {

@@ -10,7 +10,7 @@ using ::takatori::util::optional_ptr;
 using ::takatori::util::sequence_view;
 
 query_scope::query_scope(
-        optional_ptr<query_scope const> parent) noexcept :
+        optional_ptr<query_scope const> parent) :
     parent_ { std::move(parent) }
 {}
 

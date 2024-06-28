@@ -8,7 +8,6 @@
 
 #include <takatori/value/primitive.h>
 #include <takatori/value/decimal.h>
-#include <takatori/type/character.h>
 
 #include <takatori/scalar/immediate.h>
 #include <takatori/scalar/cast.h>
@@ -175,7 +174,7 @@ private:
         return {};
     }
 
-    [[nodiscard]] std::unique_ptr<tscalar::expression> process_exact_numeric(ast::literal::numeric const& value) {
+    [[nodiscard]] std::unique_ptr<tscalar::expression> process_exact_numeric(ast::literal::numeric const& value) { // NOLINT(*-function-cognitive-complexity)
         // FIXME: move to yugawara
         auto max_precision = static_cast<mpd_ssize_t>(context_.options()->max_decimal_precision());
         ::decimal::Context context {
@@ -248,7 +247,7 @@ private:
         }
         std::optional<std::size_t> precision {};
         if (context_.options()->prefer_small_decimal_literals()) {
-            precision = static_cast<std::size_t>(v.radix());
+            precision = static_cast<std::size_t>(::decimal::Decimal::radix());
         }
         return adapt(context_.create<tscalar::immediate>(
                 value.region(),

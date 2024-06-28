@@ -116,7 +116,7 @@ public:
         return graph;
     }
 
-    [[nodiscard]] result_type operator()(ast::statement::insert_statement const& stmt) {
+    [[nodiscard]] result_type operator()(ast::statement::insert_statement const& stmt) { // NOLINT(*-function-cognitive-complexity)
         // <table-expression> -> write[insert]
 
         auto info_opt = extract_table(*stmt.table_name());
@@ -567,7 +567,7 @@ public:
         return write_keys;
     }
 
-    [[nodiscard]] result_type operator()(ast::statement::table_definition const& stmt) {
+    [[nodiscard]] result_type operator()(ast::statement::table_definition const& stmt) { // NOLINT(*-function-cognitive-complexity)
         // check features
         if (!stmt.parameters().empty()) {
             context_.report(

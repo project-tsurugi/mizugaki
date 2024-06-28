@@ -213,7 +213,7 @@ private:
         return find_variable_primary(unsafe_downcast<ast::name::simple>(name), depth);
     }
 
-    [[nodiscard]] symbol_info find_variable_primary(ast::name::simple const& name, std::size_t depth) {
+    [[nodiscard]] symbol_info find_variable_primary(ast::name::simple const& name, std::size_t depth) { // NOLINT(*-function-cognitive-complexity)
         // 1-1. find column ref
         if (auto r = find_variable_in_query(scope_, name)) {
             if (auto&& v = r.found()) {

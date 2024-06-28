@@ -17,7 +17,7 @@ namespace storage = ::yugawara::storage;
 
 relation_info::relation_info(
         optional_ptr<storage::relation const> declaration,
-        std::string identifier) noexcept :
+        std::string identifier) :
     declaration_ { std::move(declaration) },
     identifier_ { std::move(identifier) }
 {}
@@ -79,7 +79,10 @@ void relation_info::erase(position_type first, position_type last) {
     if (first >= last) {
         return;
     }
-    columns_.erase(columns_.begin() + first, columns_.begin() + last);
+    using difference_type = std::iterator_traits<decltype(columns_)::iterator>::difference_type;
+    columns_.erase(
+            columns_.begin() + static_cast<difference_type>(first),
+            columns_.begin() + static_cast<difference_type>(last));
 }
 
 optional_ptr<column_info> relation_info::find(std::string_view identifier) {
