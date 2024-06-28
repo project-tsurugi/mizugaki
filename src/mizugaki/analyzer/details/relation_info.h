@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include <limits>
 
 #include <tsl/hopscotch_map.h>
 
@@ -18,6 +19,7 @@ namespace mizugaki::analyzer::details {
 class relation_info {
 public:
     using position_type = std::size_t;
+    static constexpr position_type ambiguous = std::numeric_limits<position_type>::max();
 
     relation_info() = default;
 

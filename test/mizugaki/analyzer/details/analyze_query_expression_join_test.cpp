@@ -23,6 +23,7 @@
 
 #include <mizugaki/ast/query/query.h>
 #include <mizugaki/ast/query/select_column.h>
+#include <mizugaki/ast/query/select_asterisk.h>
 
 #include "test_parent.h"
 
@@ -474,6 +475,87 @@ TEST_F(analyze_query_expression_join_test, join_full) {
 
     EXPECT_EQ(relation_columns[0].variable(), project_columns[0].variable());
     EXPECT_EQ(relation_columns[1].variable(), project_columns[1].variable());
+}
+
+TEST_F(analyze_query_expression_join_test, self_join) {
+    auto table = install_table("t");
+    trelation::graph_type graph {};
+
+    auto r = analyze_query_expression(
+            context(),
+            graph,
+            ast::query::query {
+                    {
+                            ast::query::select_asterisk {},
+                    },
+                    {
+                            ast::table::join {
+                                    ast::table::table_reference {
+                                            id("t"),
+                                            id("t1"),
+                                    },
+                                    ast::table::join_type::inner,
+                                    ast::table::table_reference {
+                                            id("t"),
+                                            id("t2"),
+                                    },
+                                    ast::table::join_condition{
+                                            ast::scalar::comparison_predicate {
+                                                    vref(ast::name::qualified(id("t1"), id("k"))),
+                                                    ast::scalar::comparison_operator::equals,
+                                                    vref(ast::name::qualified(id("t2"), id("k"))),
+                                            }
+                                    },
+                            }
+                    },
+            },
+            {},
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    EXPECT_EQ(graph.size(), 4);
+    EXPECT_FALSE(r.output().opposite());
+
+    auto&& relation = r.relation();
+    EXPECT_EQ(relation.identifier(), "");
+
+    auto relation_columns = relation.columns();
+    ASSERT_EQ(relation_columns.size(), 8);
+
+    // scan*2 - join - project -
+    auto&& project = downcast<trelation::project>(r.output().owner());
+    auto&& join = *find_prev<trelation::intermediate::join>(project);
+    auto&& left = downcast<trelation::scan>(join.left().opposite()->owner());
+    auto&& right = downcast<trelation::scan>(join.right().opposite()->owner());
+
+    EXPECT_EQ(extract<::yugawara::storage::index>(left.source()).table(), *table);
+    EXPECT_EQ(extract<::yugawara::storage::index>(right.source()).table(), *table);
+
+    auto&& left_columns = left.columns();
+    ASSERT_EQ(left_columns.size(), 4);
+
+    auto&& right_columns = right.columns();
+    ASSERT_EQ(right_columns.size(), 4);
+
+    EXPECT_EQ(join.operator_kind(), trelation::join_kind::inner);
+    EXPECT_EQ(join.lower(), trelation::intermediate::join::endpoint());
+    EXPECT_EQ(join.upper(), trelation::intermediate::join::endpoint());
+    EXPECT_EQ(join.condition(), (tscalar::compare {
+            tscalar::comparison_operator::equal,
+            vref(left_columns[0].destination()),
+            vref(right_columns[0].destination()),
+    }));
+
+    auto&& project_columns = project.columns();
+    ASSERT_EQ(project_columns.size(), 0);
+
+    EXPECT_EQ(relation_columns[0].variable(), left_columns[0].destination());
+    EXPECT_EQ(relation_columns[1].variable(), left_columns[1].destination());
+    EXPECT_EQ(relation_columns[2].variable(), left_columns[2].destination());
+    EXPECT_EQ(relation_columns[3].variable(), left_columns[3].destination());
+    EXPECT_EQ(relation_columns[4].variable(), right_columns[0].destination());
+    EXPECT_EQ(relation_columns[5].variable(), right_columns[1].destination());
+    EXPECT_EQ(relation_columns[6].variable(), right_columns[2].destination());
+    EXPECT_EQ(relation_columns[7].variable(), right_columns[3].destination());
 }
 
 } // namespace mizugaki::analyzer::details

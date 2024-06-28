@@ -142,6 +142,10 @@ std::optional<relation_info::position_type> relation_info::find_internal(std::st
 
 std::optional<relation_info::position_type> relation_info::find_internal(yugawara::storage::column const& column) const {
     if (auto it = declaration_map_.find(std::addressof(column)); it != declaration_map_.end()) {
+        if (it.value() == ambiguous) {
+            // FIXME: tell it is ambiguous
+            return {};
+        }
         return it.value();
     }
     return {};
@@ -165,9 +169,7 @@ column_info& relation_info::build_internal(position_type position) {
     }
     if (auto decl = target.declaration()) {
         if (auto [it, success] = declaration_map_.emplace(target.declaration().get(), position); !success) {
-            // FIXME: duplicate declaration
-            (void) it;
-            ::takatori::util::fail();
+            it.value() = ambiguous;
         }
     }
     return target;
