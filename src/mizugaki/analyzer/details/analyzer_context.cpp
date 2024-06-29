@@ -35,6 +35,10 @@ finalizer analyzer_context::initialize(
     diagnostics_.clear();
     types_.clear();
     values_.clear();
+    expression_analyzer_.clear_diagnostics();
+    expression_analyzer_.variables().clear();
+    expression_analyzer_.expressions().clear();
+    expression_analyzer_.allow_unresolved(true);
 
     return f;
 }
@@ -49,13 +53,15 @@ void analyzer_context::finalize() {
     diagnostics_.clear();
     types_.clear();
     values_.clear();
+    expression_analyzer_.clear_diagnostics();
+    expression_analyzer_.variables().clear();
+    expression_analyzer_.expressions().clear();
 
     initialized_.store(false, std::memory_order_release);
 }
 
 std::shared_ptr<::takatori::type::data const>
 analyzer_context::resolve(takatori::scalar::expression const& expression) {
-    expression_analyzer_.allow_unresolved(false);
     auto result = expression_analyzer_.resolve(expression, false, types_);
     if (expression_analyzer_.has_diagnostics()) {
         for (auto&& d : expression_analyzer_.diagnostics()) {
@@ -75,7 +81,6 @@ analyzer_context::resolve(takatori::scalar::expression const& expression) {
 }
 
 bool analyzer_context::resolve(::takatori::relation::expression const& expression) {
-    expression_analyzer_.allow_unresolved(false);
     auto result = expression_analyzer_.resolve(expression, false, false, types_);
     if (expression_analyzer_.has_diagnostics()) {
         for (auto&& d : expression_analyzer_.diagnostics()) {
