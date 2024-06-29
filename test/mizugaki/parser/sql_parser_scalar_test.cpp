@@ -397,6 +397,17 @@ TEST_F(sql_parser_scalar_test, binary_expression_solidus) {
     }));
 }
 
+TEST_F(sql_parser_scalar_test, binary_expression_percent) {
+    auto result = parse("a % b");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (scalar::binary_expression {
+            v("a"),
+            scalar::binary_operator::percent,
+            v("b"),
+    }));
+}
+
 TEST_F(sql_parser_scalar_test, binary_expression_concatenation) {
     auto result = parse("a || b");
     ASSERT_TRUE(result) << diagnostics(result);

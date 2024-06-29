@@ -281,6 +281,26 @@ TEST_F(analyze_scalar_expression_test, binary_expression_solidus) {
     }));
 }
 
+TEST_F(analyze_scalar_expression_test, binary_expression_percent) {
+    auto from = ast::scalar::binary_operator::percent;
+    auto to = tscalar::binary_operator::remainder;
+    auto r = analyze_scalar_expression(
+            context(),
+            ast::scalar::binary_expression {
+                    literal(number("1")),
+                    from,
+                    literal(number("2")),
+            },
+            {},
+            {});
+    ASSERT_TRUE(r);
+    EXPECT_EQ(*r, (tscalar::binary {
+            to,
+            immediate(1),
+            immediate(2),
+    }));
+}
+
 TEST_F(analyze_scalar_expression_test, binary_expression_concatenation) {
     auto from = ast::scalar::binary_operator::concatenation;
     auto to = tscalar::binary_operator::concat;

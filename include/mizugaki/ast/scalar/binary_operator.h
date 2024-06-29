@@ -43,6 +43,12 @@ enum class binary_operator {
     solidus,
 
     /**
+     * @brief percent (`%`).
+     * @note Tsurugi extension - numeric remainder operator.
+     */
+    percent,
+
+    /**
      * @brief concatenation operator (`||`).
      * @note `6.27 <string value expression>`
      * @note `6.31 <array value expression>`
@@ -136,6 +142,7 @@ inline constexpr std::string_view to_string_view(binary_operator value) noexcept
         case kind::minus: return "minus"sv;
         case kind::asterisk: return "asterisk"sv;
         case kind::solidus: return "solidus"sv;
+        case kind::percent: return "percent"sv;
         case kind::concatenation: return "concatenation"sv;
         case kind::element_reference: return "element_reference"sv;
         case kind::at_time_zone: return "at_time_zone"sv;

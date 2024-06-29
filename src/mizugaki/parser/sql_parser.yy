@@ -897,7 +897,7 @@
 
 // value expression
 %left "+" "-" "||"
-%left "*" "/"
+%left "*" "/" "%"
 %precedence UNARY_PLUS UNARY_MINUS
 
 %start program
@@ -2814,6 +2814,14 @@ scalar_value_expression
             $$ = driver.node<ast::scalar::binary_expression>(
                     $l,
                     regioned { ast::scalar::binary_operator::solidus, @o },
+                    $r,
+                    @$);
+        }
+    | scalar_value_expression[l] "%"[o] scalar_value_expression[r]
+        {
+            $$ = driver.node<ast::scalar::binary_expression>(
+                    $l,
+                    regioned { ast::scalar::binary_operator::percent, @o },
                     $r,
                     @$);
         }
