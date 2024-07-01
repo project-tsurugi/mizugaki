@@ -86,6 +86,15 @@ public:
             return {};
         }
         auto graph = std::make_unique<::takatori::relation::graph_type>();
+        if (!stmt.expression()) {
+            // FIXME: impl treat SELECT without table expressions
+            context_.report(
+                    sql_analyzer_code::unsupported_feature,
+                    "SELECT without FROM is yet not supported",
+                    stmt.targets().at(0).region());
+            return {};
+        }
+
         auto result = analyze_query_expression(
                 context_,
                 *graph,
@@ -179,6 +188,15 @@ public:
                 destination_columns.push_back(column_ptr);
                 columns_context.emplace_back(column->declaration()->shared_type());
             }
+        }
+
+        if (!stmt.expression()) {
+            // FIXME: impl treat "DEFAULT VALUES" clause
+            context_.report(
+                    sql_analyzer_code::unsupported_feature,
+                    "DEFAULT VALUES clause is yet not supported",
+                    stmt.expression()->region());
+            return {};
         }
         auto source = analyze_query_expression(
                 context_,
