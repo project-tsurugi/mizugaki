@@ -50,13 +50,16 @@ public:
             ast::scalar::expression const& expression,
             value_context const& value_context) {
         auto r = dispatch(expression, value_context);
-        if (r) {
-            return result_type {
-                    std::move(r),
-                    saw_aggregate_,
-            };
+        if (!r) {
+            return {};
         }
-        return {};
+        if (!validate(*r)) {
+            return {};
+        }
+        return result_type {
+                std::move(r),
+                saw_aggregate_,
+        };
     }
 
     [[nodiscard]] std::unique_ptr<tscalar::expression> operator()(
@@ -547,6 +550,14 @@ private:
             ast::scalar::expression const& expression,
             value_context const& value_context) {
         return ast::scalar::dispatch(*this, expression, value_context);
+    }
+
+    [[nodiscard]] bool validate(tscalar::expression const& expression) {
+        if (context_.options()->validate_scalar_expressions()) {
+            auto r = context_.resolve(expression, true);
+            return static_cast<bool>(r);
+        }
+        return false;
     }
 };
 

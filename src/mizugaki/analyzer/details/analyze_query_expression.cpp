@@ -371,7 +371,7 @@ public:
             return {};
         }
         auto&& table = unsafe_downcast<::yugawara::storage::table>(*r);
-        auto info = build_relation_info(table);
+        auto info = build_relation_info(context_, table);
         auto index = info.primary_index();
         if (!index) {
             context_.report(
@@ -502,7 +502,7 @@ public:
             return {};
         }
         auto&& table = unsafe_downcast<::yugawara::storage::table>(*r);
-        auto info = build_relation_info(table);
+        auto info = build_relation_info(context_, table);
         auto index = info.primary_index();
         if (!index) {
             context_.report(
@@ -1129,6 +1129,7 @@ analyze_query_expression_result analyze_query_expression(
 }
 
 [[nodiscard]] relation_info build_relation_info(
+        analyzer_context& context,
         ::yugawara::storage::table const& table,
         bool escape_columns,
         bool include_system_columns) {
@@ -1142,13 +1143,15 @@ analyze_query_expression_result analyze_query_expression(
         if (system && !include_system_columns) {
             continue;
         }
+        auto variable = escape_columns ?
+                f.stream_variable(
+                        debug_string_builder {} << column.simple_name() << debug_string_builder::to_string
+                ) :
+                f.table_column(column);
+        context.resolve_as(variable, column);
         result.add(column_info {
                 column,
-                escape_columns ?
-                        f.stream_variable(
-                                debug_string_builder {} << column.simple_name() << debug_string_builder::to_string
-                        ) :
-                        f.table_column(column),
+                std::move(variable),
                 column_info::name_type { column.simple_name() },
                 !hidden && !system,
         });

@@ -53,18 +53,34 @@ TEST_F(analyze_scalar_expression_test, literal_expression) {
 }
 
 TEST_F(analyze_scalar_expression_test, variable_reference) {
-    auto c0 = vdesc();
+    auto&& ctxt = context();
+    auto c0 = vd("x", ttype::int8 {});
     query_scope scope {};
     auto&& rinfo = scope.add({});
     rinfo.add({ {}, c0, "x" });
+
+    auto r = analyze_scalar_expression(
+            ctxt,
+            vref(id("x")),
+            scope,
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    EXPECT_EQ(*r, vref(c0));
+}
+
+TEST_F(analyze_scalar_expression_test, variable_reference_not_found) {
+    auto c0 = vdesc();
+    query_scope scope {};
 
     auto r = analyze_scalar_expression(
             context(),
             vref(id("x")),
             scope,
             {});
-    ASSERT_TRUE(r);
-    EXPECT_EQ(*r, vref(c0));
+    EXPECT_FALSE(r) << diagnostics();
+    EXPECT_TRUE(
+            find_error(sql_analyzer_code::variable_not_found) ||
+            find_error(sql_analyzer_code::symbol_not_found));
 }
 
 TEST_F(analyze_scalar_expression_test, host_parameter_reference_value_with_colon) {

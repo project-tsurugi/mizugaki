@@ -113,6 +113,12 @@ public:
     static constexpr bool default_allow_context_independent_null = false;
 
     /**
+     * @brief the default value of whether or not to validate all scalar expressions.
+     * @see validate_all_scalar_expressions()
+     */
+    static constexpr bool default_validate_scalar_expressions = false;
+
+    /**
      * @brief the default value of a function name to advance a sequence value.
      * @see advance_sequence_function_name()
      */
@@ -362,6 +368,21 @@ public:
     }
 
     /**
+     * @brief returns whether or not to validate all scalar expressions.
+     * @details If disabled, the analyzer only check minimal scalar expressions to avoid unnecessary overhead.
+     * @return true if validate all scalar expressions
+     * @return false otherwise
+     */
+    [[nodiscard]] bool& validate_scalar_expressions() noexcept {
+        return validate_scalar_expressions_;
+    }
+
+    /// @copydoc validate_scalar_expressions()
+    [[nodiscard]] bool const& validate_scalar_expressions() const noexcept {
+        return validate_scalar_expressions_;
+    }
+
+    /**
      * @brief returns the function name to advance a sequence value.
      * @details This function requires a symbol of the target sequence.
      * @return the function name to advance a sequence value
@@ -397,6 +418,7 @@ private:
     bool prefer_small_decimal_literals_ { default_prefer_small_decimal_literals };
     bool host_parameter_declaration_starts_with_colon_ { default_host_parameter_declaration_starts_with_colon };
     bool allow_context_independent_null_ { default_allow_context_independent_null };
+    bool validate_scalar_expressions_ { default_validate_scalar_expressions };
 
     std::string_view advance_sequence_function_name_ { default_advance_sequence_function_name };
 };

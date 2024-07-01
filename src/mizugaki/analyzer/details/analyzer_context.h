@@ -69,9 +69,10 @@ public:
     }
 
     [[nodiscard]] std::shared_ptr<::takatori::type::data const> resolve(
-            ::takatori::scalar::expression const& expression);
+            ::takatori::scalar::expression const& expression,
+            bool validate = false);
 
-    [[nodiscard]] bool resolve(::takatori::relation::expression const& expression);
+    [[nodiscard]] bool resolve(::takatori::relation::expression const& expression, bool validate = false);
 
     void resolve_as(
             ::takatori::descriptor::variable const& variable,

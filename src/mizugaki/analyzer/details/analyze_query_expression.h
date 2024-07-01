@@ -38,6 +38,7 @@ private:
         row_value_context const& value_context);
 
 [[nodiscard]] relation_info build_relation_info(
+        analyzer_context& context,
         ::yugawara::storage::table const& table,
         bool escape_columns = true,
         bool include_system_columns = false);
