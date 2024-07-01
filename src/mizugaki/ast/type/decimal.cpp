@@ -70,7 +70,7 @@ bool decimal::is_flexible_precision() const noexcept {
 }
 
 bool decimal::is_flexible_scale() const noexcept {
-    return precision_ == flexible_scale;
+    return scale_ == flexible_scale;
 }
 
 std::optional<precision_type>& decimal::precision() noexcept {

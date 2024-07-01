@@ -302,6 +302,19 @@ TEST_F(analyze_type_test, decimal_flexible_both) {
     EXPECT_EQ(*r, (ttype::decimal { {}, {} }));
 }
 
+TEST_F(analyze_type_test, decimal_flexible_with_scale) {
+    auto r = analyze_type(
+            context(),
+            // DECIMAL(*, 2)
+            ast::type::decimal {
+                    ast::type::kind::decimal,
+                    flexible,
+                    2,
+            });
+    ASSERT_TRUE(r);
+    EXPECT_EQ(*r, (ttype::decimal { {}, 2, }));
+}
+
 TEST_F(analyze_type_test, tiny_integer) {
     auto r = analyze_type(
             context(),

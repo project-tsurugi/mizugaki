@@ -165,7 +165,7 @@ public:
             if (type.is_flexible_precision()) {
                 precision = std::nullopt;
             } else {
-                precision = type.precision().value().value();
+                precision = **type.precision();
             }
         }
         if (type.scale()) {
@@ -197,8 +197,8 @@ public:
 
         // NOTE: compiler allows to use `DECIMAL(*, *)`, but SQL engine may not support it.
         return build(type, ttype::decimal {
-            precision,
-            scale,
+                precision,
+                scale,
         });
     }
 
