@@ -29,6 +29,7 @@
 #include <yugawara/binding/factory.h>
 
 #include <mizugaki/ast/scalar/value_constructor.h>
+#include <mizugaki/ast/scalar/variable_reference.h>
 
 #include <mizugaki/ast/query/dispatch.h>
 #include <mizugaki/ast/table/dispatch.h>
@@ -613,13 +614,21 @@ public:
         if (!result) {
             return {};
         }
+        std::string name;
+        if (auto n = maybe_name(elem.name())) {
+            name = std::move(*n);
+        } else if (name.empty() && elem.value()->node_kind() == ast::scalar::variable_reference::tag) {
+            auto&& var = unsafe_downcast<ast::scalar::variable_reference>(*elem.value());
+            name = var.name()->last_identifier();
+        }
+
         auto column = factory_.stream_variable(maybe_name(elem.name()).value_or(""));
         column.region() = result.value().region();
         target.columns().emplace_back(column, result.release());
         info.add({
                 {},
                 std::move(column),
-                maybe_name(elem.name()),
+                std::move(name),
                 true,
         });
         return { true, result.saw_aggregate() };

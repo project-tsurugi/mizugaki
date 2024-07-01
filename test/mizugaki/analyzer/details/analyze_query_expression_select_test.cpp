@@ -64,8 +64,7 @@ TEST_F(analyze_query_expression_select_test, simple) {
     ASSERT_EQ(relation_columns.size(), 1);
     {
         auto&& column = relation_columns[0];
-        // FIXME: check spec
-        // EXPECT_EQ(column.identifier(), "v");
+        EXPECT_EQ(column.identifier(), "v");
         EXPECT_TRUE(column.exported());
     }
 
