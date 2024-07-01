@@ -153,6 +153,14 @@ TEST_F(analyze_statement_ddl_test, table_definition_column_primary_key) {
 
     auto&& table_columns = table.columns();
     ASSERT_EQ(table_columns.size(), 1);
+    {
+        auto&& column = table_columns[0];
+        EXPECT_EQ(column.simple_name(), "c1");
+        EXPECT_EQ(column.type(), ttype::int4 {});
+        EXPECT_EQ(column.criteria().nullity(), ~::yugawara::variable::nullable);
+        EXPECT_EQ(column.default_value(), ::yugawara::storage::column_value {});
+    }
+
     auto&& key = extract_if<::yugawara::storage::index>(stmt.primary_key());
     ASSERT_TRUE(key);
     EXPECT_EQ(key->simple_name(), "");
@@ -309,6 +317,14 @@ TEST_F(analyze_statement_ddl_test, table_definition_table_primary_key) {
 
     auto&& table_columns = table.columns();
     ASSERT_EQ(table_columns.size(), 1);
+    {
+        auto&& column = table_columns[0];
+        EXPECT_EQ(column.simple_name(), "c1");
+        EXPECT_EQ(column.type(), ttype::int4 {});
+        EXPECT_EQ(column.criteria().nullity(), ~::yugawara::variable::nullable);
+        EXPECT_EQ(column.default_value(), ::yugawara::storage::column_value {});
+    }
+
     auto&& key = extract_if<::yugawara::storage::index>(stmt.primary_key());
     ASSERT_TRUE(key);
     EXPECT_EQ(key->simple_name(), "");

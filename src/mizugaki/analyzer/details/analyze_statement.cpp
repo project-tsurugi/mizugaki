@@ -634,10 +634,8 @@ public:
             auto prototype = std::make_unique<::yugawara::storage::column>(
                     std::move(column_name),
                     std::move(column_type),
-                    ::yugawara::variable::criteria {}, // column criteria
-                    ::yugawara::storage::column_value {
-                            context_.values().get(tvalue::unknown {})
-                    },
+                    ::yugawara::variable::criteria {},
+                    ::yugawara::storage::column_value {},
                     ::yugawara::storage::column_feature_set {});
             saw_columns.insert(prototype->simple_name());
             bool saw_nullity = false;
@@ -655,6 +653,14 @@ public:
                                     constraint.region());
                             return {};
                         }
+                        if (saw_nullity && prototype->criteria().nullity() == ::yugawara::variable::nullable) {
+                            context_.report(
+                                    sql_analyzer_code::unsupported_feature,
+                                    "primary key must not be NULL-able",
+                                    constraint.region());
+                            return {};
+                        }
+                        prototype->criteria().nullity(~::yugawara::variable::nullable);
                         primary_key_column.reset(prototype.get());
                         break;
                     case kind::null:
@@ -662,6 +668,13 @@ public:
                             context_.report(
                                     sql_analyzer_code::unsupported_feature,
                                     "multiple NULL-ity constraints are not supported",
+                                    constraint.region());
+                            return {};
+                        }
+                        if (prototype->criteria().nullity() == ~::yugawara::variable::nullable) {
+                            context_.report(
+                                    sql_analyzer_code::unsupported_feature,
+                                    "primary key must not be NULL-able",
                                     constraint.region());
                             return {};
                         }
@@ -677,14 +690,6 @@ public:
                             return {};
                         }
                         saw_nullity = true;
-                        if (saw_default) {
-                            context_.report(
-                                    sql_analyzer_code::unsupported_feature,
-                                    "default value is not supported for NOT NULL columns",
-                                    constraint.region());
-                            return {};
-                        }
-                        saw_default = true;
                         prototype->criteria().nullity(~::yugawara::variable::nullable);
                         prototype->default_value() = {};
                         break;
@@ -768,6 +773,17 @@ public:
                         }
                         primary_index = std::move(result);
                         primary_index->features().insert(::yugawara::storage::index_feature::primary);
+
+                        // primary key columns are implicitly not nullable
+                        for (auto&& key : primary_index->keys()) {
+                            if (key.column().criteria().nullity() == ::yugawara::variable::nullable) {
+                                auto&& columns = declaration->columns();
+                                // FIXME: warn if not found
+                                if (auto iter = std::find(columns.begin(), columns.end(), key.column()); iter != columns.end()) {
+                                    iter->criteria().nullity(~::yugawara::variable::nullable);
+                                }
+                            }
+                        }
                     }
                     break;
 
@@ -793,6 +809,12 @@ public:
                     ::yugawara::storage::index_feature_set {
                             ::yugawara::storage::index_feature::primary,
                     });
+        }
+        // fill implicit column default values
+        for (auto&& column : declaration->columns()) {
+            if (column.criteria().nullity() == ::yugawara::variable::nullable && !column.default_value()) {
+                column.default_value() = { context_.values().get(tvalue::unknown {}) };
+            }
         }
 
         auto result = context_.create<tstatement::create_table>(
