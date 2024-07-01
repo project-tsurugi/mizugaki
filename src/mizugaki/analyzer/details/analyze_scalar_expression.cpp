@@ -239,6 +239,8 @@ public:
                 return to::multiply;
             case from::solidus:
                 return to::divide;
+            case from::percent:
+                return to::remainder;
             case from::concatenation:
                 return to::concat;
             case from::and_:
