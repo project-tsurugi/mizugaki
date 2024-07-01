@@ -505,7 +505,7 @@ public:
             return {};
         }
         auto&& table = unsafe_downcast<::yugawara::storage::table>(*relation);
-        auto info = build_relation_info(table, true, true);
+        auto info = build_relation_info(context_, table, true, true);
         if (!info.primary_index()) {
             context_.report(
                     sql_analyzer_code::primary_index_not_found,
@@ -904,7 +904,7 @@ public:
                     constraint.parameters().at(0).name()->region());
         }
 
-        auto relation = build_relation_info(*table, false);
+        auto relation = build_relation_info(context_, *table, false);
         query_scope scope {};
         scope.add(relation);
 
@@ -1041,7 +1041,7 @@ public:
             name = normalize_identifier(context_, stmt.name()->last_name());
         }
 
-        auto relation = build_relation_info(*table_ptr, false);
+        auto relation = build_relation_info(context_, *table_ptr, false);
         query_scope scope {};
         scope.add(relation);
 

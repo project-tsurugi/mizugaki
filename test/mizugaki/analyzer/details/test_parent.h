@@ -51,6 +51,8 @@ protected:
     placeholder_map placeholders_ {};
     ::yugawara::variable::configurable_provider host_parameters_ {};
 
+    bool validate_scalar_expressions_ { true };
+
 private:
     analyzer_context context_;
     std::optional<::takatori::util::finalizer> context_finalizer_;

@@ -109,9 +109,9 @@ enum class sql_analyzer_code {
     ambiguous_type,
     /// @brief the set of type input is inconsistent for this operation.
     inconsistent_type,
-    /// @brief the referring variable is not resolved.
+    /// @brief the referring variable is not resolved (internal error).
     unresolved_variable,
-    /// @brief the number of values is wrong.
+    /// @brief the number of values is wrong (internal error).
     inconsistent_elements,
 };
 

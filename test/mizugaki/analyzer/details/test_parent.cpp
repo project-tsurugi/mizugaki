@@ -44,6 +44,7 @@ test_parent::test_parent() :
 
 analyzer_context &test_parent::context() {
     if (!context_finalizer_) {
+        options_.validate_scalar_expressions() = validate_scalar_expressions_;
         context_finalizer_ = context_.initialize(options_, {}, {}, placeholders_, host_parameters_);
     }
     return context_;

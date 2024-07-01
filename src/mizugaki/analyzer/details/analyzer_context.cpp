@@ -61,8 +61,8 @@ void analyzer_context::finalize() {
 }
 
 std::shared_ptr<::takatori::type::data const>
-analyzer_context::resolve(takatori::scalar::expression const& expression) {
-    auto result = expression_analyzer_.resolve(expression, false, types_);
+analyzer_context::resolve(takatori::scalar::expression const& expression, bool validate) {
+    auto result = expression_analyzer_.resolve(expression, validate, types_);
     if (expression_analyzer_.has_diagnostics()) {
         for (auto&& d : expression_analyzer_.diagnostics()) {
             auto code = convert_code(d.code());
@@ -80,8 +80,8 @@ analyzer_context::resolve(takatori::scalar::expression const& expression) {
     return result;
 }
 
-bool analyzer_context::resolve(::takatori::relation::expression const& expression) {
-    auto result = expression_analyzer_.resolve(expression, false, false, types_);
+bool analyzer_context::resolve(::takatori::relation::expression const& expression, bool validate) {
+    auto result = expression_analyzer_.resolve(expression, validate, false, types_);
     if (expression_analyzer_.has_diagnostics()) {
         for (auto&& d : expression_analyzer_.diagnostics()) {
             auto code = convert_code(d.code());
