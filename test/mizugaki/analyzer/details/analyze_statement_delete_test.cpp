@@ -2,6 +2,8 @@
 
 #include <gtest/gtest.h>
 
+#include <takatori/scalar/compare.h>
+
 #include <takatori/relation/emit.h>
 #include <takatori/relation/filter.h>
 #include <takatori/relation/scan.h>
@@ -14,7 +16,8 @@
 #include <yugawara/storage/index.h>
 #include <yugawara/storage/column.h>
 
-#include <mizugaki/ast/literal/boolean.h>
+#include <mizugaki/ast/scalar/comparison_predicate.h>
+#include <mizugaki/ast/scalar/builtin_set_function_invocation.h>
 
 #include <mizugaki/ast/statement/empty_statement.h>
 #include <mizugaki/ast/statement/delete_statement.h>
@@ -35,9 +38,14 @@ protected:
         EXPECT_TRUE(std::holds_alternative<erroneous_result_type>(r)) << diagnostics();
         EXPECT_GT(count_error(), 0);
     }
+
+    void invalid(sql_analyzer_code code, ast::statement::statement const& stmt) {
+        invalid(stmt);
+        EXPECT_TRUE(find_error(code)) << diagnostics();
+    }
 };
 
-TEST_F(analyze_statement_delete_test, delete_statement_simple) {
+TEST_F(analyze_statement_delete_test, simple) {
     auto table = install_table("testing");
 
     auto r = analyze_statement(context(), ast::statement::delete_statement {
@@ -97,12 +105,17 @@ TEST_F(analyze_statement_delete_test, delete_statement_simple) {
     ASSERT_EQ(last->columns().size(), 0);
 }
 
-TEST_F(analyze_statement_delete_test, delete_statement_filter) {
+TEST_F(analyze_statement_delete_test, where) {
     auto table = install_table("testing");
 
+    // DELETE FROM testing WHERE k > 0
     auto r = analyze_statement(context(), ast::statement::delete_statement {
             id("testing"),
-            literal(ast::literal::boolean { true }),
+            ast::scalar::comparison_predicate {
+                    vref(id("k")),
+                    ast::scalar::comparison_operator::greater_than,
+                    literal(number("0")),
+            },
     });
     auto alternative = std::get_if<execution_plan_result_type >(&r);
     ASSERT_TRUE(alternative) << diagnostics();
@@ -112,13 +125,62 @@ TEST_F(analyze_statement_delete_test, delete_statement_filter) {
     auto first = find_first<trelation::scan>(graph);
     ASSERT_TRUE(first);
 
+    auto&& scan_columns = first->columns();
+    ASSERT_EQ(scan_columns.size(), 4);
+
     auto filter = find_next<trelation::filter>(*first);
     ASSERT_TRUE(filter);
-    ASSERT_EQ(filter->condition(), immediate_bool(true));
+    ASSERT_EQ(filter->condition(), (tscalar::compare {
+            tscalar::comparison_operator::greater,
+            vref(scan_columns[0].destination()), // k
+            immediate(0),
+    }));
 
     auto last = find_last<trelation::write>(graph);
     ASSERT_TRUE(last);
     EXPECT_EQ(find_next(*filter).get(), last.get());
+}
+
+TEST_F(analyze_statement_delete_test, invalid_relation) {
+    invalid(ast::statement::delete_statement {
+            id("MISSING"),
+            {},
+    });
+}
+
+TEST_F(analyze_statement_delete_test, invalid_where) {
+    auto table = install_table("testing");
+    invalid(ast::statement::delete_statement {
+            id("testing"),
+            ast::scalar::comparison_predicate {
+                    vref(id("MISSING")),
+                    ast::scalar::comparison_operator::greater_than,
+                    literal(number("0")),
+            },
+    });
+}
+
+TEST_F(analyze_statement_delete_test, invalid_where_aggregated) {
+    auto table = install_table("testing");
+    auto count = set_functions_->add(::yugawara::aggregate::declaration {
+            ::yugawara::aggregate::declaration::minimum_builtin_function_id + 1,
+            "count",
+            ttype::int8 {},
+            {},
+            true,
+    });
+    invalid(ast::statement::delete_statement {
+            id("testing"),
+            ast::scalar::comparison_predicate {
+                    ast::scalar::builtin_set_function_invocation {
+                            ast::scalar::builtin_set_function_kind::count,
+                            {},
+                            {},
+                    },
+                    ast::scalar::comparison_operator::greater_than,
+                    literal(number("0")),
+            },
+    });
 }
 
 } // namespace mizugaki::analyzer::details

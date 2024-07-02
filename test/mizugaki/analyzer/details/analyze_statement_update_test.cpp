@@ -2,6 +2,8 @@
 
 #include <gtest/gtest.h>
 
+#include <takatori/scalar/compare.h>
+
 #include <takatori/relation/emit.h>
 #include <takatori/relation/filter.h>
 #include <takatori/relation/project.h>
@@ -14,8 +16,6 @@
 
 #include <yugawara/storage/index.h>
 #include <yugawara/storage/column.h>
-
-#include <mizugaki/ast/literal/boolean.h>
 
 #include <mizugaki/ast/scalar/comparison_predicate.h>
 #include <mizugaki/ast/scalar/builtin_set_function_invocation.h>
@@ -310,6 +310,7 @@ TEST_F(analyze_statement_update_test, multiple_set) {
 TEST_F(analyze_statement_update_test, where) {
     auto table = install_table("testing");
 
+    // UPDATE testing SET v = 'filter' WHERE k > 0
     auto r = analyze_statement(context(), ast::statement::update_statement {
             id("testing"),
             {
@@ -318,7 +319,11 @@ TEST_F(analyze_statement_update_test, where) {
                             literal(string("'filter'"))
                     },
             },
-            literal(ast::literal::boolean { true }),
+            ast::scalar::comparison_predicate {
+                    vref(id("k")),
+                    ast::scalar::comparison_operator::greater_than,
+                    literal(number("0")),
+            },
     });
     auto alternative = std::get_if<execution_plan_result_type >(&r);
     ASSERT_TRUE(alternative) << diagnostics();
@@ -328,9 +333,16 @@ TEST_F(analyze_statement_update_test, where) {
     auto first = find_first<trelation::scan>(graph);
     ASSERT_TRUE(first);
 
+    auto&& scan_columns = first->columns();
+    ASSERT_EQ(scan_columns.size(), 4);
+
     auto filter = find_next<trelation::filter>(*first);
     ASSERT_TRUE(filter);
-    ASSERT_EQ(filter->condition(), immediate_bool(true));
+    ASSERT_EQ(filter->condition(), (tscalar::compare {
+            tscalar::comparison_operator::greater,
+            vref(scan_columns[0].destination()), // k
+            immediate(0),
+    }));
 
     auto project = find_next<trelation::project>(*filter);
     ASSERT_TRUE(project);
@@ -421,12 +433,10 @@ TEST_F(analyze_statement_update_test, invalid_where) {
                             literal(string("'X'")),
                     },
             },
-            {
-                    ast::scalar::comparison_predicate {
-                            vref(id("MISSING")),
-                            ast::scalar::comparison_operator::greater_than,
-                            literal(number("0")),
-                    },
+            ast::scalar::comparison_predicate {
+                    vref(id("MISSING")),
+                    ast::scalar::comparison_operator::greater_than,
+                    literal(number("0")),
             },
     });
 }
@@ -448,16 +458,14 @@ TEST_F(analyze_statement_update_test, invalid_where_aggregated) {
                             literal(string("'X'")),
                     },
             },
-            {
-                    ast::scalar::comparison_predicate {
-                            ast::scalar::builtin_set_function_invocation {
-                                    ast::scalar::builtin_set_function_kind::count,
-                                    {},
-                                    {},
-                            },
-                            ast::scalar::comparison_operator::greater_than,
-                            literal(number("0")),
+            ast::scalar::comparison_predicate {
+                    ast::scalar::builtin_set_function_invocation {
+                            ast::scalar::builtin_set_function_kind::count,
+                            {},
+                            {},
                     },
+                    ast::scalar::comparison_operator::greater_than,
+                    literal(number("0")),
             },
     });
 }
