@@ -138,12 +138,12 @@ public:
                             << string_builder::to_string,
                     expr.operator_kind().region());
         }
-        auto type = analyze_type(context_, *expr.type());
-        if (!type) {
-            return {};
-        }
         auto operand = process(*expr.operand(), {});
         if (!operand) {
+            return {};
+        }
+        auto type = analyze_type(context_, *expr.type());
+        if (!type) {
             return {};
         }
         auto result = context_.create<tscalar::cast>(

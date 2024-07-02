@@ -18,6 +18,7 @@
 #include <yugawara/extension/scalar/aggregate_function_call.h>
 
 #include <mizugaki/ast/type/simple.h>
+#include <mizugaki/ast/type/character_string.h>
 
 #include <mizugaki/ast/literal/boolean.h>
 #include <mizugaki/ast/literal/special.h>
@@ -39,6 +40,28 @@ class analyze_scalar_expression_test : public test_parent {
 protected:
     ::takatori::descriptor::aggregate_function descriptor(std::shared_ptr<::yugawara::aggregate::declaration const> decl) {
         return ::yugawara::binding::factory {}(std::move(decl));
+    }
+
+    void invalid(ast::scalar::expression const& expression) {
+        auto r = analyze_scalar_expression(
+                context(),
+                expression,
+                {},
+                {});
+        EXPECT_FALSE(r) << diagnostics();
+    }
+
+    void invalid(sql_analyzer_code code, ast::scalar::expression const& expression) {
+        invalid(expression);
+        EXPECT_TRUE(find_error(code));
+    }
+
+    ast::scalar::literal_expression erroneous_expression() {
+        return literal(string("INVALID"));
+    }
+
+    ast::type::character_string erroneous_type() {
+        return ast::type::character_string { ast::type::kind::character_varying, 0 };
     }
 };
 
@@ -136,13 +159,7 @@ TEST_F(analyze_scalar_expression_test, host_parameter_reference_variable_without
 }
 
 TEST_F(analyze_scalar_expression_test, host_parameter_not_found) {
-    auto r = analyze_scalar_expression(
-            context(),
-            ast::scalar::host_parameter_reference { id("x") },
-            {},
-            {});
-    EXPECT_FALSE(r);
-    EXPECT_TRUE(find_error(diagnostic_code::variable_not_found));
+    invalid(diagnostic_code::variable_not_found, ast::scalar::host_parameter_reference { id("x") });
 }
 
 TEST_F(analyze_scalar_expression_test, cast_expression) {
@@ -161,6 +178,22 @@ TEST_F(analyze_scalar_expression_test, cast_expression) {
             tscalar::cast::loss_policy_type::ignore,
             immediate(1),
     }));
+}
+
+TEST_F(analyze_scalar_expression_test, cast_expression_invalid_operand) {
+    invalid(ast::scalar::cast_expression {
+            ast::scalar::cast_operator::cast,
+            erroneous_expression(),
+            ast::type::character_string { ast::type::kind::character_varying },
+    });
+}
+
+TEST_F(analyze_scalar_expression_test, cast_expression_invalid_type) {
+    invalid(ast::scalar::cast_expression {
+            ast::scalar::cast_operator::cast,
+            literal(string("'x'")),
+            erroneous_type(),
+    });
 }
 
 TEST_F(analyze_scalar_expression_test, unary_expression_plus) {
@@ -215,6 +248,13 @@ TEST_F(analyze_scalar_expression_test, unary_expression_not) {
             to,
             immediate_bool(true),
     }));
+}
+
+TEST_F(analyze_scalar_expression_test, unary_expression_invalid_operand) {
+    invalid(ast::scalar::unary_expression {
+            ast::scalar::unary_operator::plus,
+            erroneous_expression(),
+    });
 }
 
 TEST_F(analyze_scalar_expression_test, binary_expression_plus) {
@@ -446,17 +486,11 @@ TEST_F(analyze_scalar_expression_test, binary_expression_is_unknown) {
 }
 
 TEST_F(analyze_scalar_expression_test, binary_expression_is_invalid) {
-    auto r = analyze_scalar_expression(
-            context(),
-            ast::scalar::binary_expression {
-                    literal(ast::literal::boolean { true }),
-                    ast::scalar::binary_operator::is,
-                    literal(string("'INVALID'")),
-            },
-            {},
-            {});
-    EXPECT_FALSE(r);
-    EXPECT_TRUE(find_error(diagnostic_code::malformed_syntax));
+    invalid(diagnostic_code::malformed_syntax, ast::scalar::binary_expression {
+            literal(ast::literal::boolean { true }),
+            ast::scalar::binary_operator::is,
+            literal(string("'INVALID'")),
+    });
 }
 
 TEST_F(analyze_scalar_expression_test, binary_expression_is_not_null) {
@@ -477,6 +511,22 @@ TEST_F(analyze_scalar_expression_test, binary_expression_is_not_null) {
                     immediate_bool(true),
             }
     }));
+}
+
+TEST_F(analyze_scalar_expression_test, binary_expression_invalid_left) {
+    invalid(ast::scalar::binary_expression {
+            erroneous_expression(),
+            ast::scalar::binary_operator::concatenation,
+            literal(string("'right'")),
+    });
+}
+
+TEST_F(analyze_scalar_expression_test, binary_expression_invalid_right) {
+    invalid(ast::scalar::binary_expression {
+            literal(string("'left'")),
+            ast::scalar::binary_operator::concatenation,
+            erroneous_expression(),
+    });
 }
 
 TEST_F(analyze_scalar_expression_test, comparison_predicate_equals) {
@@ -597,6 +647,22 @@ TEST_F(analyze_scalar_expression_test, comparison_predicate_greater_than_or_equa
             immediate(1),
             immediate(2),
     }));
+}
+
+TEST_F(analyze_scalar_expression_test, comparison_predicate_invalid_left) {
+    invalid(ast::scalar::comparison_predicate {
+            erroneous_expression(),
+            ast::scalar::comparison_operator::equals,
+            literal(string("'right'")),
+    });
+}
+
+TEST_F(analyze_scalar_expression_test, comparison_predicate_invalid_right) {
+    invalid(ast::scalar::comparison_predicate {
+            literal(string("'left'")),
+            ast::scalar::comparison_operator::equals,
+            erroneous_expression(),
+    });
 }
 
 TEST_F(analyze_scalar_expression_test, builtin_set_function_invocation_simple) {
@@ -755,18 +821,31 @@ TEST_F(analyze_scalar_expression_test, builtin_set_function_invocation_overload)
     }));
 }
 
-TEST_F(analyze_scalar_expression_test, builtin_set_function_invocation_missing) {
-    auto r = analyze_scalar_expression(
-            context(),
-            ast::scalar::builtin_set_function_invocation {
-                    ast::scalar::builtin_set_function_kind::count,
-                    {},
-                    {},
+TEST_F(analyze_scalar_expression_test, builtin_set_function_invocation_invalid_argument) {
+    auto func = set_functions_->add(::yugawara::aggregate::declaration {
+            ::yugawara::aggregate::declaration::minimum_builtin_function_id + 2,
+            "count",
+            ttype::int8 {},
+            {
+                    ttype::character { ttype::varying },
             },
+            true,
+    });
+    invalid(ast::scalar::builtin_set_function_invocation {
+            ast::scalar::builtin_set_function_kind::count,
             {},
-            {});
-    EXPECT_FALSE(r);
-    EXPECT_TRUE(find_error(diagnostic_code::function_not_found));
+            {
+                    erroneous_expression(),
+            },
+    });
+}
+
+TEST_F(analyze_scalar_expression_test, builtin_set_function_invocation_missing) {
+    invalid(diagnostic_code::function_not_found, ast::scalar::builtin_set_function_invocation {
+            ast::scalar::builtin_set_function_kind::count,
+            {},
+            {},
+    });
 }
 
 TEST_F(analyze_scalar_expression_test, builtin_set_function_invocation_ambiguous) {
@@ -784,17 +863,11 @@ TEST_F(analyze_scalar_expression_test, builtin_set_function_invocation_ambiguous
             {},
             true,
     });
-    auto r = analyze_scalar_expression(
-            context(),
-            ast::scalar::builtin_set_function_invocation {
-                    ast::scalar::builtin_set_function_kind::count,
-                    {},
-                    {},
-            },
+    invalid(diagnostic_code::function_ambiguous, ast::scalar::builtin_set_function_invocation {
+            ast::scalar::builtin_set_function_kind::count,
             {},
-            {});
-    EXPECT_FALSE(r);
-    EXPECT_TRUE(find_error(diagnostic_code::function_ambiguous));
+            {},
+    });
 }
 
 } // namespace mizugaki::analyzer::details
