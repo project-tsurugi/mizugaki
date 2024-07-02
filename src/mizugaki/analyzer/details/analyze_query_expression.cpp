@@ -737,7 +737,7 @@ public:
         std::unique_ptr<tscalar::expression> result {};
 
         for (auto&& name : elem.columns()) {
-            auto&& id = name->identifier();
+            auto&& id = normalize_identifier(context_, *name);
             auto&& rels = scope.references();
             optional_ptr<tdescriptor::variable const> left {};
             for (query_scope::position_type i = 0, n = pivot; i < n; ++i) {
@@ -824,6 +824,9 @@ public:
                     sql_analyzer_code::malformed_syntax,
                     "join columns must not be empty",
                     elem.region());
+            return {};
+        }
+        if (!context_.resolve(*result)) {
             return {};
         }
         return result;
