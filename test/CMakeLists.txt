@@ -68,6 +68,7 @@ add_analyzer_test_executable(mizugaki/analyzer/details/analyze_statement_insert_
 add_analyzer_test_executable(mizugaki/analyzer/details/analyze_statement_update_test.cpp)
 add_analyzer_test_executable(mizugaki/analyzer/details/analyze_statement_delete_test.cpp)
 add_analyzer_test_executable(mizugaki/analyzer/details/analyze_statement_ddl_test.cpp)
+add_analyzer_test_executable(mizugaki/analyzer/details/analyze_statement_table_definition_test.cpp)
 add_analyzer_test_executable(mizugaki/analyzer/details/set_function_processor_test.cpp)
 
 # shakujo IR translator
