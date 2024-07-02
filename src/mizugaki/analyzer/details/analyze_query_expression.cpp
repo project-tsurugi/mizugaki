@@ -587,6 +587,13 @@ public:
             ast::table::subquery const& expr,
             query_scope& scope) {
         // FIXME: treat is_lateral
+        if (expr.is_lateral()) {
+            context_.report(
+                    sql_analyzer_code::unsupported_feature,
+                    "LATERAL is not yet supported",
+                    expr.region());
+            return {};
+        }
         query_scope next {};
         auto result = dispatch(*expr.expression(), next, {});
         if (!result) {
@@ -607,9 +614,9 @@ public:
         bool saw_aggregate { false };
     };
 
-    [[nodiscard]] static std::optional<std::string> maybe_name(std::unique_ptr<ast::name::simple> const& n) noexcept {
+    [[nodiscard]] std::optional<std::string> maybe_name(std::unique_ptr<ast::name::simple> const& n) noexcept {
         if (n) {
-            return { n->identifier() };
+            return normalize_identifier(context_, *n);
         }
         return std::nullopt;
     }
@@ -628,7 +635,7 @@ public:
             name = std::move(*n);
         } else if (name.empty() && elem.value()->node_kind() == ast::scalar::variable_reference::tag) {
             auto&& var = unsafe_downcast<ast::scalar::variable_reference>(*elem.value());
-            name = var.name()->last_identifier();
+            name = normalize_identifier(context_, var.name()->last_name());
         }
 
         auto column = factory_.stream_variable(maybe_name(elem.name()).value_or(""));
