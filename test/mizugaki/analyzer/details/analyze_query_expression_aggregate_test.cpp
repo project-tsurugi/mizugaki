@@ -29,6 +29,23 @@ using namespace ::mizugaki::analyzer::testing;
 
 class analyze_query_expression_aggregate_test : public test_parent {
 protected:
+    void invalid(ast::query::expression const& expression) {
+        trelation::graph_type graph {};
+        auto r = analyze_query_expression(
+                context(),
+                graph,
+                expression,
+                {},
+                {});
+        EXPECT_FALSE(r);
+        EXPECT_NE(count_error(), 0);
+    }
+
+    void invalid(sql_analyzer_code code, ast::query::expression const& expression) {
+        invalid(expression);
+        EXPECT_TRUE(find_error(code)) << diagnostics();
+    }
+
     ::yugawara::binding::factory factory_;
 
     std::shared_ptr<::yugawara::aggregate::declaration> count_asterisk = set_functions_->add(
@@ -528,103 +545,194 @@ TEST_F(analyze_query_expression_aggregate_test, group_by_where) {
 
 TEST_F(analyze_query_expression_aggregate_test, select_invalid_column) {
     auto table = install_table("testing");
-    trelation::graph_type graph {};
-
-    auto r = analyze_query_expression(
-            context(),
-            graph,
-            // SELECT k FROM testing GROUP BY v
-            ast::query::query {
-                    {
-                            ast::query::select_column {
-                                    vref(id("k")),
-                            },
-                    },
-                    {
-                            ast::table::table_reference {
-                                    id("testing"),
-                            }
-                    },
-                    {},
-                    ast::query::group_by_clause {
-                            ast::query::grouping_column { id("v") },
+    invalid(sql_analyzer_code::invalid_aggregation_column, ast::query::query {
+            {
+                    ast::query::select_column {
+                            vref(id("k")),
                     },
             },
+            {
+                    ast::table::table_reference {
+                            id("testing"),
+                    }
+            },
             {},
-            {});
-    EXPECT_FALSE(r);
-    EXPECT_TRUE(find_error(sql_analyzer_code::invalid_aggregation_column));
+            ast::query::group_by_clause {
+                    ast::query::grouping_column { id("v") },
+            },
+    });
+}
+
+TEST_F(analyze_query_expression_aggregate_test, group_by_invalid_column_expression) {
+    auto table = install_table("testing");
+    invalid(ast::query::query {
+            {
+                    ast::query::select_column {
+                            vref(id("v")),
+                    },
+                    ast::query::select_column {
+                            ast::scalar::builtin_set_function_invocation {
+                                    ast::scalar::builtin_set_function_kind::count,
+                                    {},
+                                    {},
+                            }
+                    },
+            },
+            {
+                    ast::table::table_reference {
+                            id("testing"),
+                    }
+            },
+            {},
+            ast::query::group_by_clause {
+                    ast::query::grouping_column { id("MISSING") },
+            },
+    });
+}
+
+TEST_F(analyze_query_expression_aggregate_test, group_by_invalid_column_aggregated) {
+    auto table = install_table("testing");
+    invalid(sql_analyzer_code::unsupported_feature, ast::query::query {
+            {
+                    ast::query::select_column {
+                            vref(id("v")),
+                    },
+                    ast::query::select_column {
+                            ast::scalar::builtin_set_function_invocation {
+                                    ast::scalar::builtin_set_function_kind::count,
+                                    {},
+                                    {},
+                            }
+                    },
+            },
+            {
+                    ast::table::table_reference {
+                            id("testing"),
+                    }
+            },
+            {},
+            ast::query::group_by_clause {
+                    ast::query::grouping_column {
+                            ast::scalar::builtin_set_function_invocation {
+                                    ast::scalar::builtin_set_function_kind::count,
+                                    {},
+                                    {},
+                            }
+                    },
+            },
+    });
+}
+
+TEST_F(analyze_query_expression_aggregate_test, group_by_invalid_column_not_variable) {
+    auto table = install_table("testing");
+    invalid(sql_analyzer_code::unsupported_feature, ast::query::query {
+            {
+                    ast::query::select_column {
+                            vref(id("v")),
+                    },
+                    ast::query::select_column {
+                            ast::scalar::builtin_set_function_invocation {
+                                    ast::scalar::builtin_set_function_kind::count,
+                                    {},
+                                    {},
+                            }
+                    },
+            },
+            {
+                    ast::table::table_reference {
+                            id("testing"),
+                    }
+            },
+            {},
+            ast::query::group_by_clause {
+                    ast::query::grouping_column { literal(number("1")) },
+            },
+    });
 }
 
 TEST_F(analyze_query_expression_aggregate_test, having_invalid_column) {
     auto table = install_table("testing");
-    trelation::graph_type graph {};
-
-    auto r = analyze_query_expression(
-            context(),
-            graph,
-            // SELECT v FROM testing GROUP BY v
-            ast::query::query {
-                    {
-                            ast::query::select_column {
-                                    vref(id("v")),
-                            },
-                    },
-                    {
-                            ast::table::table_reference {
-                                    id("testing"),
-                            }
-                    },
-                    {},
-                    ast::query::group_by_clause {
-                            ast::query::grouping_column { id("v") },
-                    },
-                    {
-                            ast::scalar::comparison_predicate {
-                                    vref(id("k")),
-                                    ast::scalar::comparison_operator::greater_than,
-                                    literal(number("1")),
-                            },
+    invalid(sql_analyzer_code::invalid_aggregation_column, ast::query::query {
+            {
+                    ast::query::select_column {
+                            vref(id("v")),
                     },
             },
+            {
+                    ast::table::table_reference {
+                            id("testing"),
+                    }
+            },
             {},
-            {});
-    EXPECT_FALSE(r);
-    EXPECT_TRUE(find_error(sql_analyzer_code::invalid_aggregation_column));
+            ast::query::group_by_clause {
+                    ast::query::grouping_column { id("v") },
+            },
+            {
+                    ast::scalar::comparison_predicate {
+                            vref(id("k")),
+                            ast::scalar::comparison_operator::greater_than,
+                            literal(number("1")),
+                    },
+            },
+    });
 }
 
 TEST_F(analyze_query_expression_aggregate_test, order_by_invalid_column) {
     auto table = install_table("testing");
-    trelation::graph_type graph {};
-
-    auto r = analyze_query_expression(
-            context(),
-            graph,
-            // SELECT v FROM testing GROUP BY v
-            ast::query::query {
-                    {
-                            ast::query::select_column {
-                                    vref(id("v")),
-                            },
+    invalid(sql_analyzer_code::invalid_aggregation_column, ast::query::query {
+            {
+                    ast::query::select_column {
+                            vref(id("v")),
                     },
-                    {
-                            ast::table::table_reference {
-                                    id("testing"),
-                            }
-                    },
-                    {},
-                    ast::query::group_by_clause {
-                            ast::query::grouping_column { id("v") },
-                    },
-                    {},
-                    {
-                            vref(id("k")),
+            },
+            {
+                    ast::table::table_reference {
+                            id("testing"),
                     }
             },
             {},
-            {});
-    EXPECT_FALSE(r);
-    EXPECT_TRUE(find_error(sql_analyzer_code::invalid_aggregation_column));
+            ast::query::group_by_clause {
+                    ast::query::grouping_column { id("v") },
+            },
+            {},
+            {
+                    vref(id("k")),
+            }
+    });
+}
+
+TEST_F(analyze_query_expression_aggregate_test, where_aggregated) {
+    auto table = install_table("testing");
+    invalid(sql_analyzer_code::unsupported_feature, ast::query::query {
+            {
+                    ast::query::select_column {
+                            vref(id("v")),
+                    },
+                    ast::query::select_column {
+                            ast::scalar::builtin_set_function_invocation {
+                                    ast::scalar::builtin_set_function_kind::count,
+                                    {},
+                                    {},
+                            }
+                    },
+            },
+            {
+                    ast::table::table_reference {
+                            id("testing"),
+                    }
+            },
+            {
+                    ast::scalar::comparison_predicate {
+                            ast::scalar::builtin_set_function_invocation {
+                                    ast::scalar::builtin_set_function_kind::count,
+                                    {},
+                                    {},
+                            },
+                            ast::scalar::comparison_operator::greater_than,
+                            literal(number("1")),
+                    },
+            },
+    });
 }
 
 } // namespace mizugaki::analyzer::details

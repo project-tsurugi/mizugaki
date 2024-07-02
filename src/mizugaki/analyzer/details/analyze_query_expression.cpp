@@ -110,6 +110,13 @@ public:
             if (!predicate) {
                 return {};
             }
+            if (predicate.saw_aggregate()) {
+                context_.report(
+                        sql_analyzer_code::unsupported_feature,
+                        "aggregated function in WHERE clause is not yet supported",
+                        expr.where()->region());
+                return {};
+            }
             auto&& filter = graph_.emplace<trelation::filter>(
                     predicate.release());
             if (!context_.resolve(filter)) {
@@ -120,6 +127,7 @@ public:
             output = filter.output();
         }
 
+        // GROUP BY ...
         set_function_processor set_functions { context_, graph_ };
         optional_ptr<output_port> set_function_entry { output };
         if (expr.group_by()) {
@@ -132,6 +140,7 @@ public:
             }
         }
 
+        // HAVING ...
         if (expr.having()) {
             set_functions.activate();
             auto predicate = analyze_scalar_expression(context_, *expr.having(), scope);
@@ -709,6 +718,13 @@ public:
             query_scope::position_type) {
         auto r = analyze_scalar_expression(context_, *elem.expression(), scope);
         if (!r) {
+            return {};
+        }
+        if (r.saw_aggregate()) {
+            context_.report(
+                    sql_analyzer_code::unsupported_feature,
+                    "aggregated function in JOIN ON clause is not yet supported",
+                    elem.region());
             return {};
         }
         return r.release();
