@@ -20,8 +20,8 @@ space [[:space:]]+
 
 line_break ("\n"|"\r\n")
 
-/* <regular identifier> FIXME: more characters */
-identifier_start [A-Za-z]
+/* <regular identifier> */
+identifier_start [A-Z_a-z]
 identifier_part [A-Za-z_0-9]
 identifier_body {identifier_start}{identifier_part}*
 identifier {identifier_body}

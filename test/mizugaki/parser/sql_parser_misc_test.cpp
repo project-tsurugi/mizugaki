@@ -121,4 +121,20 @@ TEST_F(sql_parser_misc_test, delimited_identifier) {
     }));
 }
 
+TEST_F(sql_parser_misc_test, identifier_single_underscore) {
+    sql_parser parser;
+    auto result = parser("-", R"(TABLE _x;)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (query::table_reference {
+            name::simple { "_x" },
+    }));
+}
+
+TEST_F(sql_parser_misc_test, identifier_double_underscore) {
+    sql_parser parser;
+    auto result = parser("-", R"(TABLE __x;)");
+    EXPECT_FALSE(result) << diagnostics(result);
+}
+
 } // namespace mizugaki::parser

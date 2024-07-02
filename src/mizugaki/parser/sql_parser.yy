@@ -4206,7 +4206,15 @@ identifier_chain
     ;
 
 identifier
-    : REGULAR_IDENTIFIER[t] { $$ = driver.to_regular_identifier($t, @$); }
+    : REGULAR_IDENTIFIER[t]
+        {
+            auto token = $t;
+            if (token.size() >= 2 && token[0] == '_' && token[1] == '_') {
+                driver.error(@$, "identifier starting with '__' is reserved for internal use");
+                YYABORT;
+            }
+            $$ = driver.to_regular_identifier(std::move(token), @$);
+        }
     | DELIMITED_IDENTIFIER[t] { $$ = driver.to_delimited_identifier($t, @$); }
     // FIXME: move to individual name
     | contextual_identifier[n]
