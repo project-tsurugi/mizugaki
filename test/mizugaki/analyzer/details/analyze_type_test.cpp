@@ -20,6 +20,7 @@
 #include <mizugaki/ast/type/binary_numeric.h>
 #include <mizugaki/ast/type/datetime.h>
 #include <mizugaki/ast/type/interval.h>
+#include <mizugaki/ast/type/user_defined.h>
 
 #include "test_parent.h"
 
@@ -678,6 +679,16 @@ TEST_F(analyze_type_test, timestamp_timezone) {
             });
     ASSERT_TRUE(r);
     EXPECT_EQ(*r, (ttype::time_point { ttype::with_time_zone }));
+}
+
+TEST_F(analyze_type_test, user_defined_unsupported) {
+    auto r = analyze_type(
+            context(),
+            ast::type::user_defined {
+                    id("undefined"),
+            });
+    EXPECT_FALSE(r);
+    EXPECT_TRUE(find_error(sql_analyzer_code::unsupported_feature));
 }
 
 } // namespace mizugaki::analyzer::details

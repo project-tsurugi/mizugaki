@@ -320,8 +320,16 @@ public:
 //    }
 
     // FIXME: impl user defined type
-//    [[nodiscard]] result_type operator()(ast::type::user_defined const& type) {
-//    }
+    [[nodiscard]] result_type operator()(ast::type::user_defined const& type) {
+        context_.report(
+                sql_analyzer_code::unsupported_feature,
+                string_builder {}
+                        << "user defined type is not supported: "
+                        << type.name()->last_identifier()
+                        << string_builder::to_string,
+                type.region());
+        return {};
+    }
 
     // FIXME: impl collections type
 //    [[nodiscard]] result_type operator()(ast::type::collection const& type) {
