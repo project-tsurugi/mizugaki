@@ -42,6 +42,11 @@ protected:
         EXPECT_TRUE(std::holds_alternative<erroneous_result_type>(r)) << diagnostics();
         EXPECT_GT(count_error(), 0);
     }
+
+    void invalid(sql_analyzer_code code, ast::statement::statement const& stmt) {
+        invalid(stmt);
+        EXPECT_TRUE(find_error(code)) << diagnostics();
+    }
 };
 
 TEST_F(analyze_statement_insert_test, simple) {
@@ -301,6 +306,108 @@ TEST_F(analyze_statement_insert_test, insert_or_replace) {
     auto last = find_last<trelation::write>(graph);
     ASSERT_TRUE(last);
     EXPECT_EQ(last->operator_kind(), tstatement::write_kind::insert_overwrite);
+}
+
+TEST_F(analyze_statement_insert_test, invalid_relation) {
+    invalid(ast::statement::insert_statement {
+            id("testing"),
+            {},
+            ast::query::table_value_constructor {
+                    ast::scalar::value_constructor {
+                            literal(number("1")),
+                            literal(string("'a'")),
+                            literal(string("'b'")),
+                            literal(string("'c'")),
+                    }
+            },
+    });
+}
+
+TEST_F(analyze_statement_insert_test, column_not_found) {
+    auto table = install_table("testing");
+    invalid(sql_analyzer_code::column_not_found, ast::statement::insert_statement {
+            id("testing"),
+            {
+                    id("k"),
+                    id("v"),
+                    id("MISSING"),
+                    id("x"),
+            },
+            ast::query::table_value_constructor {
+                    ast::scalar::value_constructor {
+                            literal(number("1")),
+                            literal(string("'a'")),
+                            literal(string("'b'")),
+                            literal(string("'c'")),
+                    }
+            },
+    });
+}
+
+TEST_F(analyze_statement_insert_test, column_duplicated) {
+    auto table = install_table("testing");
+    invalid(sql_analyzer_code::column_already_exists, ast::statement::insert_statement {
+            id("testing"),
+            {
+                    id("k"),
+                    id("v"),
+                    id("w"),
+                    id("x"),
+                    id("v"), // duplicated
+            },
+            ast::query::table_value_constructor {
+                    ast::scalar::value_constructor {
+                            literal(number("1")),
+                            literal(string("'a'")),
+                            literal(string("'b'")),
+                            literal(string("'c'")),
+                            literal(string("'d'")),
+                    }
+            },
+    });
+}
+
+TEST_F(analyze_statement_insert_test, invalid_query) {
+    auto table = install_table("testing");
+    invalid(ast::statement::insert_statement {
+            id("testing"),
+            {
+                    id("k"),
+                    id("v"),
+                    id("w"),
+                    id("x"),
+            },
+            ast::query::table_value_constructor {
+                    ast::scalar::value_constructor {
+                            literal(number("1")),
+                            literal(string("'a'")),
+                            literal(string("'b'")),
+                            vref(id("MISSING")),
+                    }
+            },
+    });
+}
+
+TEST_F(analyze_statement_insert_test, inconsistent_query) {
+    auto table = install_table("testing");
+    invalid(sql_analyzer_code::inconsistent_columns, ast::statement::insert_statement {
+            id("testing"),
+            {
+                    id("k"),
+                    id("v"),
+                    id("w"),
+                    id("x"),
+            },
+            ast::query::table_value_constructor {
+                    ast::scalar::value_constructor {
+                            literal(number("1")),
+                            literal(string("'a'")),
+                            literal(string("'b'")),
+                            literal(string("'c'")),
+                            literal(string("'d'")),
+                    }
+            },
+    });
 }
 
 } // namespace mizugaki::analyzer::details
