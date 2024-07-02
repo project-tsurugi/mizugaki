@@ -9,6 +9,7 @@
 #include <takatori/relation/scan.h>
 #include <takatori/relation/filter.h>
 #include <takatori/relation/project.h>
+#include <takatori/relation/values.h>
 #include <takatori/relation/intermediate/distinct.h>
 #include <takatori/relation/intermediate/limit.h>
 
@@ -298,6 +299,55 @@ TEST_F(analyze_query_expression_select_test, select_corelation_name) {
     {
         auto&& column = project_columns[0];
         EXPECT_EQ(column.value(), vref(scan_columns[1].destination())); // v
+    }
+
+    EXPECT_EQ(relation_columns[0].variable(), project_columns[0].variable());
+}
+
+TEST_F(analyze_query_expression_select_test, without_tables) {
+    trelation::graph_type graph {};
+
+    auto r = analyze_query_expression(
+            context(),
+            graph,
+            ast::query::query {
+                    {
+                            ast::query::select_column {
+                                    literal(number("1")),
+                                    id("r"),
+                            }
+                    },
+            },
+            {},
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    EXPECT_EQ(graph.size(), 2);
+    EXPECT_FALSE(r.output().opposite());
+
+    auto&& relation = r.relation();
+    EXPECT_EQ(relation.identifier(), "");
+
+    auto relation_columns = relation.columns();
+    ASSERT_EQ(relation_columns.size(), 1);
+    {
+        auto&& column = relation_columns[0];
+        EXPECT_EQ(column.identifier(), "r");
+        EXPECT_TRUE(column.exported());
+    }
+
+    // values - project -
+    auto&& project = downcast<trelation::project>(r.output().owner());
+    auto&& values = *find_prev<trelation::values>(project);
+
+    ASSERT_EQ(values.columns().size(), 0);
+    ASSERT_EQ(values.rows().size(), 1);
+    ASSERT_EQ(values.rows()[0].elements().size(), 0);
+
+    auto&& project_columns = project.columns();
+    ASSERT_EQ(project_columns.size(), 1);
+    {
+        auto&& column = project_columns[0];
+        EXPECT_EQ(column.value(), immediate(1));
     }
 
     EXPECT_EQ(relation_columns[0].variable(), project_columns[0].variable());
