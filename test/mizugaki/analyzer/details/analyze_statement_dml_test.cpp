@@ -44,9 +44,15 @@ using namespace ::mizugaki::analyzer::testing;
 
 using ::yugawara::binding::extract;
 
-class analyze_statement_dml_test : public test_parent {};
-
-// TODO: more tests for anomaly cases
+class analyze_statement_dml_test : public test_parent {
+protected:
+    void invalid(ast::statement::statement const& stmt) {
+        trelation::graph_type graph {};
+        auto r = analyze_statement(context(), stmt);
+        EXPECT_TRUE(std::holds_alternative<erroneous_result_type>(r)) << diagnostics();
+        EXPECT_GT(count_error(), 0);
+    }
+};
 
 TEST_F(analyze_statement_dml_test, empty_statement) {
     auto r = analyze_statement(context(), ast::statement::empty_statement {});
@@ -109,6 +115,14 @@ TEST_F(analyze_statement_dml_test, select_statement_simple) {
         EXPECT_EQ(column.source(), variables[0]);
         EXPECT_EQ(column.name(), table->columns()[0].simple_name());
     }
+}
+
+TEST_F(analyze_statement_dml_test, select_statement_invalid_query) {
+    invalid(ast::statement::select_statement {
+            ast::query::table_reference {
+                    id("INVALID"),
+            },
+    });
 }
 
 TEST_F(analyze_statement_dml_test, insert_statement_simple) {

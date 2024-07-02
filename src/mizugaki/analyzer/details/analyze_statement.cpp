@@ -87,10 +87,9 @@ public:
         }
         auto graph = std::make_unique<::takatori::relation::graph_type>();
         if (!stmt.expression()) {
-            // FIXME: impl treat SELECT without table expressions
             context_.report(
-                    sql_analyzer_code::unsupported_feature,
-                    "SELECT without FROM is yet not supported",
+                    sql_analyzer_code::malformed_syntax,
+                    "SELECT statement must have a query expression",
                     stmt.targets().at(0).region());
             return {};
         }
