@@ -37,8 +37,8 @@ enum class sql_analyzer_code {
     // about types
     /// @brief the flexible length or precision is not supported in this type.
     flexible_length_is_not_supported,
-    /// @brief the type length or precision is too large.
-    type_length_is_too_large,
+    /// @brief the type length or precision is not valid.
+    invalid_type_length,
     /// @brief the numeric scale is too large for the precision.
     invalid_numeric_scale,
 
@@ -137,7 +137,7 @@ inline constexpr std::string_view to_string_view(sql_analyzer_code value) noexce
         case kind::unsupported_string_value: return "unsupported_string_value"sv;
 
         case kind::flexible_length_is_not_supported: return "flexible_length_is_not_supported"sv;
-        case kind::type_length_is_too_large: return "type_length_is_too_large"sv;
+        case kind::invalid_type_length: return "invalid_type_length"sv;
         case kind::invalid_numeric_scale: return "invalid_numeric_scale"sv;
 
         case kind::schema_not_found: return "schema_not_found"sv;
