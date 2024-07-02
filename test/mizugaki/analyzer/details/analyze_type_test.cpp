@@ -74,6 +74,17 @@ TEST_F(analyze_type_test, character_flexible) {
     EXPECT_TRUE(find_error(error_code::flexible_length_is_not_supported));
 }
 
+TEST_F(analyze_type_test, character_length_zero) {
+    auto r = analyze_type(
+            context(),
+            ast::type::character_string {
+                    ast::type::kind::character,
+                    0,
+            });
+    EXPECT_FALSE(r);
+    EXPECT_TRUE(find_error(sql_analyzer_code::invalid_type_length));
+}
+
 TEST_F(analyze_type_test, character_varying) {
     auto r = analyze_type(
             context(),
@@ -104,6 +115,17 @@ TEST_F(analyze_type_test, character_varying_flexible) {
             });
     ASSERT_TRUE(r);
     EXPECT_EQ(*r, (ttype::character { ttype::varying, std::nullopt }));
+}
+
+TEST_F(analyze_type_test, character_varying_length_zero) {
+    auto r = analyze_type(
+            context(),
+            ast::type::character_string {
+                    ast::type::kind::character_varying,
+                    0,
+            });
+    EXPECT_FALSE(r);
+    EXPECT_TRUE(find_error(sql_analyzer_code::invalid_type_length));
 }
 
 TEST_F(analyze_type_test, bit) {
@@ -138,6 +160,17 @@ TEST_F(analyze_type_test, bit_flexible) {
     EXPECT_TRUE(find_error(error_code::flexible_length_is_not_supported));
 }
 
+TEST_F(analyze_type_test, bit_length_zero) {
+    auto r = analyze_type(
+            context(),
+            ast::type::bit_string {
+                    ast::type::kind::bit,
+                    0,
+            });
+    EXPECT_FALSE(r);
+    EXPECT_TRUE(find_error(sql_analyzer_code::invalid_type_length));
+}
+
 TEST_F(analyze_type_test, bit_varying) {
     auto r = analyze_type(
             context(),
@@ -168,6 +201,17 @@ TEST_F(analyze_type_test, bit_varying_flexible) {
             });
     ASSERT_TRUE(r);
     EXPECT_EQ(*r, (ttype::bit { ttype::varying, std::nullopt }));
+}
+
+TEST_F(analyze_type_test, bit_varying_length_zero) {
+    auto r = analyze_type(
+            context(),
+            ast::type::bit_string {
+                    ast::type::kind::bit_varying,
+                    0,
+            });
+    EXPECT_FALSE(r);
+    EXPECT_TRUE(find_error(sql_analyzer_code::invalid_type_length));
 }
 
 TEST_F(analyze_type_test, octet) {
@@ -202,6 +246,17 @@ TEST_F(analyze_type_test, octet_flexible) {
     EXPECT_TRUE(find_error(error_code::flexible_length_is_not_supported));
 }
 
+TEST_F(analyze_type_test, octet_length_zero) {
+    auto r = analyze_type(
+            context(),
+            ast::type::octet_string {
+                    ast::type::kind::octet,
+                    0,
+            });
+    EXPECT_FALSE(r);
+    EXPECT_TRUE(find_error(sql_analyzer_code::invalid_type_length));
+}
+
 TEST_F(analyze_type_test, octet_varying) {
     auto r = analyze_type(
             context(),
@@ -232,6 +287,17 @@ TEST_F(analyze_type_test, octet_varying_flexible) {
             });
     ASSERT_TRUE(r);
     EXPECT_EQ(*r, (ttype::octet { ttype::varying, std::nullopt }));
+}
+
+TEST_F(analyze_type_test, octet_varying_length_zero) {
+    auto r = analyze_type(
+            context(),
+            ast::type::octet_string {
+                    ast::type::kind::octet_varying,
+                    0,
+            });
+    EXPECT_FALSE(r);
+    EXPECT_TRUE(find_error(sql_analyzer_code::invalid_type_length));
 }
 
 TEST_F(analyze_type_test, numeric) {
@@ -313,6 +379,41 @@ TEST_F(analyze_type_test, decimal_flexible_with_scale) {
             });
     ASSERT_TRUE(r);
     EXPECT_EQ(*r, (ttype::decimal { {}, 2, }));
+}
+
+TEST_F(analyze_type_test, decimal_precision_zero) {
+    auto r = analyze_type(
+            context(),
+            ast::type::decimal {
+                    ast::type::kind::decimal,
+                    0,
+            });
+    EXPECT_FALSE(r);
+    EXPECT_TRUE(find_error(sql_analyzer_code::invalid_type_length));
+}
+
+TEST_F(analyze_type_test, decimal_precision_too_large) {
+    options_.max_decimal_precision() = 20;
+    auto r = analyze_type(
+            context(),
+            ast::type::decimal {
+                    ast::type::kind::decimal,
+                    21,
+            });
+    EXPECT_FALSE(r);
+    EXPECT_TRUE(find_error(sql_analyzer_code::invalid_type_length));
+}
+
+TEST_F(analyze_type_test, decimal_scale_too_large) {
+    auto r = analyze_type(
+            context(),
+            ast::type::decimal {
+                    ast::type::kind::decimal,
+                    10,
+                    11,
+            });
+    EXPECT_FALSE(r);
+    EXPECT_TRUE(find_error(sql_analyzer_code::invalid_numeric_scale));
 }
 
 TEST_F(analyze_type_test, tiny_integer) {
@@ -440,6 +541,28 @@ TEST_F(analyze_type_test, integer_flexible) {
     EXPECT_EQ(*r, (ttype::int8 {}));
 }
 
+TEST_F(analyze_type_test, binary_numeric_length_zero) {
+    auto r = analyze_type(
+            context(),
+            ast::type::binary_numeric {
+                    ast::type::kind::binary_integer,
+                    0,
+            });
+    EXPECT_FALSE(r);
+    EXPECT_TRUE(find_error(sql_analyzer_code::invalid_type_length));
+}
+
+TEST_F(analyze_type_test, binary_numeric_length_too_large) {
+    auto r = analyze_type(
+            context(),
+            ast::type::binary_numeric {
+                    ast::type::kind::binary_integer,
+                    options_.max_binary_integer8_precision() + 1,
+            });
+    EXPECT_FALSE(r);
+    EXPECT_TRUE(find_error(sql_analyzer_code::invalid_type_length));
+}
+
 TEST_F(analyze_type_test, float_single) {
     auto r = analyze_type(
             context(),
@@ -471,6 +594,28 @@ TEST_F(analyze_type_test, float_flexible) {
             });
     ASSERT_TRUE(r);
     EXPECT_EQ(*r, (ttype::float8 {}));
+}
+
+TEST_F(analyze_type_test, binary_float_length_zero) {
+    auto r = analyze_type(
+            context(),
+            ast::type::binary_numeric {
+                    ast::type::kind::binary_float,
+                    0,
+            });
+    EXPECT_FALSE(r);
+    EXPECT_TRUE(find_error(sql_analyzer_code::invalid_type_length));
+}
+
+TEST_F(analyze_type_test, binary_float_length_too_large) {
+    auto r = analyze_type(
+            context(),
+            ast::type::binary_numeric {
+                    ast::type::kind::binary_float,
+                    options_.max_binary_float8_precision() + 1,
+            });
+    EXPECT_FALSE(r);
+    EXPECT_TRUE(find_error(sql_analyzer_code::invalid_type_length));
 }
 
 TEST_F(analyze_type_test, boolean) {

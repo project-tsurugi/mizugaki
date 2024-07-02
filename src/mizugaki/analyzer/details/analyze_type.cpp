@@ -93,6 +93,13 @@ public:
             }
         } else if (auto len = type.length()) {
             size = type.length().value().value();
+            if (size == 0) {
+                context_.report(
+                        sql_analyzer_code::invalid_type_length,
+                        "character type must not be empty",
+                        type.length().value().region());
+                return {};
+            }
         } else if (!type.is_varying()) {
             size = 1;
         }
@@ -119,6 +126,13 @@ public:
             }
         } else if (auto len = type.length()) {
             size = type.length().value().value();
+            if (size == 0) {
+                context_.report(
+                        sql_analyzer_code::invalid_type_length,
+                        "bit type must not be empty",
+                        type.length().value().region());
+                return {};
+            }
         } else if (!type.is_varying()) {
             size = 1;
         }
@@ -145,6 +159,13 @@ public:
             }
         } else if (auto len = type.length()) {
             size = type.length().value().value();
+            if (size == 0) {
+                context_.report(
+                        sql_analyzer_code::invalid_type_length,
+                        "binary type must not be empty",
+                        type.length().value().region());
+                return {};
+            }
         } else if (!type.is_varying()) {
             size = 1;
         }
@@ -175,9 +196,16 @@ public:
                 scale = **type.scale();
             }
         }
+        if (precision && precision == 0) {
+            context_.report(
+                    sql_analyzer_code::invalid_type_length,
+                    "decimal type precision must not be zero",
+                    type.precision().value().region());
+            return {};
+        }
         if (precision && precision > options().max_decimal_precision()) {
             context_.report(
-                    sql_analyzer_code::type_length_is_too_large,
+                    sql_analyzer_code::invalid_type_length,
                     string_builder {}
                             << "too large decimal precision: " << precision.value()
                             << " (max precision is " << options().max_decimal_precision() << ")"
@@ -210,6 +238,13 @@ public:
                 if (type.is_flexible_precision() || !prec) {
                     return build(type, ttype::int8 {});
                 }
+                if (**prec == 0) {
+                    context_.report(
+                            sql_analyzer_code::invalid_type_length,
+                            "integer type precision must not be zero",
+                            type.precision().value().region());
+                    return {};
+                }
                 if (**prec <= options().max_binary_integer1_precision()) {
                     return build(type, ttype::int1 {});
                 }
@@ -223,7 +258,7 @@ public:
                     return build(type, ttype::int8 {});
                 }
                 context_.report(
-                        sql_analyzer_code::type_length_is_too_large,
+                        sql_analyzer_code::invalid_type_length,
                         string_builder {}
                                 << "too large integer precision: " << **prec
                                 << " (max precision is " << options().max_binary_integer8_precision() << ")"
@@ -235,6 +270,13 @@ public:
                 if (type.is_flexible_precision() || !prec) {
                     return build(type, ttype::float8 {});
                 }
+                if (**prec == 0) {
+                    context_.report(
+                            sql_analyzer_code::invalid_type_length,
+                            "float type precision must not be zero",
+                            type.precision().value().region());
+                    return {};
+                }
                 if (**prec <= options().max_binary_float4_precision()) {
                     return build(type, ttype::float4 {});
                 }
@@ -242,7 +284,7 @@ public:
                     return build(type, ttype::float8 {});
                 }
                 context_.report(
-                        sql_analyzer_code::type_length_is_too_large,
+                        sql_analyzer_code::invalid_type_length,
                         string_builder {}
                                 << "too large float precision: " << **prec
                                 << " (max precision is " << options().max_binary_float8_precision() << ")"
