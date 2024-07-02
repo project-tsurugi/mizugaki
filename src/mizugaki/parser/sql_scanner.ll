@@ -390,7 +390,7 @@ host_parameter_name ":"{identifier}
 "UPDATE" { return parser_type::make_UPDATE(location()); }
 "USER" { return parser_type::make_USER(location()); }
 "USING" { return parser_type::make_USING(location()); }
-"VALUE" { return parser_type::make_VALUE(location()); }
+"VALUE" { return parser_type::make_VALUE(get_image(driver), location()); }
 "VALUES" { return parser_type::make_VALUES(location()); }
 "VARCHAR" { return parser_type::make_VARCHAR(location()); }
 "VARYING" { return parser_type::make_VARYING(location()); }

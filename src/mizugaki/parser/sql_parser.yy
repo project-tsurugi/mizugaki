@@ -627,7 +627,7 @@
 // %token <ast::common::chars> USAGE "USAGE"
 %token USER "USER"
 %token USING "USING"
-%token VALUE "VALUE"
+%token <ast::common::chars> VALUE "VALUE"
 %token VALUES "VALUES"
 %token VARCHAR "VARCHAR"
 // %token <ast::common::chars> VARIABLE "VARIABLE"
@@ -4234,6 +4234,5 @@ contextual_identifier
     | FIRST[t] { $$ = driver.to_regular_identifier($t, @$); }
     | LAST[t] { $$ = driver.to_regular_identifier($t, @$); }
     | ORDINALITY[t] { $$ = driver.to_regular_identifier($t, @$); }
+    | VALUE[t] { $$ = driver.to_regular_identifier($t, @$); }
     ;
-
-

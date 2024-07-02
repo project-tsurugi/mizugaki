@@ -137,4 +137,14 @@ TEST_F(sql_parser_misc_test, identifier_double_underscore) {
     EXPECT_FALSE(result) << diagnostics(result);
 }
 
+TEST_F(sql_parser_misc_test, keyword_value) {
+    sql_parser parser;
+    auto result = parser("-", R"(TABLE VALUE;)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (query::table_reference {
+            name::simple { "VALUE" },
+    }));
+}
+
 } // namespace mizugaki::parser
