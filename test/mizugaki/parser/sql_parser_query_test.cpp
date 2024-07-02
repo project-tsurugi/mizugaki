@@ -135,6 +135,28 @@ TEST_F(sql_parser_query_test, query_column_name) {
     }));
 }
 
+TEST_F(sql_parser_query_test, query_column_name_without_as) {
+    sql_parser parser;
+    auto result = parser("-", "SELECT C0 x0 FROM T0;");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (query::query {
+            { // SELECT
+                    query::select_column {
+                            scalar::variable_reference {
+                                    name::simple { "C0" },
+                            },
+                            name::simple { "x0" },
+                    },
+            },
+            { // FROM
+                    table::table_reference {
+                            name::simple { "T0" },
+                    },
+            },
+    }));
+}
+
 TEST_F(sql_parser_query_test, query_where) {
     sql_parser parser;
     auto result = parser("-", "SELECT * FROM T0 WHERE a < 0;");

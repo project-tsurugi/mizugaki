@@ -208,7 +208,7 @@
 %token ASYMMETRIC "ASYMMETRIC"
 // %token <ast::common::chars> ATOMIC "ATOMIC"
 %token AVG "AVG"
-%token <ast::common::chars> BETWEEN "BETWEEN"
+%token BETWEEN "BETWEEN"
 %token BIT_LENGTH "BIT_LENGTH"
 %token BITVAR "BITVAR"
 // %token <ast::common::chars> C "C"
@@ -315,7 +315,7 @@
 // %token <ast::common::chars> SIMPLE "SIMPLE"
 // %token <ast::common::chars> SOURCE "SOURCE"
 // %token <ast::common::chars> SPECIFIC_NAME "SPECIFIC_NAME"
-%token <ast::common::chars> SIMILAR "SIMILAR"
+%token SIMILAR "SIMILAR"
 %token SUBLIST "SUBLIST"
 %token SUBSTRING "SUBSTRING"
 %token SUM "SUM"
@@ -2072,6 +2072,10 @@ as_clause_opt
     : %empty
         {
             $$ = nullptr;
+        }
+    | column_name[n]
+        {
+            $$ = $n;
         }
     | AS column_name[n]
         {
@@ -4212,12 +4216,10 @@ identifier
     ;
 
 contextual_identifier
-    : BETWEEN[t] { $$ = driver.to_regular_identifier($t, @$); }
-    | ASC[t] { $$ = driver.to_regular_identifier($t, @$); }
+    : ASC[t] { $$ = driver.to_regular_identifier($t, @$); }
     | DESC[t] { $$ = driver.to_regular_identifier($t, @$); }
     | KEY[t] { $$ = driver.to_regular_identifier($t, @$); }
     | IGNORE[t] { $$ = driver.to_regular_identifier($t, @$); }
-    | SIMILAR[t] { $$ = driver.to_regular_identifier($t, @$); }
     | SCHEMA[t] { $$ = driver.to_regular_identifier($t, @$); }
     | SEQUENCE[t] { $$ = driver.to_regular_identifier($t, @$); }
     | RESTRICT[t] { $$ = driver.to_regular_identifier($t, @$); }

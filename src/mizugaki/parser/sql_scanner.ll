@@ -148,7 +148,7 @@ host_parameter_name ":"{identifier}
 "ABS" { return parser_type::make_ABS(location()); }
 "ASYMMETRIC" { return parser_type::make_ASYMMETRIC(location()); }
 "AVG" { return parser_type::make_AVG(location()); }
-"BETWEEN" { return parser_type::make_BETWEEN(get_image(driver), location()); }
+"BETWEEN" { return parser_type::make_BETWEEN(location()); }
 "BIT_LENGTH" { return parser_type::make_BIT_LENGTH(location()); }
 "BITVAR" { return parser_type::make_BITVAR(location()); }
 "CARDINALITY" { return parser_type::make_CARDINALITY(location()); }
@@ -170,7 +170,7 @@ host_parameter_name ":"{identifier}
 "OVERLAPS" { return parser_type::make_OVERLAPS(location()); }
 "OVERLAY" { return parser_type::make_OVERLAY(location()); }
 "POSITION" { return parser_type::make_POSITION(location()); }
-"SIMILAR" { return parser_type::make_SIMILAR(get_image(driver), location()); }
+"SIMILAR" { return parser_type::make_SIMILAR(location()); }
 "SUBLIST" { return parser_type::make_SUBLIST(location()); }
 "SUBSTRING" { return parser_type::make_SUBSTRING(location()); }
 "SUM" { return parser_type::make_SUM(location()); }
