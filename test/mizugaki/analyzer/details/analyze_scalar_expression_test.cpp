@@ -49,6 +49,7 @@ protected:
                 {},
                 {});
         EXPECT_FALSE(r) << diagnostics();
+        EXPECT_NE(count_error(), 0);
     }
 
     void invalid(sql_analyzer_code code, ast::scalar::expression const& expression) {

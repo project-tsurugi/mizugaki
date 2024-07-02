@@ -33,6 +33,8 @@ public:
 
     bool find_error(analyzer_context::diagnostic_type::code_type code);
 
+    std::size_t count_error();
+
     std::shared_ptr<::yugawara::storage::table const> install_table(std::string_view name);
 
     ::takatori::descriptor::variable vd(

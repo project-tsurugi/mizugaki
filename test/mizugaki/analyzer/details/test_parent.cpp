@@ -58,6 +58,10 @@ bool test_parent::find_error(analyzer_context::diagnostic_type::code_type code) 
     return contains(context_, code);
 }
 
+std::size_t test_parent::count_error() {
+    return context_.diagnostics().size();
+}
+
 std::shared_ptr<::yugawara::storage::table const> test_parent::install_table(std::string_view name) {
     auto table = storages_->add_table(::yugawara::storage::table {
             name,

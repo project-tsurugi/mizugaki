@@ -904,6 +904,13 @@ private:
             }
             return static_cast<std::size_t>(*value);
         }
+        context_.report(
+                sql_analyzer_code::invalid_unsigned_integer,
+                string_builder {}
+                        << "must be a unsigned integer: "
+                        << expr.kind()
+                        << string_builder::to_string,
+                expr.region());
         return {};
     }
 

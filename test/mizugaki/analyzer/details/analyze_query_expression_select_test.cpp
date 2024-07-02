@@ -24,6 +24,7 @@
 #include <mizugaki/ast/query/query.h>
 #include <mizugaki/ast/query/select_asterisk.h>
 #include <mizugaki/ast/query/select_column.h>
+#include <mizugaki/ast/query/grouping_column.h>
 
 #include "test_parent.h"
 
@@ -33,7 +34,20 @@ using namespace ::mizugaki::analyzer::testing;
 
 using ::yugawara::binding::extract;
 
-class analyze_query_expression_select_test : public test_parent {};
+class analyze_query_expression_select_test : public test_parent {
+protected:
+    void invalid(ast::query::expression const& expression) {
+        trelation::graph_type graph {};
+        auto r = analyze_query_expression(
+                context(),
+                graph,
+                expression,
+                {},
+                {});
+        EXPECT_FALSE(r) << diagnostics();
+        EXPECT_NE(count_error(), 0);
+    }
+};
 
 TEST_F(analyze_query_expression_select_test, simple) {
     auto table = install_table("testing");
@@ -898,6 +912,198 @@ TEST_F(analyze_query_expression_select_test, order_by_limit) {
         EXPECT_EQ(column.variable(), prepare_columns[0].variable());
         EXPECT_EQ(column.direction(), trelation::sort_direction::ascendant);
     }
+}
+
+TEST_F(analyze_query_expression_select_test, invalid_select_column) {
+    auto table = install_table("testing");
+    invalid(ast::query::query {
+            {
+                    ast::query::select_column { vref(id("MISSING")) },
+            },
+            {
+                    ast::table::table_reference {
+                            id("testing"),
+                    }
+            },
+    });
+}
+
+TEST_F(analyze_query_expression_select_test, invalid_select_asterisk_table) {
+    auto table = install_table("testing");
+    invalid(ast::query::query {
+            {
+                    ast::query::select_asterisk { vref(id("testing")) },
+            },
+            {
+                    ast::table::table_reference {
+                            id("testing"),
+                    }
+            },
+    });
+}
+
+TEST_F(analyze_query_expression_select_test, invalid_from_table) {
+    auto table = install_table("testing");
+    invalid(ast::query::query {
+            {
+                    ast::query::select_asterisk {},
+            },
+            {
+                    ast::table::table_reference {
+                            id("MISSING"),
+                    }
+            },
+    });
+}
+
+TEST_F(analyze_query_expression_select_test, invalid_where_predicate) {
+    auto table = install_table("testing");
+    invalid(ast::query::query {
+            {
+                    ast::query::select_asterisk {},
+            },
+            {
+                    ast::table::table_reference {
+                            id("testing"),
+                    }
+            },
+            {
+                    ast::scalar::comparison_predicate {
+                            vref(id("MISSING")),
+                            ast::scalar::comparison_operator::equals,
+                            literal(string("''")),
+                    }
+            },
+    });
+}
+
+TEST_F(analyze_query_expression_select_test, invalid_group_by_column) {
+    auto table = install_table("testing");
+    invalid(ast::query::query {
+            {
+                    ast::query::select_column { vref(id("v")) },
+            },
+            {
+                    ast::table::table_reference {
+                            id("testing"),
+                    }
+            },
+            {},
+            ast::query::group_by_clause {
+                    ast::query::grouping_column { id("v") },
+                    ast::query::grouping_column { id("MISSING") },
+            },
+    });
+}
+
+TEST_F(analyze_query_expression_select_test, invalid_having_predicate) {
+    auto table = install_table("testing");
+    invalid(ast::query::query {
+            {
+                    ast::query::select_column { vref(id("v")) },
+            },
+            {
+                    ast::table::table_reference {
+                            id("testing"),
+                    }
+            },
+            {},
+            ast::query::group_by_clause {
+                    ast::query::grouping_column { id("v") },
+            },
+            {
+                    ast::scalar::comparison_predicate {
+                            vref(id("MISSING")),
+                            ast::scalar::comparison_operator::equals,
+                            literal(string("''")),
+                    }
+            },
+    });
+}
+
+TEST_F(analyze_query_expression_select_test, invalid_order_by_column) {
+    auto table = install_table("testing");
+    invalid(ast::query::query {
+            {
+                    ast::query::select_asterisk {},
+            },
+            {
+                    ast::table::table_reference {
+                            id("testing"),
+                    }
+            },
+            {},
+            {},
+            {},
+            {
+                    {
+                            vref(id("MISSING")),
+                    },
+            },
+    });
+}
+
+TEST_F(analyze_query_expression_select_test, invalid_limit_expression) {
+    auto table = install_table("testing");
+    invalid(ast::query::query {
+            {
+                    ast::query::select_asterisk {},
+            },
+            {
+                    ast::table::table_reference {
+                            id("testing"),
+                    }
+            },
+            {},
+            {},
+            {},
+            {},
+            {
+                    vref(id("MISSING")),
+            },
+    });
+}
+
+TEST_F(analyze_query_expression_select_test, invalid_limit_value_string) {
+    auto table = install_table("testing");
+    invalid(ast::query::query {
+            {
+                    ast::query::select_asterisk {},
+            },
+            {
+                    ast::table::table_reference {
+                            id("testing"),
+                    }
+            },
+            {},
+            {},
+            {},
+            {},
+            {
+                    literal(string("''")),
+            },
+    });
+}
+
+TEST_F(analyze_query_expression_select_test, invalid_limit_not_constant) {
+    auto table = install_table("testing");
+    invalid(ast::query::query {
+            {
+                    ast::query::select_asterisk {},
+            },
+            {
+                    ast::table::table_reference {
+                            id("testing"),
+                    }
+            },
+            {},
+            {},
+            {},
+            {},
+            {
+                    vref(id("k")),
+            },
+    });
 }
 
 } // namespace mizugaki::analyzer::details
