@@ -17,6 +17,9 @@
 
 #include <mizugaki/ast/literal/boolean.h>
 
+#include <mizugaki/ast/scalar/comparison_predicate.h>
+#include <mizugaki/ast/scalar/builtin_set_function_invocation.h>
+
 #include <mizugaki/ast/statement/empty_statement.h>
 #include <mizugaki/ast/statement/update_statement.h>
 
@@ -36,9 +39,14 @@ protected:
         EXPECT_TRUE(std::holds_alternative<erroneous_result_type>(r)) << diagnostics();
         EXPECT_GT(count_error(), 0);
     }
+
+    void invalid(sql_analyzer_code code, ast::statement::statement const& stmt) {
+        invalid(stmt);
+        EXPECT_TRUE(find_error(code)) << diagnostics();
+    }
 };
 
-TEST_F(analyze_statement_update_test, update_statement_simple) {
+TEST_F(analyze_statement_update_test, simple) {
     auto table = install_table("testing");
 
     auto r = analyze_statement(context(), ast::statement::update_statement {
@@ -117,7 +125,7 @@ TEST_F(analyze_statement_update_test, update_statement_simple) {
     }
 }
 
-TEST_F(analyze_statement_update_test, update_statement_modify_key) {
+TEST_F(analyze_statement_update_test, modify_key) {
     auto table = install_table("testing");
 
     // UPADTE testing SET k = 2
@@ -201,7 +209,7 @@ TEST_F(analyze_statement_update_test, update_statement_modify_key) {
     }
 }
 
-TEST_F(analyze_statement_update_test, update_statement_multiple_set) {
+TEST_F(analyze_statement_update_test, multiple_set) {
     auto table = install_table("testing");
 
     auto r = analyze_statement(context(), ast::statement::update_statement {
@@ -299,7 +307,7 @@ TEST_F(analyze_statement_update_test, update_statement_multiple_set) {
     }
 }
 
-TEST_F(analyze_statement_update_test, update_statement_filter) {
+TEST_F(analyze_statement_update_test, where) {
     auto table = install_table("testing");
 
     auto r = analyze_statement(context(), ast::statement::update_statement {
@@ -330,6 +338,128 @@ TEST_F(analyze_statement_update_test, update_statement_filter) {
     auto last = find_last<trelation::write>(graph);
     ASSERT_TRUE(last);
     EXPECT_EQ(find_next(*project).get(), last.get());
+}
+
+TEST_F(analyze_statement_update_test, invalid_relation) {
+    invalid(ast::statement::update_statement{
+            id("MISSING"),
+            {
+                    {
+                            id("v"),
+                            literal(string("'X'")),
+                    },
+            },
+    });
+}
+
+TEST_F(analyze_statement_update_test, columns_empty) {
+    auto table = install_table("testing");
+    invalid(sql_analyzer_code::malformed_syntax, ast::statement::update_statement{
+            id("testing"),
+            {},
+    });
+}
+
+TEST_F(analyze_statement_update_test, columns_not_found) {
+    auto table = install_table("testing");
+    invalid(sql_analyzer_code::column_not_found, ast::statement::update_statement{
+            id("testing"),
+            {
+                    {
+                            id("MISSING"),
+                            literal(string("'X'")),
+                    },
+            },
+    });
+}
+
+TEST_F(analyze_statement_update_test, columns_duplicated) {
+    auto table = install_table("testing");
+    invalid(sql_analyzer_code::column_already_exists, ast::statement::update_statement{
+            id("testing"),
+            {
+                    {
+                            id("v"),
+                            literal(string("'V'")),
+                    },
+                    {
+                            id("w"),
+                            literal(string("'W'")),
+                    },
+                    {
+                            id("x"),
+                            literal(string("'X'")),
+                    },
+                    {
+                            id("v"),
+                            literal(string("'X'")),
+                    },
+            },
+    });
+}
+
+TEST_F(analyze_statement_update_test, columns_invalid_expression) {
+    auto table = install_table("testing");
+    invalid(ast::statement::update_statement{
+            id("testing"),
+            {
+                    {
+                            id("x"),
+                            vref(id("MISSING")),
+                    },
+            },
+    });
+}
+
+TEST_F(analyze_statement_update_test, invalid_where) {
+    auto table = install_table("testing");
+    invalid(ast::statement::update_statement{
+            id("testing"),
+            {
+                    {
+                            id("v"),
+                            literal(string("'X'")),
+                    },
+            },
+            {
+                    ast::scalar::comparison_predicate {
+                            vref(id("MISSING")),
+                            ast::scalar::comparison_operator::greater_than,
+                            literal(number("0")),
+                    },
+            },
+    });
+}
+
+TEST_F(analyze_statement_update_test, invalid_where_aggregated) {
+    auto table = install_table("testing");
+    auto count = set_functions_->add(::yugawara::aggregate::declaration {
+            ::yugawara::aggregate::declaration::minimum_builtin_function_id + 1,
+            "count",
+            ttype::int8 {},
+            {},
+            true,
+    });
+    invalid(sql_analyzer_code::unsupported_feature, ast::statement::update_statement{
+            id("testing"),
+            {
+                    {
+                            id("v"),
+                            literal(string("'X'")),
+                    },
+            },
+            {
+                    ast::scalar::comparison_predicate {
+                            ast::scalar::builtin_set_function_invocation {
+                                    ast::scalar::builtin_set_function_kind::count,
+                                    {},
+                                    {},
+                            },
+                            ast::scalar::comparison_operator::greater_than,
+                            literal(number("0")),
+                    },
+            },
+    });
 }
 
 } // namespace mizugaki::analyzer::details

@@ -337,10 +337,10 @@ public:
     }
 
     [[nodiscard]] result_type operator()(ast::statement::update_statement const& stmt) {
-        // scan (-> filter) -> project -> write[insert]
+        // scan (-> filter) -> project -> write[update]
         if (stmt.elements().empty()) {
             context_.report(
-                    sql_analyzer_code::unsupported_feature,
+                    sql_analyzer_code::malformed_syntax,
                     "empty UPDATE SET is not supported",
                     stmt.region());
             return {};
@@ -405,7 +405,7 @@ public:
                 context_.report(
                         sql_analyzer_code::column_already_exists,
                         string_builder {}
-                                << "duplicate column in insert statement: "
+                                << "duplicate column in update statement: "
                                 << info.primary_index()->table().simple_name()
                                 << "."
                                 << element.target()->last_name().identifier()
@@ -547,6 +547,13 @@ public:
                 {});
         if (!predicate) {
             return {}; // error
+        }
+        if (predicate.saw_aggregate()) {
+            context_.report(
+                    sql_analyzer_code::unsupported_feature,
+                    "aggregated function in WHERE clause is not yet supported",
+                    expr.region());
+            return {};
         }
         auto result = context_.create<trelation::filter>(
                 expr.region(),
