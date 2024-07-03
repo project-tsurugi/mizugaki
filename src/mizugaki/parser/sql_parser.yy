@@ -2839,17 +2839,19 @@ scalar_value_expression
         }
     | "+"[o] scalar_value_expression[e] %prec UNARY_PLUS
         {
-            $$ = driver.node<ast::scalar::unary_expression>(
-                    regioned { ast::scalar::unary_operator::plus, @o },
-                    $e,
-                    @$);
+            $$ = driver.try_fold_literal(
+                    driver.node<ast::scalar::unary_expression>(
+                            regioned { ast::scalar::unary_operator::plus, @o },
+                            $e,
+                            @$));
         }
     | "-"[o] scalar_value_expression[e] %prec UNARY_MINUS
         {
-            $$ = driver.node<ast::scalar::unary_expression>(
-                    regioned { ast::scalar::unary_operator::minus, @o },
-                    $e,
-                    @$);
+            $$ = driver.try_fold_literal(
+                    driver.node<ast::scalar::unary_expression>(
+                            regioned { ast::scalar::unary_operator::minus, @o },
+                            $e,
+                            @$));
         }
     // 6.28 <datetime value expression> - <time zone>
     | value_expression_primary[e] AT[o1] LOCAL[o2]
@@ -2886,17 +2888,19 @@ scalar_value_expression
 signed_value_expression_primary
     : "+"[s] value_expression_primary[e]
         {
-            $$ = driver.node<ast::scalar::unary_expression>(
-                    regioned { ast::scalar::unary_operator::plus, @s },
-                    $e,
-                    @$);
+            $$ = driver.try_fold_literal(
+                    driver.node<ast::scalar::unary_expression>(
+                            regioned { ast::scalar::unary_operator::plus, @s },
+                            $e,
+                            @$));
         }
     | "-"[s] value_expression_primary[e]
         {
-            $$ = driver.node<ast::scalar::unary_expression>(
-                    regioned { ast::scalar::unary_operator::minus, @s },
-                    $e,
-                    @$);
+            $$ = driver.try_fold_literal(
+                    driver.node<ast::scalar::unary_expression>(
+                            regioned { ast::scalar::unary_operator::minus, @s },
+                            $e,
+                            @$));
         }
     | value_expression_primary[e]
         {

@@ -9,6 +9,9 @@
 
 #include <mizugaki/ast/name/qualified.h>
 #include <mizugaki/ast/type/user_defined.h>
+#include <mizugaki/ast/literal/numeric.h>
+#include <mizugaki/ast/scalar/literal_expression.h>
+#include <mizugaki/ast/scalar/unary_expression.h>
 #include <mizugaki/ast/scalar/variable_reference.h>
 #include <mizugaki/ast/scalar/builtin_function_invocation.h>
 
@@ -161,6 +164,43 @@ sql_driver::to_delimited_identifier(ast::common::chars const& str, location_type
             std::move(identifier),
             ast::name::simple::identifier_kind_type::delimited,
             location);
+}
+
+sql_driver::node_ptr<ast::scalar::expression>
+sql_driver::try_fold_literal(node_ptr<ast::scalar::expression> expression) {
+    if (expression->node_kind() != ast::scalar::unary_expression::tag) {
+        return expression;
+    }
+
+    auto&& unary = unsafe_downcast<ast::scalar::unary_expression>(*expression);
+    if (unary.operator_kind() != ast::scalar::unary_operator::plus &&
+            unary.operator_kind() != ast::scalar::unary_operator::minus) {
+        return expression;
+    }
+    if (unary.operand()->node_kind() != ast::scalar::literal_expression::tag) {
+        return expression;
+    }
+
+    auto&& literal = unsafe_downcast<ast::scalar::literal_expression>(*unary.operand()).value();
+    if (literal->node_kind() != ast::literal::kind::exact_numeric &&
+            literal->node_kind() != ast::literal::kind::approximate_numeric) {
+        return expression;
+    }
+
+    // only set if the original literal does not have a sign
+    auto&& value = unsafe_downcast<ast::literal::numeric>(*literal);
+    if (value.sign().has_value()) {
+        return expression;
+    }
+
+    if (unary.operator_kind() == ast::scalar::unary_operator::plus) {
+        value.sign() = { ast::literal::sign::plus, unary.operator_kind().region() };
+    } else {
+        value.sign() = { ast::literal::sign::minus, unary.operator_kind().region() };
+    }
+    unary.operand()->region() = expression->region();
+
+    return std::move(unary.operand());
 }
 
 } // namespace mizugaki::parser

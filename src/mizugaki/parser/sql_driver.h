@@ -2,7 +2,6 @@
 
 #include <cstddef>
 
-
 #include <mizugaki/ast/common/vector.h>
 #include <mizugaki/ast/name/name.h>
 #include <mizugaki/ast/name/simple.h>
@@ -89,6 +88,8 @@ public:
             node_ptr<ast::name::simple>& identifier);
 
     [[nodiscard]] node_ptr<ast::type::type> try_build_type(node_ptr<ast::scalar::expression>& expr);
+
+    [[nodiscard]] node_ptr<ast::scalar::expression> try_fold_literal(node_ptr<ast::scalar::expression> expression);
 
 private:
     ::takatori::util::maybe_shared_ptr<document_type const> document_;

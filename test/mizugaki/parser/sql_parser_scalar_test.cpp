@@ -4,7 +4,6 @@
 
 #include <mizugaki/ast/statement/select_statement.h>
 
-#include <mizugaki/ast/query/query.h>
 #include <mizugaki/ast/query/table_value_constructor.h>
 #include <mizugaki/ast/query/table_reference.h>
 
@@ -475,6 +474,32 @@ TEST_F(sql_parser_scalar_test, unary_expression_minus) {
     EXPECT_EQ(extract(result), (scalar::unary_expression {
             scalar::unary_operator::minus,
             v("a"),
+    }));
+}
+
+TEST_F(sql_parser_scalar_test, unary_expression_plus_literal) {
+    auto result = parse("+1");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (scalar::literal_expression {
+            ast::literal::numeric {
+                    ast::literal::kind::exact_numeric,
+                    ast::literal::sign::plus,
+                    { "1" },
+            },
+    }));
+}
+
+TEST_F(sql_parser_scalar_test, unary_expression_minus_literal) {
+    auto result = parse("-1");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (scalar::literal_expression {
+            ast::literal::numeric {
+                    ast::literal::kind::exact_numeric,
+                    ast::literal::sign::minus,
+                    { "1" },
+            },
     }));
 }
 
