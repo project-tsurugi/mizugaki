@@ -664,11 +664,8 @@
 %token OWNED "OWNED"
 %token PLACING "PLACING"
 
-%token BYTE "BYTE"
-%token BYTEVAR "BYTEVAR"
-
 %token VARBIT "VARBIT"
-%token VARBYTE "VARBYTE"
+%token VARBINARY "VARBINARY"
 
 %token TINYINT "TINYINT"
 %token BIGINT "BIGINT"
@@ -3786,7 +3783,7 @@ data_type_system
                     $s,
                     @$);
         }
-    | BYTE[k] parenthesized_size_opt[s]
+    | BINARY[k] parenthesized_size_opt[s]
         {
             $$ = driver.node<ast::type::octet_string>(
                     regioned { ast::type::kind::octet, @k },
@@ -3949,9 +3946,8 @@ bit_varying_type_name
     ;
 
 octet_varying_type_name
-    : BYTE VARYING
-    | BYTEVAR
-    | VARBYTE
+    : BINARY VARYING
+    | VARBINARY
     ;
 
 decimal_type_name

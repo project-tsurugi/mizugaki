@@ -422,10 +422,8 @@ host_parameter_name ":"{identifier}
 "IF" { return parser_type::make_IF(location()); }
 "INDEX" { return parser_type::make_INDEX(location()); }
 
-"BYTE" { return parser_type::make_BYTE(location()); }
-"BYTEVAR" { return parser_type::make_BYTEVAR(location()); }
 "VARBIT" { return parser_type::make_VARBIT(location()); }
-"VARBYTE" { return parser_type::make_VARBYTE(location()); }
+"VARBINARY" { return parser_type::make_VARBINARY(location()); }
 
 "PLACING" { return parser_type::make_PLACING(location()); }
 "TINYINT" { return parser_type::make_TINYINT(location()); }

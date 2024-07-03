@@ -155,7 +155,7 @@ TEST_F(sql_parser_type_test, bit_varying_flexible) {
 }
 
 TEST_F(sql_parser_type_test, octet) {
-    auto result = parse("BYTE");
+    auto result = parse("BINARY");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (type::octet_string {
@@ -164,7 +164,7 @@ TEST_F(sql_parser_type_test, octet) {
 }
 
 TEST_F(sql_parser_type_test, octet_length) {
-    auto result = parse("BYTE(16)");
+    auto result = parse("BINARY(16)");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (type::octet_string {
@@ -174,7 +174,7 @@ TEST_F(sql_parser_type_test, octet_length) {
 }
 
 TEST_F(sql_parser_type_test, octet_varying) {
-    auto result = parse("BYTE VARYING(256)");
+    auto result = parse("BINARY VARYING(256)");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (type::octet_string {
@@ -184,7 +184,7 @@ TEST_F(sql_parser_type_test, octet_varying) {
 }
 
 TEST_F(sql_parser_type_test, octet_varying_flexible) {
-    auto result = parse("VARBYTE(*)");
+    auto result = parse("VARBINARY(*)");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (type::octet_string {
