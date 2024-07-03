@@ -53,6 +53,7 @@ add_test_executable(mizugaki/parser/sql_parser_type_test.cpp)
 add_test_executable(mizugaki/parser/sql_parser_misc_test.cpp)
 
 # SQL analyzer
+add_test_executable(mizugaki/analyzer/sql_analyzer_test.cpp)
 add_analyzer_test_executable(mizugaki/analyzer/details/analyze_literal_test.cpp)
 add_analyzer_test_executable(mizugaki/analyzer/details/analyze_name_test.cpp)
 add_analyzer_test_executable(mizugaki/analyzer/details/analyze_type_test.cpp)

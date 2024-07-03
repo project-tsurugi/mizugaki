@@ -557,7 +557,7 @@ private:
             auto r = context_.resolve(expression, true);
             return static_cast<bool>(r);
         }
-        return false;
+        return true;
     }
 };
 
