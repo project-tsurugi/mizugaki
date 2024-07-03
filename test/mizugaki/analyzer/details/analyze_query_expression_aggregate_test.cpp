@@ -288,6 +288,159 @@ TEST_F(analyze_query_expression_aggregate_test, group_by) {
     EXPECT_EQ(relation_columns[1].variable(), project_columns[1].variable());
 }
 
+TEST_F(analyze_query_expression_aggregate_test, group_by_columns_multiple) {
+    auto table = install_table("testing");
+    trelation::graph_type graph {};
+
+    auto r = analyze_query_expression(
+            context(),
+            graph,
+            ast::query::query {
+                    {
+                            ast::query::select_column {
+                                    vref(id("v")),
+                            },
+                            ast::query::select_column {
+                                    ast::scalar::builtin_set_function_invocation {
+                                            ast::scalar::builtin_set_function_kind::count,
+                                            {},
+                                            {},
+                                    }
+                            },
+                    },
+                    {
+                            ast::table::table_reference {
+                                    id("testing"),
+                            }
+                    },
+                    {},
+                    ast::query::group_by_clause {
+                            ast::query::grouping_column { id("v") },
+                            ast::query::grouping_column { id("w") },
+                            ast::query::grouping_column { id("x") },
+                    },
+            },
+            {},
+            {});
+    ASSERT_TRUE(r);
+
+    // scan - aggregate - project -
+
+    ASSERT_EQ(graph.size(), 3);
+    EXPECT_FALSE(r.output().opposite());
+
+    auto&& relation = r.relation();
+
+    auto&& project = downcast<trelation::project>(r.output().owner());
+    auto&& aggregate = *find_prev<trelation::intermediate::aggregate>(project);
+    auto&& scan = *find_prev<trelation::scan>(aggregate);
+
+    auto&& scan_columns = scan.columns();
+    ASSERT_EQ(scan_columns.size(), 4);
+
+    auto&& grouping_columns = aggregate.group_keys();
+    ASSERT_EQ(grouping_columns.size(), 3);
+    EXPECT_EQ(grouping_columns[0], scan_columns[1].destination());
+    EXPECT_EQ(grouping_columns[1], scan_columns[2].destination());
+    EXPECT_EQ(grouping_columns[2], scan_columns[3].destination());
+
+    auto&& aggregation_columns = aggregate.columns();
+    ASSERT_EQ(aggregation_columns.size(), 1);
+    {
+        auto&& column = aggregation_columns[0];
+        EXPECT_EQ(column.function(), factory_(count_asterisk));
+        ASSERT_EQ(column.arguments().size(), 0);
+    }
+
+    auto&& project_columns = project.columns();
+    ASSERT_EQ(project_columns.size(), 2);
+    EXPECT_EQ(project_columns[0].value(), vref(scan_columns[1].destination()));
+    EXPECT_EQ(project_columns[1].value(), vref(aggregation_columns[0].destination()));
+
+    // output
+
+    auto relation_columns = relation.columns();
+    ASSERT_EQ(relation_columns.size(), 2);
+    EXPECT_EQ(relation_columns[0].variable(), project_columns[0].variable());
+    EXPECT_EQ(relation_columns[1].variable(), project_columns[1].variable());
+}
+
+TEST_F(analyze_query_expression_aggregate_test, group_by_columns_duplicate) {
+    auto table = install_table("testing");
+    trelation::graph_type graph {};
+
+    auto r = analyze_query_expression(
+            context(),
+            graph,
+            ast::query::query {
+                    {
+                            ast::query::select_column {
+                                    vref(id("v")),
+                            },
+                            ast::query::select_column {
+                                    ast::scalar::builtin_set_function_invocation {
+                                            ast::scalar::builtin_set_function_kind::count,
+                                            {},
+                                            {},
+                                    }
+                            },
+                    },
+                    {
+                            ast::table::table_reference {
+                                    id("testing"),
+                            }
+                    },
+                    {},
+                    ast::query::group_by_clause {
+                            ast::query::grouping_column { id("v") },
+                            ast::query::grouping_column { id("w") },
+                            ast::query::grouping_column { id("v") },
+                    },
+            },
+            {},
+            {});
+    ASSERT_TRUE(r);
+
+    // scan - aggregate - project -
+
+    ASSERT_EQ(graph.size(), 3);
+    EXPECT_FALSE(r.output().opposite());
+
+    auto&& relation = r.relation();
+
+    auto&& project = downcast<trelation::project>(r.output().owner());
+    auto&& aggregate = *find_prev<trelation::intermediate::aggregate>(project);
+    auto&& scan = *find_prev<trelation::scan>(aggregate);
+
+    auto&& scan_columns = scan.columns();
+    ASSERT_EQ(scan_columns.size(), 4);
+
+    auto&& grouping_columns = aggregate.group_keys();
+    ASSERT_EQ(grouping_columns.size(), 2);
+    EXPECT_EQ(grouping_columns[0], scan_columns[1].destination());
+    EXPECT_EQ(grouping_columns[1], scan_columns[2].destination());
+
+    auto&& aggregation_columns = aggregate.columns();
+    ASSERT_EQ(aggregation_columns.size(), 1);
+    {
+        auto&& column = aggregation_columns[0];
+        EXPECT_EQ(column.function(), factory_(count_asterisk));
+        ASSERT_EQ(column.arguments().size(), 0);
+    }
+
+    auto&& project_columns = project.columns();
+    ASSERT_EQ(project_columns.size(), 2);
+    EXPECT_EQ(project_columns[0].value(), vref(scan_columns[1].destination()));
+    EXPECT_EQ(project_columns[1].value(), vref(aggregation_columns[0].destination()));
+
+    // output
+
+    auto relation_columns = relation.columns();
+    ASSERT_EQ(relation_columns.size(), 2);
+    EXPECT_EQ(relation_columns[0].variable(), project_columns[0].variable());
+    EXPECT_EQ(relation_columns[1].variable(), project_columns[1].variable());
+}
+
 TEST_F(analyze_query_expression_aggregate_test, group_by_having) {
     auto table = install_table("testing");
     trelation::graph_type graph {};

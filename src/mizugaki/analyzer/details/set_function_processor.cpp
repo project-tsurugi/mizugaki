@@ -235,6 +235,11 @@ set_function_processor::set_function_processor(
 {}
 
 void set_function_processor::add_group_key(tdescriptor::variable column) {
+    auto existing = grouping_columns_.find(column);
+    if (existing != grouping_columns_.end()) {
+        // ignore exiting group key
+        return;
+    }
     activate();
     grouping_columns_.insert(column);
     aggregations_store().group_keys().emplace_back(std::move(column));
