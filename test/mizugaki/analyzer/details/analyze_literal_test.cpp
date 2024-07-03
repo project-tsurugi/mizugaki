@@ -11,6 +11,7 @@
 #include <takatori/type/character.h>
 
 #include <takatori/scalar/immediate.h>
+#include <takatori/scalar/cast.h>
 
 #include <mizugaki/ast/literal/numeric.h>
 #include <mizugaki/ast/literal/string.h> // NOLINT
@@ -234,7 +235,7 @@ TEST_F(analyze_literal_test, null_wo_context) {
     EXPECT_TRUE(contains(context(), diagnostic_code::missing_context_of_null));
 }
 
-TEST_F(analyze_literal_test, dfault) {
+TEST_F(analyze_literal_test, default) {
     auto r = analyze_literal(
             context(),
             ast::literal::default_ {},
@@ -249,7 +250,7 @@ TEST_F(analyze_literal_test, dfault) {
     }));
 }
 
-TEST_F(analyze_literal_test, dfault_wo_context) {
+TEST_F(analyze_literal_test, default_wo_context) {
     auto r = analyze_literal(
             context(),
             ast::literal::default_ {},
@@ -258,6 +259,46 @@ TEST_F(analyze_literal_test, dfault_wo_context) {
             });
     EXPECT_FALSE(r);
     EXPECT_TRUE(contains(context(), diagnostic_code::missing_context_of_default_value));
+}
+
+TEST_F(analyze_literal_test, conversion_by_context_enabled) {
+    options_.cast_literals_in_context() = true;
+    auto r = analyze_literal(
+            context(),
+            ast::literal::string {
+                    ast::literal::kind::character_string,
+                    "'1'",
+            },
+            {
+                    ttype::int8 {},
+            });
+    ASSERT_TRUE(r);
+    EXPECT_EQ(*r, (tscalar::cast {
+            ttype::int8 {},
+            tscalar::cast_loss_policy::error,
+            tscalar::immediate {
+                    tvalue::character { "1" },
+                    ttype::character { ttype::varying },
+            }
+    }));
+}
+
+TEST_F(analyze_literal_test, conversion_by_context_disabled) {
+    options_.cast_literals_in_context() = false;
+    auto r = analyze_literal(
+            context(),
+            ast::literal::string {
+                    ast::literal::kind::character_string,
+                    "'1'",
+            },
+            {
+                    ttype::int8 {},
+            });
+    ASSERT_TRUE(r);
+    EXPECT_EQ(*r, (tscalar::immediate {
+            tvalue::character { "1" },
+            ttype::character { ttype::varying },
+    }));
 }
 
 } // namespace mizugaki::analyzer::details

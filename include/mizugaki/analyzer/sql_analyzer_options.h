@@ -119,6 +119,12 @@ public:
     static constexpr bool default_validate_scalar_expressions = false;
 
     /**
+     * @brief the default value of whether or not to automatically cast literals if the context type is specified.
+     * @see cast_literals_in_context()
+     */
+    static constexpr bool default_cast_literals_in_context = true;
+
+    /**
      * @brief the default value of a function name to advance a sequence value.
      * @see advance_sequence_function_name()
      */
@@ -383,6 +389,20 @@ public:
     }
 
     /**
+     * @brief returns whether or not to automatically cast literals if the context type is specified.
+     * @return true if inserting cast is enabled
+     * @return false otherwise
+     */
+    [[nodiscard]] bool& cast_literals_in_context() noexcept {
+        return cast_literals_in_context_;
+    }
+
+    /// @copydoc cast_literals_in_context()
+    [[nodiscard]] bool const& cast_literals_in_context() const noexcept {
+        return cast_literals_in_context_;
+    }
+
+    /**
      * @brief returns the function name to advance a sequence value.
      * @details This function requires a symbol of the target sequence.
      * @return the function name to advance a sequence value
@@ -419,6 +439,7 @@ private:
     bool host_parameter_declaration_starts_with_colon_ { default_host_parameter_declaration_starts_with_colon };
     bool allow_context_independent_null_ { default_allow_context_independent_null };
     bool validate_scalar_expressions_ { default_validate_scalar_expressions };
+    bool cast_literals_in_context_ { default_cast_literals_in_context };
 
     std::string_view advance_sequence_function_name_ { default_advance_sequence_function_name };
 };

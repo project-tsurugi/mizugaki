@@ -35,10 +35,26 @@ public:
     {}
 
     [[nodiscard]] std::unique_ptr<tscalar::expression> process(ast::literal::literal const& literal) {
-        return ast::literal::dispatch(*this, literal);
+        auto result = ast::literal::dispatch(*this, literal);
+        if (!result) {
+            return {};
+        }
+        if (auto&& t = value_context_.type();
+                context_.options()->cast_literals_in_context() &&
+                t && *t != result->type()) {
+            // NOTE: here, we only apply cast operation to constant values.
+            // later optimization (if it available) will reduce this operation
+            return context_.create<tscalar::cast>(
+                    result->region(),
+                    t,
+                    tscalar::cast_loss_policy::error,
+                    std::move(result));
+        }
+        return result;
+
     }
 
-    std::unique_ptr<tscalar::expression> operator()(ast::literal::literal const& value) {
+    std::unique_ptr<tscalar::immediate> operator()(ast::literal::literal const& value) {
         context_.report(
                 sql_analyzer_code::unsupported_feature,
                 string_builder {}
@@ -49,22 +65,22 @@ public:
         return {};
     }
 
-    std::unique_ptr<tscalar::expression> operator()(ast::literal::boolean const& value) {
+    std::unique_ptr<tscalar::immediate> operator()(ast::literal::boolean const& value) {
         if (value.value() == ast::literal::boolean_kind::unknown) {
-            return adapt(context_.create<tscalar::immediate>(
+            return context_.create<tscalar::immediate>(
                     value.region(),
                     context_.values().get(tvalue::unknown {}),
-                    context_.types().get(ttype::boolean {})));
+                    context_.types().get(ttype::boolean {}));
         }
-        return adapt(context_.create<tscalar::immediate>(
+        return context_.create<tscalar::immediate>(
                 value.region(),
                 context_.values().get(tvalue::boolean {
                         value.value() == ast::literal::boolean_kind::true_,
                 }),
-                context_.types().get(ttype::boolean {})));
+                context_.types().get(ttype::boolean {}));
     }
 
-    std::unique_ptr<tscalar::expression> operator()(ast::literal::numeric const& value) {
+    std::unique_ptr<tscalar::immediate> operator()(ast::literal::numeric const& value) {
         using ast::literal::kind;
         switch (value.node_kind()) {
             case kind::exact_numeric: return process_exact_numeric(value);
@@ -83,7 +99,7 @@ public:
         return {};
     }
 
-    std::unique_ptr<tscalar::expression> operator()(ast::literal::string const& value) {
+    std::unique_ptr<tscalar::immediate> operator()(ast::literal::string const& value) {
         using ast::literal::kind;
         switch (value.node_kind()) {
             case kind::character_string: return process_character_string(value);
@@ -101,7 +117,7 @@ public:
         return {};
     }
 
-    std::unique_ptr<tscalar::expression> operator()(ast::literal::datetime const& value) {
+    std::unique_ptr<tscalar::immediate> operator()(ast::literal::datetime const& value) {
         using ast::literal::kind;
         switch (value.node_kind()) {
             default:
@@ -118,12 +134,12 @@ public:
         return {};
     }
 
-//    std::unique_ptr<tscalar::expression> operator()(ast::literal::interval const& value) {
+//    std::unique_ptr<tscalar::immediate> operator()(ast::literal::interval const& value) {
 //        (void) value;
 //        return {};
 //    }
 
-    std::unique_ptr<tscalar::expression> operator()(ast::literal::null const& value) {
+    std::unique_ptr<tscalar::immediate> operator()(ast::literal::null const& value) {
         if (auto t = value_context_.type()) {
             return context_.create<tscalar::immediate>(
                     value.region(),
@@ -142,12 +158,12 @@ public:
         return {};
     }
 
-//    std::unique_ptr<tscalar::expression> operator()(ast::literal::empty const& value) {
+//    std::unique_ptr<tscalar::immediate> operator()(ast::literal::empty const& value) {
 //        (void) value;
 //        return {};
 //    }
 
-    std::unique_ptr<tscalar::expression> operator()(ast::literal::default_ const& value) {
+    std::unique_ptr<tscalar::immediate> operator()(ast::literal::default_ const& value) {
         auto t = value_context_.type();
         auto v = value_context_.default_value();
         if (t && v) {
@@ -174,7 +190,7 @@ private:
         return {};
     }
 
-    [[nodiscard]] std::unique_ptr<tscalar::expression> process_exact_numeric(ast::literal::numeric const& value) { // NOLINT(*-function-cognitive-complexity)
+    [[nodiscard]] std::unique_ptr<tscalar::immediate> process_exact_numeric(ast::literal::numeric const& value) { // NOLINT(*-function-cognitive-complexity)
         // FIXME: move to yugawara
         auto max_precision = static_cast<mpd_ssize_t>(context_.options()->max_decimal_precision());
         ::decimal::Context context {
@@ -221,44 +237,44 @@ private:
             if (integer) {
                 if (context_.options()->prefer_small_integer_literals()) {
                     if (auto r = soft_cast<std::int8_t>(*integer)) {
-                        return adapt(context_.create<tscalar::immediate>(
+                        return context_.create<tscalar::immediate>(
                                 value.region(),
                                 context_.values().get(tvalue::int4 { *r }),
-                                context_.types().get(ttype::int1 {})));
+                                context_.types().get(ttype::int1 {}));
                     }
                     if (auto r = soft_cast<std::int16_t>(*integer)) {
-                        return adapt(context_.create<tscalar::immediate>(
+                        return context_.create<tscalar::immediate>(
                                 value.region(),
                                 context_.values().get(tvalue::int4 { *r }),
-                                context_.types().get(ttype::int2 {})));
+                                context_.types().get(ttype::int2 {}));
                     }
                     if (auto r = soft_cast<std::int32_t>(*integer)) {
-                        return adapt(context_.create<tscalar::immediate>(
+                        return context_.create<tscalar::immediate>(
                                 value.region(),
                                 context_.values().get(tvalue::int4 { *r }),
-                                context_.types().get(ttype::int4 {})));
+                                context_.types().get(ttype::int4 {}));
                     }
                 }
-                return adapt(context_.create<tscalar::immediate>(
+                return context_.create<tscalar::immediate>(
                         value.region(),
                         context_.values().get(tvalue::int8 { *integer }),
-                        context_.types().get(ttype::int8 {})));
+                        context_.types().get(ttype::int8 {}));
             }
         }
         std::optional<std::size_t> precision {};
         if (context_.options()->prefer_small_decimal_literals()) {
             precision = static_cast<std::size_t>(::decimal::Decimal::radix());
         }
-        return adapt(context_.create<tscalar::immediate>(
+        return context_.create<tscalar::immediate>(
                 value.region(),
                 context_.values().get(tvalue::decimal { ::takatori::decimal::triple { v } }),
                 context_.types().get(ttype::decimal {
                         precision,
                         static_cast<std::size_t>(v.exponent()),
-                })));
+                }));
     }
 
-    [[nodiscard]] std::unique_ptr<tscalar::expression> process_approximate_numeric(ast::literal::numeric const& value) {
+    [[nodiscard]] std::unique_ptr<tscalar::immediate> process_approximate_numeric(ast::literal::numeric const& value) {
         // FIXME: more accurate values for fp
         std::size_t index {};
         double result {};
@@ -293,10 +309,10 @@ private:
                     value.region());
             return {};
         }
-        return adapt(context_.create<tscalar::immediate>(
+        return context_.create<tscalar::immediate>(
                 value.region(),
                 context_.values().get(tvalue::float8 { result }),
-                context_.types().get(ttype::float8 {})));
+                context_.types().get(ttype::float8 {}));
     }
 
     [[nodiscard]] std::optional<std::size_t> count_characters(ast::literal::string::value_type const& string) {
@@ -340,7 +356,7 @@ private:
         }
     }
 
-    [[nodiscard]] std::unique_ptr<tscalar::expression> process_character_string(ast::literal::string const& value) {
+    [[nodiscard]] std::unique_ptr<tscalar::immediate> process_character_string(ast::literal::string const& value) {
         std::size_t nchars = 0;
         if (auto n = count_characters(value.value())) {
             nchars += *n;
@@ -366,26 +382,13 @@ private:
         if (context_.options()->prefer_small_character_literals()) {
             size = nchars;
         }
-        return adapt(context_.create<tscalar::immediate>(
+        return context_.create<tscalar::immediate>(
                 value.region(),
                 context_.values().get(tvalue::character { std::move(string) }),
                 context_.types().get(ttype::character {
                         ttype::varying,
                         size,
-                })));
-    }
-
-    [[nodiscard]] std::unique_ptr<tscalar::expression> adapt(std::unique_ptr<tscalar::immediate> expression) {
-        if (auto t = value_context_.type(); t && *t != expression->type()) {
-            // NOTE: here, we only apply cast operation to constant values.
-            // later optimization (if it available) will reduce this operation
-            return context_.create<tscalar::cast>(
-                    expression->region(),
-                    std::move(t),
-                    tscalar::cast_loss_policy::error,
-                    std::move(expression));
-        }
-        return expression;
+                }));
     }
 };
 
