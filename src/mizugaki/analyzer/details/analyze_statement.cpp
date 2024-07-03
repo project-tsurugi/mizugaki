@@ -607,7 +607,7 @@ public:
                 return context_.create<tstatement::empty>(stmt.region());
             }
             context_.report(
-                    sql_analyzer_code::index_already_exists,
+                    sql_analyzer_code::table_already_exists,
                     string_builder {}
                             << "table is already defined: "
                             << stmt.name()->last_name().identifier()
@@ -619,12 +619,12 @@ public:
         if (stmt.name()->node_kind() != ast::name::kind::simple) {
             context_.report(
                     sql_analyzer_code::unsupported_feature,
-                    "qualified table name is not supported",
+                    "qualified table table_name is not supported",
                     stmt.name()->region());
             return {};
         }
 
-        auto name = normalize_identifier(context_, stmt.name()->last_name());
+        auto table_name = normalize_identifier(context_, stmt.name()->last_name());
 
         ::takatori::util::reference_vector<::yugawara::storage::column> table_columns {};
         ::tsl::hopscotch_set<std::string_view> saw_columns {};
@@ -648,7 +648,7 @@ public:
                         sql_analyzer_code::column_already_exists,
                         string_builder {}
                                 << "duplicate column in table definition: "
-                                << name
+                                << table_name
                                 << "."
                                 << column_name
                                 << string_builder::to_string,
@@ -663,8 +663,14 @@ public:
                     ::yugawara::storage::column_feature_set {});
             saw_columns.insert(prototype->simple_name());
             bool saw_nullity = false;
-            bool saw_default = false;
             for (auto&& constraint_def : column.constraints()) {
+                // NOTE: restricted combinations of column constraints
+                // - PRIMARY KEY + PRIMARY KEY
+                // - PRIMARY KEY + NULL
+                // - NULL + NULL
+                // - NULL + NOT NULL
+                // - NOT NULL + NOT NULL
+                // - DEFAULT + DEFAULT
                 auto&& constraint = *constraint_def.body();
                 using kind = ast::statement::constraint_kind;
                 switch (constraint.node_kind()) {
@@ -672,14 +678,14 @@ public:
                         // capture primary indices
                         if (primary_key_column) {
                             context_.report(
-                                    sql_analyzer_code::primary_index_not_found,
+                                    sql_analyzer_code::primary_index_already_exists,
                                     "multiple primary keys are not supported",
                                     constraint.region());
                             return {};
                         }
                         if (saw_nullity && prototype->criteria().nullity() == ::yugawara::variable::nullable) {
                             context_.report(
-                                    sql_analyzer_code::unsupported_feature,
+                                    sql_analyzer_code::invalid_constraint,
                                     "primary key must not be NULL-able",
                                     constraint.region());
                             return {};
@@ -690,14 +696,14 @@ public:
                     case kind::null:
                         if (saw_nullity) {
                             context_.report(
-                                    sql_analyzer_code::unsupported_feature,
+                                    sql_analyzer_code::invalid_constraint,
                                     "multiple NULL-ity constraints are not supported",
                                     constraint.region());
                             return {};
                         }
                         if (prototype->criteria().nullity() == ~::yugawara::variable::nullable) {
                             context_.report(
-                                    sql_analyzer_code::unsupported_feature,
+                                    sql_analyzer_code::invalid_constraint,
                                     "primary key must not be NULL-able",
                                     constraint.region());
                             return {};
@@ -708,24 +714,22 @@ public:
                     case kind::not_null:
                         if (saw_nullity) {
                             context_.report(
-                                    sql_analyzer_code::unsupported_feature,
+                                    sql_analyzer_code::invalid_constraint,
                                     "multiple NULL-ity constraints are not supported",
                                     constraint.region());
                             return {};
                         }
                         saw_nullity = true;
                         prototype->criteria().nullity(~::yugawara::variable::nullable);
-                        prototype->default_value() = {};
                         break;
                     case kind::default_clause:
-                        if (saw_default) {
+                        if (prototype->default_value()) {
                             context_.report(
-                                    sql_analyzer_code::unsupported_feature,
+                                    sql_analyzer_code::invalid_constraint,
                                     "multiple default values are not supported",
                                     constraint.region());
                             return {};
                         }
-                        saw_default = true;
                         {
                             auto result = process_column_value(
                                     unsafe_downcast<ast::statement::expression_constraint>(constraint),
@@ -754,7 +758,7 @@ public:
 
         auto declaration = std::make_shared<::yugawara::storage::table>(
                 std::nullopt,
-                std::move(name),
+                std::move(table_name),
                 std::move(table_columns));
 
         std::shared_ptr<::yugawara::storage::index> primary_index {};
@@ -783,7 +787,7 @@ public:
                 case kind::primary_key:
                     if (primary_index) {
                         context_.report(
-                                sql_analyzer_code::primary_index_not_found,
+                                sql_analyzer_code::primary_index_already_exists,
                                 "multiple primary keys are not supported",
                                 constraint.region());
                         return {};
@@ -905,7 +909,7 @@ public:
         }
         if (!constraint.parameters().empty()) {
             context_.report(
-                    sql_analyzer_code::unsupported_feature,
+                    sql_analyzer_code::malformed_syntax,
                     "index parameters are not supported yet",
                     constraint.parameters().at(0).name()->region());
         }
@@ -937,6 +941,7 @@ public:
         auto index_keys = create_vector<::yugawara::storage::index::key>(source_keys.size());
         for (auto&& key : source_keys) {
             if (auto&& p = key.null_location()) {
+                // FIXME: impl NULLS FIRST/LAST for indices
                 context_.report(
                         sql_analyzer_code::unsupported_feature,
                         "index key element with NULLS location is not supported",
