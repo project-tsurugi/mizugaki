@@ -1123,6 +1123,16 @@ public:
 //    }
 
     [[nodiscard]] result_type operator()(ast::statement::drop_statement const& stmt) {
+        auto cascade = find(stmt.options(), ast::statement::drop_statement_option::cascade);
+        auto restrict = find(stmt.options(), ast::statement::drop_statement_option::restrict);
+        if (cascade && restrict) {
+            context_.report(
+                    sql_analyzer_code::malformed_syntax,
+                    "DROP statement must not declare both CASCADE and RESTRICT",
+                    cascade->region());
+            return {};
+        }
+
         using tag_t = ast::statement::kind;
         switch (stmt.node_kind()) {
             case tag_t::drop_table_statement:
@@ -1143,20 +1153,25 @@ public:
     }
 
     [[nodiscard]] result_type process_drop_table(ast::statement::drop_statement const& stmt) {
-        bool mandatory = std::find(
-                stmt.options().begin(), stmt.options().end(),
-                ast::statement::drop_statement_option::if_exists) == stmt.options().end();
-
-        // FIXME: more options
-
-        auto result = analyze_table_name(context_, *stmt.name(), mandatory);
-        if (!result && mandatory) {
-            // NOTE: error already reported
+        if (auto opt = find(stmt.options(), ast::statement::drop_statement_option::cascade)) {
+            context_.report(
+                    sql_analyzer_code::unsupported_feature,
+                    "CASCADE option in DROP TABLE statement is not supported yet",
+                    opt->region());
             return {};
         }
+        // NOTE: restrict option is default behavior
+
+        auto optional = find(stmt.options(), ast::statement::drop_statement_option::if_exists).has_value();
+
+        auto result = analyze_table_name(context_, *stmt.name(), !optional);
         if (!result) {
-            // NOTE: replace as no-op instead, to achieve "IF EXISTS"
-            return context_.create<tstatement::empty>(stmt.region());
+            if (optional) {
+                // NOTE: replace as no-op instead, to achieve "IF EXISTS"
+                return context_.create<tstatement::empty>(stmt.region());
+            }
+            // NOTE: error already reported
+            return {};
         }
         auto schema = std::move(result->first);
         auto target = std::move(result->second);
@@ -1167,20 +1182,25 @@ public:
     }
 
     [[nodiscard]] result_type process_drop_index(ast::statement::drop_statement const& stmt) {
-        bool mandatory = std::find(
-                stmt.options().begin(), stmt.options().end(),
-                ast::statement::drop_statement_option::if_exists) == stmt.options().end();
-
-        // FIXME: more options
-
-        auto result = analyze_index_name(context_, *stmt.name(), mandatory);
-        if (!result && mandatory) {
-            // NOTE: error already reported
+        if (auto opt = find(stmt.options(), ast::statement::drop_statement_option::cascade)) {
+            context_.report(
+                    sql_analyzer_code::unsupported_feature,
+                    "CASCADE option in DROP TABLE statement is not supported yet",
+                    opt->region());
             return {};
         }
+        // NOTE: restrict option is default behavior
+
+        auto optional = find(stmt.options(), ast::statement::drop_statement_option::if_exists).has_value();
+
+        auto result = analyze_index_name(context_, *stmt.name(), !optional);
         if (!result) {
-            // NOTE: replace as no-op instead, to achieve "IF EXISTS"
-            return context_.create<tstatement::empty>(stmt.region());
+            if (optional) {
+                // NOTE: replace as no-op instead, to achieve "IF EXISTS"
+                return context_.create<tstatement::empty>(stmt.region());
+            }
+            // NOTE: error already reported
+            return {};
         }
         auto schema = std::move(result->first);
         auto target = std::move(result->second);
