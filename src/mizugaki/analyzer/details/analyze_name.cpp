@@ -389,6 +389,7 @@ private:
     }
 
     [[nodiscard]] symbol_info find_relation_qualified(symbol_info qualifier, ast::name::qualified const& name, std::size_t depth) {
+        (void) depth; // used only for assertions
         if (saw_error(qualifier) || not_found(qualifier)) {
             return qualifier;
         }
