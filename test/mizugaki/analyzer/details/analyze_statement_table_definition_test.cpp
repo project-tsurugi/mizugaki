@@ -1065,7 +1065,7 @@ TEST_F(analyze_statement_table_definition_test, table_primary_key_column_not_var
     });
 }
 
-TEST_F(analyze_statement_table_definition_test, table_primary_key_column_not_column) {
+TEST_F(analyze_statement_table_definition_test, table_primary_key_column_not_table_column) {
     auto decl = host_parameters_.add({ "x", ttype::int8 {} });
     invalid(sql_analyzer_code::unsupported_feature, ast::statement::table_definition {
             id("testing"),

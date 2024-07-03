@@ -603,7 +603,7 @@ public:
 
         // check existing table
         if (auto existing = analyze_table_name(context_, *stmt.name(), false)) {
-            if (contains(stmt.options(), ast::statement::table_definition_option::if_not_exists)) {
+            if (find(stmt.options(), ast::statement::table_definition_option::if_not_exists)) {
                 return context_.create<tstatement::empty>(stmt.region());
             }
             context_.report(
@@ -1008,6 +1008,13 @@ public:
                     stmt.predicate()->region());
             return {};
         }
+        if (auto opt = find(stmt.options(), ast::statement::index_definition_option::unique)) {
+            context_.report(
+                    sql_analyzer_code::unsupported_feature,
+                    "unique index is not supported yet",
+                    opt->region());
+            return {};
+        }
         if (!stmt.parameters().empty()) {
             context_.report(
                     sql_analyzer_code::unsupported_feature,
@@ -1018,7 +1025,7 @@ public:
         // check existing
         if (stmt.name()) {
             if (auto existing = analyze_index_name(context_, *stmt.name(), false)) {
-                if (contains(stmt.options(), ast::statement::index_definition_option::if_not_exists)) {
+                if (find(stmt.options(), ast::statement::index_definition_option::if_not_exists)) {
                     return context_.create<tstatement::empty>(stmt.region());
                 }
                 context_.report(
@@ -1057,6 +1064,9 @@ public:
         scope.add(relation);
 
         auto index_keys = build_index_keys(stmt.keys(), scope);
+        if (index_keys.empty()) {
+            return {};
+        }
 
         auto declaration = std::make_shared<::yugawara::storage::index>(
                 std::nullopt,
@@ -1083,10 +1093,16 @@ public:
     }
 
     template<class T>
-    [[nodiscard]] static bool contains(std::vector<ast::common::regioned<T>> const& container, T const& value) {
-        return std::find(
+    [[nodiscard]] static std::optional<ast::common::regioned<T>> find(
+            std::vector<ast::common::regioned<T>> const& container,
+            T const& value) {
+        auto iter = std::find(
                 container.begin(), container.end(),
-                value) != container.end();
+                value);
+        if (iter != container.end()) {
+            return *iter;
+        }
+        return {};
     }
 
 // FIXME: impl
