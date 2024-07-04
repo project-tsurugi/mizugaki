@@ -44,7 +44,9 @@ protected:
 
     void invalid(ast::literal::literal const& literal) {
         auto r = analyze_literal(context(), literal);
-        EXPECT_FALSE(r);
+        if (r) {
+            ADD_FAILURE() << *r;
+        }
         EXPECT_NE(count_error(), 0);
     }
 
@@ -129,6 +131,7 @@ TEST_F(analyze_literal_test, unsigned_int8) {
 }
 
 TEST_F(analyze_literal_test, unsigned_mpint) {
+    options_.prefer_small_decimal_literals() = true;
     auto r = analyze_literal(
             context(),
             ast::literal::numeric {
@@ -138,11 +141,12 @@ TEST_F(analyze_literal_test, unsigned_mpint) {
     ASSERT_TRUE(r);
     EXPECT_EQ(*r, (tscalar::immediate {
             tvalue::decimal { "1234567890123456789012345" },
-            ttype::decimal { 25 },
+            ttype::decimal { 25, 0 },
     }));
 }
 
 TEST_F(analyze_literal_test, unsigned_decimal) {
+    options_.prefer_small_decimal_literals() = true;
     auto r = analyze_literal(
             context(),
             ast::literal::numeric {
@@ -335,7 +339,7 @@ TEST_F(analyze_literal_test, exact_numeric_decimal38_boundary_uint64) {
 
 TEST_F(analyze_literal_test, exact_numeric_decimal38_boundary_max) {
     options_.max_decimal_precision() = 38;
-    options_.prefer_small_decimal_literals() = false;
+    options_.prefer_small_decimal_literals() = true;
     std::string s9x38;
     s9x38.resize(38, '9');
 
@@ -349,7 +353,7 @@ TEST_F(analyze_literal_test, exact_numeric_decimal38_boundary_max) {
                                     0,
                             }
                     },
-                    ttype::decimal { {}, 0 },
+                    ttype::decimal { 38, 0 },
             }));
     EXPECT_EQ(*parse_exact_numeric(ast::literal::sign::minus, s9x38),
             (tscalar::immediate {
@@ -361,18 +365,18 @@ TEST_F(analyze_literal_test, exact_numeric_decimal38_boundary_max) {
                                     0,
                             }
                     },
-                    ttype::decimal { {}, 0 },
+                    ttype::decimal { 38, 0 },
             }));
 }
 
 TEST_F(analyze_literal_test, exact_numeric_decimal38_boundary_exponents) {
     options_.max_decimal_precision() = 38;
-    options_.prefer_small_decimal_literals() = false;
+    options_.prefer_small_decimal_literals() = true;
     std::string s9x39;
     s9x39.resize(39, '9');
-    for (int dot_position = 0; dot_position < static_cast<int>(s9x39.size()); ++dot_position) {
+    for (int scale = 0; scale < static_cast<int>(s9x39.size()); ++scale) {
         auto unsigned_value = s9x39;
-        unsigned_value[s9x39.size() - (dot_position + 1)] = '.';
+        unsigned_value[s9x39.size() - (scale + 1)] = '.';
         EXPECT_EQ(*parse_exact_numeric(ast::literal::sign::plus, unsigned_value),
                 (tscalar::immediate {
                         tvalue::decimal {
@@ -380,10 +384,10 @@ TEST_F(analyze_literal_test, exact_numeric_decimal38_boundary_exponents) {
                                         +1,
                                         5421010862427522170ULL, // coef-hi
                                         687399551400673279ULL, // coef-lo
-                                        -dot_position,
+                                        -scale,
                                 }
                         },
-                        ttype::decimal { {}, 0 },
+                        ttype::decimal { 38, scale },
                 }));
         EXPECT_EQ(*parse_exact_numeric(ast::literal::sign::minus, unsigned_value),
                 (tscalar::immediate {
@@ -392,17 +396,134 @@ TEST_F(analyze_literal_test, exact_numeric_decimal38_boundary_exponents) {
                                         -1,
                                         5421010862427522170ULL, // coef-hi
                                         687399551400673279ULL, // coef-lo
-                                        -dot_position,
+                                        -scale,
                                 }
                         },
-                        ttype::decimal { {}, 0 },
+                        ttype::decimal { 38, scale },
                 }));
     }
 }
 
-TEST_F(analyze_literal_test, exact_numeric_decimal38_boundary_over) {
+TEST_F(analyze_literal_test, exact_numeric_decimal38_boundary_min) {
     options_.max_decimal_precision() = 38;
-    options_.prefer_small_decimal_literals() = false;
+    options_.prefer_small_decimal_literals() = true;
+    std::string p38;
+    p38.resize(38, '0');
+    p38[37] = '1'; // 0{37}1
+    EXPECT_EQ(*parse_exact_numeric(ast::literal::sign::plus, "." + p38),
+            (tscalar::immediate {
+                    tvalue::decimal {
+                            tvalue::decimal::entity_type {
+                                    +1,
+                                    0ULL, // coef-hi
+                                    1ULL, // coef-lo
+                                    -38,
+                            }
+                    },
+                    ttype::decimal { 38, 38 },
+            }));
+    EXPECT_EQ(*parse_exact_numeric(ast::literal::sign::minus, "." + p38),
+            (tscalar::immediate {
+                    tvalue::decimal {
+                            tvalue::decimal::entity_type {
+                                    -1,
+                                    0ULL, // coef-hi
+                                    1ULL, // coef-lo
+                                    -38,
+                            }
+                    },
+                    ttype::decimal { 38, 38 },
+            }));
+    EXPECT_EQ(*parse_exact_numeric(ast::literal::sign::plus, "0." + p38),
+            (tscalar::immediate {
+                    tvalue::decimal {
+                            tvalue::decimal::entity_type {
+                                    +1,
+                                    0ULL, // coef-hi
+                                    1ULL, // coef-lo
+                                    -38,
+                            }
+                    },
+                    ttype::decimal { 38, 38 },
+            }));
+    EXPECT_EQ(*parse_exact_numeric(ast::literal::sign::minus, "0." + p38),
+            (tscalar::immediate {
+                    tvalue::decimal {
+                            tvalue::decimal::entity_type {
+                                    -1,
+                                    0ULL, // coef-hi
+                                    1ULL, // coef-lo
+                                    -38,
+                            }
+                    },
+                    ttype::decimal { 38, 38 },
+            }));
+}
+
+TEST_F(analyze_literal_test, exact_numeric_decimal38_boundary_leading_zeros) {
+    options_.max_decimal_precision() = 38;
+    options_.prefer_small_decimal_literals() = true;
+    std::string p38;
+    p38.resize(38, '0'); // 0{38}
+    EXPECT_EQ(*parse_exact_numeric(ast::literal::sign::plus, "." + p38),
+            (tscalar::immediate {
+                    tvalue::decimal {
+                            tvalue::decimal::entity_type {
+                                    +1,
+                                    0ULL, // coef-hi
+                                    0ULL, // coef-lo
+                                    -38,
+                            }
+                    },
+                    ttype::decimal { 38, 38 },
+            }));
+    EXPECT_EQ(*parse_exact_numeric(ast::literal::sign::minus, "." + p38),
+            (tscalar::immediate {
+                    tvalue::decimal {
+                            tvalue::decimal::entity_type {
+                                    -1,
+                                    0ULL, // coef-hi
+                                    0ULL, // coef-lo
+                                    -38,
+                            }
+                    },
+                    ttype::decimal { 38, 38 },
+            }));
+}
+
+TEST_F(analyze_literal_test, exact_numeric_decimal38_boundary_one_leading_zeros) {
+    options_.max_decimal_precision() = 38;
+    options_.prefer_small_decimal_literals() = true;
+    std::string p37;
+    p37.resize(37, '0'); // 0{37}
+    EXPECT_EQ(*parse_exact_numeric(ast::literal::sign::plus, "1." + p37),
+            (tscalar::immediate {
+                    tvalue::decimal {
+                            tvalue::decimal::entity_type {
+                                    +1,
+                                    542101086242752217ULL, // coef-hi
+                                    68739955140067328ULL, // coef-lo
+                                    -37,
+                            }
+                    },
+                    ttype::decimal { 38, 37 },
+            }));
+    EXPECT_EQ(*parse_exact_numeric(ast::literal::sign::minus, "1." + p37),
+            (tscalar::immediate {
+                    tvalue::decimal {
+                            tvalue::decimal::entity_type {
+                                    -1,
+                                    542101086242752217ULL, // coef-hi
+                                    68739955140067328ULL, // coef-lo
+                                    -37,
+                            }
+                    },
+                    ttype::decimal { 38, 37 },
+            }));
+}
+
+TEST_F(analyze_literal_test, exact_numeric_decimal38_boundary_overflow) {
+    options_.max_decimal_precision() = 38;
     std::string p39;
     p39.resize(39, '0');
     p39[0] = '1'; // 10{38}
@@ -415,6 +536,30 @@ TEST_F(analyze_literal_test, exact_numeric_decimal38_boundary_over) {
             ast::literal::kind::exact_numeric,
             ast::literal::sign::minus,
             { p39 },
+    });
+}
+
+TEST_F(analyze_literal_test, exact_numeric_decimal38_boundary_rounding) {
+    options_.max_decimal_precision() = 38;
+    std::string p38;
+    p38.resize(38, '0');
+    p38[0] = '1'; // 10^37
+    invalid(sql_analyzer_code::unsupported_decimal_value, ast::literal::numeric {
+            ast::literal::kind::exact_numeric,
+            {},
+            { p38 + ".0" },
+    });
+}
+
+TEST_F(analyze_literal_test, exact_numeric_decimal38_boundary_undeflow) {
+    options_.max_decimal_precision() = 38;
+    std::string p39;
+    p39.resize(39, '0');
+    p39[38] = '1'; // 0{38}1
+    invalid(sql_analyzer_code::unsupported_decimal_value, ast::literal::numeric {
+            ast::literal::kind::exact_numeric,
+            {},
+            { "." + p39 },
     });
 }
 
@@ -448,6 +593,7 @@ TEST_F(analyze_literal_test, signed_approx_numeric) {
 }
 
 TEST_F(analyze_literal_test, character_string) {
+    options_.prefer_small_character_literals() = true;
     auto r = analyze_literal(
             context(),
             ast::literal::string {
@@ -462,6 +608,7 @@ TEST_F(analyze_literal_test, character_string) {
 }
 
 TEST_F(analyze_literal_test, character_string_quote) {
+    options_.prefer_small_character_literals() = true;
     auto r = analyze_literal(
             context(),
             ast::literal::string {
@@ -476,6 +623,7 @@ TEST_F(analyze_literal_test, character_string_quote) {
 }
 
 TEST_F(analyze_literal_test, character_string_concat) {
+    options_.prefer_small_character_literals() = true;
     auto r = analyze_literal(
             context(),
             ast::literal::string {

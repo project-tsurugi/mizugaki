@@ -195,12 +195,23 @@ private:
         auto max_precision = static_cast<mpd_ssize_t>(context_.options()->max_decimal_precision());
         ::decimal::Context context {
             max_precision,
-            max_precision, // emax
-            -max_precision, // emin
+            MPD_MAX_EMAX, // emax
+            MPD_MIN_EMIN, // emin
             // FIXME: other decimal context
         };
 
         ::decimal::Decimal v { *value.unsigned_value(), context };
+        if ((context.status() & ::decimal::DecRounded) != 0U ||
+                v.exponent() > 0 ||
+                v.exponent() < -max_precision) {
+            context_.report(sql_analyzer_code::unsupported_decimal_value,
+                    string_builder {}
+                            << "invalid decimal value '" << value.unsigned_value() << "'"
+                            << " (inexact value by rounding)"
+                            << string_builder::to_string,
+                    value.region());
+            return {};
+        }
         if (value.sign() == ast::literal::sign::minus) {
             v = v.minus(context);
         }
@@ -211,15 +222,6 @@ private:
                             << "(" << v.number_class(context) << ")"
                             << string_builder::to_string,
                     value.region());
-        }
-        // SQL does not support number with positive exponent
-        if (v.exponent() > 0) {
-            context_.report(sql_analyzer_code::unsupported_decimal_value,
-                    string_builder {}
-                            << "invalid decimal value '" << value.unsigned_value() << "'"
-                            << string_builder::to_string,
-                    value.region());
-            return {};
         }
         ::takatori::decimal::triple triple { v };
         if (triple.exponent() == 0) {
@@ -262,16 +264,18 @@ private:
                         context_.types().get(ttype::int8 {}));
             }
         }
+        auto scale = static_cast<std::size_t>(-v.exponent());
         std::optional<std::size_t> precision {};
         if (context_.options()->prefer_small_decimal_literals()) {
-            precision = static_cast<std::size_t>(::decimal::Decimal::radix());
+            auto digits = static_cast<std::size_t>(v.coeff().adjexp() + 1);
+            precision = std::max(digits, scale);
         }
         return context_.create<tscalar::immediate>(
                 value.region(),
                 context_.values().get(tvalue::decimal { ::takatori::decimal::triple { v } }),
                 context_.types().get(ttype::decimal {
                         precision,
-                        static_cast<std::size_t>(v.exponent()),
+                        scale,
                 }));
     }
 

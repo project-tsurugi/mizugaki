@@ -89,7 +89,7 @@ inline tscalar::immediate immediate(tvalue::int8::entity_type value) {
 inline tscalar::immediate immediate(std::string_view value) {
     return tscalar::immediate {
             tvalue::character { value },
-            ttype::character { ttype::varying, value.size() },
+            ttype::character { ttype::varying, {} },
     };
 }
 
