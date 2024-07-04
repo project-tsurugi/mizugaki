@@ -33,6 +33,7 @@ inline bool set(sql_driver& driver, sequence_options& options, sequence_option_f
     if (options.saw.contains(field.kind)) {
         using ::takatori::util::string_builder;
         driver.error(
+                sql_parser_code::syntax_error,
                 field.region,
                 string_builder {}
                     << "duplicate declaration of " << to_string_view(field.kind)

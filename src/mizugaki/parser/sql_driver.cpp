@@ -52,8 +52,12 @@ void sql_driver::success(std::vector<node_ptr<ast::statement::statement>> statem
             document_);
 }
 
-void sql_driver::error(sql_driver::location_type location, sql_parser_result::message_type message) {
+void sql_driver::error(
+        diagnostic_code_type code,
+        location_type location,
+        result_type::message_type message) {
     result_ = sql_parser_diagnostic {
+            code,
             std::move(message),
             document_,
             location,
@@ -62,6 +66,10 @@ void sql_driver::error(sql_driver::location_type location, sql_parser_result::me
 
 void sql_driver::add_comment(location_type location) {
     comments_.emplace_back(location);
+}
+
+std::size_t &sql_driver::max_expected_candidates() noexcept {
+    return max_expected_candidates_;
 }
 
 std::vector<sql_driver::location_type>& sql_driver::comments() noexcept {
@@ -119,6 +127,27 @@ std::size_t sql_driver::to_size(ast::common::chars const& str) { // NOLINT: non-
         return 0;
     }
     return result;
+}
+
+std::string_view sql_driver::image(location_type location) {
+    if (location.size() == 0) {
+        return {};
+    }
+    return document_->contents(location.first(), location.size());
+}
+
+bool sql_driver::check_regular_identifier(const ast::common::chars& str) {
+    if (str.size() >= 2) {
+        return str[0] != '_' || str[1] != '_';
+    }
+    return true;
+}
+
+bool sql_driver::check_delimited_identifier(const ast::common::chars &str) {
+    if (str.size() >= 3) {
+        return str[1] != '_' || str[2] != '_';
+    }
+    return true;
 }
 
 ast::common::chars sql_driver::parse_regular_identifier(ast::common::chars str) { // NOLINT

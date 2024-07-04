@@ -12,6 +12,11 @@ namespace mizugaki::parser {
 
 using ::takatori::document::basic_document;
 
+sql_parser sql_parser::max_expected_candidates(std::size_t count) noexcept {
+    max_expected_candidates_ = count;
+    return *this;
+}
+
 sql_parser& sql_parser::set_debug(int level) noexcept {
     debug_ = level;
     return *this;
@@ -31,6 +36,8 @@ sql_parser::result_type sql_parser::operator()(takatori::util::maybe_shared_ptr<
     sql_scanner scanner { input };
 
     sql_driver driver { std::move(document) };
+    driver.max_expected_candidates() = max_expected_candidates_;
+
     sql_parser_generated parser { scanner, driver };
 
 #if YYDEBUG

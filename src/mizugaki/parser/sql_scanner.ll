@@ -434,11 +434,19 @@ host_parameter_name ":"{identifier}
 "BOOL_OR" { return parser_type::make_BOOL_OR(location()); }
 
 {identifier} {
-    return parser_type::make_REGULAR_IDENTIFIER(get_image(driver), location());
+    auto token = get_image(driver);
+    if (!driver.check_regular_identifier(token)) {
+        return parser_type::make_REGULAR_IDENTIFIER_RESTRICTED(location());
+    }
+    return parser_type::make_REGULAR_IDENTIFIER(std::move(token), location());
 }
 
 {delimited_identifier} {
-    return parser_type::make_DELIMITED_IDENTIFIER(get_image(driver), location());
+    auto token = get_image(driver);
+    if (!driver.check_delimited_identifier(token)) {
+        return parser_type::make_DELIMITED_IDENTIFIER_RESTRICTED(location());
+    }
+    return parser_type::make_DELIMITED_IDENTIFIER(std::move(token), location());
 }
 
 {host_parameter_name} {

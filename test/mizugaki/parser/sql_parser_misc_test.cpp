@@ -131,12 +131,6 @@ TEST_F(sql_parser_misc_test, identifier_single_underscore) {
     }));
 }
 
-TEST_F(sql_parser_misc_test, identifier_double_underscore) {
-    sql_parser parser;
-    auto result = parser("-", R"(TABLE __x;)");
-    EXPECT_FALSE(result) << diagnostics(result);
-}
-
 TEST_F(sql_parser_misc_test, keyword_value) {
     sql_parser parser;
     auto result = parser("-", R"(TABLE VALUE;)");

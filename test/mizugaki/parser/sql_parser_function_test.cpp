@@ -803,4 +803,13 @@ TEST_F(sql_parser_function_test, static_method_invocation_multiple_arguments) {
     }));
 }
 
+TEST_F(sql_parser_function_test, static_method_invocation_not_type) {
+    auto result = parse("1::f(a)");
+    EXPECT_FALSE(result);
+
+    auto error = result.diagnostic();
+    ASSERT_TRUE(error);
+    EXPECT_EQ(error.code(), sql_parser_code::syntax_error);
+}
+
 } // namespace mizugaki::parser

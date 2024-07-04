@@ -10,6 +10,8 @@
 #include <mizugaki/ast/statement/statement.h>
 
 #include <mizugaki/parser/sql_parser_result.h>
+#include <mizugaki/parser/sql_parser_code.h>
+
 
 namespace mizugaki::parser {
 
@@ -17,6 +19,8 @@ class sql_driver {
 public:
     using document_type = ::takatori::document::document;
     using result_type = sql_parser_result;
+
+    using diagnostic_code_type = sql_parser_code;
 
     using location_type = ast::node_region;
 
@@ -33,9 +37,14 @@ public:
 
     void success(std::vector<node_ptr<ast::statement::statement>> statements);
 
-    void error(location_type location, result_type::message_type message);
+    void error(
+            diagnostic_code_type code,
+            location_type location,
+            result_type::message_type message);
 
     void add_comment(location_type location);
+
+    [[nodiscard]] std::size_t& max_expected_candidates() noexcept;
 
     [[nodiscard]] std::vector<location_type>& comments() noexcept;
 
@@ -69,6 +78,12 @@ public:
 
     [[nodiscard]] std::size_t to_size(ast::common::chars const& str);
 
+    [[nodiscard]] bool check_regular_identifier(ast::common::chars const& str);
+
+    [[nodiscard]] bool check_delimited_identifier(ast::common::chars const& str);
+
+    [[nodiscard]] std::string_view image(location_type location);
+
     [[nodiscard]] ast::common::chars parse_regular_identifier(ast::common::chars str);
 
     [[nodiscard]] ast::common::chars parse_delimited_identifier(ast::common::chars const& str);
@@ -95,6 +110,8 @@ private:
     ::takatori::util::maybe_shared_ptr<document_type const> document_;
     std::vector<location_type> comments_;
     result_type result_ {};
+
+    std::size_t max_expected_candidates_ {};
 };
 
 } // namespace sandbox

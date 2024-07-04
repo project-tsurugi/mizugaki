@@ -8,7 +8,7 @@
 %define api.namespace { mizugaki::parser }
 %define api.parser.class { sql_parser_generated }
 %define api.token.prefix {}
-%define parse.error verbose /* FIXME: 'detailed' requires bison 3.6 */
+%define parse.error custom
 %define parse.lac full
 
 %locations
@@ -143,6 +143,7 @@
 %code {
 
     #include <takatori/util/downcast.h>
+    #include <takatori/util/string_builder.h>
 
     #include <mizugaki/parser/sql_scanner.h>
     #include <mizugaki/parser/sql_driver.h>
@@ -156,7 +157,94 @@
     }
 
     void sql_parser_generated::error(location_type const& location, std::string const& message) {
-        driver.error(location, message);
+        driver.error(sql_parser_code::system, location, message);
+    }
+
+    void sql_parser_generated::report_syntax_error(context const& ctxt) const {
+        using ::takatori::util::string_builder;
+        using kind = symbol_kind::symbol_kind_type;
+        auto symbol = ctxt.token();
+        auto location = ctxt.location();
+        auto image = driver.image(location);
+
+        // check erroneous token kind
+        if (symbol == kind::S_ERROR) {
+            driver.error(
+                    sql_parser_code::invalid_character,
+                    location,
+                    string_builder {}
+                            << "unrecognized character: " << "\"" << image << "\""
+                            << string_builder::to_string);
+            return;
+        }
+        if (symbol == kind::S_UNCLOSED_BLOCK_COMMENT) {
+            driver.error(
+                    sql_parser_code::unexpected_eof,
+                    location,
+                    "block comment (/* ~ */) is not closed");
+            return;
+        }
+        if (symbol == kind::S_REGULAR_IDENTIFIER_RESTRICTED ||
+                symbol == kind::S_DELIMITED_IDENTIFIER_RESTRICTED) {
+            driver.error(
+                    sql_parser_code::invalid_token,
+                    location,
+                    string_builder {}
+                            << "identifier must not start with two underscores: " << image
+                            << string_builder::to_string);
+            return;
+        }
+
+        auto max_candidates = driver.max_expected_candidates();
+        std::string candidates {};
+        if (max_candidates > 0) {
+            std::vector<kind> buffer {};
+            buffer.resize(max_candidates + 1);
+            auto r = ctxt.expected_tokens(buffer.data(), static_cast<int>(buffer.size()));
+            if (r == 0) {
+                if (buffer[0] == kind::S_YYEMPTY) {
+                    buffer.resize(0);
+                }
+            } else {
+                buffer.resize(r);
+            }
+            if (!buffer.empty()) {
+                candidates.reserve(256);
+                for (std::size_t i = 0; i < buffer.size() - 1; ++i) {
+                    if (i > 0) {
+                        candidates.append(", ");
+                    }
+                    auto sym = symbol_name(buffer[i]);
+                    candidates.append(sym);
+                }
+                if (buffer.size() > max_candidates) {
+                    candidates.append(", ...");
+                }
+            }
+        }
+
+        if (symbol == kind::S_YYEOF) {
+            string_builder message {};
+            message << "reached end of file";
+            if (max_candidates > 0) {
+                message << ": expected one of {" << candidates << "}";
+            }
+            driver.error(
+                    sql_parser_code::unexpected_eof,
+                    location,
+                    message << string_builder::to_string);
+            return;
+        }
+
+        string_builder message {};
+        message << "appeared unexpected token: " << "\"" << image << "\"";
+        if (max_candidates > 0) {
+            message << ", expected one of {" << candidates << "}";
+        }
+        driver.error(
+                sql_parser_code::unexpected_token,
+                location,
+                message << string_builder::to_string);
     }
 
     } // namespace mizugaki::parser
@@ -680,6 +768,9 @@
 
 %token <ast::common::chars> REGULAR_IDENTIFIER
 %token <ast::common::chars> DELIMITED_IDENTIFIER
+
+%token REGULAR_IDENTIFIER_RESTRICTED
+%token DELIMITED_IDENTIFIER_RESTRICTED
 
 %token <ast::common::chars> UNSIGNED_INTEGER
 %token <ast::common::chars> EXACT_NUMERIC_LITERAL
@@ -2992,8 +3083,11 @@ value_expression_primary
                         @$);
             } else {
                 // syntax error
-                driver.error(@q, "syntax error: must be a type");
-                $$ = nullptr;
+                driver.error(
+                        sql_parser_code::syntax_error,
+                        @q,
+                        "qualifier of static method invocation must be a type");
+                YYABORT;
             }
         }
     // FIXME: user defined aggregate functions
@@ -4206,15 +4300,7 @@ identifier_chain
     ;
 
 identifier
-    : REGULAR_IDENTIFIER[t]
-        {
-            auto token = $t;
-            if (token.size() >= 2 && token[0] == '_' && token[1] == '_') {
-                driver.error(@$, "identifier starting with '__' is reserved for internal use");
-                YYABORT;
-            }
-            $$ = driver.to_regular_identifier(std::move(token), @$);
-        }
+    : REGULAR_IDENTIFIER[t] { $$ = driver.to_regular_identifier($t, @$); }
     | DELIMITED_IDENTIFIER[t] { $$ = driver.to_delimited_identifier($t, @$); }
     // FIXME: move to individual name
     | contextual_identifier[n]
