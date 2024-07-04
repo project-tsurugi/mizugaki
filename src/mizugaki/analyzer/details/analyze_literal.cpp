@@ -195,14 +195,14 @@ private:
         auto max_precision = static_cast<mpd_ssize_t>(context_.options()->max_decimal_precision());
         ::decimal::Context context {
             max_precision,
-            0, // emax
+            max_precision, // emax
             -max_precision, // emin
             // FIXME: other decimal context
         };
 
-        ::decimal::Decimal v { *value.unsigned_value() };
+        ::decimal::Decimal v { *value.unsigned_value(), context };
         if (value.sign() == ast::literal::sign::minus) {
-            v = -v;
+            v = v.minus(context);
         }
         if (!v.iszero() && !v.isnormal(context)) {
             context_.report(sql_analyzer_code::unsupported_decimal_value,
@@ -212,6 +212,7 @@ private:
                             << string_builder::to_string,
                     value.region());
         }
+        // SQL does not support number with positive exponent
         if (v.exponent() > 0) {
             context_.report(sql_analyzer_code::unsupported_decimal_value,
                     string_builder {}
