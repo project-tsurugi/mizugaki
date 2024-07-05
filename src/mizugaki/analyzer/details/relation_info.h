@@ -14,6 +14,8 @@
 
 #include <mizugaki/analyzer/details/column_info.h>
 
+#include "find_element_result.h"
+
 namespace mizugaki::analyzer::details {
 
 class relation_info {
@@ -23,9 +25,16 @@ public:
 
     relation_info() = default;
 
-    relation_info(
+    relation_info( // NOLINT(*-explicit-constructor, *-explicit-conversions)
             ::takatori::util::optional_ptr<::yugawara::storage::relation const> declaration,
-            std::string identifier);
+            std::string identifier = {});
+
+    ~relation_info() = default;
+    relation_info(relation_info const&) = delete;
+    relation_info(relation_info&&) noexcept = default;
+    relation_info& operator=(relation_info const&) = delete;
+    relation_info& operator=(relation_info&&) noexcept = default;
+
 
     [[nodiscard]] ::takatori::util::optional_ptr<::yugawara::storage::relation const>& declaration() noexcept;
     [[nodiscard]] ::takatori::util::optional_ptr<::yugawara::storage::relation const> declaration() const noexcept;
@@ -39,10 +48,10 @@ public:
     column_info& add(column_info info);
     void erase(position_type first, position_type last);
 
-    [[nodiscard]] ::takatori::util::optional_ptr<column_info> find(std::string_view identifier);
-    [[nodiscard]] ::takatori::util::optional_ptr<column_info const> find(std::string_view identifier) const;
-    [[nodiscard]] ::takatori::util::optional_ptr<column_info> find(::yugawara::storage::column const& column);
-    [[nodiscard]] ::takatori::util::optional_ptr<column_info const> find(::yugawara::storage::column const& column) const;
+    [[nodiscard]] find_element_result<column_info> find(std::string_view identifier);
+    [[nodiscard]] find_element_result<column_info const> find(std::string_view identifier) const;
+    [[nodiscard]] find_element_result<column_info> find(::yugawara::storage::column const& column);
+    [[nodiscard]] find_element_result<column_info const> find(::yugawara::storage::column const& column) const;
 
     void rebuild();
 

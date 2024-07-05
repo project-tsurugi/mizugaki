@@ -17,7 +17,9 @@ class analyze_statement_dml_test : public test_parent {};
 TEST_F(analyze_statement_dml_test, empty_statement) {
     auto r = analyze_statement(context(), ast::statement::empty_statement {});
     auto alternative = std::get_if<statement_result_type>(&r);
-    ASSERT_TRUE(alternative);
+    ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
     auto&& stmt = *alternative;
     ASSERT_EQ(stmt->kind(), tstatement::statement_kind::empty);
 }

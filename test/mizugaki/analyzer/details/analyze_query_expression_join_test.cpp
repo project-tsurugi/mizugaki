@@ -77,7 +77,9 @@ TEST_F(analyze_query_expression_join_test, multiple_from) {
             },
             {},
             {});
-    ASSERT_TRUE(r) << diagnostics();
+    ASSERT_TRUE(r);
+    expect_no_error();
+
     EXPECT_EQ(graph.size(), 4);
     EXPECT_FALSE(r.output().opposite());
 
@@ -145,7 +147,9 @@ TEST_F(analyze_query_expression_join_test, join_cross) {
             },
             {},
             {});
-    ASSERT_TRUE(r) << diagnostics();
+    ASSERT_TRUE(r);
+    expect_no_error();
+
     EXPECT_EQ(graph.size(), 4);
     EXPECT_FALSE(r.output().opposite());
 
@@ -220,7 +224,9 @@ TEST_F(analyze_query_expression_join_test, join_inner) {
             },
             {},
             {});
-    ASSERT_TRUE(r) << diagnostics();
+    ASSERT_TRUE(r);
+    expect_no_error();
+
     EXPECT_EQ(graph.size(), 4);
     EXPECT_FALSE(r.output().opposite());
 
@@ -295,7 +301,9 @@ TEST_F(analyze_query_expression_join_test, join_left) {
             },
             {},
             {});
-    ASSERT_TRUE(r) << diagnostics();
+    ASSERT_TRUE(r);
+    expect_no_error();
+
     EXPECT_EQ(graph.size(), 4);
     EXPECT_FALSE(r.output().opposite());
 
@@ -373,7 +381,9 @@ TEST_F(analyze_query_expression_join_test, join_right) {
             },
             {},
             {});
-    ASSERT_TRUE(r) << diagnostics();
+    ASSERT_TRUE(r);
+    expect_no_error();
+
     EXPECT_EQ(graph.size(), 4);
     EXPECT_FALSE(r.output().opposite());
 
@@ -451,7 +461,9 @@ TEST_F(analyze_query_expression_join_test, join_full) {
             },
             {},
             {});
-    ASSERT_TRUE(r) << diagnostics();
+    ASSERT_TRUE(r);
+    expect_no_error();
+
     EXPECT_EQ(graph.size(), 4);
     EXPECT_FALSE(r.output().opposite());
 
@@ -533,7 +545,9 @@ TEST_F(analyze_query_expression_join_test, self_join) {
             },
             {},
             {});
-    ASSERT_TRUE(r) << diagnostics();
+    ASSERT_TRUE(r);
+    expect_no_error();
+
     EXPECT_EQ(graph.size(), 4);
     EXPECT_FALSE(r.output().opposite());
 
@@ -606,7 +620,9 @@ TEST_F(analyze_query_expression_join_test, join_columns) {
             },
             {},
             {});
-    ASSERT_TRUE(r) << diagnostics();
+    ASSERT_TRUE(r);
+    expect_no_error();
+
     EXPECT_EQ(graph.size(), 4);
     EXPECT_FALSE(r.output().opposite());
 
@@ -679,7 +695,9 @@ TEST_F(analyze_query_expression_join_test, join_columns_multiple) {
             },
             {},
             {});
-    ASSERT_TRUE(r) << diagnostics();
+    ASSERT_TRUE(r);
+    expect_no_error();
+
     EXPECT_EQ(graph.size(), 4);
     EXPECT_FALSE(r.output().opposite());
 

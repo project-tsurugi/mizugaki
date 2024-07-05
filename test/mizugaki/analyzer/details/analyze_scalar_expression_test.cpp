@@ -72,7 +72,8 @@ TEST_F(analyze_scalar_expression_test, literal_expression) {
             literal(number("1")),
             {},
             {});
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
     EXPECT_EQ(*r, immediate(1));
 }
 
@@ -89,6 +90,7 @@ TEST_F(analyze_scalar_expression_test, variable_reference) {
             scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
     EXPECT_EQ(*r, vref(c0));
 }
 
@@ -118,6 +120,7 @@ TEST_F(analyze_scalar_expression_test, host_parameter_reference_value_with_colon
             {},
             {});
     ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
     EXPECT_EQ(*r, immediate(1));
 }
 
@@ -130,6 +133,7 @@ TEST_F(analyze_scalar_expression_test, host_parameter_reference_variable_with_co
             {},
             {});
     ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
     EXPECT_EQ(*r, vref(::yugawara::binding::factory {}(decl)));
 }
 
@@ -144,6 +148,7 @@ TEST_F(analyze_scalar_expression_test, host_parameter_reference_value_without_co
             {},
             {});
     ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
     EXPECT_EQ(*r, immediate(1));
 }
 
@@ -156,6 +161,7 @@ TEST_F(analyze_scalar_expression_test, host_parameter_reference_variable_without
             {},
             {});
     ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
     EXPECT_EQ(*r, vref(::yugawara::binding::factory {}(decl)));
 }
 
@@ -173,7 +179,8 @@ TEST_F(analyze_scalar_expression_test, cast_expression) {
             },
             {},
             {});
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
     EXPECT_EQ(*r, (tscalar::cast {
             ttype::int1 {},
             tscalar::cast::loss_policy_type::ignore,
@@ -208,7 +215,8 @@ TEST_F(analyze_scalar_expression_test, unary_expression_plus) {
             },
             {},
             {});
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
     EXPECT_EQ(*r, (tscalar::unary {
             to,
             immediate(1),
@@ -226,7 +234,8 @@ TEST_F(analyze_scalar_expression_test, unary_expression_minus) {
             },
             {},
             {});
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
     EXPECT_EQ(*r, (tscalar::unary {
             to,
             immediate(1),
@@ -244,7 +253,8 @@ TEST_F(analyze_scalar_expression_test, unary_expression_not) {
             },
             {},
             {});
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
     EXPECT_EQ(*r, (tscalar::unary {
             to,
             immediate_bool(true),
@@ -270,7 +280,8 @@ TEST_F(analyze_scalar_expression_test, binary_expression_plus) {
             },
             {},
             {});
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
     EXPECT_EQ(*r, (tscalar::binary {
             to,
             immediate(1),
@@ -290,7 +301,9 @@ TEST_F(analyze_scalar_expression_test, binary_expression_minus) {
             },
             {},
             {});
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (tscalar::binary {
             to,
             immediate(1),
@@ -310,7 +323,9 @@ TEST_F(analyze_scalar_expression_test, binary_expression_asterisk) {
             },
             {},
             {});
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (tscalar::binary {
             to,
             immediate(1),
@@ -330,7 +345,9 @@ TEST_F(analyze_scalar_expression_test, binary_expression_solidus) {
             },
             {},
             {});
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (tscalar::binary {
             to,
             immediate(1),
@@ -350,7 +367,9 @@ TEST_F(analyze_scalar_expression_test, binary_expression_percent) {
             },
             {},
             {});
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (tscalar::binary {
             to,
             immediate(1),
@@ -371,6 +390,8 @@ TEST_F(analyze_scalar_expression_test, binary_expression_concatenation) {
             {},
             {});
     ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (tscalar::binary {
             to,
             immediate("a"),
@@ -390,7 +411,9 @@ TEST_F(analyze_scalar_expression_test, binary_expression_and) {
             },
             {},
             {});
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (tscalar::binary {
             to,
             immediate_bool(true),
@@ -410,7 +433,9 @@ TEST_F(analyze_scalar_expression_test, binary_expression_or) {
             },
             {},
             {});
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (tscalar::binary {
             to,
             immediate_bool(true),
@@ -428,7 +453,9 @@ TEST_F(analyze_scalar_expression_test, binary_expression_is_null) {
             },
             {},
             {});
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (tscalar::unary {
             tscalar::unary_operator::is_null,
             immediate_bool(true),
@@ -445,7 +472,9 @@ TEST_F(analyze_scalar_expression_test, binary_expression_is_true) {
             },
             {},
             {});
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (tscalar::unary {
             tscalar::unary_operator::is_true,
             immediate_bool(true),
@@ -462,7 +491,9 @@ TEST_F(analyze_scalar_expression_test, binary_expression_is_false) {
             },
             {},
             {});
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (tscalar::unary {
             tscalar::unary_operator::is_false,
             immediate_bool(true),
@@ -479,7 +510,9 @@ TEST_F(analyze_scalar_expression_test, binary_expression_is_unknown) {
             },
             {},
             {});
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (tscalar::unary {
             tscalar::unary_operator::is_unknown,
             immediate_bool(true),
@@ -504,7 +537,9 @@ TEST_F(analyze_scalar_expression_test, binary_expression_is_not_null) {
             },
             {},
             {});
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (tscalar::unary {
             tscalar::unary_operator::conditional_not,
             tscalar::unary {
@@ -542,7 +577,9 @@ TEST_F(analyze_scalar_expression_test, comparison_predicate_equals) {
             },
             {},
             {});
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (tscalar::compare {
             to,
             immediate(1),
@@ -562,7 +599,9 @@ TEST_F(analyze_scalar_expression_test, comparison_predicate_not_equals) {
             },
             {},
             {});
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (tscalar::compare {
             to,
             immediate(1),
@@ -582,7 +621,9 @@ TEST_F(analyze_scalar_expression_test, comparison_predicate_less_than) {
             },
             {},
             {});
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (tscalar::compare {
             to,
             immediate(1),
@@ -602,7 +643,9 @@ TEST_F(analyze_scalar_expression_test, comparison_predicate_greater_than) {
             },
             {},
             {});
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (tscalar::compare {
             to,
             immediate(1),
@@ -622,7 +665,9 @@ TEST_F(analyze_scalar_expression_test, comparison_predicate_less_than_or_equals)
             },
             {},
             {});
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (tscalar::compare {
             to,
             immediate(1),
@@ -642,7 +687,9 @@ TEST_F(analyze_scalar_expression_test, comparison_predicate_greater_than_or_equa
             },
             {},
             {});
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (tscalar::compare {
             to,
             immediate(1),
@@ -684,7 +731,9 @@ TEST_F(analyze_scalar_expression_test, builtin_set_function_invocation_simple) {
             },
             {},
             {});
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_TRUE(r.saw_aggregate());
     EXPECT_EQ(*r, (::yugawara::extension::scalar::aggregate_function_call {
             descriptor(func),
@@ -721,7 +770,9 @@ TEST_F(analyze_scalar_expression_test, builtin_set_function_invocation_args) {
             },
             {},
             {});
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_TRUE(r.saw_aggregate());
     EXPECT_EQ(*r, (::yugawara::extension::scalar::aggregate_function_call {
             descriptor(args),
@@ -762,7 +813,9 @@ TEST_F(analyze_scalar_expression_test, builtin_set_function_invocation_distinct)
             },
             {},
             {});
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_TRUE(r.saw_aggregate());
     EXPECT_EQ(*r, (::yugawara::extension::scalar::aggregate_function_call {
             descriptor(distinct),
@@ -813,6 +866,8 @@ TEST_F(analyze_scalar_expression_test, builtin_set_function_invocation_overload)
             {},
             {});
     ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_TRUE(r.saw_aggregate());
     EXPECT_EQ(*r, (::yugawara::extension::scalar::aggregate_function_call {
             descriptor(f_int8),

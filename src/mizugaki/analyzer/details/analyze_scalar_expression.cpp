@@ -25,6 +25,8 @@
 #include <mizugaki/analyzer/details/analyze_name.h>
 #include <mizugaki/analyzer/details/analyze_type.h>
 
+#include "name_print_support.h"
+
 namespace mizugaki::analyzer::details {
 
 namespace tscalar = ::takatori::scalar;
@@ -117,7 +119,7 @@ public:
                 sql_analyzer_code::variable_not_found,
                 string_builder {}
                         << "placeholder is not found: "
-                        << expr.name()->identifier()
+                        << print_support { *expr.name() }
                         << string_builder::to_string,
                 expr.region());
         return {};

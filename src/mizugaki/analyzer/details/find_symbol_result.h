@@ -9,11 +9,11 @@
 namespace mizugaki::analyzer::details {
 
 template<class T>
-class find_result {
+class find_symbol_result {
 public:
-    static inline find_result error = find_result(std::in_place); // NOLINT: constexpr requested but T may not be a literal type
+    static inline find_symbol_result const error = find_symbol_result(std::in_place); // NOLINT: constexpr requested but T may not be a literal type
 
-    constexpr find_result( // NOLINT: implicit conversion
+    constexpr find_symbol_result( // NOLINT: implicit conversion
             std::optional<T> result = std::nullopt) noexcept(std::is_nothrow_move_constructible_v<std::optional<T>>) :
         found_ { std::move(result) }
     {}
@@ -35,7 +35,7 @@ public:
     }
 
 private:
-    explicit constexpr find_result(std::in_place_t) noexcept :
+    explicit constexpr find_symbol_result(std::in_place_t) noexcept :
         error_ { true }
     {}
 
@@ -44,11 +44,11 @@ private:
 };
 
 template<class T>
-class find_result<T&> {
+class find_symbol_result<T&> {
 public:
-    static inline find_result error = find_result(std::in_place); // NOLINT: constexpr requested but T may not be a literal type
+    static inline find_symbol_result error = find_symbol_result(std::in_place); // NOLINT: constexpr requested but T may not be a literal type
 
-    constexpr find_result( // NOLINT: implicit conversion
+    constexpr find_symbol_result( // NOLINT: implicit conversion
             ::takatori::util::optional_ptr<T> result = nullptr) :
         found_ { std::move(result) }
     {}
@@ -66,7 +66,7 @@ public:
     }
 
 private:
-    explicit constexpr find_result(std::in_place_t) noexcept :
+    explicit constexpr find_symbol_result(std::in_place_t) noexcept :
         error_ { true }
     {}
 
@@ -75,11 +75,11 @@ private:
 };
 
 template<class T>
-class find_result<T*> {
+class find_symbol_result<T*> {
 public:
-    static inline find_result error = find_result(std::in_place); // NOLINT: constexpr requested but T may not be a literal type
+    static inline find_symbol_result error = find_symbol_result(std::in_place); // NOLINT: constexpr requested but T may not be a literal type
 
-    constexpr find_result( // NOLINT: implicit conversion
+    constexpr find_symbol_result( // NOLINT: implicit conversion
             std::shared_ptr<T> result = nullptr) :
             found_ { std::move(result) }
     {}
@@ -105,7 +105,7 @@ public:
     }
 
 private:
-    explicit constexpr find_result(std::in_place_t) noexcept :
+    explicit constexpr find_symbol_result(std::in_place_t) noexcept :
             error_ { true }
     {}
 

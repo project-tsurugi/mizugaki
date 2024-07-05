@@ -60,6 +60,8 @@ TEST_F(analyze_statement_update_test, simple) {
     });
     auto alternative = std::get_if<execution_plan_result_type >(&r);
     ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
     auto&& graph = **alternative;
     ASSERT_EQ(graph.size(), 3);
 
@@ -140,6 +142,8 @@ TEST_F(analyze_statement_update_test, modify_key) {
     });
     auto alternative = std::get_if<execution_plan_result_type >(&r);
     ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
     auto&& graph = **alternative;
 
     // scan - project[k'=2] - write[[k=k'], []]
@@ -222,6 +226,8 @@ TEST_F(analyze_statement_update_test, multiple_set) {
     });
     auto alternative = std::get_if<execution_plan_result_type >(&r);
     ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
     auto&& graph = **alternative;
     ASSERT_EQ(graph.size(), 3);
 
@@ -327,6 +333,8 @@ TEST_F(analyze_statement_update_test, where) {
     });
     auto alternative = std::get_if<execution_plan_result_type >(&r);
     ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
     auto&& graph = **alternative;
     ASSERT_EQ(graph.size(), 4);
 

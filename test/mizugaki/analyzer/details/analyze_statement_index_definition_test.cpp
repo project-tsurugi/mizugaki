@@ -54,7 +54,9 @@ TEST_F(analyze_statement_index_definition_test, simple) {
             },
     });
     auto alternative = std::get_if<statement_result_type>(&r);
-    ASSERT_TRUE(alternative);
+    ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
     ASSERT_EQ((*alternative)->kind(), tstatement::statement_kind::create_index);
 
     auto&& stmt = downcast<tstatement::create_index>(**alternative);
@@ -87,7 +89,9 @@ TEST_F(analyze_statement_index_definition_test, anonymous) {
             },
     });
     auto alternative = std::get_if<statement_result_type>(&r);
-    ASSERT_TRUE(alternative);
+    ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
     ASSERT_EQ((*alternative)->kind(), tstatement::statement_kind::create_index);
 
     auto&& stmt = downcast<tstatement::create_index>(**alternative);
@@ -126,7 +130,9 @@ TEST_F(analyze_statement_index_definition_test, columns_multiple) {
             },
     });
     auto alternative = std::get_if<statement_result_type>(&r);
-    ASSERT_TRUE(alternative);
+    ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
     ASSERT_EQ((*alternative)->kind(), tstatement::statement_kind::create_index);
 
     auto&& stmt = downcast<tstatement::create_index>(**alternative);
@@ -170,7 +176,9 @@ TEST_F(analyze_statement_index_definition_test, direction) {
             },
     });
     auto alternative = std::get_if<statement_result_type>(&r);
-    ASSERT_TRUE(alternative);
+    ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
     ASSERT_EQ((*alternative)->kind(), tstatement::statement_kind::create_index);
 
     auto&& stmt = downcast<tstatement::create_index>(**alternative);
@@ -283,7 +291,9 @@ TEST_F(analyze_statement_index_definition_test, duplicate_target_if_not_exists) 
             },
     });
     auto alternative = std::get_if<statement_result_type>(&r);
-    ASSERT_TRUE(alternative);
+    ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
     ASSERT_EQ((*alternative)->kind(), tstatement::statement_kind::empty);
 }
 

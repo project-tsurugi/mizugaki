@@ -62,6 +62,15 @@ std::size_t test_parent::count_error() {
     return context_.diagnostics().size();
 }
 
+void test_parent::expect_no_error() {
+    EXPECT_EQ(count_error(), 0) << diagnostics();
+    clear_error();
+}
+
+void test_parent::clear_error() {
+    context_.diagnostics().clear();
+}
+
 std::shared_ptr<::yugawara::storage::table const> test_parent::install_table(std::string_view name) {
     auto table = storages_->add_table(::yugawara::storage::table {
             name,

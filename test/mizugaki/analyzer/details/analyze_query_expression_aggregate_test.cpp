@@ -44,6 +44,7 @@ protected:
     void invalid(sql_analyzer_code code, ast::query::expression const& expression) {
         invalid(expression);
         EXPECT_TRUE(find_error(code)) << diagnostics();
+        clear_error();
     }
 
     ::yugawara::binding::factory factory_;
@@ -106,6 +107,7 @@ TEST_F(analyze_query_expression_aggregate_test, whole_count_asterisk) {
             {},
             {});
     ASSERT_TRUE(r);
+    expect_no_error();
 
     // scan - aggregate - project -
 
@@ -171,7 +173,8 @@ TEST_F(analyze_query_expression_aggregate_test, whole_count_value) {
             },
             {},
             {});
-    ASSERT_TRUE(r) << diagnostics();
+    ASSERT_TRUE(r);
+    expect_no_error();
 
     // scan - project - aggregate - project -
 
@@ -248,6 +251,7 @@ TEST_F(analyze_query_expression_aggregate_test, group_by) {
             {},
             {});
     ASSERT_TRUE(r);
+    expect_no_error();
 
     // scan - aggregate - project -
 
@@ -323,6 +327,7 @@ TEST_F(analyze_query_expression_aggregate_test, group_by_columns_multiple) {
             {},
             {});
     ASSERT_TRUE(r);
+    expect_no_error();
 
     // scan - aggregate - project -
 
@@ -400,6 +405,7 @@ TEST_F(analyze_query_expression_aggregate_test, group_by_columns_duplicate) {
             {},
             {});
     ASSERT_TRUE(r);
+    expect_no_error();
 
     // scan - aggregate - project -
 
@@ -479,6 +485,7 @@ TEST_F(analyze_query_expression_aggregate_test, group_by_having) {
             {},
             {});
     ASSERT_TRUE(r);
+    expect_no_error();
 
     // scan - aggregate - filter - project -
 
@@ -559,6 +566,7 @@ TEST_F(analyze_query_expression_aggregate_test, group_by_order_by) {
             {},
             {});
     ASSERT_TRUE(r);
+    expect_no_error();
 
     // scan - aggregate - project - project - limit -
 
@@ -648,6 +656,7 @@ TEST_F(analyze_query_expression_aggregate_test, group_by_where) {
             {},
             {});
     ASSERT_TRUE(r);
+    expect_no_error();
 
     // scan - filter - aggregate - project -
 

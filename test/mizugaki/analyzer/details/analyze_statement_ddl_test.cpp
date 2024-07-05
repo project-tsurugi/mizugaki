@@ -32,7 +32,7 @@ protected:
 
     void invalid(sql_analyzer_code code, ast::statement::statement const& stmt) {
         invalid(stmt);
-        EXPECT_TRUE(find_error(code)) << diagnostics();
+        EXPECT_TRUE(find_error(code)) << code << " <=> " << diagnostics();
     }
 };
 
@@ -43,7 +43,9 @@ TEST_F(analyze_statement_ddl_test, drop_table_simple) {
             id("TESTING"),
     });
     auto alternative = std::get_if<statement_result_type>(&r);
-    ASSERT_TRUE(alternative);
+    ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
     ASSERT_EQ((*alternative)->kind(), tstatement::statement_kind::drop_table);
 
     auto&& stmt = downcast<tstatement::drop_table>(**alternative);
@@ -69,7 +71,9 @@ TEST_F(analyze_statement_ddl_test, drop_table_not_found_if_exists) {
             },
     });
     auto alternative = std::get_if<statement_result_type>(&r);
-    ASSERT_TRUE(alternative);
+    ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
     ASSERT_EQ((*alternative)->kind(), tstatement::statement_kind::empty);
 }
 
@@ -83,7 +87,9 @@ TEST_F(analyze_statement_ddl_test, drop_table_restrict) {
             },
     });
     auto alternative = std::get_if<statement_result_type>(&r);
-    ASSERT_TRUE(alternative);
+    ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
     ASSERT_EQ((*alternative)->kind(), tstatement::statement_kind::drop_table);
 
     auto&& stmt = downcast<tstatement::drop_table>(**alternative);
@@ -118,7 +124,9 @@ TEST_F(analyze_statement_ddl_test, drop_index_simple) {
             id("TESTING_INDEX"),
     });
     auto alternative = std::get_if<statement_result_type>(&r);
-    ASSERT_TRUE(alternative);
+    ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
     ASSERT_EQ((*alternative)->kind(), tstatement::statement_kind::drop_index);
 
     auto&& stmt = downcast<tstatement::drop_index>(**alternative);
@@ -144,7 +152,9 @@ TEST_F(analyze_statement_ddl_test, drop_index_not_found_if_exists) {
             },
     });
     auto alternative = std::get_if<statement_result_type>(&r);
-    ASSERT_TRUE(alternative);
+    ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
     ASSERT_EQ((*alternative)->kind(), tstatement::statement_kind::empty);
 }
 
@@ -166,7 +176,9 @@ TEST_F(analyze_statement_ddl_test, drop_index_restrict) {
             },
     });
     auto alternative = std::get_if<statement_result_type>(&r);
-    ASSERT_TRUE(alternative);
+    ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
     ASSERT_EQ((*alternative)->kind(), tstatement::statement_kind::drop_index);
 
     auto&& stmt = downcast<tstatement::drop_index>(**alternative);

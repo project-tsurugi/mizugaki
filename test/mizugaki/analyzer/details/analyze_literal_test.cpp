@@ -69,6 +69,7 @@ TEST_F(analyze_literal_test, unsigned_int1) {
             tvalue::int4 { 1 },
             ttype::int1 {},
     }));
+    expect_no_error();
 }
 
 TEST_F(analyze_literal_test, unsigned_int2) {
@@ -84,6 +85,7 @@ TEST_F(analyze_literal_test, unsigned_int2) {
             tvalue::int4 { 1234 },
             ttype::int2 {},
     }));
+    expect_no_error();
 }
 
 TEST_F(analyze_literal_test, unsigned_int4) {
@@ -99,6 +101,7 @@ TEST_F(analyze_literal_test, unsigned_int4) {
             tvalue::int4 { 1234567890 },
             ttype::int4 {},
     }));
+    expect_no_error();
 }
 
 TEST_F(analyze_literal_test, unsigned_int4_widening) {
@@ -114,6 +117,7 @@ TEST_F(analyze_literal_test, unsigned_int4_widening) {
             tvalue::int8 { 1234567890 },
             ttype::int8 {},
     }));
+    expect_no_error();
 }
 
 TEST_F(analyze_literal_test, unsigned_int8) {
@@ -128,6 +132,7 @@ TEST_F(analyze_literal_test, unsigned_int8) {
             tvalue::int8 { 12345678901234567LL },
             ttype::int8 {},
     }));
+    expect_no_error();
 }
 
 TEST_F(analyze_literal_test, unsigned_mpint) {
@@ -143,6 +148,7 @@ TEST_F(analyze_literal_test, unsigned_mpint) {
             tvalue::decimal { "1234567890123456789012345" },
             ttype::decimal { 25, 0 },
     }));
+    expect_no_error();
 }
 
 TEST_F(analyze_literal_test, unsigned_decimal) {
@@ -158,6 +164,7 @@ TEST_F(analyze_literal_test, unsigned_decimal) {
             tvalue::decimal { "1.4142156" },
             ttype::decimal { 8, 7 },
     }));
+    expect_no_error();
 }
 
 TEST_F(analyze_literal_test, exact_numeric_int1_boundary) {
@@ -182,6 +189,7 @@ TEST_F(analyze_literal_test, exact_numeric_int1_boundary) {
                     tvalue::int4 { -128 },
                     ttype::int1 {},
             }));
+    expect_no_error();
 }
 
 TEST_F(analyze_literal_test, exact_numeric_int2_boundary) {
@@ -206,6 +214,7 @@ TEST_F(analyze_literal_test, exact_numeric_int2_boundary) {
                     tvalue::int4 { -32768 },
                     ttype::int2 {},
             }));
+    expect_no_error();
 }
 
 TEST_F(analyze_literal_test, exact_numeric_int4_boundary) {
@@ -230,6 +239,7 @@ TEST_F(analyze_literal_test, exact_numeric_int4_boundary) {
                     tvalue::int4 { -2147483648 },
                     ttype::int4 {},
             }));
+    expect_no_error();
 }
 
 TEST_F(analyze_literal_test, exact_numeric_int8_boundary) {
@@ -253,6 +263,7 @@ TEST_F(analyze_literal_test, exact_numeric_int8_boundary) {
                     tvalue::int8 { -9223372036854775807LL - 1LL },
                     ttype::int8 {},
             }));
+    expect_no_error();
 }
 
 TEST_F(analyze_literal_test, exact_numeric_decimal38_boundary_sint8) {
@@ -282,6 +293,7 @@ TEST_F(analyze_literal_test, exact_numeric_decimal38_boundary_sint8) {
                     },
                     ttype::decimal { {}, 0 },
             }));
+    expect_no_error();
 }
 
 TEST_F(analyze_literal_test, exact_numeric_decimal38_boundary_uint64) {
@@ -335,6 +347,7 @@ TEST_F(analyze_literal_test, exact_numeric_decimal38_boundary_uint64) {
                     },
                     ttype::decimal { {}, 0 },
             }));
+    expect_no_error();
 }
 
 TEST_F(analyze_literal_test, exact_numeric_decimal38_boundary_max) {
@@ -367,6 +380,7 @@ TEST_F(analyze_literal_test, exact_numeric_decimal38_boundary_max) {
                     },
                     ttype::decimal { 38, 0 },
             }));
+    expect_no_error();
 }
 
 TEST_F(analyze_literal_test, exact_numeric_decimal38_boundary_exponents) {
@@ -402,6 +416,7 @@ TEST_F(analyze_literal_test, exact_numeric_decimal38_boundary_exponents) {
                         ttype::decimal { 38, scale },
                 }));
     }
+    expect_no_error();
 }
 
 TEST_F(analyze_literal_test, exact_numeric_decimal38_boundary_min) {
@@ -458,6 +473,7 @@ TEST_F(analyze_literal_test, exact_numeric_decimal38_boundary_min) {
                     },
                     ttype::decimal { 38, 38 },
             }));
+    expect_no_error();
 }
 
 TEST_F(analyze_literal_test, exact_numeric_decimal38_boundary_leading_zeros) {
@@ -489,6 +505,7 @@ TEST_F(analyze_literal_test, exact_numeric_decimal38_boundary_leading_zeros) {
                     },
                     ttype::decimal { 38, 38 },
             }));
+    expect_no_error();
 }
 
 TEST_F(analyze_literal_test, exact_numeric_decimal38_boundary_one_leading_zeros) {
@@ -520,6 +537,7 @@ TEST_F(analyze_literal_test, exact_numeric_decimal38_boundary_one_leading_zeros)
                     },
                     ttype::decimal { 38, 37 },
             }));
+    expect_no_error();
 }
 
 TEST_F(analyze_literal_test, exact_numeric_decimal38_boundary_overflow) {
@@ -575,6 +593,7 @@ TEST_F(analyze_literal_test, unsigned_approx_numeric) {
             tvalue::float8 { 1.25 },
             ttype::float8 {},
     }));
+    expect_no_error();
 }
 
 TEST_F(analyze_literal_test, signed_approx_numeric) {
@@ -590,6 +609,7 @@ TEST_F(analyze_literal_test, signed_approx_numeric) {
             tvalue::float8 { -1.25 },
             ttype::float8 {},
     }));
+    expect_no_error();
 }
 
 TEST_F(analyze_literal_test, character_string) {
@@ -605,6 +625,7 @@ TEST_F(analyze_literal_test, character_string) {
             tvalue::character { "Hello, world!" },
             ttype::character { ttype::varying, 13 },
     }));
+    expect_no_error();
 }
 
 TEST_F(analyze_literal_test, character_string_quote) {
@@ -620,6 +641,7 @@ TEST_F(analyze_literal_test, character_string_quote) {
             tvalue::character { "Hello, 'world'!" },
             ttype::character { ttype::varying, 15 },
     }));
+    expect_no_error();
 }
 
 TEST_F(analyze_literal_test, character_string_concat) {
@@ -638,6 +660,7 @@ TEST_F(analyze_literal_test, character_string_concat) {
             tvalue::character { "Hello, world!" },
             ttype::character { ttype::varying, 13 },
     }));
+    expect_no_error();
 }
 
 TEST_F(analyze_literal_test, null) {
@@ -651,6 +674,7 @@ TEST_F(analyze_literal_test, null) {
             tvalue::unknown { tvalue::unknown_kind::null },
             ttype::int4 {},
     }));
+    expect_no_error();
 }
 
 TEST_F(analyze_literal_test, null_allow_independent) {
@@ -663,15 +687,12 @@ TEST_F(analyze_literal_test, null_allow_independent) {
             tvalue::unknown { tvalue::unknown_kind::null },
             ttype::unknown {},
     }));
+    expect_no_error();
 }
 
 TEST_F(analyze_literal_test, null_wo_context) {
     options_.allow_context_independent_null() = false;
-    auto r = analyze_literal(
-            context(),
-            ast::literal::null {});
-    EXPECT_FALSE(r);
-    EXPECT_TRUE(contains(context(), diagnostic_code::missing_context_of_null));
+    invalid(diagnostic_code::missing_context_of_null, ast::literal::null {});
 }
 
 TEST_F(analyze_literal_test, default) {
@@ -687,6 +708,7 @@ TEST_F(analyze_literal_test, default) {
             tvalue::int4 { 1 },
             ttype::int4 {},
     }));
+    expect_no_error();
 }
 
 TEST_F(analyze_literal_test, default_wo_context) {
@@ -720,6 +742,7 @@ TEST_F(analyze_literal_test, conversion_by_context_enabled) {
                     ttype::character { ttype::varying },
             }
     }));
+    expect_no_error();
 }
 
 TEST_F(analyze_literal_test, conversion_by_context_disabled) {
@@ -738,6 +761,7 @@ TEST_F(analyze_literal_test, conversion_by_context_disabled) {
             tvalue::character { "1" },
             ttype::character { ttype::varying },
     }));
+    expect_no_error();
 }
 
 } // namespace mizugaki::analyzer::details

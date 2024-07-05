@@ -37,6 +37,8 @@
 #include <mizugaki/analyzer/details/analyze_scalar_expression.h>
 #include <mizugaki/analyzer/details/analyze_type.h>
 
+#include "name_print_support.h"
+
 namespace mizugaki::analyzer::details {
 
 namespace tvalue = ::takatori::value;
@@ -157,13 +159,14 @@ public:
                 auto identifier = normalize_identifier(context_, *column_name);
                 auto column = info.find(identifier);
                 if (!column || !column->declaration() || !column->exported()) {
+                    // may not ambiguous
                     context_.report(
                             sql_analyzer_code::column_not_found,
                             string_builder {}
                                     << "column is not found: "
                                     << info.primary_index()->table().simple_name()
                                     << "."
-                                    << column_name->identifier()
+                                    << print_support { *column_name }
                                     << string_builder::to_string,
                             column_name->region());
                     return {};
@@ -178,7 +181,7 @@ public:
                                     << "duplicate column in insert statement: "
                                     << info.primary_index()->table().simple_name()
                                     << "."
-                                    << column_name->identifier()
+                                    << print_support { *column_name }
                                     << string_builder::to_string,
                             column_name->region());
                     return {};
@@ -350,14 +353,13 @@ public:
         if (!info_opt) {
             return {}; // error
         }
-        auto info = std::move(*info_opt);
+        query_scope scope {};
+        auto&& info = scope.add(std::move(*info_opt));
         auto index = info.primary_index();
 
         auto graph = std::make_unique<::takatori::relation::graph_type>();
         auto&& op_scan = graph->insert(build_table_scan(info, stmt.table_name()->region()));
 
-        query_scope scope {};
-        scope.add(info);
         auto* upstream = std::addressof(op_scan.output());
 
         if (stmt.where()) {
@@ -377,6 +379,7 @@ public:
         auto write_columns = create_vector<trelation::write::column>(stmt.elements().size());
         for (auto&& element : stmt.elements()) {
             if (element.target()->node_kind() != ast::name::kind::simple) {
+                // may not ambiguous
                 context_.report(
                         sql_analyzer_code::unsupported_feature,
                         "qualified UPDATE SET target is not supported",
@@ -393,7 +396,7 @@ public:
                                 << "UPDATE SET target column is not found: "
                                 << info.primary_index()->table().simple_name()
                                 << "."
-                                << element.target()->last_name().identifier()
+                                << print_support { *element.target() }
                                 << string_builder::to_string,
                         element.target()->region());
                 return {};
@@ -408,7 +411,7 @@ public:
                                 << "duplicate column in update statement: "
                                 << info.primary_index()->table().simple_name()
                                 << "."
-                                << element.target()->last_name().identifier()
+                                << print_support { *element.target() }
                                 << string_builder::to_string,
                         element.target()->region());
                 return {};
@@ -453,14 +456,13 @@ public:
         if (!info_opt) {
             return {}; // error
         }
-        auto info = std::move(*info_opt);
+        query_scope scope {};
+        auto&& info = scope.add(std::move(*info_opt));
         auto index = info.primary_index();
 
         auto graph = std::make_unique<::takatori::relation::graph_type>();
         auto&& op_scan = graph->insert(build_table_scan(info, stmt.table_name()->region()));
 
-        query_scope scope {};
-        scope.add(info);
         auto* upstream = std::addressof(op_scan.output());
 
         if (stmt.where()) {
@@ -498,7 +500,7 @@ public:
                             << "unsupported relation type \""
                             << relation->kind()
                             << "\": "
-                            << table_name.last_name().identifier()
+                            << print_support { table_name }
                             << string_builder::to_string,
                     table_name.region());
             return {};
@@ -610,7 +612,7 @@ public:
                     sql_analyzer_code::table_already_exists,
                     string_builder {}
                             << "table is already defined: "
-                            << stmt.name()->last_name().identifier()
+                            << print_support { *stmt.name() }
                             << string_builder::to_string,
                     stmt.name()->region());
             return {};
@@ -914,9 +916,8 @@ public:
                     constraint.parameters().at(0).name()->region());
         }
 
-        auto relation = build_relation_info(context_, *table, false);
         query_scope scope {};
-        scope.add(relation);
+        scope.add(build_relation_info(context_, *table, false));
 
         auto index_keys = build_index_keys(constraint.key(), scope);
         if (index_keys.empty()) {
@@ -1032,7 +1033,7 @@ public:
                         sql_analyzer_code::index_already_exists,
                         string_builder {}
                                 << "index is already defined: "
-                                << stmt.name()->last_name().identifier()
+                                << print_support { *stmt.name() }
                                 << string_builder::to_string,
                         stmt.name()->region());
                 return {};
@@ -1059,9 +1060,8 @@ public:
             name = normalize_identifier(context_, stmt.name()->last_name());
         }
 
-        auto relation = build_relation_info(context_, *table_ptr, false);
         query_scope scope {};
-        scope.add(relation);
+        scope.add(build_relation_info(context_, *table_ptr, false));
 
         auto index_keys = build_index_keys(stmt.keys(), scope);
         if (index_keys.empty()) {

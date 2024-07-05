@@ -85,29 +85,41 @@ void relation_info::erase(position_type first, position_type last) {
             columns_.begin() + static_cast<difference_type>(last));
 }
 
-optional_ptr<column_info> relation_info::find(std::string_view identifier) {
+find_element_result<column_info> relation_info::find(std::string_view identifier) {
     if (auto pos = find_internal(identifier)) {
+        if (pos == ambiguous) {
+            return find_element_result<column_info>::ambiguous;
+        }
         return columns_[*pos];
     }
     return {};
 }
 
-optional_ptr<column_info const> relation_info::find(std::string_view identifier) const {
+find_element_result<column_info const> relation_info::find(std::string_view identifier) const {
     if (auto pos = find_internal(identifier)) {
+        if (pos == ambiguous) {
+            return find_element_result<column_info const>::ambiguous;
+        }
         return columns_[*pos];
     }
     return {};
 }
 
-optional_ptr<column_info> relation_info::find(yugawara::storage::column const& column) {
+find_element_result<column_info> relation_info::find(yugawara::storage::column const& column) {
     if (auto pos = find_internal(column)) {
+        if (pos == ambiguous) {
+            return find_element_result<column_info>::ambiguous;
+        }
         return columns_[*pos];
     }
     return {};
 }
 
-optional_ptr<column_info const> relation_info::find(yugawara::storage::column const& column) const {
+find_element_result<column_info const> relation_info::find(yugawara::storage::column const& column) const {
     if (auto pos = find_internal(column)) {
+        if (pos == ambiguous) {
+            return find_element_result<column_info const>::ambiguous;
+        }
         return columns_[*pos];
     }
     return {};
@@ -145,10 +157,6 @@ std::optional<relation_info::position_type> relation_info::find_internal(std::st
 
 std::optional<relation_info::position_type> relation_info::find_internal(yugawara::storage::column const& column) const {
     if (auto it = declaration_map_.find(std::addressof(column)); it != declaration_map_.end()) {
-        if (it.value() == ambiguous) {
-            // FIXME: tell it is ambiguous
-            return {};
-        }
         return it.value();
     }
     return {};

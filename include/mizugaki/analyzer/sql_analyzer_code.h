@@ -42,6 +42,8 @@ enum class sql_analyzer_code {
     /// @brief the numeric scale is too large for the precision.
     invalid_numeric_scale,
 
+    /// @brief there is no such the catalog in system.
+    catalog_not_found,
     /// @brief there is no such the schema in catalog.
     schema_not_found,
     /// @brief there is no such the table.
@@ -52,7 +54,7 @@ enum class sql_analyzer_code {
     view_not_found,
     /// @brief there is no such the sequence.
     sequence_not_found,
-    /// @brief there is no such the column.
+    /// @brief there is no such the column in the relation.
     column_not_found,
     /// @brief there is no such the variable.
     variable_not_found,
@@ -88,6 +90,8 @@ enum class sql_analyzer_code {
     /// @brief the target constraint is invalid.
     invalid_constraint,
 
+    /// @brief there are ambiguous variables.
+    relation_ambiguous,
     /// @brief there are ambiguous variables.
     variable_ambiguous,
     /// @brief there are ambiguous columns.
@@ -140,6 +144,7 @@ inline constexpr std::string_view to_string_view(sql_analyzer_code value) noexce
         case kind::invalid_type_length: return "invalid_type_length"sv;
         case kind::invalid_numeric_scale: return "invalid_numeric_scale"sv;
 
+        case kind::catalog_not_found: return "catalog_not_found"sv;
         case kind::schema_not_found: return "schema_not_found"sv;
         case kind::table_not_found: return "table_not_found"sv;
         case kind::index_not_found: return "index_not_found"sv;
@@ -165,6 +170,7 @@ inline constexpr std::string_view to_string_view(sql_analyzer_code value) noexce
 
         case kind::invalid_constraint: return "invalid_constraint"sv;
 
+        case kind::relation_ambiguous: return "relation_ambiguous"sv;
         case kind::variable_ambiguous: return "variable_ambiguous"sv;
         case kind::column_ambiguous: return "column_ambiguous"sv;
         case kind::function_ambiguous: return "function_ambiguous"sv;

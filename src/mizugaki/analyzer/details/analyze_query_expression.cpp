@@ -544,7 +544,7 @@ public:
                 return {};
             }
         }
-        scope.add(info);
+        scope.add(std::move(info));
 
         return op.output();
     }
@@ -750,6 +750,7 @@ public:
             for (query_scope::position_type i = 0, n = pivot; i < n; ++i) {
                 auto&& rel = rels[i];
                 for (auto&& column = rel.find(id); column; column = rel.next(*column)) {
+                    // FIXME: check existing
                     if (!column->exported()) {
                         continue;
                     }
@@ -778,6 +779,7 @@ public:
             for (query_scope::position_type i = pivot, n = rels.size(); i < n; ++i) {
                 auto&& rel = rels[i];
                 for (auto&& column = rel.find(id); column; column = rel.next(*column)) {
+                    // FIXME: check existing
                     if (!column->exported()) {
                         continue;
                     }

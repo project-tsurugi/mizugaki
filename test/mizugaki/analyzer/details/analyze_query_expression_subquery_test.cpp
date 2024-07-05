@@ -68,6 +68,8 @@ TEST_F(analyze_query_expression_subquery_test, simple) {
             {},
             {});
     ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(graph.size(), 3);
     EXPECT_FALSE(r.output().opposite());
 
@@ -132,6 +134,8 @@ TEST_F(analyze_query_expression_subquery_test, correlation_column) {
             {},
             {});
     ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(graph.size(), 3);
     EXPECT_FALSE(r.output().opposite());
 
@@ -202,6 +206,8 @@ TEST_F(analyze_query_expression_subquery_test, correlation_shrink_columns) {
             {},
             {});
     ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(graph.size(), 3);
     EXPECT_FALSE(r.output().opposite());
 

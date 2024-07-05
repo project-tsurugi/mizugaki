@@ -61,7 +61,9 @@ TEST_F(analyze_statement_table_definition_test, simple) {
             },
     });
     auto alternative = std::get_if<statement_result_type>(&r);
-    ASSERT_TRUE(alternative);
+    ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
     ASSERT_EQ((*alternative)->kind(), tstatement::statement_kind::create_table);
 
     auto&& stmt = downcast<tstatement::create_table>(**alternative);
@@ -107,7 +109,9 @@ TEST_F(analyze_statement_table_definition_test, column_multiple) {
             },
     });
     auto alternative = std::get_if<statement_result_type>(&r);
-    ASSERT_TRUE(alternative);
+    ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
     ASSERT_EQ((*alternative)->kind(), tstatement::statement_kind::create_table);
 
     auto&& stmt = downcast<tstatement::create_table>(**alternative);
@@ -151,7 +155,9 @@ TEST_F(analyze_statement_table_definition_test, column_primary_key) {
             },
     });
     auto alternative = std::get_if<statement_result_type>(&r);
-    ASSERT_TRUE(alternative);
+    ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
     ASSERT_EQ((*alternative)->kind(), tstatement::statement_kind::create_table);
 
     auto&& stmt = downcast<tstatement::create_table>(**alternative);
@@ -200,7 +206,9 @@ TEST_F(analyze_statement_table_definition_test, column_null) {
             },
     });
     auto alternative = std::get_if<statement_result_type>(&r);
-    ASSERT_TRUE(alternative);
+    ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
     ASSERT_EQ((*alternative)->kind(), tstatement::statement_kind::create_table);
 
     auto&& stmt = downcast<tstatement::create_table>(**alternative);
@@ -236,7 +244,9 @@ TEST_F(analyze_statement_table_definition_test, column_not_null) {
             },
     });
     auto alternative = std::get_if<statement_result_type>(&r);
-    ASSERT_TRUE(alternative);
+    ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
     ASSERT_EQ((*alternative)->kind(), tstatement::statement_kind::create_table);
 
     auto&& stmt = downcast<tstatement::create_table>(**alternative);
@@ -274,6 +284,8 @@ TEST_F(analyze_statement_table_definition_test, column_default) {
     });
     auto alternative = std::get_if<statement_result_type>(&r);
     ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
     ASSERT_EQ((*alternative)->kind(), tstatement::statement_kind::create_table);
 
     auto&& stmt = downcast<tstatement::create_table>(**alternative);
@@ -315,6 +327,8 @@ TEST_F(analyze_statement_table_definition_test, table_primary_key) {
     });
     auto alternative = std::get_if<statement_result_type>(&r);
     ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
     ASSERT_EQ((*alternative)->kind(), tstatement::statement_kind::create_table);
 
     auto&& stmt = downcast<tstatement::create_table>(**alternative);
@@ -380,6 +394,8 @@ TEST_F(analyze_statement_table_definition_test, table_primary_key_multiple_colum
     });
     auto alternative = std::get_if<statement_result_type>(&r);
     ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
     ASSERT_EQ((*alternative)->kind(), tstatement::statement_kind::create_table);
 
     auto&& stmt = downcast<tstatement::create_table>(**alternative);
@@ -459,7 +475,9 @@ TEST_F(analyze_statement_table_definition_test, duplicate_target_if_not_exists) 
             },
     });
     auto alternative = std::get_if<statement_result_type>(&r);
-    ASSERT_TRUE(alternative);
+    ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
     ASSERT_EQ((*alternative)->kind(), tstatement::statement_kind::empty);
 }
 
@@ -588,7 +606,9 @@ TEST_F(analyze_statement_table_definition_test, column_constraint_primary_key_vs
             },
     });
     auto alternative = std::get_if<statement_result_type>(&r);
-    ASSERT_TRUE(alternative);
+    ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
     ASSERT_EQ((*alternative)->kind(), tstatement::statement_kind::create_table);
 
     auto&& stmt = downcast<tstatement::create_table>(**alternative);
@@ -638,7 +658,9 @@ TEST_F(analyze_statement_table_definition_test, column_constraint_primary_key_vs
             },
     });
     auto alternative = std::get_if<statement_result_type>(&r);
-    ASSERT_TRUE(alternative);
+    ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
     ASSERT_EQ((*alternative)->kind(), tstatement::statement_kind::create_table);
 
     auto&& stmt = downcast<tstatement::create_table>(**alternative);
@@ -748,7 +770,9 @@ TEST_F(analyze_statement_table_definition_test, column_constraint_null_vs_defaul
             },
     });
     auto alternative = std::get_if<statement_result_type>(&r);
-    ASSERT_TRUE(alternative);
+    ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
     ASSERT_EQ((*alternative)->kind(), tstatement::statement_kind::create_table);
 
     auto&& stmt = downcast<tstatement::create_table>(**alternative);
@@ -787,7 +811,9 @@ TEST_F(analyze_statement_table_definition_test, column_constraint_not_null_vs_pr
             },
     });
     auto alternative = std::get_if<statement_result_type>(&r);
-    ASSERT_TRUE(alternative);
+    ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
     ASSERT_EQ((*alternative)->kind(), tstatement::statement_kind::create_table);
 
     auto&& stmt = downcast<tstatement::create_table>(**alternative);
@@ -877,7 +903,9 @@ TEST_F(analyze_statement_table_definition_test, column_constraint_not_null_vs_de
             },
     });
     auto alternative = std::get_if<statement_result_type>(&r);
-    ASSERT_TRUE(alternative);
+    ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
     ASSERT_EQ((*alternative)->kind(), tstatement::statement_kind::create_table);
 
     auto&& stmt = downcast<tstatement::create_table>(**alternative);

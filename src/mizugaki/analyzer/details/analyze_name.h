@@ -29,6 +29,11 @@ using schema_element = std::pair<
         ast::name::name const& name,
         query_scope const& scope); // FIXME: search for parent scope
 
+[[nodiscard]] ::takatori::util::optional_ptr<relation_info const> analyze_relation_info_name(
+        analyzer_context& context,
+        ast::name::name const& name,
+        query_scope const& scope);
+
 [[nodiscard]] ::takatori::util::optional_ptr<::yugawara::storage::relation const> analyze_relation_name(
         analyzer_context& context,
         ast::name::name const& name);
@@ -39,6 +44,11 @@ using schema_element = std::pair<
         bool mandatory = true);
 
 [[nodiscard]] std::optional<schema_element<::yugawara::storage::index>> analyze_index_name(
+        analyzer_context& context,
+        ast::name::name const& name,
+        bool mandatory = true);
+
+[[nodiscard]] std::shared_ptr<::yugawara::schema::declaration const> analyze_schema_name(
         analyzer_context& context,
         ast::name::name const& name,
         bool mandatory = true);

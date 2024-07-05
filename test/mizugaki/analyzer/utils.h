@@ -100,10 +100,9 @@ inline tscalar::immediate immediate_bool(bool value = true) {
     };
 }
 
-inline ast::name::simple id(std::string_view token = "id", bool regular = true) {
+inline ast::name::simple id(std::string_view token = "id") {
     return ast::name::simple {
             ast::common::chars { token },
-            regular ? ast::name::identifier_kind::regular : ast::name::identifier_kind::delimited,
     };
 }
 

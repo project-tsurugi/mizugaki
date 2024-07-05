@@ -39,7 +39,9 @@ TEST_F(analyze_type_test, unknown) {
             ast::type::simple {
                     ast::type::kind::unknown,
             });
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (ttype::unknown {}));
 }
 
@@ -49,7 +51,9 @@ TEST_F(analyze_type_test, character) {
             ast::type::character_string {
                     ast::type::kind::character,
             });
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (ttype::character { 1 }));
 }
 
@@ -60,7 +64,9 @@ TEST_F(analyze_type_test, character_length) {
                     ast::type::kind::character,
                     16,
             });
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (ttype::character { 16 }));
 }
 
@@ -71,7 +77,7 @@ TEST_F(analyze_type_test, character_flexible) {
                     ast::type::kind::character,
                     flexible,
             });
-    EXPECT_FALSE(r);
+    EXPECT_FALSE(r) << diagnostics();
     EXPECT_TRUE(find_error(error_code::flexible_length_is_not_supported));
 }
 
@@ -82,7 +88,7 @@ TEST_F(analyze_type_test, character_length_zero) {
                     ast::type::kind::character,
                     0,
             });
-    EXPECT_FALSE(r);
+    EXPECT_FALSE(r) << diagnostics();
     EXPECT_TRUE(find_error(sql_analyzer_code::invalid_type_length));
 }
 
@@ -92,7 +98,9 @@ TEST_F(analyze_type_test, character_varying) {
             ast::type::character_string {
                     ast::type::kind::character_varying,
             });
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (ttype::character { ttype::varying, {} }));
 }
 
@@ -103,7 +111,9 @@ TEST_F(analyze_type_test, character_varying_length) {
                     ast::type::kind::character_varying,
                     10,
             });
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (ttype::character { ttype::varying, 10 }));
 }
 
@@ -114,7 +124,9 @@ TEST_F(analyze_type_test, character_varying_flexible) {
                     ast::type::kind::character_varying,
                     flexible,
             });
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (ttype::character { ttype::varying, std::nullopt }));
 }
 
@@ -125,7 +137,7 @@ TEST_F(analyze_type_test, character_varying_length_zero) {
                     ast::type::kind::character_varying,
                     0,
             });
-    EXPECT_FALSE(r);
+    EXPECT_FALSE(r) << diagnostics();
     EXPECT_TRUE(find_error(sql_analyzer_code::invalid_type_length));
 }
 
@@ -135,7 +147,9 @@ TEST_F(analyze_type_test, bit) {
             ast::type::bit_string {
                     ast::type::kind::bit,
             });
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (ttype::bit { 1 }));
 }
 
@@ -146,7 +160,9 @@ TEST_F(analyze_type_test, bit_length) {
                     ast::type::kind::bit,
                     16,
             });
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (ttype::bit { 16 }));
 }
 
@@ -178,7 +194,9 @@ TEST_F(analyze_type_test, bit_varying) {
             ast::type::bit_string {
                     ast::type::kind::bit_varying,
             });
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (ttype::bit { ttype::varying, {} }));
 }
 
@@ -189,7 +207,9 @@ TEST_F(analyze_type_test, bit_varying_length) {
                     ast::type::kind::bit_varying,
                     10,
             });
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (ttype::bit { ttype::varying, 10 }));
 }
 
@@ -200,7 +220,9 @@ TEST_F(analyze_type_test, bit_varying_flexible) {
                     ast::type::kind::bit_varying,
                     flexible,
             });
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (ttype::bit { ttype::varying, std::nullopt }));
 }
 
@@ -221,7 +243,9 @@ TEST_F(analyze_type_test, octet) {
             ast::type::octet_string {
                     ast::type::kind::octet,
             });
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (ttype::octet { 1 }));
 }
 
@@ -232,7 +256,9 @@ TEST_F(analyze_type_test, octet_length) {
                     ast::type::kind::octet,
                     16,
             });
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (ttype::octet { 16 }));
 }
 
@@ -264,7 +290,9 @@ TEST_F(analyze_type_test, octet_varying) {
             ast::type::octet_string {
                     ast::type::kind::octet_varying,
             });
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (ttype::octet { ttype::varying, {} }));
 }
 
@@ -275,7 +303,9 @@ TEST_F(analyze_type_test, octet_varying_length) {
                     ast::type::kind::octet_varying,
                     10,
             });
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (ttype::octet { ttype::varying, 10 }));
 }
 
@@ -286,7 +316,9 @@ TEST_F(analyze_type_test, octet_varying_flexible) {
                     ast::type::kind::octet_varying,
                     flexible,
             });
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (ttype::octet { ttype::varying, std::nullopt }));
 }
 
@@ -308,7 +340,9 @@ TEST_F(analyze_type_test, numeric) {
             ast::type::numeric {
                     ast::type::kind::numeric,
             });
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (ttype::decimal { 20, 0 }));
 }
 
@@ -319,7 +353,9 @@ TEST_F(analyze_type_test, decimal) {
             ast::type::decimal {
                     ast::type::kind::decimal,
             });
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (ttype::decimal { 20, 0 }));
 }
 
@@ -330,7 +366,9 @@ TEST_F(analyze_type_test, decimal_precision) {
                     ast::type::kind::decimal,
                     16,
             });
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (ttype::decimal { 16, 0 }));
 }
 
@@ -342,7 +380,9 @@ TEST_F(analyze_type_test, decimal_scale) {
                     16,
                     2,
             });
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (ttype::decimal { 16, 2 }));
 }
 
@@ -353,7 +393,9 @@ TEST_F(analyze_type_test, decimal_flexible_precision) {
                     ast::type::kind::decimal,
                     flexible,
             });
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (ttype::decimal { {}, 0 }));
 }
 
@@ -365,7 +407,9 @@ TEST_F(analyze_type_test, decimal_flexible_both) {
                     flexible,
                     flexible,
             });
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (ttype::decimal { {}, {} }));
 }
 
@@ -378,7 +422,9 @@ TEST_F(analyze_type_test, decimal_flexible_with_scale) {
                     flexible,
                     2,
             });
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (ttype::decimal { {}, 2, }));
 }
 
@@ -423,7 +469,9 @@ TEST_F(analyze_type_test, tiny_integer) {
             ast::type::simple {
                     ast::type::kind::tiny_integer,
             });
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (ttype::int1 {}));
 }
 
@@ -433,7 +481,9 @@ TEST_F(analyze_type_test, small_integer) {
             ast::type::simple {
                     ast::type::kind::small_integer,
             });
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (ttype::int2 {}));
 }
 
@@ -443,7 +493,9 @@ TEST_F(analyze_type_test, integer) {
             ast::type::simple {
                     ast::type::kind::integer,
             });
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (ttype::int4 {}));
 }
 
@@ -453,7 +505,9 @@ TEST_F(analyze_type_test, big_integer) {
             ast::type::simple {
                     ast::type::kind::big_integer,
             });
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (ttype::int8 {}));
 }
 
@@ -463,7 +517,9 @@ TEST_F(analyze_type_test, float) {
             ast::type::simple {
                     ast::type::kind::float_,
             });
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (ttype::float4 {}));
 }
 
@@ -473,7 +529,9 @@ TEST_F(analyze_type_test, real) {
             ast::type::simple {
                     ast::type::kind::float_,
             });
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (ttype::float4 {}));
 }
 
@@ -483,7 +541,9 @@ TEST_F(analyze_type_test, double_precision) {
             ast::type::simple {
                     ast::type::kind::double_precision,
             });
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (ttype::float8 {}));
 }
 
@@ -494,7 +554,9 @@ TEST_F(analyze_type_test, integer_tiny) {
                     ast::type::kind::binary_integer,
                     7,
             });
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (ttype::int1 {}));
 }
 
@@ -505,7 +567,9 @@ TEST_F(analyze_type_test, integer_small) {
                     ast::type::kind::binary_integer,
                     15,
             });
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (ttype::int2 {}));
 }
 
@@ -516,7 +580,9 @@ TEST_F(analyze_type_test, integer_medium) {
                     ast::type::kind::binary_integer,
                     31,
             });
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (ttype::int4 {}));
 }
 
@@ -527,7 +593,9 @@ TEST_F(analyze_type_test, integer_big) {
                     ast::type::kind::binary_integer,
                     63,
             });
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (ttype::int8 {}));
 }
 
@@ -538,7 +606,9 @@ TEST_F(analyze_type_test, integer_flexible) {
                     ast::type::kind::binary_integer,
                     flexible,
             });
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (ttype::int8 {}));
 }
 
@@ -571,7 +641,9 @@ TEST_F(analyze_type_test, float_single) {
                     ast::type::kind::binary_float,
                     sql_analyzer_options::default_max_binary_float4_precision,
             });
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (ttype::float4 {}));
 }
 
@@ -582,7 +654,9 @@ TEST_F(analyze_type_test, float_double) {
                     ast::type::kind::binary_float,
                     sql_analyzer_options::default_max_binary_float8_precision,
             });
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (ttype::float8 {}));
 }
 
@@ -593,7 +667,9 @@ TEST_F(analyze_type_test, float_flexible) {
                     ast::type::kind::binary_float,
                     flexible,
             });
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (ttype::float8 {}));
 }
 
@@ -625,7 +701,9 @@ TEST_F(analyze_type_test, boolean) {
             ast::type::simple {
                     ast::type::kind::boolean,
             });
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (ttype::boolean {}));
 }
 
@@ -635,7 +713,9 @@ TEST_F(analyze_type_test, date) {
             ast::type::simple {
                     ast::type::kind::date,
             });
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (ttype::date {}));
 }
 
@@ -645,7 +725,9 @@ TEST_F(analyze_type_test, time) {
             ast::type::datetime {
                     ast::type::kind::time,
             });
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (ttype::time_of_day {}));
 }
 
@@ -656,7 +738,9 @@ TEST_F(analyze_type_test, time_timezone) {
                     ast::type::kind::time,
                     true,
             });
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (ttype::time_of_day { ttype::with_time_zone }));
 }
 
@@ -666,7 +750,9 @@ TEST_F(analyze_type_test, timestamp) {
             ast::type::datetime {
                     ast::type::kind::timestamp,
             });
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (ttype::time_point {}));
 }
 
@@ -677,7 +763,9 @@ TEST_F(analyze_type_test, timestamp_timezone) {
                     ast::type::kind::timestamp,
                     true,
             });
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(*r, (ttype::time_point { ttype::with_time_zone }));
 }
 

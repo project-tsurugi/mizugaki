@@ -11,10 +11,14 @@
 
 #include <mizugaki/analyzer/details/relation_info.h>
 
+#include "find_element_result.h"
+
 namespace mizugaki::analyzer::details {
 
 class query_scope {
 public:
+    using result_type = find_element_result<relation_info>;
+    using const_result_type = find_element_result<relation_info const>;
     using position_type = std::size_t;
 
     query_scope() = default;
@@ -25,21 +29,23 @@ public:
     [[nodiscard]] ::takatori::util::sequence_view<relation_info> references() noexcept;
     [[nodiscard]] ::takatori::util::sequence_view<relation_info const> references() const noexcept;
 
-    void reserve(std::size_t count);
+    void reserve(std::size_t size);
     relation_info& add(relation_info info);
 
-    [[nodiscard]] ::takatori::util::optional_ptr<relation_info> find(std::string_view identifier);
-    [[nodiscard]] ::takatori::util::optional_ptr<relation_info const> find(std::string_view identifier) const;
-    [[nodiscard]] ::takatori::util::optional_ptr<relation_info> find(::yugawara::storage::relation const& relation);
-    [[nodiscard]] ::takatori::util::optional_ptr<relation_info const> find(::yugawara::storage::relation const& relation) const;
+    [[nodiscard]] result_type find(std::string_view identifier);
+    [[nodiscard]] const_result_type find(std::string_view identifier) const;
+    [[nodiscard]] result_type find(::yugawara::storage::relation const& relation);
+    [[nodiscard]] const_result_type find(::yugawara::storage::relation const& relation) const;
 
     [[nodiscard]] position_type create_pivot() const noexcept;
-    [[nodiscard]] std::optional<position_type> position_of(relation_info const& relation) const noexcept;
 
 private:
+    static constexpr position_type ambiguous = std::numeric_limits<position_type>::max();
+
     ::takatori::util::optional_ptr<query_scope const> parent_ {};
-    std::vector<relation_info> references_ {};
-    ::tsl::hopscotch_map<std::string, position_type, std::hash<std::string_view>, std::equal_to<>> reference_name_map_ {};
+    std::vector<relation_info> relations_ {};
+    ::tsl::hopscotch_map<std::string, position_type, std::hash<std::string_view>, std::equal_to<>> name_map_ {};
+    ::tsl::hopscotch_map<yugawara::storage::relation const*, position_type> reference_map_ {};
 
     // FIXME: support WITH ...
 

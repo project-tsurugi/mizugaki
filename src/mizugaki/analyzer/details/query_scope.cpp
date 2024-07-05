@@ -23,90 +23,97 @@ optional_ptr<query_scope const> query_scope::parent() const noexcept {
 }
 
 sequence_view<relation_info> query_scope::references() noexcept {
-    return references_;
+    return relations_;
 }
 
 sequence_view<relation_info const> query_scope::references() const noexcept {
-    return references_;
+    return relations_;
 }
 
-void query_scope::reserve(std::size_t count) {
-    references_.reserve(count);
-    reference_name_map_.reserve(count);
+void query_scope::reserve(std::size_t size) {
+    relations_.reserve(size);
+    name_map_.reserve(size);
+    reference_map_.reserve(size);
 }
 
 relation_info& query_scope::add(relation_info info) {
-    auto position = references_.size();
-    auto&& added = references_.emplace_back(std::move(info));
+    auto position = relations_.size();
+    auto&& added = relations_.emplace_back(std::move(info));
+
     if (auto&& id = added.identifier(); !id.empty()) {
-        if (auto [it, success] = reference_name_map_.emplace(id, position); !success) {
-            // FIXME: duplicate correlation
-            (void) it;
-            ::takatori::util::fail(); // FIXME: fail
+        if (auto [it, success] = name_map_.try_emplace(id, position); !success) {
+            it.value() = ambiguous;
+        }
+    } else if (auto ref = added.declaration()) {
+        auto&& name = ref->simple_name();
+        if (auto [it, success] = name_map_.try_emplace(std::string { name }, position); !success) {
+            it.value() = ambiguous;
+        }
+        if (auto [it, success] = reference_map_.try_emplace(ref.get(), position); !success) {
+            it.value() = ambiguous;
         }
     }
     return added;
 }
 
-optional_ptr<relation_info> query_scope::find(std::string_view identifier) {
+query_scope::result_type query_scope::find(std::string_view identifier) {
     if (auto pos = find_internal(identifier)) {
-        return references_[*pos];
+        if (*pos == ambiguous) {
+            return result_type::ambiguous;
+        }
+        return relations_[*pos];
     }
     return {};
 }
 
-optional_ptr<relation_info const> query_scope::find(std::string_view identifier) const {
+query_scope::const_result_type query_scope::find(std::string_view identifier) const {
     if (auto pos = find_internal(identifier)) {
-        return references_[*pos];
+        if (*pos == ambiguous) {
+            return const_result_type::ambiguous;
+        }
+        return relations_[*pos];
     }
     return {};
 }
 
-optional_ptr<relation_info> query_scope::find(::yugawara::storage::relation const& relation) {
+query_scope::result_type query_scope::find(::yugawara::storage::relation const& relation) {
     if (auto pos = find_internal(relation)) {
-        return references_[*pos];
+        if (*pos == ambiguous) {
+            return result_type::ambiguous;
+        }
+        return relations_[*pos];
     }
     return {};
 }
 
-optional_ptr<relation_info const> query_scope::find(::yugawara::storage::relation const& relation) const {
+query_scope::const_result_type query_scope::find(::yugawara::storage::relation const& relation) const {
     if (auto pos = find_internal(relation)) {
-        return references_[*pos];
+        if (*pos == ambiguous) {
+            return const_result_type::ambiguous;
+        }
+        return relations_[*pos];
     }
     return {};
 }
 
 std::optional<query_scope::position_type> query_scope::find_internal(std::string_view identifier) const {
-    auto&& map = reference_name_map_;
+    auto&& map = name_map_;
     if (auto it = map.find(identifier); it != map.end()) {
         return it.value();
     }
     return {};
 }
 
-std::optional<query_scope::position_type> query_scope::find_internal(yugawara::storage::relation const& relation) const {
-    auto&& list = references_;
-    for (position_type i = 0, n = list.size(); i < n; ++i) {
-        auto&& ref = list[i];
-        if (ref.declaration().get() == std::addressof(relation)) {
-            // FIXME: ambiguous
-            return i;
-        }
+std::optional<query_scope::position_type> query_scope::find_internal(::yugawara::storage::relation const& relation) const {
+    auto&& map = reference_map_;
+    if (auto it = map.find(std::addressof(relation)); it != map.end()) {
+        return it.value();
     }
     return {};
 }
 
 query_scope::position_type query_scope::create_pivot() const noexcept {
-    return references_.size();
-}
-
-std::optional<query_scope::position_type> query_scope::position_of(relation_info const& relation) const noexcept {
-    for (position_type position = 0, n = references_.size(); position < n; ++position) {
-        if (std::addressof(relation) == std::addressof(references_[position])) {
-            return position;
-        }
-    }
-    return {};
+    return relations_.size();
 }
 
 std::ostream& operator<<(std::ostream& out, query_scope const& value) {

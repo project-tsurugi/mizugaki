@@ -9,10 +9,11 @@
 #include <takatori/type/time_of_day.h>
 #include <takatori/type/time_point.h>
 
-#include <takatori/util/fail.h>
 #include <takatori/util/string_builder.h>
 
 #include <mizugaki/ast/type/dispatch.h>
+
+#include "name_print_support.h"
 
 namespace mizugaki::analyzer::details {
 
@@ -20,7 +21,6 @@ namespace ttype = ::takatori::type;
 
 using result_type = std::shared_ptr<ttype::data const>;
 
-using ::takatori::util::fail;
 using ::takatori::util::string_builder;
 
 namespace {
@@ -73,7 +73,14 @@ public:
             default:
                 break;
         }
-        fail();
+        context_.report(
+                sql_analyzer_code::unsupported_feature,
+                string_builder {}
+                        << "unsupported simple type: "
+                        << type.node_kind()
+                        << string_builder::to_string,
+                type.region());
+        return {};
     }
 
     [[nodiscard]] result_type operator()(ast::type::character_string const& type) {
@@ -294,7 +301,14 @@ public:
             default:
                 break;
         }
-        fail();
+        context_.report(
+                sql_analyzer_code::unsupported_feature,
+                string_builder {}
+                        << "unsupported binary numeric type: "
+                        << type.node_kind()
+                        << string_builder::to_string,
+                type.region());
+        return {};
     }
 
     [[nodiscard]] result_type operator()(ast::type::datetime const& type) {
@@ -308,7 +322,14 @@ public:
             default:
                 break;
         }
-        fail();
+        context_.report(
+                sql_analyzer_code::unsupported_feature,
+                string_builder {}
+                        << "unsupported datetime type: "
+                        << type.node_kind()
+                        << string_builder::to_string,
+                type.region());
+        return {};
     }
 
     // FIXME: support interval qualifier
@@ -325,7 +346,7 @@ public:
                 sql_analyzer_code::unsupported_feature,
                 string_builder {}
                         << "user defined type is not supported: "
-                        << type.name()->last_identifier()
+                        << print_support { *type.name() }
                         << string_builder::to_string,
                 type.region());
         return {};

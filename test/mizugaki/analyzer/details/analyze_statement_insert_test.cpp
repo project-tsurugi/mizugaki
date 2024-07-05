@@ -67,6 +67,8 @@ TEST_F(analyze_statement_insert_test, simple) {
     });
     auto alternative = std::get_if<execution_plan_result_type >(&r);
     ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
     auto&& graph = **alternative;
     ASSERT_EQ(graph.size(), 2);
 
@@ -134,6 +136,8 @@ TEST_F(analyze_statement_insert_test, columns) {
     });
     auto alternative = std::get_if<execution_plan_result_type >(&r);
     ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
     auto&& graph = **alternative;
     ASSERT_EQ(graph.size(), 2);
 
@@ -188,6 +192,8 @@ TEST_F(analyze_statement_insert_test, as_write_statement) {
     });
     auto alternative = std::get_if<statement_result_type>(&r);
     ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
     ASSERT_EQ((*alternative)->kind(), tstatement::statement_kind::write);
     auto&& stmt = downcast<tstatement::write>(**alternative);
 
@@ -233,6 +239,8 @@ TEST_F(analyze_statement_insert_test, values_null) {
     });
     auto alternative = std::get_if<execution_plan_result_type>(&r);
     ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
     auto&& graph = **alternative;
     ASSERT_EQ(graph.size(), 2);
 
@@ -272,6 +280,8 @@ TEST_F(analyze_statement_insert_test, insert_or_ignore) {
     });
     auto alternative = std::get_if<execution_plan_result_type >(&r);
     ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
     auto&& graph = **alternative;
     ASSERT_EQ(graph.size(), 2);
 
@@ -300,6 +310,8 @@ TEST_F(analyze_statement_insert_test, insert_or_replace) {
     });
     auto alternative = std::get_if<execution_plan_result_type >(&r);
     ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
     auto&& graph = **alternative;
     ASSERT_EQ(graph.size(), 2);
 

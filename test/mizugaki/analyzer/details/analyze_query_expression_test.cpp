@@ -36,7 +36,9 @@ TEST_F(analyze_query_expression_test, table_reference) {
             },
             {},
             {});
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(graph.size(), 1);
     EXPECT_FALSE(r.output().opposite());
 
@@ -120,7 +122,9 @@ TEST_F(analyze_query_expression_test, table_value_constructor) {
             },
             {},
             {});
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(graph.size(), 1);
     EXPECT_FALSE(r.output().opposite());
 
@@ -189,7 +193,9 @@ TEST_F(analyze_query_expression_test, table_value_constructor_multiple_rows) {
             },
             {},
             {});
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
     EXPECT_EQ(graph.size(), 1);
     EXPECT_FALSE(r.output().opposite());
 

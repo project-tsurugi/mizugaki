@@ -35,6 +35,10 @@ public:
 
     std::size_t count_error();
 
+    void expect_no_error();
+
+    void clear_error();
+
     std::shared_ptr<::yugawara::storage::table const> install_table(std::string_view name);
 
     ::takatori::descriptor::variable vd(
