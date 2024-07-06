@@ -2,6 +2,8 @@
 
 #include <gtest/gtest.h>
 
+#include <string_view>
+
 #include <mizugaki/ast/statement/select_statement.h>
 
 #include <mizugaki/ast/query/table_reference.h>
@@ -11,6 +13,8 @@
 namespace mizugaki::parser {
 
 using namespace testing;
+
+using std::string_view_literals::operator""sv;
 
 class sql_parser_error_test : public ::testing::Test {
 protected:
@@ -46,6 +50,26 @@ TEST_F(sql_parser_error_test, invalid_character) {
 
     EXPECT_EQ(r.code(), sql_parser_code::invalid_character);
     EXPECT_EQ(r.contents(), "$");
+    print_result(r);
+}
+
+TEST_F(sql_parser_error_test, invalid_character_not_ascii) {
+    std::string content { u8"SELECT \u3042" };
+    auto r = parse_erroneous(content);
+    ASSERT_TRUE(r);
+
+    EXPECT_EQ(r.code(), sql_parser_code::invalid_character);
+    EXPECT_EQ(r.contents(), u8"\u3042"sv);
+    print_result(r);
+}
+
+TEST_F(sql_parser_error_test, invalid_character_emoji) {
+    std::string content { u8"SELECT \U0001F44D" };
+    auto r = parse_erroneous(content);
+    ASSERT_TRUE(r);
+
+    EXPECT_EQ(r.code(), sql_parser_code::invalid_character);
+    EXPECT_EQ(r.contents(), u8"\U0001F44D"sv);
     print_result(r);
 }
 
