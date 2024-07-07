@@ -66,6 +66,15 @@ dot_asterisk "."{space}*"*"
 
 host_parameter_name ":"{identifier}
 
+/* error handling */
+ASCII   [\x00-\x7f]
+UTF8_2  [\xc2-\xdf]
+UTF8_3  [\xe0-\xef]
+UTF8_4  [\xf0-\xf4]
+U       [\x80-\xbf]
+
+UTF8_CHAR {ASCII}|{UTF8_2}{U}|{UTF8_3}{U}{U}|{UTF8_4}{U}{U}{U}
+
 %x bracketed_comment
 %x simple_comment
 
@@ -88,7 +97,7 @@ host_parameter_name ":"{identifier}
         auto loc = exit_comment(true);
         return parser_type::make_UNCLOSED_BLOCK_COMMENT(loc(0, 2));
     }
-    . {}
+    [\x00-\xff] {}
 }
 
 "--" {
@@ -478,7 +487,12 @@ host_parameter_name ":"{identifier}
 }
 
 <*>{
-    . { return parser_type::make_ERROR(location()); }
+    {UTF8_CHAR} {
+        return parser_type::make_ERROR(location());
+    }
+    [\x00-\xff] {
+        return parser_type::make_ERROR(location());
+    }
 }
 
 <<EOF>> {
