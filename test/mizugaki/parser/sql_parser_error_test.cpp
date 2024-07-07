@@ -49,6 +49,7 @@ TEST_F(sql_parser_error_test, invalid_character) {
     ASSERT_TRUE(r);
 
     EXPECT_EQ(r.code(), sql_parser_code::invalid_character);
+    EXPECT_NE(r.message().find(R"("$")"), std::string::npos) << r.message();
     EXPECT_EQ(r.contents(), "$");
     print_result(r);
 }
@@ -79,7 +80,30 @@ TEST_F(sql_parser_error_test, invalid_character_cstyle_not_eq) {
     ASSERT_TRUE(r);
 
     EXPECT_EQ(r.code(), sql_parser_code::invalid_character);
+    EXPECT_NE(r.message().find(R"("!")"), std::string::npos) << r.message();
     EXPECT_EQ(r.contents(), "!");
+    print_result(r);
+}
+
+TEST_F(sql_parser_error_test, invalid_character_control_control_00) {
+    using std::string_literals::operator""s;
+    auto content = "SELECT \0"s;
+    auto r = parse_erroneous(content);
+    ASSERT_TRUE(r);
+
+    EXPECT_EQ(r.code(), sql_parser_code::invalid_character);
+    EXPECT_NE(r.message().find("U+0000"), std::string::npos) << r.message();
+    print_result(r);
+}
+
+TEST_F(sql_parser_error_test, invalid_character_control_control_1f) {
+    using std::string_literals::operator""s;
+    auto content = "SELECT \x1f"s;
+    auto r = parse_erroneous(content);
+    ASSERT_TRUE(r);
+
+    EXPECT_EQ(r.code(), sql_parser_code::invalid_character);
+    EXPECT_NE(r.message().find("U+001F"), std::string::npos) << r.message();
     print_result(r);
 }
 

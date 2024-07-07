@@ -141,6 +141,7 @@
 }
 
 %code {
+    #include <iomanip>
 
     #include <takatori/util/downcast.h>
     #include <takatori/util/string_builder.h>
@@ -169,12 +170,24 @@
 
         // check erroneous token kind
         if (symbol == kind::S_ERROR) {
-            driver.error(
-                    sql_parser_code::invalid_character,
-                    location,
-                    string_builder {}
-                            << "unrecognized character: " << "\"" << image << "\""
-                            << string_builder::to_string);
+            if (image.size() == 1 && image[0] < static_cast<char>(0x20)) {
+                auto c = static_cast<unsigned int>(image[0]);
+                driver.error(
+                        sql_parser_code::invalid_character,
+                        location,
+                        string_builder {}
+                                << "unrecognized control character: "
+                                << "U+"
+                                << std::uppercase << std::hex << std::setw(4) << std::setfill('0') << c
+                                << string_builder::to_string);
+            } else {
+                driver.error(
+                        sql_parser_code::invalid_character,
+                        location,
+                        string_builder {}
+                                << "unrecognized character: " << "\"" << image << "\""
+                                << string_builder::to_string);
+            }
             return;
         }
         if (symbol == kind::S_UNCLOSED_BLOCK_COMMENT) {
