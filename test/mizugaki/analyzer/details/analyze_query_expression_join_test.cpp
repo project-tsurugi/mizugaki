@@ -839,4 +839,108 @@ TEST_F(analyze_query_expression_join_test, join_columns_missing) {
     });
 }
 
+TEST_F(analyze_query_expression_join_test, qualified_asterisk_left) {
+    auto table_a = install_table("a");
+    auto table_b = install_table("b");
+    trelation::graph_type graph {};
+
+    auto r = analyze_query_expression(
+            context(),
+            graph,
+            ast::query::query {
+                    {
+                            ast::query::select_asterisk { vref(id("a")) },
+                    },
+                    {
+                            ast::table::table_reference { id("a") },
+                            ast::table::table_reference { id("b") },
+                    },
+            },
+            {},
+            {});
+    ASSERT_TRUE(r);
+    expect_no_error();
+
+    EXPECT_EQ(graph.size(), 4);
+    EXPECT_FALSE(r.output().opposite());
+
+    auto&& relation = r.relation();
+    EXPECT_EQ(relation.identifier(), "");
+
+    auto relation_columns = relation.columns();
+    ASSERT_EQ(relation_columns.size(), 4);
+
+    // scan*2 - join - project -
+    auto&& project = downcast<trelation::project>(r.output().owner());
+    auto&& join = *find_prev<trelation::intermediate::join>(project);
+    auto&& left = downcast<trelation::scan>(join.left().opposite()->owner());
+    auto&& right = downcast<trelation::scan>(join.right().opposite()->owner());
+
+    auto&& left_columns = left.columns();
+    ASSERT_EQ(left_columns.size(), 4);
+
+    auto&& right_columns = right.columns();
+    ASSERT_EQ(right_columns.size(), 4);
+
+    auto&& project_columns = project.columns();
+    ASSERT_EQ(project_columns.size(), 0);
+
+    EXPECT_EQ(relation_columns[0].variable(), left_columns[0].destination());
+    EXPECT_EQ(relation_columns[1].variable(), left_columns[1].destination());
+    EXPECT_EQ(relation_columns[2].variable(), left_columns[2].destination());
+    EXPECT_EQ(relation_columns[3].variable(), left_columns[3].destination());
+}
+
+TEST_F(analyze_query_expression_join_test, qualified_asterisk_right) {
+    auto table_a = install_table("a");
+    auto table_b = install_table("b");
+    trelation::graph_type graph {};
+
+    auto r = analyze_query_expression(
+            context(),
+            graph,
+            ast::query::query {
+                    {
+                            ast::query::select_asterisk { vref(id("public", "b")) },
+                    },
+                    {
+                            ast::table::table_reference { id("a") },
+                            ast::table::table_reference { id("b") },
+                    },
+            },
+            {},
+            {});
+    ASSERT_TRUE(r);
+    expect_no_error();
+
+    EXPECT_EQ(graph.size(), 4);
+    EXPECT_FALSE(r.output().opposite());
+
+    auto&& relation = r.relation();
+    EXPECT_EQ(relation.identifier(), "");
+
+    auto relation_columns = relation.columns();
+    ASSERT_EQ(relation_columns.size(), 4);
+
+    // scan*2 - join - project -
+    auto&& project = downcast<trelation::project>(r.output().owner());
+    auto&& join = *find_prev<trelation::intermediate::join>(project);
+    auto&& left = downcast<trelation::scan>(join.left().opposite()->owner());
+    auto&& right = downcast<trelation::scan>(join.right().opposite()->owner());
+
+    auto&& left_columns = left.columns();
+    ASSERT_EQ(left_columns.size(), 4);
+
+    auto&& right_columns = right.columns();
+    ASSERT_EQ(right_columns.size(), 4);
+
+    auto&& project_columns = project.columns();
+    ASSERT_EQ(project_columns.size(), 0);
+
+    EXPECT_EQ(relation_columns[0].variable(), right_columns[0].destination());
+    EXPECT_EQ(relation_columns[1].variable(), right_columns[1].destination());
+    EXPECT_EQ(relation_columns[2].variable(), right_columns[2].destination());
+    EXPECT_EQ(relation_columns[3].variable(), right_columns[3].destination());
+}
+
 } // namespace mizugaki::analyzer::details
