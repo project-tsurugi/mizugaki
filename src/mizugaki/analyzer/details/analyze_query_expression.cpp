@@ -130,9 +130,9 @@ public:
         // GROUP BY ...
         set_function_processor set_functions { context_, graph_ };
         optional_ptr<output_port> set_function_entry { output };
-        if (expr.group_by()) {
+        if (auto&& group_by = expr.group_by()) {
             set_functions.activate();
-            for (auto&& element : expr.group_by()->elements()) {
+            for (auto&& element : group_by->elements()) {
                 auto r = dispatch(*element, set_functions, scope);
                 if (!r) {
                     return {};
@@ -192,13 +192,13 @@ public:
         }
 
         // SELECT DISTINCT
-        if (expr.quantifier() == ast::query::set_quantifier::distinct) {
+        if (auto&& quantifier = expr.quantifier(); quantifier == ast::query::set_quantifier::distinct) {
             auto keys = create_vector<tdescriptor::variable>(info.columns().size());
             for (auto&& column : info.columns()) {
                 keys.emplace_back(column.variable());
             }
             auto&& distinct = graph_.emplace<trelation::intermediate::distinct>(std::move(keys));
-            distinct.region() = context_.convert(expr.quantifier()->region());
+            distinct.region() = context_.convert(quantifier->region());
             if (!context_.resolve(distinct)) {
                 return {};
             }
@@ -655,13 +655,26 @@ public:
             query_scope const& scope,
             trelation::project&,
             relation_info& info) {
-        if (elem.qualifier()) {
-            // FIXME: impl qualified asterisk
-            context_.report(
-                    sql_analyzer_code::unsupported_feature,
-                    "relation.* in select clause is not yet supported",
-                    elem.region());
-            return {};
+        if (auto&& qualifier = elem.qualifier()) {
+            if (qualifier->node_kind() != ast::scalar::variable_reference::tag) {
+                context_.report(
+                        sql_analyzer_code::unsupported_feature,
+                        "qualifier must be a plain name",
+                        qualifier->region());
+                return {};
+            }
+            auto&& name = unsafe_downcast<ast::scalar::variable_reference>(*qualifier).name();
+            auto found = analyze_relation_info_name(context_, *name, scope);
+            if (!found) {
+                return {}; // error already reported
+            }
+            for (auto&& column : found->columns()) {
+                if (!column.exported()) {
+                    continue;
+                }
+                info.add(column);
+            }
+            return { true };
         }
         for (auto&& relation : scope.references()) {
             for (auto&& column : relation.columns()) {

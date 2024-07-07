@@ -21,7 +21,7 @@ select_asterisk::select_asterisk(
         scalar::expression&& qualifier,
         region_type region) :
     select_asterisk {
-            clone_unique(qualifier),
+            clone_unique(std::move(qualifier)),
             region,
     }
 {}

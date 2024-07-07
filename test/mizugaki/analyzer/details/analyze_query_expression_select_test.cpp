@@ -47,6 +47,11 @@ protected:
         EXPECT_FALSE(r) << diagnostics();
         EXPECT_NE(count_error(), 0);
     }
+
+    void invalid(sql_analyzer_code code, ast::query::expression const& expression) {
+        invalid(expression);
+        EXPECT_TRUE(find_error(code)) << diagnostics();
+    }
 };
 
 TEST_F(analyze_query_expression_select_test, simple) {
@@ -114,6 +119,79 @@ TEST_F(analyze_query_expression_select_test, select_asterisk_simple) {
             ast::query::query {
                     {
                             ast::query::select_asterisk {},
+                    },
+                    {
+                            ast::table::table_reference {
+                                    id("testing"),
+                            }
+                    },
+            },
+            {},
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
+    EXPECT_EQ(graph.size(), 2);
+    EXPECT_FALSE(r.output().opposite());
+
+    auto&& relation = r.relation();
+    EXPECT_EQ(relation.identifier(), "");
+
+    auto relation_columns = relation.columns();
+    ASSERT_EQ(relation_columns.size(), 4);
+    {
+        auto&& column = relation_columns[0];
+        EXPECT_EQ(column.identifier(), "k");
+        EXPECT_EQ(column.declaration(), table->columns()[0]);
+        EXPECT_TRUE(column.exported());
+    }
+    {
+        auto&& column = relation_columns[1];
+        EXPECT_EQ(column.identifier(), "v");
+        EXPECT_EQ(column.declaration(), table->columns()[1]);
+        EXPECT_TRUE(column.exported());
+    }
+    {
+        auto&& column = relation_columns[2];
+        EXPECT_EQ(column.identifier(), "w");
+        EXPECT_EQ(column.declaration(), table->columns()[2]);
+        EXPECT_TRUE(column.exported());
+    }
+    {
+        auto&& column = relation_columns[3];
+        EXPECT_EQ(column.identifier(), "x");
+        EXPECT_EQ(column.declaration(), table->columns()[3]);
+        EXPECT_TRUE(column.exported());
+    }
+
+    // scan - project -
+    auto&& project = downcast<trelation::project>(r.output().owner());
+    auto&& scan = *find_prev<trelation::scan>(project);
+
+    EXPECT_EQ(extract<::yugawara::storage::index>(scan.source()).table(), *table);
+
+    auto&& scan_columns = scan.columns();
+    ASSERT_EQ(scan_columns.size(), 4);
+
+    auto&& project_columns = project.columns();
+    ASSERT_EQ(project_columns.size(), 0);
+
+    EXPECT_EQ(relation_columns[0].variable(), scan_columns[0].destination());
+    EXPECT_EQ(relation_columns[1].variable(), scan_columns[1].destination());
+    EXPECT_EQ(relation_columns[2].variable(), scan_columns[2].destination());
+    EXPECT_EQ(relation_columns[3].variable(), scan_columns[3].destination());
+}
+
+TEST_F(analyze_query_expression_select_test, select_asterisk_qualified) {
+    auto table = install_table("testing");
+    trelation::graph_type graph {};
+
+    auto r = analyze_query_expression(
+            context(),
+            graph,
+            ast::query::query {
+                    {
+                            ast::query::select_asterisk { vref(id("testing")) },
                     },
                     {
                             ast::table::table_reference {
@@ -937,7 +1015,7 @@ TEST_F(analyze_query_expression_select_test, order_by_limit) {
 
 TEST_F(analyze_query_expression_select_test, invalid_select_column) {
     auto table = install_table("testing");
-    invalid(ast::query::query {
+    invalid(sql_analyzer_code::variable_not_found, ast::query::query {
             {
                     ast::query::select_column { vref(id("MISSING")) },
             },
@@ -951,9 +1029,9 @@ TEST_F(analyze_query_expression_select_test, invalid_select_column) {
 
 TEST_F(analyze_query_expression_select_test, invalid_select_asterisk_table) {
     auto table = install_table("testing");
-    invalid(ast::query::query {
+    invalid(sql_analyzer_code::table_not_found, ast::query::query {
             {
-                    ast::query::select_asterisk { vref(id("testing")) },
+                    ast::query::select_asterisk { vref(id("MISSING")) },
             },
             {
                     ast::table::table_reference {
@@ -965,7 +1043,7 @@ TEST_F(analyze_query_expression_select_test, invalid_select_asterisk_table) {
 
 TEST_F(analyze_query_expression_select_test, invalid_from_table) {
     auto table = install_table("testing");
-    invalid(ast::query::query {
+    invalid(sql_analyzer_code::table_not_found, ast::query::query {
             {
                     ast::query::select_asterisk {},
             },
@@ -979,7 +1057,7 @@ TEST_F(analyze_query_expression_select_test, invalid_from_table) {
 
 TEST_F(analyze_query_expression_select_test, invalid_where_predicate) {
     auto table = install_table("testing");
-    invalid(ast::query::query {
+    invalid(sql_analyzer_code::variable_not_found, ast::query::query {
             {
                     ast::query::select_asterisk {},
             },
@@ -1000,7 +1078,7 @@ TEST_F(analyze_query_expression_select_test, invalid_where_predicate) {
 
 TEST_F(analyze_query_expression_select_test, invalid_group_by_column) {
     auto table = install_table("testing");
-    invalid(ast::query::query {
+    invalid(sql_analyzer_code::variable_not_found, ast::query::query {
             {
                     ast::query::select_column { vref(id("v")) },
             },
@@ -1019,7 +1097,7 @@ TEST_F(analyze_query_expression_select_test, invalid_group_by_column) {
 
 TEST_F(analyze_query_expression_select_test, invalid_having_predicate) {
     auto table = install_table("testing");
-    invalid(ast::query::query {
+    invalid(sql_analyzer_code::variable_not_found, ast::query::query {
             {
                     ast::query::select_column { vref(id("v")) },
             },
@@ -1044,7 +1122,7 @@ TEST_F(analyze_query_expression_select_test, invalid_having_predicate) {
 
 TEST_F(analyze_query_expression_select_test, invalid_order_by_column) {
     auto table = install_table("testing");
-    invalid(ast::query::query {
+    invalid(sql_analyzer_code::variable_not_found, ast::query::query {
             {
                     ast::query::select_asterisk {},
             },
@@ -1066,7 +1144,7 @@ TEST_F(analyze_query_expression_select_test, invalid_order_by_column) {
 
 TEST_F(analyze_query_expression_select_test, invalid_limit_expression) {
     auto table = install_table("testing");
-    invalid(ast::query::query {
+    invalid(sql_analyzer_code::variable_not_found, ast::query::query {
             {
                     ast::query::select_asterisk {},
             },
