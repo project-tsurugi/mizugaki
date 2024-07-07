@@ -410,4 +410,14 @@ TEST_F(analyze_statement_insert_test, inconsistent_query) {
     });
 }
 
+TEST_F(analyze_statement_insert_test, default_values) {
+    options_.prefer_write_statement() = false;
+    auto table = install_table("testing");
+    invalid(sql_analyzer_code::unsupported_feature, ast::statement::insert_statement {
+            id("testing"),
+            {},
+            {}, // default values
+    });
+}
+
 } // namespace mizugaki::analyzer::details

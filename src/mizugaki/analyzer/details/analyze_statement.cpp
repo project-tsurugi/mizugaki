@@ -194,7 +194,7 @@ public:
             context_.report(
                     sql_analyzer_code::unsupported_feature,
                     "DEFAULT VALUES clause is yet not supported",
-                    stmt.expression()->region());
+                    stmt.region());
             return {};
         }
         auto source = analyze_query_expression(
