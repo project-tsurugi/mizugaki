@@ -2,15 +2,25 @@
 
 #include <gtest/gtest.h>
 
+#include <string>
+
 #include <mizugaki/ast/statement/select_statement.h>
 
+#include <mizugaki/ast/literal/string.h>
+
+#include <mizugaki/ast/scalar/literal_expression.h>
+#include <mizugaki/ast/scalar/value_constructor.h>
+
 #include <mizugaki/ast/query/table_reference.h>
+#include <mizugaki/ast/query/table_value_constructor.h>
 
 #include "utils.h"
 
 namespace mizugaki::parser {
 
 using namespace testing;
+
+using std::string_literals::operator""s;
 
 class sql_parser_misc_test : public ::testing::Test {};
 
@@ -138,6 +148,54 @@ TEST_F(sql_parser_misc_test, keyword_value) {
 
     EXPECT_EQ(extract(result), (query::table_reference {
             name::simple { "VALUE" },
+    }));
+}
+
+TEST_F(sql_parser_misc_test, null_in_line_comment) {
+    sql_parser parser;
+    auto result = parser("-", "-- \0 NUL"s);
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    auto&& unit = **result;
+    ASSERT_EQ(unit.comments().size(), 1);
+    EXPECT_EQ(comment(unit, 0), "-- \0 NUL"s);
+}
+
+TEST_F(sql_parser_misc_test, null_in_block_comment) {
+    sql_parser parser;
+    auto result = parser("-", "/* \0 NUL */"s);
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    auto&& unit = **result;
+    ASSERT_EQ(unit.comments().size(), 1);
+    EXPECT_EQ(comment(unit, 0), "/* \0 NUL */"s);
+}
+
+TEST_F(sql_parser_misc_test, null_in_string_literal) {
+    sql_parser parser;
+    auto result = parser("-", "VALUES ('\0 NUL')"s);
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (query::table_value_constructor {
+            scalar::value_constructor {
+                    scalar::literal_expression {
+                            literal::string { literal::kind::character_string, "'\0 NUL'"s },
+                    },
+            },
+    }));
+}
+
+TEST_F(sql_parser_misc_test, null_in_delimited_identifier) {
+    sql_parser parser;
+    auto result = parser("-", "VALUES (\"\0 NUL\")"s);
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (query::table_value_constructor {
+            scalar::value_constructor {
+                    scalar::variable_reference {
+                            name::simple { "\0 NUL"s, name::identifier_kind::delimited },
+                    }
+            },
     }));
 }
 

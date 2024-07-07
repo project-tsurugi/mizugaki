@@ -24,9 +24,11 @@ sql_scanner::location_type sql_scanner::location(bool eof) noexcept {
 }
 
 ast::common::chars sql_scanner::get_image(sql_driver const&) {
-    return {
-            YYText(),
+    std::string image {
+            yytext,
+            static_cast<std::size_t>(yyleng),
     };
+    return image;
 }
 
 void sql_scanner::enter_comment() noexcept {
