@@ -159,6 +159,15 @@ TEST_F(analyze_statement_index_definition_test, columns_multiple) {
     }
 }
 
+TEST_F(analyze_statement_index_definition_test, columns_missing) {
+    auto table = install_table("testing_table");
+    invalid(sql_analyzer_code::malformed_syntax, ast::statement::index_definition {
+            id("testing"),
+            id("testing_table"),
+            {},
+    });
+}
+
 TEST_F(analyze_statement_index_definition_test, direction) {
     auto table = install_table("testing_table");
     auto r = analyze_statement(context(), ast::statement::index_definition {

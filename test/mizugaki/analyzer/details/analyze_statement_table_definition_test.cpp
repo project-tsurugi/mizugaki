@@ -139,6 +139,13 @@ TEST_F(analyze_statement_table_definition_test, column_multiple) {
     }
 }
 
+TEST_F(analyze_statement_table_definition_test, column_missing) {
+    invalid(sql_analyzer_code::malformed_syntax, ast::statement::table_definition {
+            id("testing"),
+            {},
+    });
+}
+
 TEST_F(analyze_statement_table_definition_test, column_primary_key) {
     auto r = analyze_statement(context(), ast::statement::table_definition {
             id("testing"),
@@ -445,6 +452,24 @@ TEST_F(analyze_statement_table_definition_test, table_primary_key_multiple_colum
     EXPECT_EQ(key.features(), (::yugawara::storage::index_feature_set {
             ::yugawara::storage::index_feature::primary,
     }));
+}
+
+TEST_F(analyze_statement_table_definition_test, table_primary_key_missing_columns) {
+    invalid(sql_analyzer_code::malformed_syntax, ast::statement::table_definition {
+            id("testing"),
+            {
+                    ast::statement::column_definition {
+                            id("c1"),
+                            ast::type::simple { ast::type::kind::integer },
+                    },
+                    ast::statement::table_constraint_definition {
+                            ast::statement::key_constraint {
+                                    ast::statement::constraint_kind::primary_key,
+                                    {},
+                            },
+                    },
+            },
+    });
 }
 
 TEST_F(analyze_statement_table_definition_test, duplicate_target) {

@@ -628,6 +628,7 @@ public:
 
         auto table_name = normalize_identifier(context_, stmt.name()->last_name());
 
+        // extract columns
         ::takatori::util::reference_vector<::yugawara::storage::column> table_columns {};
         ::tsl::hopscotch_set<std::string_view> saw_columns {};
         table_columns.reserve(stmt.elements().size());
@@ -755,6 +756,13 @@ public:
                 }
             }
             table_columns.push_back(std::move(prototype));
+        }
+        if (table_columns.empty()) {
+            context_.report(
+                    sql_analyzer_code::malformed_syntax,
+                    "table definition must have at least one column",
+                    stmt.region());
+            return {};
         }
         saw_columns.clear();
 
@@ -919,7 +927,7 @@ public:
         query_scope scope {};
         scope.add(build_relation_info(context_, *table, false));
 
-        auto index_keys = build_index_keys(constraint.key(), scope);
+        auto index_keys = build_index_keys(constraint.key(), scope, constraint.region());
         if (index_keys.empty()) {
             return {};
         }
@@ -937,7 +945,8 @@ public:
 
     [[nodiscard]] std::vector<::yugawara::storage::index::key> build_index_keys(
             std::vector<ast::common::sort_element> const& source_keys,
-            query_scope const& scope) {
+            query_scope const& scope,
+            ast::node_region region) {
         ::tsl::hopscotch_set<::yugawara::storage::column const*> saw_columns { source_keys.size() };
         auto index_keys = create_vector<::yugawara::storage::index::key>(source_keys.size());
         for (auto&& key : source_keys) {
@@ -989,6 +998,13 @@ public:
             }
             saw_columns.insert(binding.get());
             index_keys.emplace_back(*binding, to_sort_direction(key.direction()));
+        }
+        if (index_keys.empty()) {
+            context_.report(
+                    sql_analyzer_code::malformed_syntax,
+                    "index with empty key is not supported",
+                    region);
+            return {};
         }
         return index_keys;
     }
@@ -1047,6 +1063,7 @@ public:
 
         auto&& table_ptr = table_result->second;
 
+        ast::node_region region;
         std::string name {};
         if (stmt.name()) {
             // FIXME: impl qualified index name
@@ -1058,12 +1075,13 @@ public:
                 return {};
             }
             name = normalize_identifier(context_, stmt.name()->last_name());
+            region = stmt.name()->region();
         }
 
         query_scope scope {};
         scope.add(build_relation_info(context_, *table_ptr, false));
 
-        auto index_keys = build_index_keys(stmt.keys(), scope);
+        auto index_keys = build_index_keys(stmt.keys(), scope, region);
         if (index_keys.empty()) {
             return {};
         }
