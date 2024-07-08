@@ -115,6 +115,16 @@ R"(
  */)");
 }
 
+TEST_F(sql_parser_misc_test, block_comment_multibyte) {
+    sql_parser parser;
+    auto result = parser("-", u8"/* \u3042 */");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    auto&& unit = **result;
+    ASSERT_EQ(unit.comments().size(), 1);
+    EXPECT_EQ(comment(unit, 0), u8"/* \u3042 */");
+}
+
 TEST_F(sql_parser_misc_test, block_comment_unclosed) {
     sql_parser parser;
     auto result = parser("-", "; /* unexpected EOF");

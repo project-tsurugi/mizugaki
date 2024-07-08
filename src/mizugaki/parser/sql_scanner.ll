@@ -97,6 +97,7 @@ UTF8_CHAR {ASCII}|{UTF8_2}{U}|{UTF8_3}{U}{U}|{UTF8_4}{U}{U}{U}
         auto loc = exit_comment(true);
         return parser_type::make_UNCLOSED_BLOCK_COMMENT(loc(0, 2));
     }
+    {UTF8_CHAR} {}
     [\x00-\xff] {}
 }
 
