@@ -115,6 +115,7 @@ UTF8_CHAR {ASCII}|{UTF8_2}{U}|{UTF8_3}{U}{U}|{UTF8_4}{U}{U}{U}
         driver.add_comment(exit_comment(true));
         return parser_type::make_END_OF_FILE(location(true));
     }
+    {UTF8_CHAR} {}
     . {}
 }
 
