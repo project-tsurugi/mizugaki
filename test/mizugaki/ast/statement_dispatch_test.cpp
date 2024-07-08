@@ -20,9 +20,9 @@ TEST_F(statement_dispatch_test, statement) {
         int operator()(statement const&) { return -1; }
     };
     cb c;
-    EXPECT_EQ(dispatch(c, as_lvref(empty_statement {})), 0);
-    EXPECT_EQ(dispatch(c, as_lvref(select_statement { query::table_reference { id() } })), 1);
-    EXPECT_EQ(dispatch(c, as_lvref(delete_statement { id() })), -1);
+    EXPECT_EQ(dispatch(c, as_lvref<statement>(empty_statement {})), 0);
+    EXPECT_EQ(dispatch(c, as_lvref<statement>(select_statement { query::table_reference { id() } })), 1);
+    EXPECT_EQ(dispatch(c, as_lvref<statement>(delete_statement { id() })), -1);
 }
 
 TEST_F(statement_dispatch_test, table_element) {
@@ -32,8 +32,8 @@ TEST_F(statement_dispatch_test, table_element) {
         int operator()(table_element const&) { return -1; }
     };
     cb c;
-    EXPECT_EQ(dispatch(c, as_lvref(column_definition { id(), type::simple { type::kind::integer } })), 0);
-    EXPECT_EQ(dispatch(c, as_lvref(table_constraint_definition { simple_constraint { constraint_kind::not_null } })), 1);
+    EXPECT_EQ(dispatch(c, as_lvref<table_element>(column_definition { id(), type::simple { type::kind::integer } })), 0);
+    EXPECT_EQ(dispatch(c, as_lvref<table_element>(table_constraint_definition { simple_constraint { constraint_kind::not_null } })), 1);
 }
 
 TEST_F(statement_dispatch_test, constraint) {
@@ -43,9 +43,9 @@ TEST_F(statement_dispatch_test, constraint) {
         int operator()(constraint const&) { return -1; }
     };
     cb c;
-    EXPECT_EQ(dispatch(c, as_lvref(simple_constraint { constraint_kind::not_null })), 0);
-    EXPECT_EQ(dispatch(c, as_lvref(expression_constraint { constraint_kind::check, vref() })), 1);
-    EXPECT_EQ(dispatch(c, as_lvref(key_constraint { constraint_kind::primary_key, {} })), -1);
+    EXPECT_EQ(dispatch(c, as_lvref<constraint>(simple_constraint { constraint_kind::not_null })), 0);
+    EXPECT_EQ(dispatch(c, as_lvref<constraint>(expression_constraint { constraint_kind::check, vref() })), 1);
+    EXPECT_EQ(dispatch(c, as_lvref<constraint>(key_constraint { constraint_kind::primary_key, {} })), -1);
 }
 
 } // namespace mizugaki::ast

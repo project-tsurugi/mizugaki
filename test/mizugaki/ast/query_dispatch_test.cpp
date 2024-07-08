@@ -17,8 +17,8 @@ TEST_F(query_dispatch_test, expression) {
         int operator()(expression const&) { return -1; }
     };
     cb c;
-    EXPECT_EQ(dispatch(c, as_lvref(table_reference { id() })), 0);
-    EXPECT_EQ(dispatch(c, as_lvref(table_value_constructor {})), 1);
+    EXPECT_EQ(dispatch(c, as_lvref<expression>(table_reference { id() })), 0);
+    EXPECT_EQ(dispatch(c, as_lvref<expression>(table_value_constructor {})), 1);
 }
 
 TEST_F(query_dispatch_test, grouping_element) {
@@ -27,7 +27,7 @@ TEST_F(query_dispatch_test, grouping_element) {
         int operator()(grouping_element const&) { return -1; }
     };
     cb c;
-    EXPECT_EQ(dispatch(c, as_lvref(grouping_column { id() })), 0);
+    EXPECT_EQ(dispatch(c, as_lvref<grouping_element>(grouping_column { id() })), 0);
 }
 
 TEST_F(query_dispatch_test, select_element) {
@@ -37,8 +37,8 @@ TEST_F(query_dispatch_test, select_element) {
         int operator()(select_element const&) { return -1; }
     };
     cb c;
-    EXPECT_EQ(dispatch(c, as_lvref(select_column { vref() })), 0);
-    EXPECT_EQ(dispatch(c, as_lvref(select_asterisk { vref() })), 1);
+    EXPECT_EQ(dispatch(c, as_lvref<select_element>(select_column { vref() })), 0);
+    EXPECT_EQ(dispatch(c, as_lvref<select_element>(select_asterisk { vref() })), 1);
 }
 
 } // namespace mizugaki::ast

@@ -17,9 +17,9 @@ TEST_F(type_dispatch_test, type) {
         int operator()(type const&) { return -1; }
     };
     cb c;
-    EXPECT_EQ(dispatch(c, as_lvref(simple { kind::boolean })), 0);
-    EXPECT_EQ(dispatch(c, as_lvref(decimal { kind::decimal, 18, 2 })), 1);
-    EXPECT_EQ(dispatch(c, as_lvref(user_defined { id() })), -1);
+    EXPECT_EQ(dispatch(c, as_lvref<type>(simple { kind::boolean })), 0);
+    EXPECT_EQ(dispatch(c, as_lvref<type>(decimal { kind::decimal, 18, 2 })), 1);
+    EXPECT_EQ(dispatch(c, as_lvref<type>(user_defined { id() })), -1);
 }
 
 } // namespace mizugaki::ast

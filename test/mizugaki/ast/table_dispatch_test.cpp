@@ -20,9 +20,9 @@ TEST_F(table_dispatch_test, expression) {
         int operator()(expression const&) { return -1; }
     };
     cb c;
-    EXPECT_EQ(dispatch(c, as_lvref(table_reference { id() })), 0);
-    EXPECT_EQ(dispatch(c, as_lvref(subquery { query::table_reference { id() }, correlation_clause { id() }  })), 1);
-    EXPECT_EQ(dispatch(c, as_lvref(unnest { vref(), correlation_clause { id() } })), -1);
+    EXPECT_EQ(dispatch(c, as_lvref<expression>(table_reference { id() })), 0);
+    EXPECT_EQ(dispatch(c, as_lvref<expression>(subquery { query::table_reference { id() }, correlation_clause { id() }  })), 1);
+    EXPECT_EQ(dispatch(c, as_lvref<expression>(unnest { vref(), correlation_clause { id() } })), -1);
 }
 
 TEST_F(table_dispatch_test, join_specification) {
@@ -31,8 +31,8 @@ TEST_F(table_dispatch_test, join_specification) {
         int operator()(join_specification const&) { return -1; }
     };
     cb c;
-    EXPECT_EQ(dispatch(c, as_lvref(join_condition { vref() })), 0);
-    EXPECT_EQ(dispatch(c, as_lvref(join_columns {})), -1);
+    EXPECT_EQ(dispatch(c, as_lvref<join_specification>(join_condition { vref() })), 0);
+    EXPECT_EQ(dispatch(c, as_lvref<join_specification>(join_columns {})), -1);
 }
 
 } // namespace mizugaki::ast

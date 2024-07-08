@@ -17,10 +17,10 @@ TEST_F(literal_dispatch_test, simple) {
         int operator()(literal const&) { return -1; }
     };
     cb c;
-    EXPECT_EQ(dispatch(c, as_lvref(boolean { true })), 0);
-    EXPECT_EQ(dispatch(c, as_lvref(numeric { kind::exact_numeric, "1" })), 1);
-    EXPECT_EQ(dispatch(c, as_lvref(numeric { kind::approximate_numeric, "2" })), 1);
-    EXPECT_EQ(dispatch(c, as_lvref(string { kind::character_string, "3" })), -1);
+    EXPECT_EQ(dispatch(c, as_lvref<literal>(boolean { true })), 0);
+    EXPECT_EQ(dispatch(c, as_lvref<literal>(numeric { kind::exact_numeric, "1" })), 1);
+    EXPECT_EQ(dispatch(c, as_lvref<literal>(numeric { kind::approximate_numeric, "2" })), 1);
+    EXPECT_EQ(dispatch(c, as_lvref<literal>(string { kind::character_string, "3" })), -1);
 }
 
 } // namespace mizugaki::ast

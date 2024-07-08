@@ -17,8 +17,8 @@ TEST_F(name_dispatch_test, simple) {
         int operator()(name const&) { return -1; }
     };
     cb c;
-    EXPECT_EQ(dispatch(c, as_lvref(simple { "a" })), 0);
-    EXPECT_EQ(dispatch(c, as_lvref(qualified { simple { "a" }, simple { "b" } })), 1);
+    EXPECT_EQ(dispatch(c, as_lvref<name>(simple { "a" })), 0);
+    EXPECT_EQ(dispatch(c, as_lvref<name>(qualified { simple { "a" }, simple { "b" } })), 1);
 }
 
 } // namespace mizugaki::ast
