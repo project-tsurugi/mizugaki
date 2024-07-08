@@ -180,23 +180,27 @@ add_library(mizugaki
     # common tools
     mizugaki/placeholder_map.cpp
     mizugaki/placeholder_entry.cpp
-
-    # shakujo IR translator
-    mizugaki/translator/shakujo_translator.cpp
-    mizugaki/translator/shakujo_translator_options.cpp
-    mizugaki/translator/shakujo_translator_result.cpp
-    mizugaki/translator/shakujo_translator_impl.cpp
-    mizugaki/translator/details/relation_info.cpp
-    mizugaki/translator/details/variable_scope.cpp
-    mizugaki/translator/details/type_info_translator.cpp
-    mizugaki/translator/details/value_info_translator.cpp
-    mizugaki/translator/details/type_translator.cpp
-    mizugaki/translator/details/scalar_expression_translator.cpp
-    mizugaki/translator/details/relation_expression_translator.cpp
-    mizugaki/translator/details/aggregate_analyzer.cpp
-    mizugaki/translator/details/dml_statement_translator.cpp
-    mizugaki/translator/details/ddl_statement_translator.cpp
 )
+
+if (ENABLE_SHAKUJO)
+    # shakujo IR translator
+    target_sources(mizugaki PRIVATE
+            mizugaki/translator/shakujo_translator.cpp
+            mizugaki/translator/shakujo_translator_options.cpp
+            mizugaki/translator/shakujo_translator_result.cpp
+            mizugaki/translator/shakujo_translator_impl.cpp
+            mizugaki/translator/details/relation_info.cpp
+            mizugaki/translator/details/variable_scope.cpp
+            mizugaki/translator/details/type_info_translator.cpp
+            mizugaki/translator/details/value_info_translator.cpp
+            mizugaki/translator/details/type_translator.cpp
+            mizugaki/translator/details/scalar_expression_translator.cpp
+            mizugaki/translator/details/relation_expression_translator.cpp
+            mizugaki/translator/details/aggregate_analyzer.cpp
+            mizugaki/translator/details/dml_statement_translator.cpp
+            mizugaki/translator/details/ddl_statement_translator.cpp
+    )
+endif (ENABLE_SHAKUJO)
 
 message(STATUS ${FLEX_INCLUDE_DIRS})
 
@@ -210,10 +214,13 @@ target_link_libraries(mizugaki
     PUBLIC mizugaki-api
     PUBLIC takatori
     PUBLIC yugawara
-    PUBLIC shakujo-model # FIXME:transitive
     PRIVATE tsl::hopscotch_map
     PRIVATE Threads::Threads
 )
+
+if (ENABLE_SHAKUJO)
+    target_link_libraries(mizugaki PUBLIC shakujo-model)
+endif (ENABLE_SHAKUJO)
 
 if (FORCE_INSTALL_RPATH)
     force_install_rpath(mizugaki)

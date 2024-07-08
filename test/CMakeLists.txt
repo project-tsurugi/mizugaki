@@ -75,12 +75,14 @@ add_analyzer_test_executable(mizugaki/analyzer/details/analyze_statement_table_d
 add_analyzer_test_executable(mizugaki/analyzer/details/analyze_statement_index_definition_test.cpp)
 add_analyzer_test_executable(mizugaki/analyzer/details/set_function_processor_test.cpp)
 
-# shakujo IR translator
-add_test_executable(mizugaki/translator/shakujo_translator_test.cpp)
-add_test_executable(mizugaki/translator/details/type_info_translator_test.cpp)
-add_test_executable(mizugaki/translator/details/value_info_translator_test.cpp)
-add_test_executable(mizugaki/translator/details/type_translator_test.cpp)
-add_test_executable(mizugaki/translator/details/scalar_expression_translator_test.cpp)
-add_test_executable(mizugaki/translator/details/relation_expression_translator_test.cpp)
-add_test_executable(mizugaki/translator/details/dml_statement_translator_test.cpp)
-add_test_executable(mizugaki/translator/details/ddl_statement_translator_test.cpp)
+if (ENABLE_SHAKUJO)
+    # shakujo IR translator
+    add_test_executable(mizugaki/translator/shakujo_translator_test.cpp)
+    add_test_executable(mizugaki/translator/details/type_info_translator_test.cpp)
+    add_test_executable(mizugaki/translator/details/value_info_translator_test.cpp)
+    add_test_executable(mizugaki/translator/details/type_translator_test.cpp)
+    add_test_executable(mizugaki/translator/details/scalar_expression_translator_test.cpp)
+    add_test_executable(mizugaki/translator/details/relation_expression_translator_test.cpp)
+    add_test_executable(mizugaki/translator/details/dml_statement_translator_test.cpp)
+    add_test_executable(mizugaki/translator/details/ddl_statement_translator_test.cpp)
+endif (ENABLE_SHAKUJO)
