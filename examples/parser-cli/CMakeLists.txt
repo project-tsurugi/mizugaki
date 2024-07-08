@@ -38,5 +38,5 @@ endif()
 
 add_test(
     NAME parser-cli
-    COMMAND ${output_name} "SELECT * FROM T0;"
+    COMMAND ${output_name} "-text" "SELECT * FROM T0;"
 )
