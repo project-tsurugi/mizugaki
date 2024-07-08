@@ -875,8 +875,7 @@ public:
         if (!result) {
             return {}; // error
         }
-        auto expr = result.release();
-        auto value = extract_column_value(*expr);
+        auto value = extract_column_value(result.release());
         if (!value) {
             context_.report(
                     sql_analyzer_code::unsupported_feature,
@@ -886,19 +885,21 @@ public:
         return value;
     }
 
-    [[nodiscard]] std::optional<::yugawara::storage::column_value> extract_column_value(tscalar::expression const& expr) {
+    [[nodiscard]] std::optional<::yugawara::storage::column_value> extract_column_value(
+            std::unique_ptr<tscalar::expression> expr) {
+        context_.clear_expression_resolution(*expr);
         using kind = tscalar::expression_kind;
-        switch (expr.kind()) {
+        switch (expr->kind()) {
             case kind::immediate:
             {
-                auto&& value = unsafe_downcast<tscalar::immediate>(expr);
+                auto&& value = unsafe_downcast<tscalar::immediate>(*expr);
                 return ::yugawara::storage::column_value { context_.values().get(value.value()) };
             }
             case kind::cast:
             {
-                auto&& e = unsafe_downcast<tscalar::cast>(expr);
+                auto&& e = unsafe_downcast<tscalar::cast>(*expr);
                 // FIXME: impl casting
-                return extract_column_value(e.operand());
+                return extract_column_value(e.release_operand());
             }
             default:
                 // FIXME: more types for column default values
@@ -968,6 +969,7 @@ public:
                 return {};
             }
             auto expr = result.release();
+            context_.clear_expression_resolution(*expr);
             if (expr->kind() != tscalar::expression_kind::variable_reference) {
                 context_.report(
                         sql_analyzer_code::unsupported_feature,

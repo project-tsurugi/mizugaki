@@ -304,6 +304,7 @@ optional_ptr<output_port_type> set_function_processor::install(output_port_type&
 void set_function_processor::consume(ownership_reference<tscalar::expression> expression) {
     activate();
     auto&& invocation = downcast<::yugawara::extension::scalar::aggregate_function_call>(expression.get());
+    context_.clear_expression_resolution(invocation);
 
     std::vector<tdescriptor::variable> arguments {};
     arguments.reserve(invocation.arguments().size());

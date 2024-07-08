@@ -78,6 +78,10 @@ public:
             ::takatori::descriptor::variable const& variable,
             ::yugawara::analyzer::variable_resolution resolution);
 
+    void clear_expression_resolution();
+
+    void clear_expression_resolution(::takatori::scalar::expression const& expression);
+
     [[nodiscard]] ::takatori::document::region convert(ast::node_region region) const;
 
     template<class T>

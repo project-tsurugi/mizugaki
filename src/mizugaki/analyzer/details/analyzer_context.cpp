@@ -61,7 +61,7 @@ void analyzer_context::finalize() {
 }
 
 std::shared_ptr<::takatori::type::data const>
-analyzer_context::resolve(takatori::scalar::expression const& expression, bool validate) {
+analyzer_context::resolve(::takatori::scalar::expression const& expression, bool validate) {
     auto result = expression_analyzer_.resolve(expression, validate, types_);
     if (expression_analyzer_.has_diagnostics()) {
         for (auto&& d : expression_analyzer_.diagnostics()) {
@@ -97,6 +97,14 @@ bool analyzer_context::resolve(::takatori::relation::expression const& expressio
         return false;
     }
     return true;
+}
+
+void analyzer_context::clear_expression_resolution() {
+    expression_analyzer_.expressions().clear();
+}
+
+void analyzer_context::clear_expression_resolution(::takatori::scalar::expression const& expression) {
+    expression_analyzer_.expressions().unbind(expression);
 }
 
 void analyzer_context::resolve_as(

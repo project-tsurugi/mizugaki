@@ -245,6 +245,7 @@ public:
                 variable.region() = result.value().region();
                 auto direction = convert(spec.direction());
                 if (!direction) {
+                    context_.clear_expression_resolution(result.value());
                     return {};
                 }
                 project.columns().emplace_back(variable, result.release());
@@ -275,7 +276,7 @@ public:
             if (!nrows_expr) {
                 return {};
             }
-            auto nrows = extract_size(*nrows_expr);
+            auto nrows = extract_size(nrows_expr.release());
             if (!nrows) {
                 return {};
             }
@@ -337,9 +338,10 @@ public:
         return { *output, std::move(info) };
     }
 
-    static optional_ptr<tdescriptor::variable> extract_variable(tscalar::expression& expr) {
-        if (expr.kind() == tscalar::variable_reference::tag) {
-            return unsafe_downcast<tscalar::variable_reference>(expr).variable();
+    [[nodiscard]] std::optional<tdescriptor::variable> extract_variable(std::unique_ptr<tscalar::expression> expr) {
+        context_.clear_expression_resolution(*expr);
+        if (expr->kind() == tscalar::variable_reference::tag) {
+            return std::move(unsafe_downcast<tscalar::variable_reference>(*expr).variable());
         }
         return {};
     }
@@ -725,7 +727,7 @@ public:
                     elem.region());
             return false;
         }
-        auto variable = extract_variable(r.value());
+        auto variable = extract_variable(r.release());
         if (!variable) {
             context_.report(
                     sql_analyzer_code::unsupported_feature,
@@ -937,9 +939,10 @@ private:
         return true;
     }
 
-    [[nodiscard]] std::optional<std::size_t> extract_size(tscalar::expression const& expr) {
-        if (expr.kind() == tscalar::immediate::tag) {
-            auto&& immediate = unsafe_downcast<tscalar::immediate>(expr);
+    [[nodiscard]] std::optional<std::size_t> extract_size(std::unique_ptr<tscalar::expression> expr) {
+        context_.clear_expression_resolution(*expr);
+        if (expr->kind() == tscalar::immediate::tag) {
+            auto&& immediate = unsafe_downcast<tscalar::immediate>(*expr);
             auto value = extract_int_value(immediate.value());
             if (!value || value < 0) {
                 context_.report(
@@ -947,7 +950,7 @@ private:
                         string_builder {}
                                 << "not a valid unsigned integer: " << immediate.value()
                                 << string_builder::to_string,
-                        expr.region());
+                        expr->region());
                 return {};
             }
             return static_cast<std::size_t>(*value);
@@ -956,9 +959,9 @@ private:
                 sql_analyzer_code::invalid_unsigned_integer,
                 string_builder {}
                         << "must be a unsigned integer: "
-                        << expr.kind()
+                        << expr->kind()
                         << string_builder::to_string,
-                expr.region());
+                expr->region());
         return {};
     }
 
