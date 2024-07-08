@@ -233,6 +233,13 @@ public:
                 if (result.saw_aggregate()) {
                     set_functions.activate();
                 }
+                if (result.value().kind() == tscalar::immediate::tag) {
+                    context_.report(
+                            sql_analyzer_code::unsupported_feature,
+                            "plain literal is not allowed in ORDER BY clause",
+                            spec.key()->region());
+                    return {};
+                }
                 // FIXME: debug string for order key column
                 auto variable = factory_.stream_variable();
                 variable.region() = result.value().region();

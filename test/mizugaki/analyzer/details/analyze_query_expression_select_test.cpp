@@ -4,6 +4,7 @@
 
 #include <takatori/type/primitive.h>
 
+#include <takatori/scalar/binary.h>
 #include <takatori/scalar/compare.h>
 
 #include <takatori/relation/scan.h>
@@ -17,6 +18,7 @@
 
 #include <mizugaki/ast/name/qualified.h>
 
+#include <mizugaki/ast/scalar/binary_expression.h>
 #include <mizugaki/ast/scalar/comparison_predicate.h>
 
 #include <mizugaki/ast/table/table_reference.h>
@@ -825,7 +827,11 @@ TEST_F(analyze_query_expression_select_test, order_by_expression) {
                     {},
                     {
                             {
-                                    literal(number("1")),
+                                    ast::scalar::binary_expression {
+                                            vref(id("w")),
+                                            ast::scalar::binary_operator::concatenation,
+                                            vref(id("x")),
+                                    },
                             },
                     },
             },
@@ -862,7 +868,11 @@ TEST_F(analyze_query_expression_select_test, order_by_expression) {
 
     auto&& prepare_columns = prepare.columns();
     ASSERT_EQ(prepare_columns.size(), 1);
-    EXPECT_EQ(prepare_columns[0].value(), immediate(1)); // literal: 1
+    EXPECT_EQ(prepare_columns[0].value(), (tscalar::binary { // w || x
+            tscalar::binary_operator::concat,
+            vref(scan_columns[2].destination()),
+            vref(scan_columns[3].destination()),
+    }));
 
     EXPECT_EQ(limit.count(), std::nullopt);
     EXPECT_EQ(limit.group_keys().size(), 0);
@@ -874,6 +884,28 @@ TEST_F(analyze_query_expression_select_test, order_by_expression) {
         EXPECT_EQ(column.variable(), prepare_columns[0].variable());
         EXPECT_EQ(column.direction(), trelation::sort_direction::ascendant);
     }
+}
+
+TEST_F(analyze_query_expression_select_test, order_by_literal) {
+    auto table = install_table("testing");
+    invalid(sql_analyzer_code::unsupported_feature, ast::query::query {
+            {
+                    ast::query::select_column { vref(id("v")) },
+            },
+            {
+                    ast::table::table_reference {
+                            id("testing"),
+                    }
+            },
+            {},
+            {},
+            {},
+            {
+                    {
+                            literal(number("1")),
+                    },
+            },
+    });
 }
 
 TEST_F(analyze_query_expression_select_test, limit) {
