@@ -169,7 +169,8 @@ column_info& relation_info::build_internal(position_type position) {
             auto pos = it.value();
             while (true) {
                 auto&& current = columns_[pos];
-                if (auto&& next = current.next()) {
+                // FIXME: avoid cyclic reference
+                if (auto&& next = current.next(); next && pos != *next) {
                     pos = *next;
                 } else {
                     next = position;
