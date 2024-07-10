@@ -72,6 +72,7 @@ void relation_info::reserve(std::size_t count, bool also_declaration_map) {
 }
 
 column_info& relation_info::add(column_info info) {
+    info.next().reset();
     auto position = columns_.size();
     columns_.emplace_back(std::move(info));
     return build_internal(position);
@@ -130,8 +131,10 @@ find_element_result<column_info const> relation_info::find(yugawara::storage::co
 void relation_info::rebuild() {
     name_map_.clear();
     declaration_map_.clear();
+    for (auto&& column : columns_) {
+        column.next().reset();
+    }
     for (std::size_t i = 0, n = columns_.size(); i < n; ++i) {
-        columns_[i].next().reset();
         build_internal(i);
     }
 }
