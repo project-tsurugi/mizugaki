@@ -93,4 +93,53 @@ TEST_F(sql_analyzer_test, table_subquery_self_join) {
     ASSERT_EQ(emit.columns().size(), 12);
 }
 
+TEST_F(sql_analyzer_test, table_subquery_self_join_2) {
+    install_table("t1");
+    install_table("t2");
+
+    sql_analyzer analyzer;
+    auto result = analyzer(
+            options_,
+            // SELECT t1.*, t1.* FROM (SELECT * FROM t1, t1) t1, (SELECT * FROM t2) t2;
+            ast::statement::select_statement {
+                    ast::query::query {
+                            {
+                                    ast::query::select_asterisk { vref(id("t1")) },
+                                    ast::query::select_asterisk { vref(id("t1")) },
+                            },
+                            {
+                                    ast::table::subquery {
+                                            ast::query::query {
+                                                    {
+                                                            ast::query::select_asterisk {},
+                                                    },
+                                                    {
+                                                            ast::table::table_reference { id("t1") },
+                                                            ast::table::table_reference { id("t1") },
+                                                    },
+                                            },
+                                            id("t1")
+                                    },
+                                    ast::table::subquery {
+                                            ast::query::query {
+                                                    {
+                                                            ast::query::select_asterisk {},
+                                                    },
+                                                    {
+                                                            ast::table::table_reference { id("t2") },
+                                                    },
+                                            },
+                                            id("t2")
+                                    },
+                            },
+                    }
+            }
+    );
+    ASSERT_TRUE(result) << diagnostics();
+    auto graph = result.release<sql_analyzer_result_kind::execution_plan>();
+
+    auto&& emit = *find_last<trelation::emit>(*graph);
+    ASSERT_EQ(emit.columns().size(), 16);
+}
+
 } // namespace mizugaki::analyzer

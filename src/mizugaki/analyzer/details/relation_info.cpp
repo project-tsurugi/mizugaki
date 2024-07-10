@@ -1,5 +1,7 @@
 #include <mizugaki/analyzer/details/relation_info.h>
 
+#include <boost/dynamic_bitset.hpp>
+
 #include <takatori/util/downcast.h>
 #include <takatori/util/fail.h>
 #include <takatori/util/print_support.h>
@@ -167,10 +169,19 @@ column_info& relation_info::build_internal(position_type position) {
     if (auto&& id = target.identifier()) {
         if (auto [it, success] = name_map_.emplace(id.value(), position); !success) {
             auto pos = it.value();
+            ::boost::dynamic_bitset<> saw { columns_.size() };
             while (true) {
-                auto&& current = columns_[pos];
+                if (pos == ambiguous) {
+                    break;
+                }
                 // FIXME: avoid cyclic reference
-                if (auto&& next = current.next(); next && pos != *next) {
+                auto&& current = columns_[pos];
+                if (saw.test(pos)) {
+                    current.next() = ambiguous;
+                    break;
+                }
+                saw.set(pos);
+                if (auto&& next = current.next()) {
                     pos = *next;
                 } else {
                     next = position;
