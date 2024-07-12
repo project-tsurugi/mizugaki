@@ -56,6 +56,17 @@ protected:
                     },
                     true,
             });
+
+    std::shared_ptr<::yugawara::aggregate::declaration> sum_value = set_functions_->add(
+            ::yugawara::aggregate::declaration {
+                    ::yugawara::aggregate::declaration::minimum_builtin_function_id + 2,
+                    "sum",
+                    ttype::int8 {},
+                    {
+                            ttype::int8 {},
+                    },
+                    true,
+            });
 };
 
 TEST_F(set_function_processor_test, simple) {
@@ -126,6 +137,63 @@ TEST_F(set_function_processor_test, function_arguments) {
         EXPECT_EQ(*expr, vref(column.destination()));
         ASSERT_EQ(column.arguments().size(), 1);
         EXPECT_EQ(column.arguments()[0], arguments->columns()[0].variable());
+    }
+
+    EXPECT_FALSE(aggregate->output().opposite());
+}
+
+TEST_F(set_function_processor_test, function_arguments_twice) {
+    set_function_processor processor { context(), graph_ };
+
+    EXPECT_FALSE(processor.active());
+    std::unique_ptr<tscalar::expression> e0 = clone_unique(aggregate_function_call {
+            factory_(count_value),
+            {
+                    immediate(1),
+            }
+    });
+    bool r0 = processor.process(ownership_reference { e0 });
+    ASSERT_TRUE(r0);
+
+    std::unique_ptr<tscalar::expression> e1 = clone_unique(aggregate_function_call {
+            factory_(count_value),
+            {
+                    immediate(2),
+            }
+    });
+    bool r1 = processor.process(ownership_reference { e1 });
+    ASSERT_TRUE(r1);
+
+    EXPECT_TRUE(processor.active());
+
+    trelation::values values { {}, {} };
+    auto&& output = processor.install(values.output());
+    ASSERT_TRUE(output);
+    EXPECT_FALSE(output->opposite());
+
+    auto&& arguments = find_next<trelation::project>(values);
+    ASSERT_TRUE(arguments);
+    ASSERT_EQ(arguments->columns().size(), 2);
+    EXPECT_EQ(arguments->columns()[0].value(), immediate(1));
+    EXPECT_EQ(arguments->columns()[1].value(), immediate(2));
+
+    auto&& aggregate = find_next<trelation::intermediate::aggregate>(*arguments);
+    ASSERT_TRUE(aggregate);
+    ASSERT_EQ(aggregate->group_keys().size(), 0);
+    ASSERT_EQ(aggregate->columns().size(), 2);
+    {
+        auto&& column = aggregate->columns()[0];
+        EXPECT_EQ(&extract(column.function()), count_value.get());
+        EXPECT_EQ(*e0, vref(column.destination()));
+        ASSERT_EQ(column.arguments().size(), 1);
+        EXPECT_EQ(column.arguments()[0], arguments->columns()[0].variable());
+    }
+    {
+        auto&& column = aggregate->columns()[1];
+        EXPECT_EQ(&extract(column.function()), count_value.get());
+        EXPECT_EQ(*e1, vref(column.destination()));
+        ASSERT_EQ(column.arguments().size(), 1);
+        EXPECT_EQ(column.arguments()[0], arguments->columns()[1].variable());
     }
 
     EXPECT_FALSE(aggregate->output().opposite());

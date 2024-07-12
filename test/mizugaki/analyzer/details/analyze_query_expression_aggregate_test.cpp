@@ -79,6 +79,17 @@ protected:
                     },
                     true,
             });
+
+    std::shared_ptr<::yugawara::aggregate::declaration> sum_int = set_functions_->add(
+            ::yugawara::aggregate::declaration {
+                    ::yugawara::aggregate::declaration::minimum_builtin_function_id + 4,
+                    "sum",
+                    ttype::int8 {},
+                    {
+                            ttype::int8 {},
+                    },
+                    true,
+            });
 };
 
 TEST_F(analyze_query_expression_aggregate_test, whole_count_asterisk) {
@@ -216,6 +227,127 @@ TEST_F(analyze_query_expression_aggregate_test, whole_count_value) {
     auto relation_columns = relation.columns();
     ASSERT_EQ(relation_columns.size(), 1);
     EXPECT_EQ(relation_columns[0].variable(), project_columns[0].variable());
+}
+
+TEST_F(analyze_query_expression_aggregate_test, whole_sum_twice) {
+    // CREATE TABLE t (a BIGINT, b BIGINT)
+    auto table = storages_->add_table(::yugawara::storage::table {
+            "t",
+            {
+                    {
+                            "a",
+                            ttype::int8 {},
+                    },
+                    {
+                            "b",
+                            ttype::int8 {},
+                    },
+            },
+    });
+    storages_->add_index(::yugawara::storage::index {
+            table,
+            "t",
+            {
+                    {
+                            table->columns()[0],
+                            ::yugawara::storage::index::key::direction_type::ascendant,
+                    },
+            },
+            {},
+            {
+                    ::yugawara::storage::index_feature::find,
+                    ::yugawara::storage::index_feature::scan,
+                    ::yugawara::storage::index_feature::primary,
+                    ::yugawara::storage::index_feature::unique,
+            },
+    });
+    trelation::graph_type graph {};
+
+    auto r = analyze_query_expression(
+            context(),
+            graph,
+            // SELECT SUM(a), SUM(b) FROM t
+            ast::query::query {
+                    {
+                            ast::query::select_column {
+                                    ast::scalar::builtin_set_function_invocation {
+                                            ast::scalar::builtin_set_function_kind::sum,
+                                            {},
+                                            {
+                                                    vref(id("a")),
+                                            },
+                                    }
+                            },
+                            ast::query::select_column {
+                                    ast::scalar::builtin_set_function_invocation {
+                                            ast::scalar::builtin_set_function_kind::sum,
+                                            {},
+                                            {
+                                                    vref(id("b")),
+                                            },
+                                    }
+                            },
+                    },
+                    {
+                            ast::table::table_reference {
+                                    id("t"),
+                            }
+                    },
+            },
+            {},
+            {});
+    ASSERT_TRUE(r);
+    expect_no_error();
+
+    // scan - project - aggregate - project -
+
+    ASSERT_EQ(graph.size(), 4);
+    EXPECT_FALSE(r.output().opposite());
+
+    auto&& relation = r.relation();
+
+    auto&& project = downcast<trelation::project>(r.output().owner());
+    auto&& aggregate = *find_prev<trelation::intermediate::aggregate>(project);
+    auto&& aggregate_args = *find_prev<trelation::project>(aggregate);
+    auto&& scan = *find_prev<trelation::scan>(aggregate_args);
+
+    auto&& scan_columns = scan.columns();
+    ASSERT_EQ(scan_columns.size(), 2);
+
+    auto&& aggargs_columns = aggregate_args.columns();
+    ASSERT_EQ(aggargs_columns.size(), 2);
+    EXPECT_EQ(aggargs_columns[0].value(), vref(scan_columns[0].destination()));
+    EXPECT_EQ(aggargs_columns[1].value(), vref(scan_columns[1].destination()));
+
+    auto&& grouping_columns = aggregate.group_keys();
+    ASSERT_EQ(grouping_columns.size(), 0);
+
+    auto&& aggregation_columns = aggregate.columns();
+    ASSERT_EQ(aggregation_columns.size(), 2);
+    {
+        auto&& column = aggregation_columns[0];
+        EXPECT_EQ(column.function(), factory_(sum_int));
+        ASSERT_EQ(column.arguments().size(), 1);
+        EXPECT_EQ(column.arguments()[0], aggargs_columns[0].variable());
+    }
+    {
+        auto&& column = aggregation_columns[1];
+        EXPECT_EQ(column.function(), factory_(sum_int));
+        ASSERT_EQ(column.arguments().size(), 1);
+        EXPECT_EQ(column.arguments()[0], aggargs_columns[1].variable());
+    }
+
+    auto&& project_columns = project.columns();
+    ASSERT_EQ(project_columns.size(), 2);
+    EXPECT_EQ(project_columns[0].value(), vref(aggregation_columns[0].destination()));
+    EXPECT_EQ(project_columns[1].value(), vref(aggregation_columns[1].destination()));
+
+    // output
+
+    auto relation_columns = relation.columns();
+    ASSERT_EQ(relation_columns.size(), 2);
+    EXPECT_EQ(relation_columns[0].variable(), project_columns[0].variable());
+    EXPECT_EQ(relation_columns[1].variable(), project_columns[1].variable());
 }
 
 TEST_F(analyze_query_expression_aggregate_test, group_by) {

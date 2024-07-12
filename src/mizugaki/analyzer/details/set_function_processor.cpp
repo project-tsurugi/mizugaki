@@ -369,10 +369,15 @@ set_function_processor::find_aggregation(
         if (entry.arguments().size() != arguments.size()) {
             continue;
         }
+        bool argument_match = true;
         for (std::size_t position = 0, size = arguments.size(); position < size; ++position) {
             if (entry.arguments()[position] != arguments[position]) {
-                continue;
+                argument_match = false;
+                break;
             }
+        }
+        if (!argument_match) {
+            continue;
         }
         return entry.destination();
     }
