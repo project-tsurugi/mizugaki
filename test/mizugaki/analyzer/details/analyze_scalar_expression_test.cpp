@@ -5,6 +5,7 @@
 #include <takatori/value/primitive.h>
 #include <takatori/type/primitive.h>
 #include <takatori/type/decimal.h>
+#include <takatori/type/time_point.h>
 
 #include <takatori/scalar/binary.h>
 #include <takatori/scalar/cast.h>
@@ -19,6 +20,7 @@
 
 #include <mizugaki/ast/type/simple.h>
 #include <mizugaki/ast/type/character_string.h>
+#include <mizugaki/ast/type/decimal.h>
 
 #include <mizugaki/ast/literal/boolean.h>
 #include <mizugaki/ast/literal/special.h>
@@ -873,6 +875,168 @@ TEST_F(analyze_scalar_expression_test, builtin_set_function_invocation_overload)
             descriptor(f_int8),
             {
                     immediate(1),
+            },
+    }));
+}
+
+TEST_F(analyze_scalar_expression_test, builtin_set_function_invocation_overload_limited_decimal) {
+    auto f_int4 = set_functions_->add(::yugawara::aggregate::declaration {
+            ::yugawara::aggregate::declaration::minimum_builtin_function_id + 1,
+            "max",
+            ttype::int8 {},
+            {
+                    ttype::int4 {},
+            },
+            true,
+    });
+    auto f_int8 = set_functions_->add(::yugawara::aggregate::declaration {
+            ::yugawara::aggregate::declaration::minimum_builtin_function_id + 2,
+            "max",
+            ttype::int8 {},
+            {
+                    ttype::int8 {},
+            },
+            true,
+    });
+    auto f_decimal = set_functions_->add(::yugawara::aggregate::declaration {
+            ::yugawara::aggregate::declaration::minimum_builtin_function_id + 3,
+            "max",
+            ttype::decimal {},
+            {
+                    ttype::decimal {},
+            },
+            true,
+    });
+
+    auto r = analyze_scalar_expression(
+            context(),
+            ast::scalar::builtin_set_function_invocation {
+                    ast::scalar::builtin_set_function_kind::max,
+                    ast::scalar::set_quantifier::all,
+                    {
+                            ast::scalar::cast_expression {
+                                    ast::scalar::cast_operator::cast,
+                                    literal(number("1")),
+                                    ast::type::decimal {
+                                            ast::type::kind::decimal,
+                                            5,
+                                            0,
+                                    },
+                            },
+                    },
+            },
+            {},
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
+    EXPECT_TRUE(r.saw_aggregate());
+    EXPECT_EQ(*r, (::yugawara::extension::scalar::aggregate_function_call {
+            descriptor(f_decimal),
+            {
+                    tscalar::cast {
+                            ttype::decimal { 5, 0 },
+                            tscalar::cast::loss_policy_type::ignore,
+                            immediate(1),
+                    },
+            },
+    }));
+}
+
+TEST_F(analyze_scalar_expression_test, builtin_set_function_invocation_overload_timestamp) {
+    auto f_ts = set_functions_->add(::yugawara::aggregate::declaration {
+            ::yugawara::aggregate::declaration::minimum_builtin_function_id + 1,
+            "max",
+            ttype::time_point {},
+            {
+                    ttype::time_point {},
+            },
+            true,
+    });
+    auto f_ts_tz = set_functions_->add(::yugawara::aggregate::declaration {
+            ::yugawara::aggregate::declaration::minimum_builtin_function_id + 2,
+            "max",
+            ttype::time_point { ttype::with_time_zone },
+            {
+                    ttype::time_point { ttype::with_time_zone },
+            },
+            true,
+    });
+
+    auto&& ctxt = context();
+    auto v = vd("v", ttype::time_point {});
+    query_scope scope {};
+    auto&& rinfo = scope.add({});
+    rinfo.add({ {}, v, "v" });
+
+    auto r = analyze_scalar_expression(
+            ctxt,
+            ast::scalar::builtin_set_function_invocation {
+                    ast::scalar::builtin_set_function_kind::max,
+                    ast::scalar::set_quantifier::all,
+                    {
+                            vref(id("v")),
+                    },
+            },
+            scope,
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
+    EXPECT_TRUE(r.saw_aggregate());
+    EXPECT_EQ(*r, (::yugawara::extension::scalar::aggregate_function_call {
+            descriptor(f_ts),
+            {
+                    vref(v),
+            },
+    }));
+}
+
+TEST_F(analyze_scalar_expression_test, builtin_set_function_invocation_overload_timestamp_tz) {
+    auto f_ts = set_functions_->add(::yugawara::aggregate::declaration {
+            ::yugawara::aggregate::declaration::minimum_builtin_function_id + 1,
+            "max",
+            ttype::time_point {},
+            {
+                    ttype::time_point {},
+            },
+            true,
+    });
+    auto f_ts_tz = set_functions_->add(::yugawara::aggregate::declaration {
+            ::yugawara::aggregate::declaration::minimum_builtin_function_id + 2,
+            "max",
+            ttype::time_point { ttype::with_time_zone },
+            {
+                    ttype::time_point { ttype::with_time_zone },
+            },
+            true,
+    });
+
+    auto&& ctxt = context();
+    auto v = vd("v", ttype::time_point { ttype::with_time_zone });
+    query_scope scope {};
+    auto&& rinfo = scope.add({});
+    rinfo.add({ {}, v, "v" });
+
+    auto r = analyze_scalar_expression(
+            ctxt,
+            ast::scalar::builtin_set_function_invocation {
+                    ast::scalar::builtin_set_function_kind::max,
+                    ast::scalar::set_quantifier::all,
+                    {
+                            vref(id("v")),
+                    },
+            },
+            scope,
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
+    EXPECT_TRUE(r.saw_aggregate());
+    EXPECT_EQ(*r, (::yugawara::extension::scalar::aggregate_function_call {
+            descriptor(f_ts_tz),
+            {
+                    vref(v),
             },
     }));
 }

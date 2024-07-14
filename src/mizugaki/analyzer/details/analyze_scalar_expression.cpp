@@ -442,7 +442,7 @@ public:
                     function_name,
                     expr.arguments().size(),
                     [&](std::shared_ptr<::yugawara::aggregate::declaration const> const& ptr) -> void {
-                        if (is_callable(ptr->shared_parameter_types(), argument_types)) {
+                        if (is_applicable(argument_types, ptr->shared_parameter_types())) {
                             candidates.emplace_back(ptr);
                         }
                     });
@@ -476,15 +476,17 @@ public:
         return result;
     }
 
-    [[nodiscard]] static bool is_callable(
-            std::vector<std::shared_ptr<::takatori::type::data const>> const& params,
-            std::vector<std::shared_ptr<::takatori::type::data const>> const& args) {
-        for (std::size_t i = 0, n = params.size(); i < n; ++i) {
-            if (*args[i] == *params[i]) {
-                continue;
-            }
-            auto r = ::yugawara::type::is_widening_convertible(*args[i], *params[i]);
-            if (r != true) {
+    [[nodiscard]] static bool is_applicable(
+            std::vector<std::shared_ptr<::takatori::type::data const>> const& arguments,
+            std::vector<std::shared_ptr<::takatori::type::data const>> const& parameters) {
+        if (arguments.size() != parameters.size()) {
+            return false;
+        }
+        for (std::size_t i = 0, n = arguments.size(); i < n; ++i) {
+            auto&& arg = *arguments[i];
+            auto&& param = *parameters[i];
+            auto r = ::yugawara::type::is_parameter_application_convertible(arg, param);
+            if (r != ::yugawara::util::ternary::yes) {
                 return false;
             }
         }
@@ -495,13 +497,13 @@ public:
     [[nodiscard]] std::shared_ptr<::yugawara::aggregate::declaration const> resolve_overload(
             ast::common::regioned<T> const& title,
             std::vector<std::shared_ptr<::yugawara::aggregate::declaration const>> const& candidates) {
-        std::size_t result_at = 0;
-        for (std::size_t i = 1, n = candidates.size(); i < n; ++i) {
-            auto const* left = candidates[result_at].get();
-            auto const* right = candidates[i].get();
-            auto lw = left->has_wider_parameters(*right);
-            auto rw = right->has_wider_parameters(*left);
-            if (lw == rw) {
+        std::size_t left_idx = 0;
+        for (std::size_t right_idx = 1, n = candidates.size(); right_idx < n; ++right_idx) {
+            auto const* left = candidates[left_idx].get();
+            auto const* right = candidates[right_idx].get();
+            auto forward_applicable = is_applicable(left->shared_parameter_types(), right->shared_parameter_types());
+            auto reverse_applicable = is_applicable(right->shared_parameter_types(), left->shared_parameter_types());
+            if (forward_applicable == reverse_applicable) {
                 string_builder builder {};
                 builder << "ambiguous function overload: "
                         << left->name()
@@ -515,11 +517,11 @@ public:
                         title.region());
                 return {};
             }
-            if (lw) {
-                result_at = i;
+            if (reverse_applicable) {
+                left_idx = right_idx;
             }
         }
-        return candidates[result_at];
+        return candidates[left_idx];
     }
 
     static void append_string(
