@@ -5,16 +5,23 @@
 #include <takatori/value/primitive.h>
 #include <takatori/value/decimal.h>
 #include <takatori/value/character.h>
+#include <takatori/value/date.h>
+#include <takatori/value/time_of_day.h>
+#include <takatori/value/time_point.h>
 
 #include <takatori/type/primitive.h>
 #include <takatori/type/decimal.h>
 #include <takatori/type/character.h>
+#include <takatori/type/date.h>
+#include <takatori/type/time_of_day.h>
+#include <takatori/type/time_point.h>
 
 #include <takatori/scalar/immediate.h>
 #include <takatori/scalar/cast.h>
 
 #include <mizugaki/ast/literal/numeric.h>
 #include <mizugaki/ast/literal/string.h> // NOLINT
+#include <mizugaki/ast/literal/datetime.h>
 #include <mizugaki/ast/literal/special.h>
 
 #include "test_parent.h"
@@ -663,13 +670,136 @@ TEST_F(analyze_literal_test, character_string_concat) {
     expect_no_error();
 }
 
+TEST_F(analyze_literal_test, date) {
+    auto r = analyze_literal(
+            context(),
+            ast::literal::datetime {
+                    ast::literal::kind::date,
+                    "'2001-02-03'",
+            });
+    ASSERT_TRUE(r) << diagnostics();
+    EXPECT_EQ(*r, (tscalar::immediate {
+            tvalue::date { 2001, 2, 3 },
+            ttype::date {},
+    }));
+    expect_no_error();
+}
+
+TEST_F(analyze_literal_test, date_invalid) {
+    invalid(sql_analyzer_code::unsupported_string_value, ast::literal::datetime {
+            ast::literal::kind::date,
+            "'1-2-0'",
+    });
+}
+
+TEST_F(analyze_literal_test, time) {
+    auto r = analyze_literal(
+            context(),
+            ast::literal::datetime {
+                    ast::literal::kind::time,
+                    "'12:34:56'",
+            });
+    ASSERT_TRUE(r) << diagnostics();
+    EXPECT_EQ(*r, (tscalar::immediate {
+            tvalue::time_of_day { 12, 34, 56 },
+            ttype::time_of_day {},
+    }));
+    expect_no_error();
+}
+
+TEST_F(analyze_literal_test, time_invalid) {
+    invalid(sql_analyzer_code::unsupported_string_value, ast::literal::datetime {
+            ast::literal::kind::time,
+            "'24:00:00'",
+    });
+}
+
+TEST_F(analyze_literal_test, timestamp) {
+    auto r = analyze_literal(
+            context(),
+            ast::literal::datetime {
+                    ast::literal::kind::timestamp,
+                    "'1970-1-2 12:34:56'",
+            });
+    ASSERT_TRUE(r) << diagnostics();
+    EXPECT_EQ(*r, (tscalar::immediate {
+            tvalue::time_point { 1970, 1, 2, 12, 34, 56 },
+            ttype::time_point {},
+    }));
+    expect_no_error();
+}
+
+TEST_F(analyze_literal_test, timestamp_invalid) {
+    invalid(sql_analyzer_code::unsupported_string_value, ast::literal::datetime {
+            ast::literal::kind::timestamp,
+            "'1970-8-32 0:0:0'",
+    });
+    invalid(sql_analyzer_code::unsupported_string_value, ast::literal::datetime {
+            ast::literal::kind::timestamp,
+            "'1970-1-2 0:0:0Z'",
+    });
+}
+
+TEST_F(analyze_literal_test, timestamp_with_time_zone) {
+    auto r = analyze_literal(
+            context(),
+            ast::literal::datetime {
+                    ast::literal::kind::timestamp_with_time_zone,
+                    "'1970-1-1 00:00:00+09:00'",
+            });
+    ASSERT_TRUE(r) << diagnostics();
+    EXPECT_EQ(*r, (tscalar::immediate {
+            tvalue::time_point { 1969, 12, 31, 15, 0, 0 },
+            ttype::time_point {},
+    }));
+    expect_no_error();
+}
+
+TEST_F(analyze_literal_test, timestamp_with_time_zone_z) {
+    auto r = analyze_literal(
+            context(),
+            ast::literal::datetime {
+                    ast::literal::kind::timestamp_with_time_zone,
+                    "'1970-1-1 00:00:00Z'",
+            });
+    ASSERT_TRUE(r) << diagnostics();
+    EXPECT_EQ(*r, (tscalar::immediate {
+            tvalue::time_point { 1970, 1, 1, 0, 0, 0 },
+            ttype::time_point {},
+    }));
+    expect_no_error();
+}
+
+TEST_F(analyze_literal_test, timestamp_with_time_zone_default) {
+    options_.system_zone_offset() = sql_analyzer_options::zone_offset_type { -9 * 60 };
+    auto r = analyze_literal(
+            context(),
+            ast::literal::datetime {
+                    ast::literal::kind::timestamp_with_time_zone,
+                    "'1970-1-1 00:00:00'",
+            });
+    ASSERT_TRUE(r) << diagnostics();
+    EXPECT_EQ(*r, (tscalar::immediate {
+            tvalue::time_point { 1970, 1, 1, 9, 0, 0 },
+            ttype::time_point {},
+    }));
+    expect_no_error();
+}
+
+TEST_F(analyze_literal_test, timestamp_with_time_zone_invalid) {
+    invalid(sql_analyzer_code::unsupported_string_value, ast::literal::datetime {
+            ast::literal::kind::timestamp_with_time_zone,
+            "'0:0:0'",
+    });
+}
+
 TEST_F(analyze_literal_test, null) {
     options_.allow_context_independent_null() = false;
     auto r = analyze_literal(
             context(),
             ast::literal::null {},
             ttype::int4 {});
-    ASSERT_TRUE(r);
+    ASSERT_TRUE(r) << diagnostics();
     EXPECT_EQ(*r, (tscalar::immediate {
             tvalue::unknown { tvalue::unknown_kind::null },
             ttype::int4 {},

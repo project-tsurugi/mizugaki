@@ -71,10 +71,22 @@ enum class kind {
     time,
 
     /**
+     * @brief time with time zone literals.
+     * @see datetime
+     */
+    time_with_time_zone,
+
+    /**
      * @brief timestamp literals.
      * @see datetime
      */
     timestamp,
+
+    /**
+     * @brief timestamp with time zone literals.
+     * @see datetime
+     */
+    timestamp_with_time_zone,
 
     /**
      * @brief interval literals.
@@ -165,8 +177,14 @@ template<> struct type_of<kind, kind::date> : ::takatori::util::meta_type<dateti
 /// @brief provides implementation type of kind::time.
 template<> struct type_of<kind, kind::time> : ::takatori::util::meta_type<datetime> {};
 
+/// @brief provides implementation type of kind::time_with_time_zone.
+template<> struct type_of<kind, kind::time_with_time_zone> : ::takatori::util::meta_type<datetime> {};
+
 /// @brief provides implementation type of kind::timestamp.
 template<> struct type_of<kind, kind::timestamp> : ::takatori::util::meta_type<datetime> {};
+
+/// @brief provides implementation type of kind::timestamp_with_time_zone.
+template<> struct type_of<kind, kind::timestamp_with_time_zone> : ::takatori::util::meta_type<datetime> {};
 
 /// @brief provides implementation type of kind::interval.
 template<> struct type_of<kind, kind::interval> : ::takatori::util::meta_type<interval> {};
@@ -196,7 +214,9 @@ inline constexpr std::string_view to_string_view(kind value) noexcept {
         case kind::hex_string: return "hex_string"sv;
         case kind::date: return "date"sv;
         case kind::time: return "time"sv;
+        case kind::time_with_time_zone: return "time_with_time_zone"sv;
         case kind::timestamp: return "timestamp"sv;
+        case kind::timestamp_with_time_zone: return "timestamp_with_time_zone"sv;
         case kind::interval: return "interval"sv;
         case kind::null: return "null"sv;
         case kind::empty: return "empty"sv;

@@ -27,12 +27,14 @@ public:
     static constexpr kind_set tags {
             node_kind_type::date,
             node_kind_type::time,
+            node_kind_type::time_with_time_zone,
             node_kind_type::timestamp,
+            node_kind_type::timestamp_with_time_zone,
     };
 
     /**
      * @brief creates a new instance.
-     * @param value_kind the value kind, must be one of `date`, `time` or `timestamp`
+     * @param value_kind the value kind, must be one of `date`, `time`, timestamp`, or their `*_with_time_zone`
      * @param value quoted string representation of the value
      * @param region the node region
      * @throws std::invalid_argument if kind is invalid

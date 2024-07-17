@@ -2,12 +2,20 @@
 
 #include <limits>
 
+#include <takatori/datetime/conversion.h>
+
 #include <takatori/type/primitive.h>
 #include <takatori/type/decimal.h>
 #include <takatori/type/character.h>
+#include <takatori/type/date.h>
+#include <takatori/type/time_of_day.h>
+#include <takatori/type/time_point.h>
 
 #include <takatori/value/primitive.h>
 #include <takatori/value/decimal.h>
+#include <takatori/value/date.h>
+#include <takatori/value/time_of_day.h>
+#include <takatori/value/time_point.h>
 
 #include <takatori/scalar/immediate.h>
 #include <takatori/scalar/cast.h>
@@ -118,12 +126,33 @@ public:
     }
 
     std::unique_ptr<tscalar::immediate> operator()(ast::literal::datetime const& value) {
+        auto&& quoted = *value.value();
+        if (quoted.size() < 2 || quoted.front() != '\'' || quoted.back() != '\'') {
+            context_.report(
+                    sql_analyzer_code::malformed_quoted_string,
+                    string_builder {}
+                            << "invalid quoted string \"" << quoted << "\""
+                            << " for " << value.node_kind() << " literal"
+                            << string_builder::to_string,
+                    value.value().region());
+            return {};
+        }
+
         using ast::literal::kind;
         switch (value.node_kind()) {
+            case kind::date:
+                return process_date(value);
+            case kind::time:
+                return process_time(value);
+            case kind::time_with_time_zone:
+                break; // NOTE: TIME WITH TIME ZONE is not supported yet
+            case kind::timestamp:
+                return process_timestamp(value, false);
+            case kind::timestamp_with_time_zone:
+                return process_timestamp(value, true);
             default:
                 break;
         }
-        // FIXME impl
         context_.report(
                 sql_analyzer_code::unsupported_feature,
                 string_builder {}
@@ -133,6 +162,7 @@ public:
                 value.region());
         return {};
     }
+
 
 //    std::unique_ptr<tscalar::immediate> operator()(ast::literal::interval const& value) {
 //        (void) value;
@@ -394,6 +424,123 @@ private:
                         ttype::varying,
                         size,
                 }));
+    }
+
+    std::unique_ptr<tscalar::immediate> process_date(ast::literal::datetime const& value) {
+        std::string_view contents { *value.value() };
+        contents.remove_prefix(1);
+        contents.remove_suffix(1);
+        auto result = ::takatori::datetime::parse_date(contents);
+        if (!result) {
+            context_.report(
+                    sql_analyzer_code::unsupported_string_value,
+                    string_builder {}
+                            << "invalid date literal: "
+                            << contents
+                            << " (" << result.error() << ")"
+                            << string_builder::to_string,
+                    value.value().region());
+            return {};
+        }
+        return context_.create<tscalar::immediate>(
+                value.region(),
+                context_.values().get(tvalue::date { convert(result.value()) }),
+                context_.types().get(ttype::date {}));
+    }
+
+    static ::takatori::datetime::date convert(::takatori::datetime::date_info const& info) {
+        return ::takatori::datetime::date {
+                static_cast<std::int32_t>(info.year),
+                static_cast<std::uint32_t>(info.month),
+                static_cast<std::uint32_t>(info.day),
+        };
+    }
+
+    std::unique_ptr<tscalar::immediate> process_time(ast::literal::datetime const& value) {
+        std::string_view contents { *value.value() };
+        contents.remove_prefix(1);
+        contents.remove_suffix(1);
+        auto result = ::takatori::datetime::parse_time(contents);
+        if (!result) {
+            context_.report(
+                    sql_analyzer_code::unsupported_string_value,
+                    string_builder {}
+                            << "invalid time literal: "
+                            << contents
+                            << " (" << result.error() << ")"
+                            << string_builder::to_string,
+                    value.value().region());
+            return {};
+        }
+        return context_.create<tscalar::immediate>(
+                value.region(),
+                context_.values().get(tvalue::time_of_day { convert(result.value()) }),
+                context_.types().get(ttype::time_of_day {}));
+    }
+
+    static ::takatori::datetime::time_of_day convert(::takatori::datetime::time_info const& info) {
+        return ::takatori::datetime::time_of_day {
+                static_cast<std::uint32_t>(info.hour),
+                static_cast<std::uint32_t>(info.minute),
+                static_cast<std::uint32_t>(info.second),
+                info.subsecond,
+        };
+    }
+
+    std::unique_ptr<tscalar::immediate> process_timestamp(ast::literal::datetime const& value, bool with_tz) {
+        std::string_view contents { *value.value() };
+        contents.remove_prefix(1);
+        contents.remove_suffix(1);
+        auto result = ::takatori::datetime::parse_datetime(contents);
+        if (!result) {
+            context_.report(
+                    sql_analyzer_code::unsupported_string_value,
+                    string_builder {}
+                            << "invalid datetime literal: "
+                            << contents
+                            << " (" << result.error() << ")"
+                            << string_builder::to_string,
+                    value.value().region());
+            return {};
+        }
+        if (!with_tz && result.value().offset) {
+            context_.report(
+                    sql_analyzer_code::unsupported_string_value,
+                    string_builder {}
+                            << "invalid datetime literal: "
+                            << contents
+                            << " (unexpected zone offset)"
+                            << string_builder::to_string,
+                    value.value().region());
+            return {};
+        }
+        auto&& info = result.value();
+        return context_.create<tscalar::immediate>(
+                value.region(),
+                context_.values().get(tvalue::time_point { convert(info) }),
+                context_.types().get(ttype::time_point {}));
+    }
+
+    ::takatori::datetime::time_point convert(::takatori::datetime::datetime_info const& info) {
+        ::takatori::datetime::time_point ts { convert(info.date), convert(info.time) };
+        auto tz = convert(info.offset);
+        ts -= tz;
+        return ts;
+    }
+
+    sql_analyzer_options::zone_offset_type convert(std::optional<::takatori::datetime::zone_offset_info> const& info) {
+        using duration_type = sql_analyzer_options::zone_offset_type;
+        if (info) {
+            auto&& v = info.value();
+            duration_type tz {};
+            tz += std::chrono::duration_cast<duration_type>(std::chrono::hours { v.hour });
+            tz += std::chrono::duration_cast<duration_type>(std::chrono::minutes { v.minute });
+            if (!v.plus) {
+                tz = -tz;
+            }
+            return tz;
+        }
+        return context_.options()->system_zone_offset();
     }
 };
 

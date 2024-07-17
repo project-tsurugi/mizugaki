@@ -1,5 +1,6 @@
 #pragma once
 
+#include <chrono>
 #include <memory>
 #include <optional>
 #include <string>
@@ -129,6 +130,17 @@ public:
      * @see advance_sequence_function_name()
      */
     static constexpr std::string_view default_advance_sequence_function_name { "nextval" };
+
+    /**
+     * @brief the zone offset unit type.
+     */
+    using zone_offset_type = std::chrono::duration<std::int32_t, std::ratio<60>>;
+
+    /**
+     * @brief the default value of system time zone offset.
+     * @see system_zone_offset()
+     */
+    static constexpr zone_offset_type default_system_zone_offset {}; // NOLINT(*-statically-constructed-objects)
 
     /**
      * @brief creates a new instance.
@@ -417,6 +429,19 @@ public:
         return advance_sequence_function_name_;
     }
 
+    /**
+     * @brief returns the system time zone offset.
+     * @return return the system time zone offset
+     */
+    [[nodiscard]] zone_offset_type& system_zone_offset() noexcept {
+        return system_zone_offset_;
+    }
+
+    /// @copydoc system_zone_offset()
+    [[nodiscard]] zone_offset_type const& system_zone_offset() const noexcept {
+        return system_zone_offset_;
+    }
+
 private:
     ::takatori::util::maybe_shared_ptr<::yugawara::schema::catalog const> catalog_;
     ::takatori::util::maybe_shared_ptr<::yugawara::schema::search_path const> schema_search_path_;
@@ -442,6 +467,7 @@ private:
     bool cast_literals_in_context_ { default_cast_literals_in_context };
 
     std::string_view advance_sequence_function_name_ { default_advance_sequence_function_name };
+    zone_offset_type system_zone_offset_ { default_system_zone_offset };
 };
 
 } // namespace mizugaki::analyzer

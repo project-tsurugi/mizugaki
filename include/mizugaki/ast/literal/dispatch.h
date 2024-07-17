@@ -58,7 +58,9 @@ inline auto dispatch(Callback&& callback, E&& object, Args&&... args) {
         case kind::hex_string: return polymorphic_callback<type_of_t<kind::hex_string>>(std::forward<Callback>(callback), std::forward<E>(object), std::forward<Args>(args)...);
         case kind::date: return polymorphic_callback<type_of_t<kind::date>>(std::forward<Callback>(callback), std::forward<E>(object), std::forward<Args>(args)...);
         case kind::time: return polymorphic_callback<type_of_t<kind::time>>(std::forward<Callback>(callback), std::forward<E>(object), std::forward<Args>(args)...);
+        case kind::time_with_time_zone: return polymorphic_callback<type_of_t<kind::time_with_time_zone>>(std::forward<Callback>(callback), std::forward<E>(object), std::forward<Args>(args)...);
         case kind::timestamp: return polymorphic_callback<type_of_t<kind::timestamp>>(std::forward<Callback>(callback), std::forward<E>(object), std::forward<Args>(args)...);
+        case kind::timestamp_with_time_zone: return polymorphic_callback<type_of_t<kind::timestamp_with_time_zone>>(std::forward<Callback>(callback), std::forward<E>(object), std::forward<Args>(args)...);
         case kind::interval: return polymorphic_callback<type_of_t<kind::interval>>(std::forward<Callback>(callback), std::forward<E>(object), std::forward<Args>(args)...);
         case kind::null: return polymorphic_callback<type_of_t<kind::null>>(std::forward<Callback>(callback), std::forward<E>(object), std::forward<Args>(args)...);
         case kind::empty: return polymorphic_callback<type_of_t<kind::empty>>(std::forward<Callback>(callback), std::forward<E>(object), std::forward<Args>(args)...);

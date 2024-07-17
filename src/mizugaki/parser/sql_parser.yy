@@ -3754,17 +3754,33 @@ literal
                     $t,
                     @$);
         }
-    | TIME[k] CHARACTER_STRING_LITERAL[t]
+    | TIME[k] with_or_without_time_zone_opt[z] CHARACTER_STRING_LITERAL[t]
         {
+            ast::literal::kind kind = ast::literal::kind::time;
+            location_type region = @k;
+            if (auto tz = $z) {
+                if (*tz) {
+                    kind = ast::literal::kind::time_with_time_zone;
+                }
+                region = @k | @z;
+            }
             $$ = driver.node<ast::literal::datetime>(
-                    regioned { ast::literal::kind::time, @k },
+                    regioned { kind, region },
                     regioned { $t, @t },
                     @$);
         }
-    | TIMESTAMP[k] CHARACTER_STRING_LITERAL[t]
+    | TIMESTAMP[k] with_or_without_time_zone_opt[z] CHARACTER_STRING_LITERAL[t]
         {
+            ast::literal::kind kind = ast::literal::kind::timestamp;
+            location_type region = @k;
+            if (auto tz = $z) {
+                if (*tz) {
+                    kind = ast::literal::kind::timestamp_with_time_zone;
+                }
+                region = @k | @z;
+            }
             $$ = driver.node<ast::literal::datetime>(
-                    regioned { ast::literal::kind::timestamp, @k },
+                    regioned { kind, region },
                     regioned { $t, @t },
                     @$);
         }

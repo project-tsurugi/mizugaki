@@ -131,8 +131,48 @@ TEST_F(sql_parser_literal_test, time) {
     }));
 }
 
+TEST_F(sql_parser_literal_test, time_with_time_zone) {
+    auto result = parse("TIME WITH TIME ZONE '01:23:45.678Z'");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (literal::datetime {
+            literal::kind::time_with_time_zone,
+            "'01:23:45.678Z'",
+    }));
+}
+
+TEST_F(sql_parser_literal_test, time_without_time_zone) {
+    auto result = parse("TIME WITHOUT TIME ZONE '01:23:45.678'");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (literal::datetime {
+            literal::kind::time,
+            "'01:23:45.678'",
+    }));
+}
+
 TEST_F(sql_parser_literal_test, timestamp) {
     auto result = parse("TIMESTAMP '2020-01-02 34:56:78'");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (literal::datetime {
+            literal::kind::timestamp,
+            "'2020-01-02 34:56:78'",
+    }));
+}
+
+TEST_F(sql_parser_literal_test, timestamp_with_time_zone) {
+    auto result = parse("TIMESTAMP WITH TIME ZONE '2020-01-02 34:56:78+09:00'");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (literal::datetime {
+            literal::kind::timestamp_with_time_zone,
+            "'2020-01-02 34:56:78+09:00'",
+    }));
+}
+
+TEST_F(sql_parser_literal_test, timestamp_without_time_zone) {
+    auto result = parse("TIMESTAMP WITHOUT TIME ZONE '2020-01-02 34:56:78'");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (literal::datetime {
