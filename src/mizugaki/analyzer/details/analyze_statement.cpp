@@ -9,6 +9,7 @@
 #include <takatori/scalar/immediate.h>
 #include <takatori/scalar/variable_reference.h>
 #include <takatori/scalar/cast.h>
+#include <takatori/scalar/function_call.h>
 
 #include <takatori/relation/emit.h>
 #include <takatori/relation/filter.h>
@@ -875,17 +876,12 @@ public:
         if (!result) {
             return {}; // error
         }
-        auto value = extract_column_value(result.release());
-        if (!value) {
-            context_.report(
-                    sql_analyzer_code::unsupported_feature,
-                    "default value must be a literal",
-                    constraint.expression()->region());
-        }
+        auto value = extract_column_value(constraint, result.release());
         return value;
     }
 
     [[nodiscard]] std::optional<::yugawara::storage::column_value> extract_column_value(
+            ast::statement::expression_constraint const& constraint,
             std::unique_ptr<tscalar::expression> expr) {
         context_.clear_expression_resolution(*expr);
         using kind = tscalar::expression_kind;
@@ -895,14 +891,30 @@ public:
                 auto&& value = unsafe_downcast<tscalar::immediate>(*expr);
                 return ::yugawara::storage::column_value { context_.values().get(value.value()) };
             }
+            case kind::function_call:
+            {
+                auto&& value = unsafe_downcast<tscalar::function_call>(*expr);
+                if (!value.arguments().empty()) {
+                    context_.report(
+                            sql_analyzer_code::unsupported_feature,
+                            "function call in default value must not have any parameters",
+                            constraint.expression()->region());
+                    return {};
+                }
+                auto&& function = ::yugawara::binding::extract_shared(value.function());
+                return ::yugawara::storage::column_value { std::move(function) };
+            }
             case kind::cast:
             {
                 auto&& e = unsafe_downcast<tscalar::cast>(*expr);
                 // FIXME: impl casting
-                return extract_column_value(e.release_operand());
+                return extract_column_value(constraint, e.release_operand());
             }
             default:
-                // FIXME: more types for column default values
+                context_.report(
+                        sql_analyzer_code::unsupported_feature,
+                        "default value must be a literal",
+                        constraint.expression()->region());
                 return {};
         }
     }

@@ -8,17 +8,22 @@
 #include <takatori/statement/empty.h>
 #include <takatori/statement/create_table.h>
 
+#include <yugawara/binding/factory.h>
 #include <yugawara/binding/extract.h>
 
 #include <yugawara/storage/table.h>
 #include <yugawara/storage/index.h>
 #include <yugawara/storage/column.h>
 
+#include <yugawara/function/declaration.h>
+
 #include <mizugaki/ast/type/simple.h>
+#include <mizugaki/ast/type/character_string.h>
 #include <mizugaki/ast/type/user_defined.h>
 
 #include <mizugaki/ast/scalar/unary_expression.h>
 #include <mizugaki/ast/scalar/host_parameter_reference.h>
+#include <mizugaki/ast/scalar/builtin_function_invocation.h>
 
 #include <mizugaki/ast/statement/table_definition.h>
 #include <mizugaki/ast/statement/column_definition.h>
@@ -310,6 +315,87 @@ TEST_F(analyze_statement_table_definition_test, column_default) {
         EXPECT_EQ(column.criteria().nullity(), ::yugawara::variable::nullable);
         EXPECT_EQ(column.default_value(), ::yugawara::storage::column_value { tvalue::int8 { 1 } });
     }
+}
+
+TEST_F(analyze_statement_table_definition_test, column_default_function) {
+    auto f = functions_->add(::yugawara::function::declaration {
+            ::yugawara::function::declaration::minimum_builtin_function_id + 1,
+            "current_user",
+            ttype::character { ttype::varying, {} },
+            {},
+    });
+    auto r = analyze_statement(context(), ast::statement::table_definition {
+            id("testing"),
+            {
+                    ast::statement::column_definition {
+                            id("c1"),
+                            ast::type::character_string {
+                                    ast::type::kind::character_varying,
+                            },
+                            {
+                                    ast::statement::expression_constraint {
+                                            ast::statement::constraint_kind::default_clause,
+                                            ast::scalar::builtin_function_invocation {
+                                                    ast::scalar::builtin_function_kind::current_user,
+                                                    {},
+                                            },
+                                    },
+                            },
+                    },
+            },
+    });
+    auto alternative = std::get_if<statement_result_type>(&r);
+    ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
+    ASSERT_EQ((*alternative)->kind(), tstatement::statement_kind::create_table);
+
+    auto&& stmt = downcast<tstatement::create_table>(**alternative);
+    EXPECT_EQ(extract(stmt.schema()), *default_schema_);
+
+    auto&& table = extract(stmt.definition());
+    EXPECT_EQ(table.simple_name(), "testing");
+
+    auto&& table_columns = table.columns();
+    ASSERT_EQ(table_columns.size(), 1);
+    {
+        auto&& column = table_columns[0];
+        EXPECT_EQ(column.simple_name(), "c1");
+        EXPECT_EQ(column.type(), (ttype::character { ttype::varying, {} }));
+        EXPECT_EQ(column.criteria().nullity(), ::yugawara::variable::nullable);
+        EXPECT_EQ(column.default_value(), ::yugawara::storage::column_value { f });
+    }
+}
+
+TEST_F(analyze_statement_table_definition_test, column_default_function_invalid_arg) {
+    auto f = functions_->add(::yugawara::function::declaration {
+            ::yugawara::function::declaration::minimum_builtin_function_id + 1,
+            "length",
+            ttype::int8 {},
+            {
+                    ttype::character { ttype::varying, {} },
+            },
+    });
+    invalid(sql_analyzer_code::unsupported_feature, ast::statement::table_definition {
+            id("testing"),
+            {
+                    ast::statement::column_definition {
+                            id("c1"),
+                            ast::type::simple { ast::type::kind::big_integer },
+                            {
+                                    ast::statement::expression_constraint {
+                                            ast::statement::constraint_kind::default_clause,
+                                            ast::scalar::builtin_function_invocation {
+                                                    ast::scalar::builtin_function_kind::length,
+                                                    {
+                                                            literal(string("'testing'"))
+                                                    },
+                                            },
+                                    },
+                            },
+                    },
+            },
+    });
 }
 
 TEST_F(analyze_statement_table_definition_test, table_primary_key) {
