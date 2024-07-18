@@ -16,6 +16,9 @@
 #include <yugawara/variable/declaration.h>
 #include <yugawara/variable/configurable_provider.h>
 
+#include <yugawara/function/declaration.h>
+#include <yugawara/function/configurable_provider.h>
+
 #include <yugawara/aggregate/declaration.h>
 #include <yugawara/aggregate/configurable_provider.h>
 
@@ -47,6 +50,7 @@ public:
 
 protected:
     std::shared_ptr<::yugawara::storage::configurable_provider> storages_;
+    std::shared_ptr<::yugawara::function::configurable_provider> functions_;
     std::shared_ptr<::yugawara::aggregate::configurable_provider> set_functions_;
     std::shared_ptr<::yugawara::schema::configurable_provider> schemas_;
     std::shared_ptr<::yugawara::schema::catalog> catalog_;

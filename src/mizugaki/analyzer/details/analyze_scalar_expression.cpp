@@ -9,6 +9,7 @@
 #include <takatori/scalar/binary.h>
 #include <takatori/scalar/compare.h>
 #include <takatori/scalar/variable_reference.h>
+#include <takatori/scalar/function_call.h>
 
 #include <takatori/util/string_builder.h>
 #include <takatori/util/downcast.h>
@@ -407,7 +408,90 @@ public:
     // FIXME: impl <match predicate>
     // FIXME: impl <type predicate>
     // FIXME: impl function_invocation,
-    // FIXME: impl builtin_function_invocation,
+
+    [[nodiscard]] std::unique_ptr<tscalar::expression> operator()(
+            ast::scalar::builtin_function_invocation const& expr,
+            value_context const&) {
+        using kind = ast::scalar::builtin_function_kind;
+        switch (*expr.function()) {
+            case kind::nullif:
+                // FIXME: impl nullif (built-in function)
+            case kind::coalesce:
+                // FIXME: impl coalesce (built-in function)
+            case kind::next_value_for:
+                // FIXME: impl next_value_for (built-in function)
+
+            case kind::convert:
+            case kind::translate:
+            case kind::current_path:
+                context_.report(
+                        sql_analyzer_code::unsupported_feature,
+                        string_builder {}
+                                << "unsupported special built-in function invocation: "
+                                << expr.function()
+                                << string_builder::to_string,
+                        expr.function().region());
+                return {};
+
+            default:
+                break;
+        }
+
+        auto function_name = to_string_view(*expr.function());
+        ::takatori::util::reference_vector<tscalar::expression> arguments {};
+        arguments.reserve(expr.arguments().size());
+        std::vector<std::shared_ptr<ttype::data const>> argument_types {};
+        argument_types.reserve(expr.arguments().size());
+        for (auto&& arg : expr.arguments()) {
+            auto value = process(*arg, {});
+            if (!value) {
+                return {};
+            }
+            auto type = context_.resolve(*value);
+            if (!type) {
+                return {};
+            }
+            arguments.push_back(value.release());
+            argument_types.emplace_back(type);
+        }
+
+        auto&& path = context_.options()->schema_search_path();
+        std::vector<std::shared_ptr<::yugawara::function::declaration const>> candidates {};
+        for (auto&& schema : path.elements()) {
+            // FIXME: consider override over schemas
+            schema->function_provider().each(
+                    function_name,
+                    expr.arguments().size(),
+                    [&](std::shared_ptr<::yugawara::function::declaration const> const& ptr) -> void {
+                        if (is_applicable(argument_types, ptr->shared_parameter_types())) {
+                            candidates.emplace_back(ptr);
+                        }
+                    });
+        }
+
+        if (candidates.empty()) {
+            string_builder buffer {};
+            buffer << "function not found: "
+                   << expr.function();
+            append_string(buffer, argument_types);
+            context_.report(
+                    sql_analyzer_code::function_not_found,
+                    buffer << string_builder::to_string,
+                    expr.region());
+            return {};
+        }
+        auto target = resolve_overload(expr.function(), candidates);
+        if (!target) {
+            return {};
+        }
+
+        auto result = context_.create<tscalar::function_call>(
+                expr.region(),
+                factory_(std::move(target)),
+                std::move(arguments));
+
+        return result;
+    }
 
     [[nodiscard]] std::unique_ptr<tscalar::expression> operator()(
             ast::scalar::builtin_set_function_invocation const& expr,
@@ -493,10 +577,10 @@ public:
         return true;
     }
 
-    template<class T>
-    [[nodiscard]] std::shared_ptr<::yugawara::aggregate::declaration const> resolve_overload(
-            ast::common::regioned<T> const& title,
-            std::vector<std::shared_ptr<::yugawara::aggregate::declaration const>> const& candidates) {
+    template<class TDecl, class TNode>
+    [[nodiscard]] std::shared_ptr<TDecl> resolve_overload(
+            ast::common::regioned<TNode> const& title,
+            std::vector<std::shared_ptr<TDecl>> const& candidates) {
         std::size_t left_idx = 0;
         for (std::size_t right_idx = 1, n = candidates.size(); right_idx < n; ++right_idx) {
             auto const* left = candidates[left_idx].get();

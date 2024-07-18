@@ -8,6 +8,9 @@ test_parent::test_parent() :
         storages_ {
                 std::make_shared<::yugawara::storage::configurable_provider>(),
         },
+        functions_ {
+                std::make_shared<::yugawara::function::configurable_provider>(),
+        },
         set_functions_ {
                 std::make_shared<::yugawara::aggregate::configurable_provider>(),
         },
@@ -26,7 +29,7 @@ test_parent::test_parent() :
                         std::nullopt,
                         storages_,
                         std::shared_ptr<::yugawara::variable::provider> {},
-                        std::shared_ptr<::yugawara::function::provider> {},
+                        functions_,
                         set_functions_)
         },
         search_path_ {
