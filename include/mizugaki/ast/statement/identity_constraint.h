@@ -4,6 +4,7 @@
 #include <optional>
 
 #include <takatori/util/clone_tag.h>
+#include <takatori/util/rvalue_ptr.h>
 
 #include <mizugaki/ast/common/regioned.h>
 #include <mizugaki/ast/scalar/expression.h>
@@ -43,10 +44,29 @@ public:
      */
     explicit identity_constraint(
             generation_type generation,
-            std::unique_ptr<scalar::expression> initial_value = {},
+            std::unique_ptr<scalar::expression> initial_value,
             std::unique_ptr<scalar::expression> increment_value = {},
             std::unique_ptr<scalar::expression> min_value = {},
             std::unique_ptr<scalar::expression> max_value = {},
+            std::optional<bool_type> cycle = {},
+            region_type region = {}) noexcept;
+
+    /**
+     * @brief creates a new object.
+     * @param generation the generation type
+     * @param initial_value the initial value, or empty if it is not defined
+     * @param increment_value the increment value, or empty if it is not defined
+     * @param min_value the minimum value, or empty if it is not defined
+     * @param max_value the maximum value, or empty if it is not defined
+     * @param cycle whether or not to enable value overflow, or empty if it is not defined
+     * @param region the node region
+     */
+    explicit identity_constraint(
+            generation_type generation,
+            ::takatori::util::rvalue_ptr<scalar::expression> initial_value = {},
+            ::takatori::util::rvalue_ptr<scalar::expression> increment_value = {},
+            ::takatori::util::rvalue_ptr<scalar::expression> min_value = {},
+            ::takatori::util::rvalue_ptr<scalar::expression> max_value = {},
             std::optional<bool_type> cycle = {},
             region_type region = {}) noexcept;
 

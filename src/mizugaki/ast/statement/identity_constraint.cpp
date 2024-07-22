@@ -11,6 +11,7 @@
 namespace mizugaki::ast::statement {
 
 using ::takatori::util::clone_unique;
+using ::takatori::util::rvalue_ptr;
 
 identity_constraint::identity_constraint(
         generation_type generation,
@@ -27,6 +28,26 @@ identity_constraint::identity_constraint(
     min_value_ { std::move(min_value) },
     max_value_ { std::move(max_value) },
     cycle_ { cycle }
+{}
+
+
+identity_constraint::identity_constraint(
+        generation_type generation,
+        rvalue_ptr<scalar::expression> initial_value,
+        rvalue_ptr<scalar::expression> increment_value,
+        rvalue_ptr<scalar::expression> min_value,
+        rvalue_ptr<scalar::expression> max_value,
+        std::optional<bool_type> cycle,
+        region_type region) noexcept :
+    identity_constraint {
+            generation,
+            clone_unique(initial_value),
+            clone_unique(increment_value),
+            clone_unique(min_value),
+            clone_unique(max_value),
+            cycle,
+            region,
+    }
 {}
 
 identity_constraint::identity_constraint(::takatori::util::clone_tag_t, identity_constraint const& other) :

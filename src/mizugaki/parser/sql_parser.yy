@@ -1736,6 +1736,14 @@ common_sequence_option
                     @k,
             };
         }
+    | START[k] scalar_value_expression[e]
+        {
+            $$ = {
+                    details::sequence_option_field_kind::initial_value,
+                    $e,
+                    @k,
+            };
+        }
     | basic_sequence_option[o]
         {
             $$ = $o;
@@ -1744,6 +1752,14 @@ common_sequence_option
 
 basic_sequence_option
     : INCREMENT[k] BY scalar_value_expression[e]
+        {
+            $$ = {
+                    details::sequence_option_field_kind::increment_value,
+                    $e,
+                    @k,
+            };
+        }
+    | INCREMENT[k] scalar_value_expression[e]
         {
             $$ = {
                     details::sequence_option_field_kind::increment_value,

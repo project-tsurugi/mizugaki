@@ -126,6 +126,12 @@ public:
     static constexpr bool default_cast_literals_in_context = true;
 
     /**
+     * @brief the default value of the default to enable to wrap the seuqnce values.
+     * @see default_sequence_cycle()
+     */
+    static constexpr bool default_default_sequence_cycle = true;
+
+    /**
      * @brief the default value of a function name to advance a sequence value.
      * @see advance_sequence_function_name()
      */
@@ -415,6 +421,20 @@ public:
     }
 
     /**
+     * @brief returns whether or not to wrap the sequence values.
+     * @return true if the sequence values are wrapped
+     * @return false otherwise
+     */
+    [[nodiscard]] bool& default_sequence_cycle() noexcept {
+        return default_sequence_cycle_;
+    }
+
+    /// @copydoc default_sequence_cycle()
+    [[nodiscard]] bool const& default_sequence_cycle() const noexcept {
+        return default_sequence_cycle_;
+    }
+
+    /**
      * @brief returns the function name to advance a sequence value.
      * @details This function requires a symbol of the target sequence.
      * @return the function name to advance a sequence value
@@ -465,6 +485,7 @@ private:
     bool allow_context_independent_null_ { default_allow_context_independent_null };
     bool validate_scalar_expressions_ { default_validate_scalar_expressions };
     bool cast_literals_in_context_ { default_cast_literals_in_context };
+    bool default_sequence_cycle_ { default_default_sequence_cycle };
 
     std::string_view advance_sequence_function_name_ { default_advance_sequence_function_name };
     zone_offset_type system_zone_offset_ { default_system_zone_offset };

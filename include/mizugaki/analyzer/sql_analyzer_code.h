@@ -90,6 +90,9 @@ enum class sql_analyzer_code {
     /// @brief the target constraint is invalid.
     invalid_constraint,
 
+    /// @brief the value is not suitable for the sequence.
+    invalid_sequence_value,
+
     /// @brief there are ambiguous variables.
     relation_ambiguous,
     /// @brief there are ambiguous variables.
@@ -169,6 +172,8 @@ inline constexpr std::string_view to_string_view(sql_analyzer_code value) noexce
         case kind::primary_index_already_exists: return "primary_index_already_exists"sv;
 
         case kind::invalid_constraint: return "invalid_constraint"sv;
+
+        case kind::invalid_sequence_value: return "invalid_sequence_value"sv;
 
         case kind::relation_ambiguous: return "relation_ambiguous"sv;
         case kind::variable_ambiguous: return "variable_ambiguous"sv;

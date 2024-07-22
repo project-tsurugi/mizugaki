@@ -51,18 +51,16 @@ inline std::string diagnostics_to_string(details::analyzer_context const& contex
 }
 
 inline bool contains(details::analyzer_context const& context, diagnostic_code code) {
-    for (auto&& d : context.diagnostics()) {
-        if (d.code() == code) {
-            return true;
-        }
-    }
-    return false;
+    return std::any_of(context.diagnostics().begin(), context.diagnostics().end(), [code](auto&& d) {
+        return d.code() == code;
+    });
 }
 
-inline ast::literal::numeric number(std::string_view token = "1") {
+inline ast::literal::numeric number(std::string_view token = "1", std::optional<ast::literal::numeric::sign_type> sign = {}) {
     return ast::literal::numeric {
             ast::literal::kind::exact_numeric,
-            token,
+            sign,
+            ast::common::chars { token },
     };
 }
 

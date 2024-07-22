@@ -1515,6 +1515,18 @@ TEST_F(sql_parser_statement_test, sequence_definition_start) {
     }));
 }
 
+TEST_F(sql_parser_statement_test, sequence_definition_start_shorten) {
+    sql_parser parser;
+    auto result = parser("-", "CREATE SEQUENCE s START 1");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::sequence_definition {
+            name::simple { "s" },
+            {},
+            int_literal("1"),
+    }));
+}
+
 TEST_F(sql_parser_statement_test, sequence_definition_start_dup) {
     sql_parser parser;
     auto result = parser("-", "CREATE SEQUENCE s START WITH 1 START WITH 1");
@@ -1524,6 +1536,19 @@ TEST_F(sql_parser_statement_test, sequence_definition_start_dup) {
 TEST_F(sql_parser_statement_test, sequence_definition_increment) {
     sql_parser parser;
     auto result = parser("-", "CREATE SEQUENCE s INCREMENT BY 1");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::sequence_definition {
+            name::simple { "s" },
+            {},
+            {},
+            int_literal("1"),
+    }));
+}
+
+TEST_F(sql_parser_statement_test, sequence_definition_increment_shorten) {
+    sql_parser parser;
+    auto result = parser("-", "CREATE SEQUENCE s INCREMENT 1");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::sequence_definition {

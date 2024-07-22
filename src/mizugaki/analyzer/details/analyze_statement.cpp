@@ -1,10 +1,16 @@
 #include <mizugaki/analyzer/details/analyze_statement.h>
 
+#include <limits>
 #include <vector>
+
+#include <cstdint>
 
 #include <tsl/hopscotch_set.h>
 
-#include <takatori/value/unknown.h>
+#include <takatori/value/int.h>
+#include <takatori/value/decimal.h>
+
+#include <takatori/type/int.h>
 
 #include <takatori/scalar/immediate.h>
 #include <takatori/scalar/variable_reference.h>
@@ -30,6 +36,8 @@
 #include <yugawara/binding/extract.h>
 #include <yugawara/binding/factory.h>
 #include <yugawara/binding/table_column_info.h>
+
+#include <yugawara/storage/sequence.h>
 
 #include <mizugaki/ast/statement/dispatch.h>
 
@@ -744,6 +752,26 @@ public:
                             prototype->default_value() = std::move(result.value());
                         }
                         break;
+                    case kind::identity_column:
+                        if (prototype->default_value()) {
+                            context_.report(
+                                    sql_analyzer_code::invalid_constraint,
+                                    "multiple default values are not supported",
+                                    constraint.region());
+                            return {};
+                        }
+                        {
+                            auto result = process_column_value(
+                                    unsafe_downcast<ast::statement::identity_constraint>(constraint),
+                                    *prototype);
+                            if (!result) {
+                                return {};
+                            }
+                            prototype->default_value() = std::move(result.value());
+                        }
+                        break;
+
+
                     default:
                         // FIXME: impl more column constraints
                         context_.report(
@@ -917,6 +945,180 @@ public:
                         constraint.expression()->region());
                 return {};
         }
+    }
+
+    [[nodiscard]] std::optional<::yugawara::storage::column_value> process_column_value( // NOLINT(*-function-cognitive-complexity)
+            ast::statement::identity_constraint const& constraint,
+            ::yugawara::storage::column& prototype) {
+        auto&& type = prototype.type();
+        bool is_int8 {};
+        if (type.kind() == ::takatori::type::int4::tag) {
+            is_int8 = false;
+        } else if (type.kind() == ::takatori::type::int8::tag) {
+            is_int8 = true;
+        } else {
+            context_.report(
+                    sql_analyzer_code::inconsistent_type,
+                    "IDENTITY column must be INT or BIGINT type",
+                    constraint.region());
+            return {};
+        }
+
+        if (constraint.generation() == ast::statement::identity_generation_type::always) {
+            // GENERATED ALWAYS AS IDENTITY
+            prototype.features().insert(::yugawara::storage::column_feature::read_only);
+        }
+
+        std::int64_t increment_value = 1;
+        if (auto&& expr = constraint.increment_value()) {
+            auto value = extract_sequence_value(*expr, is_int8);
+            if (!value) {
+                return {};
+            }
+            if (value == 0) {
+                context_.report(
+                        sql_analyzer_code::invalid_sequence_value,
+                        "increment value must not be zero",
+                        expr->region());
+                return {};
+            }
+            increment_value = *value;
+        }
+
+        std::int64_t min_value { is_int8 ?
+                std::numeric_limits<std::int64_t>::min() :
+                std::numeric_limits<std::int32_t>::min() };
+        std::int64_t max_value { is_int8 ?
+                std::numeric_limits<std::int64_t>::max() :
+                std::numeric_limits<std::int32_t>::max() };
+        if (increment_value > 0) {
+            min_value = +1;
+        } else {
+            max_value = -1;
+        }
+        if (auto&& expr = constraint.min_value()) {
+            auto value = extract_sequence_value(*expr, is_int8);
+            if (!value) {
+                return {};
+            }
+            min_value = *value;
+        }
+        if (auto&& expr = constraint.max_value()) {
+            auto value = extract_sequence_value(*expr, is_int8);
+            if (!value) {
+                return {};
+            }
+            max_value = *value;
+        }
+
+        std::int64_t initial_value { increment_value > 0 ? min_value : max_value };
+        if (auto&& expr = constraint.initial_value()) {
+            auto value = extract_sequence_value(*expr, is_int8);
+            if (!value) {
+                return {};
+            }
+            initial_value = *value;
+        }
+        if (initial_value < min_value || initial_value > max_value) {
+            context_.report(
+                    sql_analyzer_code::invalid_sequence_value,
+                    string_builder {}
+                            << "initial value is out of range: "
+                            << initial_value
+                            << " (min=" << min_value << ", max=" << max_value << ")"
+                            << string_builder::to_string,
+                    constraint.region());
+            return {};
+        }
+
+        auto cycle = context_.options()->default_sequence_cycle();
+        if (auto&& value = constraint.cycle()) {
+            cycle = **value;
+        }
+
+        auto sequence = std::make_shared<::yugawara::storage::sequence>(
+                std::nullopt,
+                std::string {},
+                initial_value,
+                increment_value,
+                min_value,
+                max_value,
+                cycle);
+        ::yugawara::storage::column_value result { std::move(sequence) };
+        return { std::move(result) };
+    }
+
+    [[nodiscard]] std::optional<std::int64_t> extract_sequence_value(
+            ast::scalar::expression const& expr,
+            bool is_int8) {
+        auto result = analyze_scalar_expression(
+                context_,
+                expr,
+                {},
+                {});
+        if (!result) {
+            return {};
+        }
+        if (result.value().kind() == ::takatori::scalar::expression_kind::immediate) {
+            auto&& data = unsafe_downcast<::takatori::scalar::immediate>(result.value()).value();
+            using ::takatori::value::value_kind;
+            switch (data.kind()) {
+                case value_kind::int4:
+                    // int4 value is always in range.
+                    return unsafe_downcast<::takatori::value::int4>(data).get();
+
+                case value_kind::int8:
+                {
+                    auto value = unsafe_downcast<::takatori::value::int8>(data).get();
+                    if (!is_int8 && (value < std::numeric_limits<std::int32_t>::min() ||
+                            value > std::numeric_limits<std::int32_t>::max())) {
+                        context_.report(
+                                sql_analyzer_code::invalid_sequence_value,
+                                string_builder {}
+                                        << "sequence value is out of range: "
+                                        << value
+                                        << string_builder::to_string,
+                                expr.region());
+                        return {};
+                    }
+                    return value;
+                }
+                break;
+
+                case value_kind::decimal:
+                {
+                    ::decimal::Decimal value { unsafe_downcast<::takatori::value::decimal>(data).get() };
+                    if (!value.isinteger()) {
+                        // not an integer
+                        break;
+                    }
+                    try {
+                        if (is_int8) {
+                            return value.i64();
+                        }
+                        return value.i32();
+                    } catch (::decimal::ValueError const&) {
+                        context_.report(
+                                sql_analyzer_code::invalid_sequence_value,
+                                string_builder {}
+                                        << "sequence value is out of range: "
+                                        << value
+                                        << string_builder::to_string,
+                                expr.region());
+                        return {};
+                    }
+                }
+                break;
+
+                default:
+                    break;
+            }
+        }
+        context_.report(
+                sql_analyzer_code::invalid_sequence_value,
+                "sequence value must be an integer literal",
+                expr.region());
+        return {};
     }
 
     [[nodiscard]] std::shared_ptr<::yugawara::storage::index> process_primary_key(
