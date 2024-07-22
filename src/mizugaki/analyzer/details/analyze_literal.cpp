@@ -518,7 +518,7 @@ private:
         return context_.create<tscalar::immediate>(
                 value.region(),
                 context_.values().get(tvalue::time_point { convert(info) }),
-                context_.types().get(ttype::time_point {}));
+                context_.types().get(ttype::time_point { ttype::with_time_zone_t { with_tz } }));
     }
 
     ::takatori::datetime::time_point convert(::takatori::datetime::datetime_info const& info) {

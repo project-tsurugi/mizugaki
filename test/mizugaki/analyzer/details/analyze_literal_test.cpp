@@ -750,7 +750,7 @@ TEST_F(analyze_literal_test, timestamp_with_time_zone) {
     ASSERT_TRUE(r) << diagnostics();
     EXPECT_EQ(*r, (tscalar::immediate {
             tvalue::time_point { 1969, 12, 31, 15, 0, 0 },
-            ttype::time_point {},
+            ttype::time_point { ttype::with_time_zone },
     }));
     expect_no_error();
 }
@@ -765,7 +765,7 @@ TEST_F(analyze_literal_test, timestamp_with_time_zone_z) {
     ASSERT_TRUE(r) << diagnostics();
     EXPECT_EQ(*r, (tscalar::immediate {
             tvalue::time_point { 1970, 1, 1, 0, 0, 0 },
-            ttype::time_point {},
+            ttype::time_point { ttype::with_time_zone },
     }));
     expect_no_error();
 }
@@ -781,7 +781,7 @@ TEST_F(analyze_literal_test, timestamp_with_time_zone_default) {
     ASSERT_TRUE(r) << diagnostics();
     EXPECT_EQ(*r, (tscalar::immediate {
             tvalue::time_point { 1970, 1, 1, 9, 0, 0 },
-            ttype::time_point {},
+            ttype::time_point { ttype::with_time_zone },
     }));
     expect_no_error();
 }
