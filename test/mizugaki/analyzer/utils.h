@@ -169,14 +169,19 @@ inline ::takatori::util::optional_ptr<T const> find_next(U const& node) {
     return {};
 }
 
-template<class T = trelation::expression, class U = trelation::expression>
-inline ::takatori::util::optional_ptr<T const> find_prev(U const& node) {
-    if (auto opposite = node.input().opposite()) {
+template<class T = trelation::expression>
+inline ::takatori::util::optional_ptr<T const> find_prev(trelation::expression::input_port_type const& port) {
+    if (auto opposite = port.opposite()) {
         if (auto ptr = downcast<T>(&opposite->owner())) {
             return ::takatori::util::optional_ptr<T const> { ptr };
         }
     }
     return {};
+}
+
+template<class T = trelation::expression, class U = trelation::expression>
+inline ::takatori::util::optional_ptr<T const> find_prev(U const& node) {
+    return find_prev<T>(node.input());
 }
 
 } // namespace mizugaki::analyzer::testing

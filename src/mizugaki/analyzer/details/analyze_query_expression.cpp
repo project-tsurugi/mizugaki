@@ -495,7 +495,111 @@ public:
         return { op.output(), std::move(info) };
     }
 
-    // FIXME: impl binary_expression
+    [[nodiscard]] result_type operator()(
+            ast::query::binary_expression const& expr,
+            optional_ptr<query_scope const> const& parent,
+            row_value_context const& val) {
+        using kind = ast::query::binary_operator;
+        switch (*expr.operator_kind()) {
+            case kind::union_:
+                return process_union(expr, parent, val);
+
+            case kind::except:
+            case kind::intersect:
+            case kind::outer_union:
+            default:
+                break;
+        }
+        context_.report(
+                sql_analyzer_code::unsupported_feature,
+                string_builder {}
+                    << "unsupported binary operator: "
+                    << expr.operator_kind()
+                    << string_builder::to_string,
+                expr.region());
+        return {};
+    }
+
+    [[nodiscard]] result_type process_union(
+            ast::query::binary_expression const& expr,
+            optional_ptr<query_scope const> const& parent,
+            row_value_context const& val) {
+        if (expr.corresponding()) {
+            context_.report(
+                    sql_analyzer_code::unsupported_feature,
+                    "CORRESPONDING clause is not yet supported",
+                    expr.region());
+            return {};
+        }
+        auto left = process(*expr.left(), parent, val);
+        if (!left) {
+            return {};
+        }
+        auto right = process(*expr.right(), parent, val);
+        if (!right) {
+            return {};
+        }
+
+        auto&& left_info = left.relation();
+        auto&& right_info = right.relation();
+
+        auto left_columns = extract_exported_columns(left_info.columns());
+        auto right_columns = extract_exported_columns(right_info.columns());
+        if (left_columns.size() != right_columns.size()) {
+            context_.report(
+                    sql_analyzer_code::inconsistent_columns,
+                    "column count mismatch",
+                    expr.operator_kind().region());
+            return {};
+        }
+
+        trelation::set_quantifier quantifier { trelation::set_quantifier::distinct };
+        if (expr.quantifier() == ast::query::set_quantifier::all) {
+            quantifier = trelation::set_quantifier::all;
+        }
+
+        relation_info output_info {};
+        output_info.reserve(left_info.columns().size());
+
+        std::vector<trelation::intermediate::union_::mapping> mappings {};
+        mappings.reserve(left_info.columns().size());
+        for (std::size_t index = 0, size = left_columns.size(); index < size; ++index) {
+            auto&& left_column = *left_columns[index];
+            auto&& right_column = *right_columns[index];
+            auto output_column = factory_.stream_variable(
+                    // FIXME: debug name
+            );
+            mappings.emplace_back(left_column.variable(), right_column.variable(), output_column);
+            output_info.add({
+                    {},
+                    std::move(output_column),
+                    left_column.identifier(), // NOTE: pick the column identifier from the left-most query
+            });
+        }
+        auto&& result = graph_.insert(context_.create<trelation::intermediate::union_>(
+                expr.operator_kind().region(),
+                quantifier,
+                std::move(mappings)));
+        result.left() << left.output();
+        result.right() << right.output();
+        if (!context_.resolve(result)) {
+            return {};
+        }
+        return { result.output(), std::move(output_info) };
+    }
+
+    [[nodiscard]] std::vector<column_info const*> extract_exported_columns(
+            ::takatori::util::sequence_view<column_info> columns) {
+        std::vector<column_info const*> results {};
+        results.reserve(columns.size());
+        for (auto&& c : columns) {
+            if (c.exported()) {
+                results.emplace_back(std::addressof(c));
+            }
+        }
+        return results;
+    }
+
     // FIXME: impl with_expression
 
     // table expressions

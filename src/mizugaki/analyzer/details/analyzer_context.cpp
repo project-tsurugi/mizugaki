@@ -113,6 +113,13 @@ void analyzer_context::resolve_as(
     expression_analyzer_.variables().bind(variable, std::move(resolution), true);
 }
 
+::yugawara::compiled_info analyzer_context::test_info() {
+    return {
+            expression_analyzer_.shared_expressions().ownership(),
+            expression_analyzer_.shared_variables().ownership(),
+    };
+}
+
 sql_analyzer_code analyzer_context::convert_code(
         ::yugawara::analyzer::expression_analyzer_code code) noexcept {
     using kind = decltype(code);

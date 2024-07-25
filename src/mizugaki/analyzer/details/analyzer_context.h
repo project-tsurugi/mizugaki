@@ -11,6 +11,8 @@
 
 #include <takatori/util/finalizer.h>
 
+#include <yugawara/compiled_info.h>
+
 #include <yugawara/analyzer/expression_analyzer.h>
 
 #include <yugawara/util/object_repository.h>
@@ -77,6 +79,8 @@ public:
     void resolve_as(
             ::takatori::descriptor::variable const& variable,
             ::yugawara::analyzer::variable_resolution resolution);
+
+    [[nodiscard]] ::yugawara::compiled_info test_info();
 
     void clear_expression_resolution();
 
