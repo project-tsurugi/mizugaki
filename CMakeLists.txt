@@ -17,7 +17,7 @@ option(FORCE_INSTALL_RPATH "automatically add library directory of custom prefix
 
 option(ENABLE_COVERAGE "enable coverage on debug build" OFF)
 
-option(ENABLE_SHAKUJO "whether to enable shakujo translator" ON)
+option(ENABLE_SHAKUJO "whether to enable shakujo translator" OFF)
 
 include(GNUInstallDirs)
 include(force_install_rpath)
