@@ -17,13 +17,15 @@ option(FORCE_INSTALL_RPATH "automatically add library directory of custom prefix
 
 option(ENABLE_COVERAGE "enable coverage on debug build" OFF)
 
+option(ENABLE_SHAKUJO "whether to enable shakujo translator" ON)
+
 include(GNUInstallDirs)
 include(force_install_rpath)
 
 find_package(takatori REQUIRED)
 find_package(yugawara REQUIRED)
 find_package(mpdecpp REQUIRED)
-find_package(shakujo REQUIRED)
+
 find_package(tsl-hopscotch-map 2.2 REQUIRED)
 find_package(FLEX REQUIRED)
 find_package(BISON 3.6 REQUIRED)
@@ -40,6 +42,10 @@ find_package(Boost 1.65
 
 find_package(Doxygen
     OPTIONAL_COMPONENTS dot)
+
+if (ENABLE_SHAKUJO)
+    find_package(shakujo REQUIRED)
+endif (ENABLE_SHAKUJO)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_EXTENSIONS OFF)
