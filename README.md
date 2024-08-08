@@ -33,7 +33,6 @@ optional packages:
 This requires below [tsurugidb](https://github.com/project-tsurugi/tsurugidb) modules to be installed.
 
 * [yugawara](https://github.com/project-tsurugi/yugawara)
-* [shakujo](https://github.com/project-tsurugi/shakujo) (transitive)
 
 #### `third_party/hopscotch-map`
 
