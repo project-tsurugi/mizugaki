@@ -7,12 +7,15 @@
 #include <takatori/type/primitive.h>
 #include <takatori/type/decimal.h>
 #include <takatori/type/character.h>
+#include <takatori/type/octet.h>
 #include <takatori/type/date.h>
 #include <takatori/type/time_of_day.h>
 #include <takatori/type/time_point.h>
 
 #include <takatori/value/primitive.h>
 #include <takatori/value/decimal.h>
+#include <takatori/value/character.h>
+#include <takatori/value/octet.h>
 #include <takatori/value/date.h>
 #include <takatori/value/time_of_day.h>
 #include <takatori/value/time_point.h>
@@ -23,7 +26,6 @@
 #include <takatori/util/string_builder.h>
 
 #include <mizugaki/ast/literal/dispatch.h>
-#include <takatori/value/character.h>
 
 namespace mizugaki::analyzer::details {
 
@@ -111,6 +113,7 @@ public:
         using ast::literal::kind;
         switch (value.node_kind()) {
             case kind::character_string: return process_character_string(value);
+            case kind::hex_string: return process_binary_string(value);
             default:
                 break;
         }
@@ -423,6 +426,101 @@ private:
                 context_.types().get(ttype::character {
                         ttype::varying,
                         size,
+                }));
+    }
+
+    [[nodiscard]] std::optional<std::size_t> count_hex_digits(ast::literal::string::value_type const& string) {
+        constexpr char quote = ast::literal::string::quote_character;
+        auto&& q = *string;
+        if (q.size() < 2 || q.front() != quote || q.back() != quote) {
+            context_.report(sql_analyzer_code::malformed_quoted_string,
+                    string_builder {}
+                            << "invalid quoted string \"" << q << "\""
+                            << string_builder::to_string,
+                    string.region());
+            return {};
+        }
+        std::size_t digits = 0;
+        for (auto iter = string.value().begin() + 1, end = string.value().end() - 1; iter != end; ++iter) {
+            auto c = *iter;
+            if (c == ' ') {
+                continue;
+            }
+            if (('0' <= c && c <= '9') || ('A' <= c && c <= 'F') || ('a' <= c && c <= 'f')) {
+                ++digits;
+                continue;
+            }
+            context_.report(sql_analyzer_code::malformed_quoted_string,
+                    string_builder {}
+                            << "unexpected character in hex string \"" << q << "\""
+                            << string_builder::to_string,
+                    string.region());
+            return {};
+        }
+        if ((digits % 2) != 0) {
+            context_.report(sql_analyzer_code::malformed_quoted_string,
+                    string_builder {}
+                            << "odd-digit hex string \"" << q << "\""
+                            << string_builder::to_string,
+                    string.region());
+            return {};
+        }
+        return digits / 2;
+    }
+
+    [[nodiscard]] bool append_quoted_hex_digits_unchecked(ast::literal::string::value_type const& string, std::string& destination) {
+        std::string_view input { *string };
+        input.remove_prefix(1);
+        input.remove_suffix(1);
+        auto result = tvalue::parse_octet(input, destination);
+        if (result) {
+            return true;
+        }
+        context_.report(sql_analyzer_code::malformed_quoted_string,
+                string_builder {}
+                        << "invalid hex string "
+                        << "(" << result.error() << "): "
+                        << *string
+                        << string_builder::to_string,
+                string.region());
+        return false;
+    }
+
+    [[nodiscard]] std::unique_ptr<tscalar::immediate> process_binary_string(ast::literal::string const& value) {
+        std::size_t nchars {};
+        if (auto n = count_hex_digits(value.value())) {
+            nchars += *n;
+        } else {
+            return {};
+        }
+        for (auto&& concat : value.concatenations()) {
+            if (auto n = count_hex_digits(concat)) {
+                nchars += *n;
+            } else {
+                return {};
+            }
+        }
+
+        std::string buffer {};
+        buffer.reserve(nchars);
+        if (!append_quoted_hex_digits_unchecked(value.value(), buffer)) {
+            return {};
+        }
+        for (auto&& v : value.concatenations()) {
+            if (!append_quoted_hex_digits_unchecked(v, buffer)) {
+                return {};
+            }
+        }
+        std::optional<std::size_t> size {};
+        if (context_.options()->prefer_small_binary_literals()) {
+            size = nchars;
+        }
+        return context_.create<tscalar::immediate>(
+                value.region(),
+                context_.values().get(tvalue::octet { std::move(buffer) }),
+                context_.types().get(ttype::octet {
+                        ttype::varying,
+                        nchars,
                 }));
     }
 

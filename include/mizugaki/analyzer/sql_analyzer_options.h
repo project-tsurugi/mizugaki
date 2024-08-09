@@ -96,6 +96,13 @@ public:
     static constexpr bool default_prefer_small_character_literals = false;
 
     /**
+     * @brief the default value of whether to match the data length of binary string types to literals,
+     *      or use `VARBINARY(*)`.
+     * @see prefer_small_integer_literals()
+     */
+    static constexpr bool default_prefer_small_binary_literals = false;
+
+    /**
      * @brief the default value of whether to match the precision of decimal types to literals, or use `DECIMAL(*)`.
      * @see prefer_small_integer_literals()
      */
@@ -378,6 +385,20 @@ public:
     }
 
     /**
+     * @brief returns whether or not to consider small binary string literals as smaller data types.
+     * @return true if prefer to smaller data types
+     * @return false otherwise
+     */
+    [[nodiscard]] bool& prefer_small_binary_literals() noexcept {
+        return prefer_small_binary_literals_;
+    }
+
+    /// @copydoc prefer_small_binary_literals()
+    [[nodiscard]] bool const& prefer_small_binary_literals() const noexcept {
+        return prefer_small_binary_literals_;
+    }
+
+    /**
      * @brief returns whether or not to consider small decimal literals as smaller data types.
      * @return true if prefer to smaller data types
      * @return false otherwise
@@ -480,6 +501,7 @@ private:
     bool prefer_write_statement_ { default_prefer_write_statement };
     bool prefer_small_integer_literals_ { default_prefer_small_integer_literals };
     bool prefer_small_character_literals_ { default_prefer_small_character_literals };
+    bool prefer_small_binary_literals_ { default_prefer_small_binary_literals };
     bool prefer_small_decimal_literals_ { default_prefer_small_decimal_literals };
     bool host_parameter_declaration_starts_with_colon_ { default_host_parameter_declaration_starts_with_colon };
     bool allow_context_independent_null_ { default_allow_context_independent_null };

@@ -5,6 +5,7 @@
 #include <takatori/value/primitive.h>
 #include <takatori/value/decimal.h>
 #include <takatori/value/character.h>
+#include <takatori/value/octet.h>
 #include <takatori/value/date.h>
 #include <takatori/value/time_of_day.h>
 #include <takatori/value/time_point.h>
@@ -12,6 +13,7 @@
 #include <takatori/type/primitive.h>
 #include <takatori/type/decimal.h>
 #include <takatori/type/character.h>
+#include <takatori/type/octet.h>
 #include <takatori/type/date.h>
 #include <takatori/type/time_of_day.h>
 #include <takatori/type/time_point.h>
@@ -668,6 +670,73 @@ TEST_F(analyze_literal_test, character_string_concat) {
             ttype::character { ttype::varying, 13 },
     }));
     expect_no_error();
+}
+
+TEST_F(analyze_literal_test, binary_string) {
+    options_.prefer_small_binary_literals() = true;
+    auto r = analyze_literal(
+            context(),
+            ast::literal::string {
+                    ast::literal::kind::hex_string,
+                    "'CAFE babe'",
+            });
+    ASSERT_TRUE(r);
+    EXPECT_EQ(*r, (tscalar::immediate {
+            tvalue::octet { "\xca\xfe\xba\xbe" },
+            ttype::octet { ttype::varying, 4 },
+    }));
+    expect_no_error();
+}
+
+TEST_F(analyze_literal_test, binary_string_empty) {
+    options_.prefer_small_binary_literals() = true;
+    auto r = analyze_literal(
+            context(),
+            ast::literal::string {
+                    ast::literal::kind::hex_string,
+                    "''",
+            });
+    ASSERT_TRUE(r);
+    EXPECT_EQ(*r, (tscalar::immediate {
+            tvalue::octet { "" },
+            ttype::octet { ttype::varying, 0 },
+    }));
+    expect_no_error();
+}
+
+TEST_F(analyze_literal_test, binary_string_concat) {
+    options_.prefer_small_binary_literals() = true;
+    auto r = analyze_literal(
+            context(),
+            ast::literal::string {
+                    ast::literal::kind::hex_string,
+                    "'CAFE babe'",
+                    "'dead'",
+                    "'beef'",
+            });
+    ASSERT_TRUE(r);
+    EXPECT_EQ(*r, (tscalar::immediate {
+            tvalue::octet { "\xca\xfe\xba\xbe\xde\xad\xbe\xef" },
+            ttype::octet { ttype::varying, 8 },
+    }));
+    expect_no_error();
+}
+
+TEST_F(analyze_literal_test, binary_string_unexpected_character) {
+    invalid(sql_analyzer_code::malformed_quoted_string,
+            ast::literal::string {
+                    ast::literal::kind::hex_string,
+                    "'X'",
+            });
+}
+
+TEST_F(analyze_literal_test, binary_string_odd_digits) {
+    invalid(sql_analyzer_code::malformed_quoted_string,
+            ast::literal::string {
+                    ast::literal::kind::hex_string,
+                    "'CAF'",
+                    "'E'",
+            });
 }
 
 TEST_F(analyze_literal_test, date) {
