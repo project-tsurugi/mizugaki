@@ -615,14 +615,16 @@ private:
         auto&& info = result.value();
         return context_.create<tscalar::immediate>(
                 value.region(),
-                context_.values().get(tvalue::time_point { convert(info) }),
+                context_.values().get(tvalue::time_point { convert(info, with_tz) }),
                 context_.types().get(ttype::time_point { ttype::with_time_zone_t { with_tz } }));
     }
 
-    ::takatori::datetime::time_point convert(::takatori::datetime::datetime_info const& info) {
+    ::takatori::datetime::time_point convert(::takatori::datetime::datetime_info const& info, bool with_tz) {
         ::takatori::datetime::time_point ts { convert(info.date), convert(info.time) };
-        auto tz = convert(info.offset);
-        ts -= tz;
+        if (with_tz) {
+            auto tz = convert(info.offset);
+            ts -= tz;
+        }
         return ts;
     }
 
