@@ -855,6 +855,22 @@ TEST_F(analyze_literal_test, timestamp_with_time_zone_default) {
     expect_no_error();
 }
 
+TEST_F(analyze_literal_test, timestamp_without_time_zone_default) {
+    options_.system_zone_offset() = sql_analyzer_options::zone_offset_type { -9 * 60 };
+    auto r = analyze_literal(
+            context(),
+            ast::literal::datetime {
+                    ast::literal::kind::timestamp,
+                    "'1970-1-1 00:00:00'",
+            });
+    ASSERT_TRUE(r) << diagnostics();
+    EXPECT_EQ(*r, (tscalar::immediate {
+            tvalue::time_point { 1970, 1, 1, 0, 0, 0 },
+            ttype::time_point {},
+    }));
+    expect_no_error();
+}
+
 TEST_F(analyze_literal_test, timestamp_with_time_zone_invalid) {
     invalid(sql_analyzer_code::unsupported_string_value, ast::literal::datetime {
             ast::literal::kind::timestamp_with_time_zone,
