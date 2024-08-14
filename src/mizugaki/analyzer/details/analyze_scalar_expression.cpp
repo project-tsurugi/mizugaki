@@ -22,6 +22,7 @@
 
 #include <mizugaki/ast/scalar/dispatch.h>
 #include <mizugaki/ast/literal/boolean.h>
+#include <mizugaki/ast/query/table_value_constructor.h>
 
 #include <mizugaki/analyzer/details/analyze_literal.h>
 #include <mizugaki/analyzer/details/analyze_name.h>
@@ -498,7 +499,89 @@ public:
         return result;
     }
 
-    // FIXME: impl in_predicate,
+    [[nodiscard]] std::unique_ptr<tscalar::expression> operator()(
+            ast::scalar::in_predicate const& expr,
+            value_context const&) {
+        if (expr.right()->node_kind() == ast::query::table_value_constructor::tag) {
+            return process_in_values(
+                    expr,
+                    unsafe_downcast<ast::query::table_value_constructor>(*expr.right()),
+                    {});
+        }
+        // FIXME: impl table subquery
+        context_.report(
+                sql_analyzer_code::unsupported_feature,
+                "IN predicate with generic queries is yet not supported",
+                expr.region());
+        return {};
+    }
+
+    [[nodiscard]] std::unique_ptr<tscalar::expression> process_in_values(
+            ast::scalar::in_predicate const& expr,
+            ast::query::table_value_constructor const& values,
+            value_context const&) {
+        if (values.elements().empty()) {
+            context_.report(
+                    sql_analyzer_code::malformed_syntax,
+                    "IN predicate with values must not be empty",
+                    values.region());
+            return {};
+        }
+
+        auto left = process(*expr.left(), {});
+        if (!left) {
+            return {};
+        }
+
+        std::vector<std::unique_ptr<tscalar::expression>> elements {};
+        elements.reserve(values.elements().size());
+        for (auto&& element : values.elements()) {
+            auto resolved = process(*element, {});
+            if (!resolved) {
+                return {};
+            }
+            elements.emplace_back(resolved.release());
+        }
+
+        auto v_target = factory_.stream_variable();
+        v_target.region() = context_.convert(expr.left()->region());
+        std::vector<tscalar::let::variable> variables {};
+        variables.reserve(1);
+        variables.emplace_back(v_target, left.release());
+
+        std::unique_ptr<tscalar::expression> body {};
+        for (auto&& element : elements) {
+            auto cmp = context_.create<tscalar::compare>(
+                    element->region(),
+                    tscalar::comparison_operator::equal,
+                    context_.create<tscalar::variable_reference>(v_target.region(), v_target),
+                    std::move(element));
+            if (!body) {
+                body = std::move(cmp);
+            } else {
+                auto region = cmp->region();
+                body = std::make_unique<tscalar::binary>(
+                        tscalar::binary_operator::conditional_or,
+                        std::move(body),
+                        std::move(cmp));
+                body->region() = region;
+            }
+        }
+        std::unique_ptr<tscalar::expression> result {
+                context_.create<tscalar::let>(
+                        expr.region(),
+                        std::move(variables),
+                        std::move(body)),
+        };
+        if (*expr.is_not()) {
+            result = context_.create<tscalar::unary>(
+                    expr.is_not().region(),
+                    tscalar::unary_operator::conditional_not,
+                    std::move(result));
+        }
+        return result;
+    }
+
     // FIXME: impl pattern_match_predicate,
     // FIXME: impl table_predicate,
     // FIXME: impl <match predicate>

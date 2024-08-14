@@ -22,7 +22,11 @@
 #include <mizugaki/ast/scalar/cast_expression.h>
 #include <mizugaki/ast/scalar/comparison_predicate.h>
 #include <mizugaki/ast/scalar/host_parameter_reference.h>
+#include <mizugaki/ast/scalar/in_predicate.h>
 #include <mizugaki/ast/scalar/unary_expression.h>
+
+#include <mizugaki/ast/query/table_value_constructor.h>
+#include <mizugaki/ast/query/table_reference.h>
 
 #include "test_parent.h"
 
@@ -846,6 +850,141 @@ TEST_F(analyze_scalar_expression_test, between_predicate_symmetric) {
                     },
             },
     }));
+}
+
+TEST_F(analyze_scalar_expression_test, in_predicate_values) {
+    auto r = analyze_scalar_expression(
+            context(),
+            ast::scalar::in_predicate {
+                    literal(number("1")),
+                    ast::query::table_value_constructor {
+                            literal(number("2")),
+                    }
+            },
+            {},
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
+    auto vs = collect_let_variables(*r);
+    ASSERT_EQ(vs.size(), 1);
+    EXPECT_EQ(*r, (tscalar::let {
+            tscalar::let::variable { vs[0], immediate(1) },
+            tscalar::compare {
+                    tscalar::comparison_operator::equal,
+                    vref(vs[0]),
+                    immediate(2),
+            },
+    }));
+}
+
+TEST_F(analyze_scalar_expression_test, in_predicate_values_multiple) {
+    auto r = analyze_scalar_expression(
+            context(),
+            ast::scalar::in_predicate {
+                    literal(number("1")),
+                    ast::query::table_value_constructor {
+                            literal(number("2")),
+                            literal(number("3")),
+                            literal(number("4")),
+                    }
+            },
+            {},
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
+    auto vs = collect_let_variables(*r);
+    ASSERT_EQ(vs.size(), 1);
+    EXPECT_EQ(*r, (tscalar::let {
+            tscalar::let::variable { vs[0], immediate(1) },
+            tscalar::binary {
+                    tscalar::binary_operator::conditional_or,
+                    tscalar::binary {
+                            tscalar::binary_operator::conditional_or,
+                            tscalar::compare {
+                                    tscalar::comparison_operator::equal,
+                                    vref(vs[0]),
+                                    immediate(2),
+                            },
+                            tscalar::compare {
+                                    tscalar::comparison_operator::equal,
+                                    vref(vs[0]),
+                                    immediate(3),
+                            },
+                    },
+                    tscalar::compare {
+                            tscalar::comparison_operator::equal,
+                            vref(vs[0]),
+                            immediate(4),
+                    },
+            },
+    }));
+}
+
+TEST_F(analyze_scalar_expression_test, in_predicate_values_empty) {
+    invalid(sql_analyzer_code::malformed_syntax, ast::scalar::in_predicate {
+            literal(number("1")),
+            ast::query::table_value_constructor {}
+    });
+}
+
+TEST_F(analyze_scalar_expression_test, in_predicate_values_not) {
+    auto r = analyze_scalar_expression(
+            context(),
+            ast::scalar::in_predicate {
+                    literal(number("1")),
+                    ast::query::table_value_constructor {
+                            literal(number("2")),
+                            literal(number("3")),
+                            literal(number("4")),
+                    },
+                    true,
+            },
+            {},
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
+    auto vs = collect_let_variables(*r);
+    ASSERT_EQ(vs.size(), 1);
+    EXPECT_EQ(*r, (tscalar::unary {
+            tscalar::unary_operator::conditional_not,
+            tscalar::let {
+                    tscalar::let::variable { vs[0], immediate(1) },
+                    tscalar::binary {
+                            tscalar::binary_operator::conditional_or,
+                            tscalar::binary {
+                                    tscalar::binary_operator::conditional_or,
+                                    tscalar::compare {
+                                            tscalar::comparison_operator::equal,
+                                            vref(vs[0]),
+                                            immediate(2),
+                                    },
+                                    tscalar::compare {
+                                            tscalar::comparison_operator::equal,
+                                            vref(vs[0]),
+                                            immediate(3),
+                                    },
+                            },
+                            tscalar::compare {
+                                    tscalar::comparison_operator::equal,
+                                    vref(vs[0]),
+                                    immediate(4),
+                            },
+                    },
+            }
+    }));
+}
+
+TEST_F(analyze_scalar_expression_test, in_predicate_query) {
+    install_table("t");
+    invalid(sql_analyzer_code::unsupported_feature, ast::scalar::in_predicate {
+            literal(number("1")),
+            ast::query::table_reference {
+                    id("t"),
+            },
+    });
 }
 
 } // namespace mizugaki::analyzer::details
