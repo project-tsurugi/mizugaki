@@ -8,6 +8,7 @@
 #include <takatori/scalar/binary.h>
 #include <takatori/scalar/cast.h>
 #include <takatori/scalar/compare.h>
+#include <takatori/scalar/let.h>
 #include <takatori/scalar/unary.h>
 
 #include <mizugaki/ast/type/simple.h>
@@ -16,6 +17,7 @@
 #include <mizugaki/ast/literal/boolean.h>
 #include <mizugaki/ast/literal/special.h>
 
+#include <mizugaki/ast/scalar/between_predicate.h>
 #include <mizugaki/ast/scalar/binary_expression.h>
 #include <mizugaki/ast/scalar/cast_expression.h>
 #include <mizugaki/ast/scalar/comparison_predicate.h>
@@ -51,6 +53,25 @@ protected:
 
     ast::type::character_string erroneous_type() {
         return ast::type::character_string { ast::type::kind::character_varying, 0 };
+    }
+
+    std::vector<::takatori::descriptor::variable> collect_let_variables(tscalar::expression const& expr) {
+        if (expr.kind() == tscalar::unary::tag) {
+            auto&& e = downcast<tscalar::unary>(expr);
+            if (e.operator_kind() == tscalar::unary_operator::conditional_not) {
+                return collect_let_variables(e.operand());
+            }
+        }
+        if (expr.kind() != tscalar::let::tag) {
+            return {};
+        }
+        auto&& let = downcast<tscalar::let>(expr);
+        std::vector<::takatori::descriptor::variable> variables {};
+        variables.reserve(let.variables().size());
+        for (auto&& v : let.variables()) {
+            variables.push_back(v.variable());
+        }
+        return variables;
     }
 };
 
@@ -699,6 +720,132 @@ TEST_F(analyze_scalar_expression_test, comparison_predicate_invalid_right) {
             ast::scalar::comparison_operator::equals,
             erroneous_expression(),
     });
+}
+
+TEST_F(analyze_scalar_expression_test, between_predicate) {
+    auto r = analyze_scalar_expression(
+            context(),
+            ast::scalar::between_predicate {
+                    literal(number("1")),
+                    literal(number("2")),
+                    literal(number("3")),
+            },
+            {},
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
+    auto vs = collect_let_variables(*r);
+    ASSERT_EQ(vs.size(), 1);
+    EXPECT_EQ(*r, (tscalar::let {
+        tscalar::let::variable { vs[0], immediate(1) },
+        tscalar::binary {
+                tscalar::binary_operator::conditional_and,
+                tscalar::compare {
+                        tscalar::comparison_operator::less_equal,
+                        immediate(2),
+                        vref(vs[0]),
+                },
+                tscalar::compare {
+                        tscalar::comparison_operator::less_equal,
+                        vref(vs[0]),
+                        immediate(3),
+                },
+        },
+    }));
+}
+
+TEST_F(analyze_scalar_expression_test, between_predicate_not) {
+    auto r = analyze_scalar_expression(
+            context(),
+            ast::scalar::between_predicate {
+                    literal(number("1")),
+                    literal(number("2")),
+                    literal(number("3")),
+                    true,
+                    ast::scalar::between_operator::asymmetric,
+            },
+            {},
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
+    auto vs = collect_let_variables(*r);
+    ASSERT_EQ(vs.size(), 1);
+    EXPECT_EQ(*r, (tscalar::unary {
+            tscalar::unary_operator::conditional_not,
+            tscalar::let {
+                tscalar::let::variable { vs[0], immediate(1) },
+                        tscalar::binary {
+                                tscalar::binary_operator::conditional_and,
+                                tscalar::compare {
+                                        tscalar::comparison_operator::less_equal,
+                                        immediate(2),
+                                        vref(vs[0]),
+                                },
+                                tscalar::compare {
+                                        tscalar::comparison_operator::less_equal,
+                                        vref(vs[0]),
+                                        immediate(3),
+                                },
+                        },
+            },
+    }));
+}
+
+TEST_F(analyze_scalar_expression_test, between_predicate_symmetric) {
+    auto r = analyze_scalar_expression(
+            context(),
+            ast::scalar::between_predicate {
+                    literal(number("1")),
+                    literal(number("2")),
+                    literal(number("3")),
+                    false,
+                    ast::scalar::between_operator::symmetric,
+            },
+            {},
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
+    auto vs = collect_let_variables(*r);
+    ASSERT_EQ(vs.size(), 3);
+    EXPECT_EQ(*r, (tscalar::let {
+            {
+                    tscalar::let::variable { vs[0], immediate(1) },
+                    tscalar::let::variable { vs[1], immediate(2) },
+                    tscalar::let::variable { vs[2], immediate(3) },
+            },
+            tscalar::binary {
+                    tscalar::binary_operator::conditional_or,
+                    tscalar::binary {
+                            tscalar::binary_operator::conditional_and,
+                            tscalar::compare {
+                                    tscalar::comparison_operator::less_equal,
+                                    vref(vs[1]),
+                                    vref(vs[0]),
+                            },
+                            tscalar::compare {
+                                    tscalar::comparison_operator::less_equal,
+                                    vref(vs[0]),
+                                    vref(vs[2]),
+                            },
+                    },
+                    tscalar::binary {
+                            tscalar::binary_operator::conditional_and,
+                            tscalar::compare {
+                                    tscalar::comparison_operator::less_equal,
+                                    vref(vs[2]),
+                                    vref(vs[0]),
+                            },
+                            tscalar::compare {
+                                    tscalar::comparison_operator::less_equal,
+                                    vref(vs[0]),
+                                    vref(vs[1]),
+                            },
+                    },
+            },
+    }));
 }
 
 } // namespace mizugaki::analyzer::details

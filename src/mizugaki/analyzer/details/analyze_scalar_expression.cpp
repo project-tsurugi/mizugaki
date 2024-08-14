@@ -9,6 +9,7 @@
 #include <takatori/scalar/binary.h>
 #include <takatori/scalar/compare.h>
 #include <takatori/scalar/variable_reference.h>
+#include <takatori/scalar/let.h>
 #include <takatori/scalar/function_call.h>
 
 #include <takatori/util/string_builder.h>
@@ -401,7 +402,102 @@ public:
     }
 
     // FIXME: impl quantified_comparison_predicate,
-    // FIXME: impl between_predicate,
+
+    [[nodiscard]] std::unique_ptr<tscalar::expression> operator()(
+            ast::scalar::between_predicate const& expr,
+            value_context const&) {
+        auto target = process(*expr.target(), {});
+        if (!target) {
+            return {};
+        }
+        auto left = process(*expr.left(), {});
+        if (!left) {
+            return {};
+        }
+        auto right = process(*expr.right(), {});
+        if (!right) {
+            return {};
+        }
+
+        std::unique_ptr<tscalar::expression> result {};
+        if (expr.operator_kind() == ast::scalar::between_operator::symmetric) {
+            auto v_target = factory_.stream_variable();
+            auto v_left = factory_.stream_variable();
+            auto v_right = factory_.stream_variable();
+
+            std::vector<tscalar::let::variable> variables {};
+            variables.reserve(3);
+            variables.emplace_back(v_target, target.release());
+            variables.emplace_back(v_left, left.release());
+            variables.emplace_back(v_right, right.release());
+
+            auto forward = context_.create<tscalar::binary>(
+                    expr.region(),
+                    tscalar::binary_operator::conditional_and,
+                    context_.create<tscalar::compare>(
+                            expr.region(),
+                            tscalar::comparison_operator::less_equal,
+                            context_.create<tscalar::variable_reference>(expr.left()->region(), v_left),
+                            context_.create<tscalar::variable_reference>(expr.target()->region(), v_target)),
+                    context_.create<tscalar::compare>(
+                            expr.region(),
+                            tscalar::comparison_operator::less_equal,
+                            context_.create<tscalar::variable_reference>(expr.target()->region(), v_target),
+                            context_.create<tscalar::variable_reference>(expr.right()->region(), v_right)));
+            auto backward = context_.create<tscalar::binary>(
+                    expr.region(),
+                    tscalar::binary_operator::conditional_and,
+                    context_.create<tscalar::compare>(
+                            expr.region(),
+                            tscalar::comparison_operator::less_equal,
+                            context_.create<tscalar::variable_reference>(expr.right()->region(), v_right),
+                            context_.create<tscalar::variable_reference>(expr.target()->region(), v_target)),
+                    context_.create<tscalar::compare>(
+                            expr.region(),
+                            tscalar::comparison_operator::less_equal,
+                            context_.create<tscalar::variable_reference>(expr.target()->region(), v_target),
+                            context_.create<tscalar::variable_reference>(expr.left()->region(), v_left)));
+            auto body = context_.create<tscalar::binary>(
+                    expr.operator_kind()->region(),
+                    tscalar::binary_operator::conditional_or,
+                    std::move(forward),
+                    std::move(backward));
+            result = context_.create<tscalar::let>(
+                    expr.region(),
+                    std::move(variables),
+                    std::move(body));
+        } else {
+            auto v_target = factory_.stream_variable();
+            std::vector<tscalar::let::variable> variables {};
+            variables.reserve(1);
+            variables.emplace_back(v_target, target.release());
+
+            result = context_.create<tscalar::let>(
+                    expr.region(),
+                    std::move(variables),
+                    context_.create<tscalar::binary>(
+                            expr.region(),
+                            tscalar::binary_operator::conditional_and,
+                            context_.create<tscalar::compare>(
+                                    expr.region(),
+                                    tscalar::comparison_operator::less_equal,
+                                    left.release(),
+                                    context_.create<tscalar::variable_reference>(expr.target()->region(), v_target)),
+                            context_.create<tscalar::compare>(
+                                    expr.region(),
+                                    tscalar::comparison_operator::less_equal,
+                                    context_.create<tscalar::variable_reference>(expr.target()->region(), v_target),
+                                    right.release())));
+        }
+        if (*expr.is_not()) {
+            result = context_.create<tscalar::unary>(
+                    expr.is_not().region(),
+                    tscalar::unary_operator::conditional_not,
+                    std::move(result));
+        }
+        return result;
+    }
+
     // FIXME: impl in_predicate,
     // FIXME: impl pattern_match_predicate,
     // FIXME: impl table_predicate,
