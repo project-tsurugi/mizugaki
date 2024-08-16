@@ -78,8 +78,8 @@ bool operator!=(case_when_clause const& a, case_when_clause const& b) noexcept {
     using namespace common::serializers;
     using namespace std::string_view_literals;
     auto obj = struct_block(acceptor);
-    property(acceptor, "result"sv, *value.result_);
     property(acceptor, "when"sv, *value.when_);
+    property(acceptor, "result"sv, *value.result_);
     region_property(acceptor, value);
     return acceptor;
 }
