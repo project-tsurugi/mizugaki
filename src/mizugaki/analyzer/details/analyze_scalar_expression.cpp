@@ -4,6 +4,9 @@
 
 #include <takatori/type/boolean.h>
 
+#include <takatori/value/unknown.h>
+
+#include <takatori/scalar/immediate.h>
 #include <takatori/scalar/cast.h>
 #include <takatori/scalar/unary.h>
 #include <takatori/scalar/binary.h>
@@ -669,11 +672,11 @@ public:
 
     [[nodiscard]] std::unique_ptr<tscalar::expression> operator()(
             ast::scalar::builtin_function_invocation const& expr,
-            value_context const&) {
+            value_context const& context) {
         using kind = ast::scalar::builtin_function_kind;
         switch (*expr.function()) {
             case kind::nullif:
-                // FIXME: impl nullif (built-in function)
+                return process_nullif(expr, context);
             case kind::coalesce:
                 // FIXME: impl coalesce (built-in function)
             case kind::next_value_for:
@@ -747,6 +750,64 @@ public:
                 expr.region(),
                 factory_(std::move(target)),
                 std::move(arguments));
+
+        return result;
+    }
+
+    [[nodiscard]] std::unique_ptr<tscalar::expression> process_nullif(
+            ast::scalar::builtin_function_invocation const& expr,
+            value_context const&) {
+        if (expr.arguments().size() != 2) {
+            context_.report(
+                    sql_analyzer_code::malformed_syntax,
+                    "NULLIF must have two operands",
+                    expr.region());
+            return {};
+        }
+        auto left = process(*expr.arguments()[0], {});
+        if (!left) {
+            return {};
+        }
+        auto right = process(*expr.arguments()[1], {});
+        if (!right) {
+            return {};
+        }
+        auto type = context_.resolve(*left);
+        if (!type) {
+            return {};
+        }
+
+        auto v_left = context_.stream_variable(*expr.arguments()[0]);
+        std::vector<tscalar::let::variable> variables {};
+        variables.reserve(1);
+        variables.emplace_back(v_left, left.release());
+
+        std::vector<tscalar::conditional::alternative> alternatives {};
+        alternatives.reserve(1);
+        alternatives.emplace_back(
+                context_.create<tscalar::compare>(
+                        expr.arguments()[1]->region(),
+                        tscalar::comparison_operator::equal,
+                        context_.create<tscalar::variable_reference>(
+                                v_left.region(),
+                                v_left),
+                        right.release()),
+                context_.create<tscalar::immediate>(
+                        expr.function().region(),
+                        context_.values().get(::takatori::value::unknown {}),
+                        std::move(type)));
+
+        auto body = context_.create<tscalar::conditional>(
+                expr.region(),
+                std::move(alternatives),
+                context_.create<tscalar::variable_reference>(
+                        v_left.region(),
+                        std::move(v_left)));
+
+        auto result = context_.create<tscalar::let>(
+                expr.region(),
+                std::move(variables),
+                std::move(body));
 
         return result;
     }

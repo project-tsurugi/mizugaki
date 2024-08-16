@@ -11,6 +11,7 @@
 #include <takatori/scalar/unary.h>
 
 #include <mizugaki/ast/scalar/binary_expression.h>
+#include <mizugaki/ast/scalar/builtin_function_invocation.h>
 #include <mizugaki/ast/scalar/comparison_predicate.h>
 #include <mizugaki/ast/scalar/case_expression.h>
 
@@ -34,7 +35,7 @@ protected:
 
     void invalid(sql_analyzer_code code, ast::scalar::expression const& expression) {
         invalid(expression);
-        EXPECT_TRUE(find_error(code));
+        EXPECT_TRUE(find_error(code)) << diagnostics();
     }
 
     std::vector<::takatori::descriptor::variable> collect_let_variables(tscalar::expression const& expr) {
@@ -340,6 +341,54 @@ TEST_F(analyze_scalar_expression_case_test, case_simple_empty) {
     invalid(sql_analyzer_code::malformed_syntax, ast::scalar::case_expression {
             literal(number("1")),
             std::initializer_list<ast::scalar::case_when_clause> {},
+    });
+}
+
+TEST_F(analyze_scalar_expression_case_test, nullif) {
+    auto r = analyze_scalar_expression(
+            context(),
+            ast::scalar::builtin_function_invocation {
+                    ast::scalar::builtin_function_kind::nullif,
+                    {
+                            literal(number("1")),
+                            literal(number("2")),
+                    },
+            },
+            {},
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
+    auto vars = collect_let_variables(*r);
+    ASSERT_EQ(vars.size(), 1);
+
+    EXPECT_EQ(*r, (tscalar::let {
+            tscalar::let::variable { vars[0], immediate(1) },
+            tscalar::conditional {
+                    {
+                            tscalar::conditional::alternative {
+                                    tscalar::compare {
+                                            tscalar::comparison_operator::equal,
+                                            vref(vars[0]),
+                                            immediate(2),
+                                    },
+                                    tscalar::immediate {
+                                            tvalue::unknown {},
+                                            ttype::int8 {},
+                                    },
+                            },
+                    },
+                    vref(vars[0]),
+            },
+    }));
+}
+
+TEST_F(analyze_scalar_expression_case_test, nullif_invalid) {
+    invalid(sql_analyzer_code::malformed_syntax, ast::scalar::builtin_function_invocation {
+            ast::scalar::builtin_function_kind::nullif,
+            {
+                    literal(number("1")),
+            },
     });
 }
 
