@@ -2,6 +2,8 @@
 
 #include <takatori/util/exception.h>
 
+#include <yugawara/binding/factory.h>
+
 namespace mizugaki::analyzer::details {
 
 using ::takatori::util::finalizer;
@@ -157,6 +159,10 @@ void analyzer_context::report(
         diagnostic_type::message_type message,
         ast::node_region region) {
     diagnostics_.emplace_back(code, std::move(message), convert(region));
+}
+
+::takatori::descriptor::variable analyzer_context::stream_variable(ast::scalar::expression const& expression) const {
+    return bless(::yugawara::binding::factory {}.stream_variable(), expression.region());
 }
 
 } // namespace mizugaki::analyzer::details

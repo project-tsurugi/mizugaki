@@ -8,6 +8,8 @@
 #include <takatori/scalar/unary.h>
 #include <takatori/scalar/binary.h>
 #include <takatori/scalar/compare.h>
+#include <takatori/scalar/conditional.h>
+#include <takatori/scalar/coalesce.h>
 #include <takatori/scalar/variable_reference.h>
 #include <takatori/scalar/let.h>
 #include <takatori/scalar/function_call.h>
@@ -129,7 +131,85 @@ public:
     }
 
     // FIXME: impl field reference
-    // FIXME: impl case expression
+
+    [[nodiscard]] std::unique_ptr<tscalar::expression> operator()(
+            ast::scalar::case_expression const& expr,
+            value_context const& context) {
+        if (expr.when_clauses().empty()) {
+            context_.report(
+                    sql_analyzer_code::malformed_syntax,
+                    "when clause list must not empty",
+                    expr.region());
+            return {};
+        }
+
+        std::optional<tscalar::let::variable> variable {};
+        if (expr.operand()) {
+            auto r = process(*expr.operand(), {});
+            if (!r) {
+                return {};
+            }
+            auto v = context_.stream_variable(*expr.operand());
+            variable.emplace(std::move(v), r.release());
+        }
+
+        std::vector<tscalar::conditional::alternative> alternatives {};
+        alternatives.reserve(expr.when_clauses().size());
+        for (auto&& alternative : expr.when_clauses()) {
+            auto r_when = process(*alternative.when(), {});
+            if (!r_when) {
+                return {};
+            }
+            auto r_then = process(*alternative.result(), context);
+            if (!r_then) {
+                return {};
+            }
+            std::unique_ptr<tscalar::expression> condition {};
+            if (variable) {
+                // simple case -> operand = when
+                condition = context_.create<tscalar::compare>(
+                        alternative.when()->region(),
+                        tscalar::comparison_operator::equal,
+                        context_.create<tscalar::variable_reference>(
+                                variable->value().region(),
+                                variable->variable()),
+                        r_when.release());
+            } else {
+                // searched case -> just when
+                condition = r_when.release();
+            }
+            alternatives.emplace_back(std::move(condition), r_then.release());
+        }
+
+        std::unique_ptr<tscalar::expression> default_expr {};
+        if (expr.default_result()) {
+            auto r = process(*expr.default_result(), context);
+            if (!r) {
+                return {};
+            }
+            default_expr = r.release();
+        }
+
+        auto body = context_.create<tscalar::conditional>(
+                expr.region(),
+                std::move(alternatives),
+                std::move(default_expr));
+
+        std::unique_ptr<tscalar::expression> result {};
+        if (variable) {
+            std::vector<tscalar::let::variable> variables {};
+            variables.reserve(1);
+            variables.emplace_back(std::move(*variable));
+            result = context_.create<tscalar::let>(
+                    expr.region(),
+                    std::move(variables),
+                    std::move(body));
+        } else {
+            result = std::move(body);
+        }
+        return result;
+    }
+
 
     [[nodiscard]] std::unique_ptr<tscalar::expression> operator()(
             ast::scalar::cast_expression const& expr,
@@ -422,9 +502,9 @@ public:
 
         std::unique_ptr<tscalar::expression> result {};
         if (expr.operator_kind() == ast::scalar::between_operator::symmetric) {
-            auto v_target = factory_.stream_variable();
-            auto v_left = factory_.stream_variable();
-            auto v_right = factory_.stream_variable();
+            auto v_target = context_.stream_variable(*expr.target());
+            auto v_left = context_.stream_variable(*expr.left());
+            auto v_right = context_.stream_variable(*expr.right());
 
             std::vector<tscalar::let::variable> variables {};
             variables.reserve(3);
@@ -468,7 +548,7 @@ public:
                     std::move(variables),
                     std::move(body));
         } else {
-            auto v_target = factory_.stream_variable();
+            auto v_target = context_.stream_variable(*expr.target());
             std::vector<tscalar::let::variable> variables {};
             variables.reserve(1);
             variables.emplace_back(v_target, target.release());
@@ -543,8 +623,7 @@ public:
             elements.emplace_back(resolved.release());
         }
 
-        auto v_target = factory_.stream_variable();
-        v_target.region() = context_.convert(expr.left()->region());
+        auto v_target = context_.stream_variable(*expr.left());
         std::vector<tscalar::let::variable> variables {};
         variables.reserve(1);
         variables.emplace_back(v_target, left.release());

@@ -17,6 +17,8 @@
 
 #include <yugawara/util/object_repository.h>
 
+#include <mizugaki/ast/scalar/expression.h>
+
 #include <mizugaki/analyzer/sql_analyzer.h>
 
 namespace mizugaki::analyzer::details {
@@ -115,6 +117,8 @@ public:
     [[nodiscard]] std::unique_ptr<T> create(ast::node_region region, Args&&... args) const {
         return create<T>(convert(region), std::forward<Args>(args)...);
     }
+
+    [[nodiscard]] ::takatori::descriptor::variable stream_variable(ast::scalar::expression const& expression) const;
 
 private:
     std::atomic<bool> initialized_ { false };
