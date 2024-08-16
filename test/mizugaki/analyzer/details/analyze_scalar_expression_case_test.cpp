@@ -5,6 +5,7 @@
 #include <takatori/type/primitive.h>
 
 #include <takatori/scalar/binary.h>
+#include <takatori/scalar/coalesce.h>
 #include <takatori/scalar/compare.h>
 #include <takatori/scalar/conditional.h>
 #include <takatori/scalar/let.h>
@@ -389,6 +390,59 @@ TEST_F(analyze_scalar_expression_case_test, nullif_invalid) {
             {
                     literal(number("1")),
             },
+    });
+}
+
+TEST_F(analyze_scalar_expression_case_test, coalesce) {
+    auto r = analyze_scalar_expression(
+            context(),
+            ast::scalar::builtin_function_invocation {
+                    ast::scalar::builtin_function_kind::coalesce,
+                    {
+                            literal(number("1")),
+                    },
+            },
+            {},
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
+    EXPECT_EQ(*r, (tscalar::coalesce {
+            {
+                    immediate(1),
+            },
+    }));
+}
+
+TEST_F(analyze_scalar_expression_case_test, coalesce_multiple) {
+    auto r = analyze_scalar_expression(
+            context(),
+            ast::scalar::builtin_function_invocation {
+                    ast::scalar::builtin_function_kind::coalesce,
+                    {
+                            literal(number("1")),
+                            literal(number("2")),
+                            literal(number("3")),
+                    },
+            },
+            {},
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
+    EXPECT_EQ(*r, (tscalar::coalesce {
+            {
+                    immediate(1),
+                    immediate(2),
+                    immediate(3),
+            },
+    }));
+}
+
+TEST_F(analyze_scalar_expression_case_test, coalesce_invalid) {
+    invalid(sql_analyzer_code::malformed_syntax, ast::scalar::builtin_function_invocation {
+            ast::scalar::builtin_function_kind::coalesce,
+            {},
     });
 }
 

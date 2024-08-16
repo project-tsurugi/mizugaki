@@ -678,7 +678,7 @@ public:
             case kind::nullif:
                 return process_nullif(expr, context);
             case kind::coalesce:
-                // FIXME: impl coalesce (built-in function)
+                return process_coalesce(expr, context);
             case kind::next_value_for:
                 // FIXME: impl next_value_for (built-in function)
 
@@ -808,6 +808,33 @@ public:
                 expr.region(),
                 std::move(variables),
                 std::move(body));
+
+        return result;
+    }
+
+    [[nodiscard]] std::unique_ptr<tscalar::expression> process_coalesce(
+            ast::scalar::builtin_function_invocation const& expr,
+            value_context const&) {
+        if (expr.arguments().empty()) {
+            context_.report(
+                    sql_analyzer_code::malformed_syntax,
+                    "COALESCE must have one or more operands",
+                    expr.region());
+            return {};
+        }
+
+        ::takatori::util::reference_vector<tscalar::expression> operands {};
+        operands.reserve(expr.arguments().size());
+        for (auto&& argument : expr.arguments()) {
+            auto r = process(*argument, {});
+            if (!r) {
+                return {};
+            }
+            operands.push_back(r.release());
+        }
+        auto result = context_.create<tscalar::coalesce>(
+                expr.region(),
+                std::move(operands));
 
         return result;
     }
