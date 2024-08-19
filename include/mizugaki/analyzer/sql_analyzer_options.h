@@ -145,6 +145,37 @@ public:
     static constexpr std::string_view default_advance_sequence_function_name { "nextval" };
 
     /**
+     * @brief the default value of maximum number of columns in table definition.
+     * @see max_max_table_columns()
+     */
+    static constexpr size_type default_max_table_columns = 1'000;
+
+    /**
+     * @brief the default value of maximum number of columns in the select list.
+     * @see max_select_elements()
+     */
+    static constexpr size_type default_max_select_elements = 1'000;
+
+    /**
+     * @brief the default value of maximum number of rows in table value constructor.
+     * @see max_table_value_constructor_rows()
+     */
+    static constexpr size_type default_max_table_value_constructor_rows = 1'000;
+
+    /**
+     * @brief the default value of maximum number of columns in row value constructor.
+     * @see max_row_value_constructor_columns()
+     */
+    static constexpr size_type default_max_row_value_constructor_columns = 1'000;
+
+    /**
+     * @brief the default value of maximum number of alternatives in case expressions.
+     * @see max_case_alternatives()
+     * @note this also restricts the number of alternatives of `COALESCE`.
+     */
+    static constexpr size_type default_max_case_alternatives = 300;
+
+    /**
      * @brief the zone offset unit type.
      */
     using zone_offset_type = std::chrono::duration<std::int32_t, std::ratio<60>>;
@@ -483,6 +514,71 @@ public:
         return system_zone_offset_;
     }
 
+    /**
+     * @brief returns the maximum number of columns in table definition.
+     * @return the max number of columns in table definition
+     */
+    [[nodiscard]] size_type& max_table_columns() noexcept {
+        return max_table_columns_;
+    }
+
+    /// @copydoc max_table_columns()
+    [[nodiscard]] size_type const& max_table_columns() const noexcept {
+        return max_table_columns_;
+    }
+
+    /**
+     * @brief returns the maximum number of columns in the select list.
+     * @return the max number of columns in the select list
+     */
+    [[nodiscard]] size_type& max_select_elements() noexcept {
+        return max_select_elements_;
+    }
+
+    /// @copydoc max_select_elements()
+    [[nodiscard]] size_type const& max_select_elements() const noexcept {
+        return max_select_elements_;
+    }
+
+    /**
+     * @brief returns the maximum number of rows in table value constructor.
+     * @return the max number of rows in table value constructor
+     */
+    [[nodiscard]] size_type& max_table_value_constructor_rows() noexcept {
+        return max_table_value_constructor_rows_;
+    }
+
+    /// @copydoc max_table_value_constructor_rows()
+    [[nodiscard]] size_type const& max_table_value_constructor_rows() const noexcept {
+        return max_table_value_constructor_rows_;
+    }
+
+    /**
+     * @brief returns the maximum number of columns in row value constructor.
+     * @return the max number of columns in row value constructor
+     */
+    [[nodiscard]] size_type& max_row_value_constructor_columns() noexcept {
+        return max_row_value_constructor_columns_;
+    }
+
+    /// @copydoc max_row_value_constructor_columns()
+    [[nodiscard]] size_type const& max_row_value_constructor_columns() const noexcept {
+        return max_row_value_constructor_columns_;
+    }
+
+    /**
+     * @brief returns the maximum number of alternatives in case expressions.
+     * @return the max number of alternatives in case expressions
+     */
+    [[nodiscard]] size_type& max_case_alternatives() noexcept {
+        return max_case_alternatives_;
+    }
+
+    /// @copydoc max_case_alternatives()
+    [[nodiscard]] size_type const& max_case_alternatives() const noexcept {
+        return max_case_alternatives_;
+    }
+
 private:
     ::takatori::util::maybe_shared_ptr<::yugawara::schema::catalog const> catalog_;
     ::takatori::util::maybe_shared_ptr<::yugawara::schema::search_path const> schema_search_path_;
@@ -511,6 +607,12 @@ private:
 
     std::string_view advance_sequence_function_name_ { default_advance_sequence_function_name };
     zone_offset_type system_zone_offset_ { default_system_zone_offset };
+
+    size_type max_table_columns_ { default_max_table_columns };
+    size_type max_select_elements_ { default_max_select_elements };
+    size_type max_table_value_constructor_rows_ { default_max_table_value_constructor_rows };
+    size_type max_row_value_constructor_columns_ { default_max_row_value_constructor_columns };
+    size_type max_case_alternatives_ { default_max_case_alternatives };
 };
 
 } // namespace mizugaki::analyzer

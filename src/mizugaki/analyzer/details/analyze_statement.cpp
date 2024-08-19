@@ -785,6 +785,17 @@ public:
                 }
             }
             table_columns.push_back(std::move(prototype));
+            if (table_columns.size() > context_.options()->max_table_columns()) {
+                context_.report(
+                        sql_analyzer_code::exceed_number_of_elements,
+                        string_builder {}
+                                << "too many columns in table definition: "
+                                << table_name << " - "
+                                << "must be less than or equal to " << context_.options()->max_table_columns()
+                                << string_builder::to_string,
+                        stmt.region());
+                return {};
+            }
         }
         if (table_columns.empty()) {
             context_.report(

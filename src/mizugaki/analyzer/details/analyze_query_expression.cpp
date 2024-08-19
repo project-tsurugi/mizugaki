@@ -164,6 +164,16 @@ public:
         relation_info info;
         optional_ptr<trelation::project> select_columns {};
         {
+            if (expr.elements().size() > context_.options()->max_select_elements()) {
+                context_.report(
+                        sql_analyzer_code::exceed_number_of_elements,
+                        string_builder {}
+                                << "too many select elements: "
+                                << "must be less than or equal to " << context_.options()->max_select_elements()
+                                << string_builder::to_string,
+                        expr.region());
+                return {};
+            }
             auto&& project = graph_.emplace<trelation::project>(std::vector<trelation::project::column> {});
             project.columns().reserve(std::min(expr.elements().size(), std::size_t { 8 }));
             if (!expr.elements().empty()) {
@@ -424,10 +434,33 @@ public:
             ast::query::table_value_constructor const& expr,
             optional_ptr<query_scope const> const& parent,
             row_value_context const& val) {
+        if (expr.elements().size() > context_.options()->max_table_value_constructor_rows()) {
+            context_.report(
+                    sql_analyzer_code::exceed_number_of_elements,
+                    string_builder {}
+                            << "too many table value constructor elements: "
+                            << "must be less than or equal to "
+                            << context_.options()->max_table_value_constructor_rows()
+                            << string_builder::to_string,
+                    expr.region());
+            return {};
+        }
+
         // compute row values only which is a row value constructor
         auto rows = create_vector<trelation::values::row>(expr.elements().size());
         for (auto&& row_value : expr.elements()) {
             if (auto row_ctor = as_row_value_constructor(*row_value)) {
+                if (row_ctor->elements().size() > context_.options()->max_row_value_constructor_columns()) {
+                    context_.report(
+                            sql_analyzer_code::exceed_number_of_elements,
+                            string_builder {}
+                                    << "too many row value constructor elements: "
+                                    << "must be less than or equal to "
+                                    << context_.options()->max_row_value_constructor_columns()
+                                    << string_builder::to_string,
+                            row_ctor->region());
+                    return {};
+                }
                 auto row = create_ref_vector<tscalar::expression>(row_ctor->elements().size());
                 std::size_t index = 0;
                 for (auto&& elem_expr : row_ctor->elements()) {

@@ -145,6 +145,16 @@ public:
                     expr.region());
             return {};
         }
+        if (expr.when_clauses().size() > context_.options()->max_case_alternatives()) {
+            context_.report(
+                    sql_analyzer_code::exceed_number_of_elements,
+                    string_builder {}
+                            << "too many alternatives in CASE expression: "
+                            << "must be less than or equal to " << context_.options()->max_case_alternatives()
+                            << string_builder::to_string,
+                    expr.region());
+            return {};
+        }
 
         std::optional<tscalar::let::variable> variable {};
         if (expr.operand()) {
@@ -610,6 +620,17 @@ public:
                     values.region());
             return {};
         }
+        if (values.elements().size() > context_.options()->max_table_value_constructor_rows()) {
+            context_.report(
+                    sql_analyzer_code::exceed_number_of_elements,
+                    string_builder {}
+                            << "IN predicate with too many elements: "
+                            << "must be less than or equal to "
+                            << context_.options()->max_table_value_constructor_rows()
+                            << string_builder::to_string,
+                    values.region());
+            return {};
+        }
 
         auto left = process(*expr.left(), {});
         if (!left) {
@@ -819,6 +840,16 @@ public:
             context_.report(
                     sql_analyzer_code::malformed_syntax,
                     "COALESCE must have one or more operands",
+                    expr.region());
+            return {};
+        }
+        if (expr.arguments().size() > context_.options()->max_case_alternatives()) {
+            context_.report(
+                    sql_analyzer_code::exceed_number_of_elements,
+                    string_builder {}
+                            << "too many alternatives in COALESCE expression: "
+                            << "must be less than or equal to " << context_.options()->max_case_alternatives()
+                            << string_builder::to_string,
                     expr.region());
             return {};
         }

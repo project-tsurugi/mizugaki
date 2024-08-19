@@ -116,6 +116,8 @@ enum class sql_analyzer_code {
     ambiguous_type,
     /// @brief the set of type input is inconsistent for this operation.
     inconsistent_type,
+    /// @brief the declared elements exceeds the limit of count.
+    exceed_number_of_elements,
     /// @brief the referring variable is not resolved (internal error).
     unresolved_variable,
     /// @brief the number of values is wrong (internal error).
@@ -188,6 +190,7 @@ inline constexpr std::string_view to_string_view(sql_analyzer_code value) noexce
 
         case kind::ambiguous_type: return "ambiguous_type"sv;
         case kind::inconsistent_type: return "inconsistent_type"sv;
+        case kind::exceed_number_of_elements: return "exceed_number_of_elements"sv;
         case kind::unresolved_variable: return "unresolved_variable"sv;
         case kind::inconsistent_elements: return "inconsistent_elements"sv;
     }
