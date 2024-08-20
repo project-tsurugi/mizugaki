@@ -11,7 +11,7 @@ namespace mizugaki::examples::parser_cli {
 
 bool run(std::string_view source, std::size_t repeat, bool quiet, int debug) {
     parser::sql_parser parser;
-    parser.set_debug(debug);
+    parser.options().debug() = debug;
     for (std::size_t round = 0; round < repeat; ++round) {
         auto result = parser("-", std::string { source });
         if (auto&& error = result.diagnostic()) {

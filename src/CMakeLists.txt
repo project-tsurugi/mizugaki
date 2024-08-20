@@ -148,6 +148,7 @@ add_library(mizugaki
 
     # SQL parser
     mizugaki/parser/sql_parser.cpp
+    mizugaki/parser/sql_parser_options.cpp
     mizugaki/parser/sql_parser_diagnostic.cpp
     mizugaki/parser/sql_parser_result.cpp
     mizugaki/parser/sql_scanner.cpp

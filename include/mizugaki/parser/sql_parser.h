@@ -6,6 +6,7 @@
 
 #include <takatori/util/maybe_shared_ptr.h>
 
+#include "sql_parser_options.h"
 #include "sql_parser_result.h"
 
 namespace mizugaki::parser {
@@ -21,23 +22,20 @@ public:
     /// @brief the result type.
     using result_type = sql_parser_result;
 
-    /// @brief default number of next token candidates to display on error.
-    static constexpr std::size_t default_max_expected_candidates = 5;
+    /**
+     * @brief creates a new instance.
+     * @param options the parser options
+     */
+    explicit sql_parser(sql_parser_options options = {}) noexcept;
 
     /**
-     * @brief sets the max number of next token candidates to display on error.
-     * @param count the max number of candidates, or 0 to disable to display
-     * @see default_max_expected_candidates
+     * @brief returns the parser options.
+     * @return the parser options
      */
-    sql_parser max_expected_candidates(std::size_t count) noexcept;
+    [[nodiscard]] sql_parser_options& options() noexcept;
 
-    /**
-     * @brief sets the debug level.
-     * @param level the debug level
-     * @return this
-     * @note this feature is only available for debug configurations
-     */
-    sql_parser& set_debug(int level) noexcept;
+    /// @copydoc options()
+    [[nodiscard]] sql_parser_options const& options() const noexcept;
 
     /**
      * @brief parses the contents.
@@ -57,8 +55,7 @@ public:
     [[nodiscard]] result_type operator()(::takatori::util::maybe_shared_ptr<document_type const> document) const;
 
 private:
-    std::size_t max_expected_candidates_ { default_max_expected_candidates };
-    int debug_ {};
+    sql_parser_options options_;
 };
 
 } // namespace mizugaki::parser

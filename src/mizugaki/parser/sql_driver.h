@@ -11,7 +11,7 @@
 
 #include <mizugaki/parser/sql_parser_result.h>
 #include <mizugaki/parser/sql_parser_code.h>
-
+#include <mizugaki/parser/sql_parser_element_kind.h>
 
 namespace mizugaki::parser {
 
@@ -23,6 +23,8 @@ public:
     using diagnostic_code_type = sql_parser_code;
 
     using location_type = ast::node_region;
+
+    using element_kind = sql_parser_element_kind;
 
     template<class T>
     using node_ptr = std::unique_ptr<T>;
@@ -45,6 +47,8 @@ public:
     void add_comment(location_type location);
 
     [[nodiscard]] std::size_t& max_expected_candidates() noexcept;
+
+    [[nodiscard]] ::takatori::util::optional_ptr<sql_parser_element_map<std::size_t> const>& element_limits() noexcept;
 
     [[nodiscard]] std::vector<location_type>& comments() noexcept;
 
@@ -106,12 +110,20 @@ public:
 
     [[nodiscard]] node_ptr<ast::scalar::expression> try_fold_literal(node_ptr<ast::scalar::expression> expression);
 
+    template<class T>
+    [[nodiscard]] bool validate(location_type location, std::vector<T> const& elements, element_kind kind) {
+        return validate_count(location, elements.size(), kind);
+    }
+
+    [[nodiscard]] bool validate_count(location_type location, std::size_t size, element_kind kind);
+
 private:
     ::takatori::util::maybe_shared_ptr<document_type const> document_;
     std::vector<location_type> comments_;
     result_type result_ {};
 
     std::size_t max_expected_candidates_ {};
+    ::takatori::util::optional_ptr<sql_parser_element_map<std::size_t> const> element_limits_;
 };
 
 } // namespace sandbox

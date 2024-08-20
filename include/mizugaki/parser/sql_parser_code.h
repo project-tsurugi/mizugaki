@@ -33,6 +33,9 @@ enum class sql_parser_code {
 
     /// @brief the document includes unexpected EOF.
     unexpected_eof,
+
+    /// @brief the declared elements exceeds the limit of count.
+    exceed_number_of_elements,
 };
 
 /**
@@ -52,6 +55,7 @@ inline constexpr std::string_view to_string_view(sql_parser_code value) noexcept
         case kind::invalid_token: return "invalid_token"sv;
         case kind::unexpected_token: return "unexpected_token"sv;
         case kind::unexpected_eof: return "unexpected_eof"sv;
+        case kind::exceed_number_of_elements: return "exceed_number_of_elements"sv;
     }
     std::abort();
 }

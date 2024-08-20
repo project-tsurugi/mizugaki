@@ -153,6 +153,8 @@
 
     using ::takatori::util::downcast;
 
+    using element_kind = sql_driver::element_kind;
+
     static sql_parser_generated::symbol_type yylex(sql_scanner& scanner, sql_driver& driver) {
         return scanner.next_token(driver);
     }
@@ -1013,10 +1015,13 @@ program
     ;
 
 statement_list
-    : statement_list[L] ";" statement[s]
+    : statement_list[L] ";"[c] statement[s]
         {
             $$ = $L;
             $$.emplace_back($s);
+            if (!driver.validate(@c, $$, element_kind::statement)) {
+                YYABORT;
+            }
         }
     | statement[s]
         {
@@ -1244,6 +1249,9 @@ schema_element_list_opt
         {
             $$ = $L;
             $$.emplace_back($e);
+            if (!driver.validate(@e, $$, element_kind::schema_element_definition)) {
+                YYABORT;
+            }
         }
     | %empty
         {
@@ -1385,10 +1393,13 @@ table_element_list_opt
         }
 
 table_element_list
-    : table_element_list[L] "," table_element[e]
+    : table_element_list[L] ","[s] table_element[e]
         {
             $$ = $L;
             $$.emplace_back($e);
+            if (!driver.validate(@s, $$, element_kind::table_element_definition)) {
+                YYABORT;
+            }
         }
     | table_element[e]
         {
@@ -1467,6 +1478,9 @@ column_constraint_definition_list
         {
             $$ = $L;
             $$.emplace_back($e);
+            if (!driver.validate(@e, $$, element_kind::column_constraint_definition)) {
+                YYABORT;
+            }
         }
     | %empty
         {
@@ -1607,10 +1621,13 @@ index_value_list_body_opt
     ;
 
 index_value_list_body
-    : index_value_list_body[L] "," scalar_value_expression[e]
+    : index_value_list_body[L] ","[s] scalar_value_expression[e]
         {
             $$ = $L;
             $$.emplace_back($e);
+            if (!driver.validate(@s, $$, element_kind::scalar_expression)) {
+                YYABORT;
+            }
         }
     | scalar_value_expression[e]
         {
@@ -1840,10 +1857,13 @@ storage_parameter_list_body_opt
     ;
 
 storage_parameter_list_body
-    : storage_parameter_list_body[L] "," storage_parameter[e]
+    : storage_parameter_list_body[L] ","[s] storage_parameter[e]
         {
             $$ = $L;
             $$.emplace_back($e);
+            if (!driver.validate(@s, $$, element_kind::storage_parameter)) {
+                YYABORT;
+            }
         }
     | storage_parameter[e]
         {
@@ -1886,10 +1906,13 @@ target_table
     ;
 
 set_clause_list
-    : set_clause_list[L] "," set_clause[c]
+    : set_clause_list[L] ","[s] set_clause[c]
         {
             $$ = $L;
             $$.emplace_back($c);
+            if (!driver.validate(@s, $$, element_kind::set_clause)) {
+                YYABORT;
+            }
         }
     | set_clause[c]
         {
@@ -2012,10 +2035,13 @@ recursive_opt
     ;
 
 with_list
-    : with_list[L] "," with_element[c]
+    : with_list[L] ","[s] with_element[c]
         {
             $$ = $L;
             $$.emplace_back($c);
+            if (!driver.validate(@s, $$, element_kind::with_element)) {
+                YYABORT;
+            }
         }
     | with_element[c]
         {
@@ -2151,10 +2177,13 @@ query_expression_primary
     ;
 
 select_list
-    : select_list[L] "," select_element[e]
+    : select_list[L] ","[s] select_element[e]
         {
             $$ = $L;
             $$.emplace_back($e);
+            if (!driver.validate(@s, $$, element_kind::select_element)) {
+                YYABORT;
+            }
         }
     | select_element[e]
         {
@@ -2201,10 +2230,13 @@ as_clause_opt
     ;
 
 table_reference_list
-    : table_reference_list[L] "," table_reference[e]
+    : table_reference_list[L] ","[s] table_reference[e]
         {
             $$ = $L;
             $$.emplace_back($e);
+            if (!driver.validate(@s, $$, element_kind::table_reference)) {
+                YYABORT;
+            }
         }
     | table_reference[e]
         {
@@ -2247,10 +2279,13 @@ group_by_clause_opt
     ;
 
 grouping_column_reference_list
-    : grouping_column_reference_list[L] "," grouping_column_reference[e]
+    : grouping_column_reference_list[L] ","[s] grouping_column_reference[e]
         {
             $$ = $L;
             $$.emplace_back($e);
+            if (!driver.validate(@s, $$, element_kind::grouping_element)) {
+                YYABORT;
+            }
         }
     | grouping_column_reference[e]
         {
@@ -2303,10 +2338,13 @@ order_by_clause_opt
     ;
 
 sort_specification_list
-    : sort_specification_list[L] "," sort_specification[e]
+    : sort_specification_list[L] ","[s] sort_specification[e]
         {
             $$ = $L;
             $$.emplace_back($e);
+            if (!driver.validate(@s, $$, element_kind::ordering_element)) {
+                YYABORT;
+            }
         }
     | sort_specification[e]
         {
@@ -2537,10 +2575,13 @@ table_primary
     ;
 
 field_definition_list
-    : field_definition_list[L] "," field_definition[e]
+    : field_definition_list[L] ","[s] field_definition[e]
         {
             $$ = $L;
             $$.emplace_back($e);
+            if (!driver.validate(@s, $$, element_kind::field_definition)) {
+                YYABORT;
+            }
         }
     | field_definition[e]
         {
@@ -2604,10 +2645,13 @@ correlation_clause
 
 // NOTE: explicitly require () to avoid syntactic conflict
 explicit_row_value_expression_list
-    : explicit_row_value_expression_list[L] "," explicit_row_value_expression[e]
+    : explicit_row_value_expression_list[L] ","[s] explicit_row_value_expression[e]
         {
             $$ = $L;
             $$.emplace_back($e);
+            if (!driver.validate(@s, $$, element_kind::row_expression)) {
+                YYABORT;
+            }
         }
     | explicit_row_value_expression[e]
         {
@@ -2638,10 +2682,13 @@ explicit_row_value_expression
     ;
 
 value_expression_list
-    : value_expression_list[L] "," value_expression[e]
+    : value_expression_list[L] ","[s] value_expression[e]
         {
             $$ = $L;
             $$.emplace_back($e);
+            if (!driver.validate(@s, $$, element_kind::scalar_expression)) {
+                YYABORT;
+            }
         }
     | value_expression[e]
         {
@@ -3613,6 +3660,9 @@ case_when_clause_list
         {
             $$ = $L;
             $$.emplace_back($e);
+            if (!driver.validate(@e, $$, element_kind::when_clause)) {
+                YYABORT;
+            }
         }
     | case_when_clause[e]
         {
@@ -3662,10 +3712,13 @@ sql_argument_list_opt
     ;
 
 sql_argument_list
-    : sql_argument_list_opt[L] "," sql_argument[e]
+    : sql_argument_list_opt[L] ","[s] sql_argument[e]
         {
             $$ = $L;
             $$.emplace_back($e);
+            if (!driver.validate(@s, $$, element_kind::scalar_expression)) {
+                YYABORT;
+            }
         }
     | sql_argument[e]
         {
@@ -3871,6 +3924,9 @@ concatenations_list_opt
         {
             $$ = $L;
             $$.emplace_back($t, @t);
+            if (!driver.validate(@t, $$, element_kind::string_literal_concatenation)) {
+                YYABORT;
+            }
         }
     | %empty
         {
@@ -4223,10 +4279,13 @@ column_name_list_opt
     ;
 
 column_name_list
-    : column_name_list[L] "," column_name[n]
+    : column_name_list[L] ","[s] column_name[n]
         {
             $$ = $L;
             $$.emplace_back($n);
+            if (!driver.validate(@s, $$, element_kind::column_reference)) {
+                YYABORT;
+            }
         }
     | column_name[n]
         {

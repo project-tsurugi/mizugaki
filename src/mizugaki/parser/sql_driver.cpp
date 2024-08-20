@@ -6,6 +6,7 @@
 
 #include <takatori/util/assertion.h>
 #include <takatori/util/downcast.h>
+#include <takatori/util/string_builder.h>
 
 #include <mizugaki/ast/name/qualified.h>
 #include <mizugaki/ast/type/user_defined.h>
@@ -68,8 +69,12 @@ void sql_driver::add_comment(location_type location) {
     comments_.emplace_back(location);
 }
 
-std::size_t &sql_driver::max_expected_candidates() noexcept {
+std::size_t& sql_driver::max_expected_candidates() noexcept {
     return max_expected_candidates_;
+}
+
+::takatori::util::optional_ptr<sql_parser_element_map<std::size_t> const>& sql_driver::element_limits() noexcept {
+    return element_limits_;
 }
 
 std::vector<sql_driver::location_type>& sql_driver::comments() noexcept {
@@ -230,6 +235,24 @@ sql_driver::try_fold_literal(node_ptr<ast::scalar::expression> expression) {
     unary.operand()->region() = expression->region();
 
     return std::move(unary.operand());
+}
+
+bool sql_driver::validate_count(location_type location, std::size_t size, sql_driver::element_kind kind) {
+    if (!element_limits_) {
+        return true;
+    }
+    auto limit = (*element_limits_)[kind];
+    if (limit != 0 && limit < size) {
+        using ::takatori::util::string_builder;
+        error(sql_parser_code::exceed_number_of_elements, location,
+                string_builder {}
+                    << "SQL parser has reached the max number of elements: "
+                    << kind
+                    << " must be less than or equal to " << limit
+                    << string_builder::to_string);
+        return false;
+    }
+    return true;
 }
 
 } // namespace mizugaki::parser
