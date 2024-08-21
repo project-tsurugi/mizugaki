@@ -42,6 +42,7 @@ add_test_executable(mizugaki/ast/query_dispatch_test.cpp)
 add_test_executable(mizugaki/ast/statement_dispatch_test.cpp)
 
 # SQL parser
+add_test_executable(mizugaki/parser/sql_parser_element_kind_test.cpp)
 add_test_executable(mizugaki/parser/sql_parser_statement_test.cpp)
 add_test_executable(mizugaki/parser/sql_parser_query_test.cpp)
 add_test_executable(mizugaki/parser/sql_parser_table_test.cpp)
