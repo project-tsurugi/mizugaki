@@ -220,6 +220,65 @@ TEST_F(analyze_statement_insert_test, as_write_statement) {
     }
 }
 
+TEST_F(analyze_statement_insert_test, default_values) {
+    options_.prefer_write_statement() = false;
+    auto table = install_table("testing");
+
+    auto r = analyze_statement(context(), ast::statement::insert_statement {
+            id("testing"),
+            {},
+            {},
+    });
+    auto alternative = std::get_if<execution_plan_result_type >(&r);
+    ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
+    auto&& graph = **alternative;
+    ASSERT_EQ(graph.size(), 2);
+
+    auto first = find_first<trelation::values>(graph);
+    ASSERT_TRUE(first);
+    ASSERT_EQ(first->columns().size(), 0);
+    ASSERT_EQ(first->rows().size(), 1);
+    ASSERT_EQ(first->rows()[0].elements().size(), 0);
+
+    auto last = find_last<trelation::write>(graph);
+    ASSERT_TRUE(last);
+    EXPECT_EQ(find_next(*first).get(), last.get());
+
+    EXPECT_EQ(last->operator_kind(), tstatement::write_kind::insert);
+    EXPECT_EQ(&extract<::yugawara::storage::index>(last->destination()).table(), table.get());
+
+    ASSERT_EQ(last->keys().size(), 0);
+    ASSERT_EQ(last->columns().size(), 0);
+}
+
+TEST_F(analyze_statement_insert_test, default_values_as_write_statement) {
+    options_.prefer_write_statement() = true;
+    auto table = install_table("testing");
+
+    auto r = analyze_statement(context(), ast::statement::insert_statement {
+            id("testing"),
+            {},
+            {},
+    });
+    auto alternative = std::get_if<statement_result_type>(&r);
+    ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
+    ASSERT_EQ((*alternative)->kind(), tstatement::statement_kind::write);
+    auto&& stmt = downcast<tstatement::write>(**alternative);
+
+    EXPECT_EQ(stmt.operator_kind(), tstatement::write_kind::insert);
+    EXPECT_EQ(&extract<::yugawara::storage::index>(stmt.destination()).table(), table.get());
+
+    auto&& columns = stmt.columns();
+    ASSERT_EQ(columns.size(), 0);
+    auto&& tuples = stmt.tuples();
+    ASSERT_EQ(tuples.size(), 1);
+    ASSERT_EQ(tuples[0].elements().size(), 0);
+}
+
 TEST_F(analyze_statement_insert_test, values_null) {
     options_.prefer_write_statement() = false;
     auto table = install_table("testing");
@@ -419,16 +478,6 @@ TEST_F(analyze_statement_insert_test, inconsistent_query) {
                             literal(string("'d'")),
                     }
             },
-    });
-}
-
-TEST_F(analyze_statement_insert_test, default_values) {
-    options_.prefer_write_statement() = false;
-    auto table = install_table("testing");
-    invalid(sql_analyzer_code::unsupported_feature, ast::statement::insert_statement {
-            id("testing"),
-            {},
-            {}, // default values
     });
 }
 

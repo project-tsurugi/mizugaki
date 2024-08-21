@@ -145,8 +145,6 @@ public:
         auto info = std::move(*info_opt);
         auto index = info.primary_index();
 
-        auto graph = std::make_unique<::takatori::relation::graph_type>();
-
         auto destination_columns = create_vector<::yugawara::storage::column const*>();
         auto columns_context = create_vector<scalar_value_context>();
 
@@ -201,14 +199,12 @@ public:
             }
         }
 
+        // empty source means "INSERT INTO ~ DEFAULT VALUES"
         if (!stmt.expression()) {
-            // FIXME: impl treat "DEFAULT VALUES" clause
-            context_.report(
-                    sql_analyzer_code::unsupported_feature,
-                    "DEFAULT VALUES clause is yet not supported",
-                    stmt.region());
-            return {};
+            return process_insert_default_values(stmt, info);
         }
+
+        auto graph = std::make_unique<::takatori::relation::graph_type>();
         auto source = analyze_query_expression(
                 context_,
                 *graph,
@@ -302,6 +298,43 @@ public:
                 std::move(write_values)));
         op_write.input().connect_to(source.output());
 
+        return graph;
+    }
+
+    [[nodiscard]] result_type process_insert_default_values(
+            ast::statement::insert_statement const& stmt,
+            relation_info const& relation) {
+        auto index = relation.primary_index();
+        auto write_operator = compute_write_type(stmt);
+        if (!write_operator) {
+            return {};
+        }
+
+        if (context_.options()->prefer_write_statement()) {
+            auto write_tuples = create_vector<tstatement::write::tuple>(1);
+            write_tuples.emplace_back(::takatori::util::reference_vector<tscalar::expression> {});
+            return context_.create<tstatement::write>(
+                    stmt.region(),
+                    *write_operator,
+                    factory_(index),
+                    std::vector<tstatement::write::column> {},
+                    std::move(write_tuples));
+        }
+
+        auto graph = std::make_unique<::takatori::relation::graph_type>();
+        auto rows = create_vector<trelation::values::row>(1);
+        rows.emplace_back(::takatori::util::reference_vector<tscalar::expression> {});
+        auto&& op_values = graph->insert(context_.create<trelation::values>(
+                stmt.table_name()->region(),
+                std::vector<trelation::values::column> {},
+                std::move(rows)));
+        auto&& op_write = graph->insert(context_.create<trelation::write>(
+                stmt.table_name()->region(),
+                *write_operator,
+                factory_(index),
+                std::vector<trelation::write::key> {},
+                std::vector<trelation::write::column> {}));
+        op_write.input().connect_to(op_values.output());
         return graph;
     }
 
