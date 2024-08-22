@@ -21,6 +21,8 @@
 #include <takatori/relation/intermediate/distinct.h>
 #include <takatori/relation/intermediate/limit.h>
 #include <takatori/relation/intermediate/union.h>
+#include <takatori/relation/intermediate/difference.h>
+#include <takatori/relation/intermediate/intersection.h>
 
 #include <takatori/util/downcast.h>
 #include <takatori/util/fail.h>
@@ -505,7 +507,11 @@ public:
                 return process_union(expr, parent, val);
 
             case kind::except:
+                return process_except_intersect<trelation::intermediate::difference>(expr, parent, val);
+
             case kind::intersect:
+                return process_except_intersect<trelation::intermediate::intersection>(expr, parent, val);
+
             case kind::outer_union:
             default:
                 break;
@@ -585,6 +591,70 @@ public:
         if (!context_.resolve(result)) {
             return {};
         }
+        return { result.output(), std::move(output_info) };
+    }
+
+    template<class T>
+    [[nodiscard]] result_type process_except_intersect(
+            ast::query::binary_expression const& expr,
+            optional_ptr<query_scope const> const& parent,
+            row_value_context const& val) {
+        using operator_type = T;
+        if (expr.corresponding()) {
+            context_.report(
+                    sql_analyzer_code::unsupported_feature,
+                    "CORRESPONDING clause is not yet supported",
+                    expr.region());
+            return {};
+        }
+        auto left = process(*expr.left(), parent, val);
+        if (!left) {
+            return {};
+        }
+        auto right = process(*expr.right(), parent, val);
+        if (!right) {
+            return {};
+        }
+
+        auto&& left_info = left.relation();
+        auto&& right_info = right.relation();
+
+        auto left_columns = extract_exported_columns(left_info.columns());
+        auto right_columns = extract_exported_columns(right_info.columns());
+        if (left_columns.size() != right_columns.size()) {
+            context_.report(
+                    sql_analyzer_code::inconsistent_columns,
+                    "column count mismatch",
+                    expr.operator_kind().region());
+            return {};
+        }
+
+        trelation::set_quantifier quantifier { trelation::set_quantifier::distinct };
+        if (expr.quantifier() == ast::query::set_quantifier::all) {
+            quantifier = trelation::set_quantifier::all;
+        }
+
+        relation_info output_info {};
+        output_info.reserve(left_info.columns().size());
+
+        std::vector<typename operator_type::group_key_pair> mappings {};
+        mappings.reserve(left_info.columns().size());
+        for (std::size_t index = 0, size = left_columns.size(); index < size; ++index) {
+            auto&& left_column = *left_columns[index];
+            auto&& right_column = *right_columns[index];
+            mappings.emplace_back(left_column.variable(), right_column.variable());
+            output_info.add({
+                    {},
+                    left_column.variable(),
+                    left_column.identifier(), // NOTE: pick the column identifier from the left-most query
+            });
+        }
+        auto&& result = graph_.insert(context_.create<operator_type>(
+                expr.operator_kind().region(),
+                quantifier,
+                std::move(mappings)));
+        result.left() << left.output();
+        result.right() << right.output();
         return { result.output(), std::move(output_info) };
     }
 
