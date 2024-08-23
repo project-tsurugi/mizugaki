@@ -9,6 +9,7 @@
 #include <mizugaki/ast/literal/numeric.h>
 #include <mizugaki/ast/name/simple.h>
 
+#include <mizugaki/parser/sql_parser.h>
 #include <mizugaki/parser/sql_parser_result.h>
 
 namespace mizugaki::parser::testing {
@@ -17,6 +18,13 @@ using namespace ast;
 
 template<class T>
 using node_ptr = std::unique_ptr<T>;
+
+inline sql_parser default_parser() {
+    sql_parser parser {};
+    parser.options().tree_node_limit() = 100;
+    parser.options().tree_depth_limit() = 10;
+    return parser;
+}
 
 template<class T, class U>
 inline T const& downcast(U const& u) {

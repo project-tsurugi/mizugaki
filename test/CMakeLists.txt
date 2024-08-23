@@ -54,6 +54,7 @@ add_test_executable(mizugaki/parser/sql_parser_type_test.cpp)
 add_test_executable(mizugaki/parser/sql_parser_limit_test.cpp)
 add_test_executable(mizugaki/parser/sql_parser_misc_test.cpp)
 add_test_executable(mizugaki/parser/sql_parser_error_test.cpp)
+add_test_executable(mizugaki/parser/sql_tree_validator_test.cpp)
 
 # SQL analyzer
 add_test_executable(mizugaki/analyzer/sql_analyzer_test.cpp)

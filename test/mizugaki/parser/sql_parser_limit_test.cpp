@@ -50,7 +50,7 @@ protected:
 };
 
 TEST_F(sql_parser_limit_test, statement_ok) {
-    sql_parser parser {};
+    auto parser = default_parser();
     parser.options().element_limits()[element_kind::statement] = 2;
 
     std::string content { R"(SELECT 1; SELECT 2)" };
@@ -62,7 +62,7 @@ TEST_F(sql_parser_limit_test, statement_ok) {
 }
 
 TEST_F(sql_parser_limit_test, statement_exceed) {
-    sql_parser parser {};
+    auto parser = default_parser();
     parser.options().element_limits()[element_kind::statement] = 2;
 
     std::string content { R"(SELECT 1; SELECT 2; SELECT 3)" };
@@ -71,7 +71,7 @@ TEST_F(sql_parser_limit_test, statement_exceed) {
 }
 
 TEST_F(sql_parser_limit_test, schema_element_ok) {
-    sql_parser parser {};
+    auto parser = default_parser();
     parser.options().element_limits()[element_kind::schema_element_definition] = 2;
 
     std::string content { R"(CREATE SCHEMA s CREATE SEQUENCE s1 CREATE SEQUENCE s2;)" };
@@ -83,7 +83,7 @@ TEST_F(sql_parser_limit_test, schema_element_ok) {
 }
 
 TEST_F(sql_parser_limit_test, schema_element_exceed) {
-    sql_parser parser {};
+    auto parser = default_parser();
     parser.options().element_limits()[element_kind::schema_element_definition] = 2;
 
     std::string content { R"(CREATE SCHEMA s CREATE SEQUENCE s1 CREATE SEQUENCE s2 CREATE SEQUENCE s3;)" };
@@ -92,7 +92,7 @@ TEST_F(sql_parser_limit_test, schema_element_exceed) {
 }
 
 TEST_F(sql_parser_limit_test, table_element_definition_ok) {
-    sql_parser parser {};
+    auto parser = default_parser();
     parser.options().element_limits()[element_kind::table_element_definition] = 2;
 
     std::string content { R"(CREATE TABLE t (c1 int, c2 int))" };
@@ -104,7 +104,7 @@ TEST_F(sql_parser_limit_test, table_element_definition_ok) {
 }
 
 TEST_F(sql_parser_limit_test, table_element_definition_exceed) {
-    sql_parser parser {};
+    auto parser = default_parser();
     parser.options().element_limits()[element_kind::table_element_definition] = 2;
 
     std::string content { R"(CREATE TABLE t (c1 int, c2 int, c3 int))" };
@@ -113,7 +113,7 @@ TEST_F(sql_parser_limit_test, table_element_definition_exceed) {
 }
 
 TEST_F(sql_parser_limit_test, column_constraint_definition_ok) {
-    sql_parser parser {};
+    auto parser = default_parser();
     parser.options().element_limits()[element_kind::column_constraint_definition] = 2;
 
     std::string content { R"(CREATE TABLE t (c1 int NULL DEFAULT 1))" };
@@ -126,7 +126,7 @@ TEST_F(sql_parser_limit_test, column_constraint_definition_ok) {
 }
 
 TEST_F(sql_parser_limit_test, column_constraint_definition_exceed) {
-    sql_parser parser {};
+    auto parser = default_parser();
     parser.options().element_limits()[element_kind::column_constraint_definition] = 2;
 
     std::string content { R"(CREATE TABLE t (c1 int PRIMARY KEY NOT NULL DEFAULT 1))" };
@@ -135,7 +135,7 @@ TEST_F(sql_parser_limit_test, column_constraint_definition_exceed) {
 }
 
 TEST_F(sql_parser_limit_test, column_reference_ok) {
-    sql_parser parser {};
+    auto parser = default_parser();
     parser.options().element_limits()[element_kind::column_reference] = 2;
 
     std::string content { R"(INSERT INTO t (c1, c2) VALUES (1, 2))" };
@@ -147,7 +147,7 @@ TEST_F(sql_parser_limit_test, column_reference_ok) {
 }
 
 TEST_F(sql_parser_limit_test, column_reference_exceed) {
-    sql_parser parser {};
+    auto parser = default_parser();
     parser.options().element_limits()[element_kind::column_reference] = 2;
 
     std::string content { R"(INSERT INTO t (c1, c2, c3) VALUES (1, 2, 3))" };
@@ -156,7 +156,7 @@ TEST_F(sql_parser_limit_test, column_reference_exceed) {
 }
 
 TEST_F(sql_parser_limit_test, storage_parameter_ok) {
-    sql_parser parser {};
+    auto parser = default_parser();
     parser.options().element_limits()[element_kind::storage_parameter] = 2;
 
     std::string content { R"(CREATE TABLE t (c1 int) WITH (p1, p2))" };
@@ -168,7 +168,7 @@ TEST_F(sql_parser_limit_test, storage_parameter_ok) {
 }
 
 TEST_F(sql_parser_limit_test, storage_parameter_exceed) {
-    sql_parser parser {};
+    auto parser = default_parser();
     parser.options().element_limits()[element_kind::storage_parameter] = 2;
 
     std::string content { R"(CREATE TABLE t (c1 int) WITH (p1, p2, p3))" };
@@ -177,7 +177,7 @@ TEST_F(sql_parser_limit_test, storage_parameter_exceed) {
 }
 
 TEST_F(sql_parser_limit_test, set_clause_ok) {
-    sql_parser parser {};
+    auto parser = default_parser();
     parser.options().element_limits()[element_kind::set_clause] = 2;
 
     std::string content { R"(UPDATE t SET c1=1, c2=2)" };
@@ -189,7 +189,7 @@ TEST_F(sql_parser_limit_test, set_clause_ok) {
 }
 
 TEST_F(sql_parser_limit_test, set_clause_exceed) {
-    sql_parser parser {};
+    auto parser = default_parser();
     parser.options().element_limits()[element_kind::set_clause] = 2;
 
     std::string content { R"(UPDATE t SET c1=1, c2=2, c3=3)" };

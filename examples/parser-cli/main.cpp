@@ -9,11 +9,9 @@
 
 namespace mizugaki::examples::parser_cli {
 
-bool run(std::string_view source, std::size_t repeat, bool quiet, int debug) {
-    parser::sql_parser parser;
-    parser.options().debug() = debug;
+bool run(std::string_view source, std::size_t repeat, bool quiet, bool stats, parser::sql_parser engine) {
     for (std::size_t round = 0; round < repeat; ++round) {
-        auto result = parser("-", std::string { source });
+        auto result = engine("-", std::string { source });
         if (auto&& error = result.diagnostic()) {
             std::cerr << error.message() << "; "
                       << "occurred at " << error.region().first()
@@ -22,6 +20,10 @@ bool run(std::string_view source, std::size_t repeat, bool quiet, int debug) {
         }
         if (!quiet && round == 0) {
             std::cout << *result.value() << std::endl;
+            if (stats) {
+                std::cout << "AST nodes: " << result.tree_node_count() << std::endl;
+                std::cout << "AST depth: " << result.max_tree_depth() << std::endl;
+            }
         }
     }
     return true;
@@ -36,6 +38,9 @@ DEFINE_int32(debug, 0, "parser debug level"); // NOLINT
 DEFINE_uint32(repeat, 1, "repeat parse operation"); // NOLINT
 DEFINE_string(file, "", "input file path"); // NOLINT
 DEFINE_string(text, "", "input text"); // NOLINT
+DEFINE_bool(stats, false, "show AST statistics"); // NOLINT
+DEFINE_uint64(node_limit, 10'000, "AST node limit"); // NOLINT
+DEFINE_uint64(depth_limit, 5'000, "AST depth limit"); // NOLINT
 
 int main(int argc, char* argv[]) {
     gflags::SetUsageMessage("mizugaki SQL parser CLI");
@@ -60,7 +65,11 @@ int main(int argc, char* argv[]) {
                 std::istreambuf_iterator<char> {});
         ifs.close();
     }
-    if (run(source, FLAGS_repeat, FLAGS_quiet, FLAGS_debug)) {
+    ::mizugaki::parser::sql_parser engine {};
+    engine.options().debug() = FLAGS_debug;
+    engine.options().tree_node_limit() = FLAGS_node_limit;
+    engine.options().tree_depth_limit() = FLAGS_depth_limit;
+    if (run(source, FLAGS_repeat, FLAGS_quiet, FLAGS_stats, std::move(engine))) {
         return 0;
     }
     return 1;

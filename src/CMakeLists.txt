@@ -153,6 +153,7 @@ add_library(mizugaki
     mizugaki/parser/sql_parser_result.cpp
     mizugaki/parser/sql_scanner.cpp
     mizugaki/parser/sql_driver.cpp
+    mizugaki/parser/sql_tree_validator.cpp
     ${FLEX_sql_scanner_OUTPUTS}
     ${BISON_sql_parser_OUTPUTS}
 

@@ -22,6 +22,14 @@ Available options:
 * `-debug N`
   * parser debug level (requires `-DCMAKE_BUILD_TYPE=Debug`)
   * default: `0`
+* `-node_limit`
+  * limits the number of nodes in the AST
+  * default: `10,000`
+* `-depth_limit`
+  * limits the max depth in the AST
+  * default: `5,000`
+* `-stats`
+  * print AST statistics
 * `-help`
   * print help messages
 

@@ -8,6 +8,8 @@
 #include <mizugaki/parser/sql_driver.h>
 #include <mizugaki/parser/sql_scanner.h>
 
+#include "sql_tree_validator.h"
+
 namespace mizugaki::parser {
 
 using ::takatori::document::basic_document;
@@ -49,8 +51,19 @@ sql_parser::result_type sql_parser::operator()(takatori::util::maybe_shared_ptr<
 #endif // YYDEBUG
 
     parser.parse();
+    if (driver.result().has_value()) {
+        sql_tree_validator checker {
+                options_.tree_node_limit(),
+                options_.tree_depth_limit(),
+        };
+        if (auto diagnostic = checker(*driver.result().value())) {
+            return std::move(*diagnostic);
+        }
+        driver.result().max_tree_depth() = checker.last_max_depth();
+        driver.result().tree_node_count() = checker.last_node_count();
+    }
+
     return std::move(driver.result());
 }
 
 } // namespace mizugaki::parser
-

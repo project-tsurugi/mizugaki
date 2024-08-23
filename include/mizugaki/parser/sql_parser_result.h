@@ -89,9 +89,34 @@ public:
     /// @copydoc diagnostic()
     [[nodiscard]] diagnostic_type const& diagnostic() const noexcept;
 
+    /**
+     * @brief returns the number of nodes in the AST.
+     * @return the number of nodes in the AST
+     * @return 0 if the valid AST does not exist
+     * @return 0 if the check mechanism is not enabled
+     */
+    [[nodiscard]] std::size_t& tree_node_count() noexcept;
+
+    /// @copydoc tree_node_count()
+    [[nodiscard]] std::size_t tree_node_count() const noexcept;
+
+    /**
+     * @brief returns the depth of the AST.
+     * @return the depth of the AST
+     * @return 0 if the valid AST does not exist
+     * @return 0 if the check mechanism is not enabled
+     */
+    [[nodiscard]] std::size_t& max_tree_depth() noexcept;
+
+    /// @copydoc max_tree_depth()
+    [[nodiscard]] std::size_t max_tree_depth() const noexcept;
+
 private:
     value_type value_ {};
     diagnostic_type diagnostic_ {};
+
+    std::size_t tree_node_count_ {};
+    std::size_t max_tree_depth_ {};
 };
 
 } // namespace mizugaki::parser

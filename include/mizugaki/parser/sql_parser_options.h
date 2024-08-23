@@ -13,7 +13,13 @@ public:
     using size_type = std::size_t;
 
     /// @brief default number of next token candidates to display on error.
-    static constexpr std::size_t default_max_expected_candidates = 5;
+    static constexpr size_type default_max_expected_candidates = 5;
+
+    /// @brief default limit of the number of nodes in syntax tree.
+    static constexpr size_type default_tree_node_limit = 0;
+
+    /// @brief default limit of syntax tree depth.
+    static constexpr size_type default_tree_depth_limit = 0;
 
     /**
      * @brief creates a new instance.
@@ -42,6 +48,26 @@ public:
     [[nodiscard]] sql_parser_element_map<size_type> const& element_limits() const noexcept;
 
     /**
+     * @brief sets the limit of syntax tree depth.
+     * @param depth the limit of syntax tree depth, or 0 to disable to limit
+     * @see default_limit_tree_depth
+     */
+    [[nodiscard]] size_type& tree_node_limit() noexcept;
+
+    /// @copydoc limit_tree_depth()
+    [[nodiscard]] size_type const& tree_node_limit() const noexcept;
+
+    /**
+     * @brief sets the limit of syntax tree depth.
+     * @param depth the limit of syntax tree depth, or 0 to disable to limit
+     * @see default_limit_tree_depth
+     */
+    [[nodiscard]] size_type& tree_depth_limit() noexcept;
+
+    /// @copydoc limit_tree_depth()
+    [[nodiscard]] size_type const& tree_depth_limit() const noexcept;
+
+    /**
      * @brief returns the debug level.
      * @return the debug level
      * @note this feature is only available for debug configurations
@@ -55,6 +81,8 @@ private:
     int debug_ {};
     size_type max_expected_candidates_ { default_max_expected_candidates };
     std::unique_ptr<sql_parser_element_map<size_type>> element_limits_;
+    size_type tree_node_limit_ { default_tree_node_limit };
+    size_type tree_depth_limit_ { default_tree_depth_limit };
 };
 
 } // namespace mizugaki::parser

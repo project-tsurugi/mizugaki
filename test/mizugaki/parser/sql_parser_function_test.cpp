@@ -28,14 +28,15 @@ namespace mizugaki::parser {
 
 using namespace testing;
 
-class sql_parser_function_test : public ::testing::Test {};
-
-static sql_parser_result parse(std::string_view str, sql_parser parser = sql_parser {}) {
-    using ::takatori::util::string_builder;
-    return parser("-", string_builder {}
-            << "VALUES (" << str << ");"
-            << string_builder::to_string);
-}
+class sql_parser_function_test : public ::testing::Test {
+protected:
+    sql_parser_result parse(std::string_view str, sql_parser parser = default_parser()) {
+        using ::takatori::util::string_builder;
+        return parser("-", string_builder {}
+                << "VALUES (" << str << ");"
+                << string_builder::to_string);
+    }
+};
 
 static scalar::expression const& extract(sql_parser::result_type const& result) {
     auto&& stmt = result.value()->statements().at(0);

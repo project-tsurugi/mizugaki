@@ -80,12 +80,21 @@ unnest::bool_type const& unnest::with_ordinality() const noexcept {
     return with_ordinality_;
 }
 
+unnest::correlation_type& unnest::correlation() noexcept {
+    return correlation_;
+}
+
+unnest::correlation_type const& unnest::correlation() const noexcept {
+    return correlation_;
+}
+
 bool operator==(unnest const& a, unnest const& b) noexcept {
     if (std::addressof(a) == std::addressof(b)) {
         return true;
     }
     return eq(a.expression_, b.expression_)
-            && eq(a.with_ordinality_, b.with_ordinality_);
+            && eq(a.with_ordinality_, b.with_ordinality_)
+            && eq(a.correlation_, b.correlation_);
 }
 
 bool operator!=(unnest const& a, unnest const& b) noexcept {
@@ -103,6 +112,7 @@ void unnest::serialize(takatori::serializer::object_acceptor& acceptor) const {
     auto obj = struct_block(acceptor, *this);
     property(acceptor, "expression"sv, expression_);
     property(acceptor, "with_ordinality"sv, with_ordinality_);
+    property(acceptor, "correlation"sv, correlation_);
     region_property(acceptor, *this);
 }
 

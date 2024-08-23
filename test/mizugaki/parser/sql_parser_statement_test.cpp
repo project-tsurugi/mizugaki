@@ -32,7 +32,6 @@
 #include <mizugaki/ast/type/simple.h>
 #include <mizugaki/ast/type/decimal.h>
 
-#include <mizugaki/ast/scalar/literal_expression.h>
 #include <mizugaki/ast/scalar/variable_reference.h>
 #include <mizugaki/ast/scalar/comparison_predicate.h>
 #include <mizugaki/ast/scalar/value_constructor.h>
@@ -48,7 +47,12 @@ namespace mizugaki::parser {
 
 using namespace testing;
 
-class sql_parser_statement_test : public ::testing::Test {};
+class sql_parser_statement_test : public ::testing::Test {
+protected:
+    sql_parser_result parse(std::string_view str, sql_parser parser = default_parser()) {
+        return parser("-", std::string { str });
+    }
+};
 
 static statement::statement const& extract(sql_parser::result_type const& result) {
     auto&& statements = result.value()->statements();
@@ -62,8 +66,7 @@ static statement::statement const& extract(sql_parser::result_type const& result
 }
 
 TEST_F(sql_parser_statement_test, empty_document) {
-    sql_parser parser;
-    auto result = parser("-", "");
+    auto result = parse("");
     ASSERT_TRUE(result);
 
     auto cu = std::move(result.value());
@@ -71,16 +74,14 @@ TEST_F(sql_parser_statement_test, empty_document) {
 }
 
 TEST_F(sql_parser_statement_test, empty_statement) {
-    sql_parser parser;
-    auto result = parser("-", ";");
+    auto result = parse(";");
     ASSERT_TRUE(result);
 
     EXPECT_EQ(extract(result), (statement::empty_statement {}));
 }
 
 TEST_F(sql_parser_statement_test, select_statement) {
-    sql_parser parser;
-    auto result = parser("-", "SELECT * FROM T0");
+    auto result = parse("SELECT * FROM T0");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::select_statement {
@@ -101,8 +102,7 @@ TEST_F(sql_parser_statement_test, select_statement) {
 }
 
 TEST_F(sql_parser_statement_test, insert_select) {
-    sql_parser parser;
-    auto result = parser("-", "INSERT INTO T0 SELECT * FROM T1;");
+    auto result = parse("INSERT INTO T0 SELECT * FROM T1;");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::insert_statement {
@@ -123,8 +123,7 @@ TEST_F(sql_parser_statement_test, insert_select) {
 }
 
 TEST_F(sql_parser_statement_test, insert_values) {
-    sql_parser parser;
-    auto result = parser("-", "INSERT INTO T0 VALUES (1);");
+    auto result = parse("INSERT INTO T0 VALUES (1);");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::insert_statement {
@@ -139,8 +138,7 @@ TEST_F(sql_parser_statement_test, insert_values) {
 }
 
 TEST_F(sql_parser_statement_test, insert_values_multirow) {
-    sql_parser parser;
-    auto result = parser("-", "INSERT INTO T0 VALUES (1), (2), (3);");
+    auto result = parse("INSERT INTO T0 VALUES (1), (2), (3);");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::insert_statement {
@@ -161,8 +159,7 @@ TEST_F(sql_parser_statement_test, insert_values_multirow) {
 }
 
 TEST_F(sql_parser_statement_test, insert_default_values) {
-    sql_parser parser;
-    auto result = parser("-", "INSERT INTO T0 DEFAULT VALUES;");
+    auto result = parse("INSERT INTO T0 DEFAULT VALUES;");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::insert_statement {
@@ -173,8 +170,7 @@ TEST_F(sql_parser_statement_test, insert_default_values) {
 }
 
 TEST_F(sql_parser_statement_test, insert_columns) {
-    sql_parser parser;
-    auto result = parser("-", "INSERT INTO T0 (C0, C1) VALUES (1, 2);");
+    auto result = parse("INSERT INTO T0 (C0, C1) VALUES (1, 2);");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::insert_statement {
@@ -193,8 +189,7 @@ TEST_F(sql_parser_statement_test, insert_columns) {
 }
 
 TEST_F(sql_parser_statement_test, insert_or_replace) {
-    sql_parser parser;
-    auto result = parser("-", "INSERT OR REPLACE INTO T0 VALUES (1);");
+    auto result = parse("INSERT OR REPLACE INTO T0 VALUES (1);");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::insert_statement {
@@ -212,8 +207,7 @@ TEST_F(sql_parser_statement_test, insert_or_replace) {
 }
 
 TEST_F(sql_parser_statement_test, insert_or_ignore) {
-    sql_parser parser;
-    auto result = parser("-", "INSERT OR IGNORE INTO T0 VALUES (1);");
+    auto result = parse("INSERT OR IGNORE INTO T0 VALUES (1);");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::insert_statement {
@@ -231,8 +225,7 @@ TEST_F(sql_parser_statement_test, insert_or_ignore) {
 }
 
 TEST_F(sql_parser_statement_test, update_or_insert) {
-    sql_parser parser;
-    auto result = parser("-", "UPDATE OR INSERT INTO T0 VALUES (1);");
+    auto result = parse("UPDATE OR INSERT INTO T0 VALUES (1);");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::insert_statement {
@@ -250,8 +243,7 @@ TEST_F(sql_parser_statement_test, update_or_insert) {
 }
 
 TEST_F(sql_parser_statement_test, insert_if_not_exists) {
-    sql_parser parser;
-    auto result = parser("-", "INSERT IF NOT EXISTS INTO T0 VALUES (1);");
+    auto result = parse("INSERT IF NOT EXISTS INTO T0 VALUES (1);");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::insert_statement {
@@ -269,8 +261,7 @@ TEST_F(sql_parser_statement_test, insert_if_not_exists) {
 }
 
 TEST_F(sql_parser_statement_test, update) {
-    sql_parser parser;
-    auto result = parser("-", "UPDATE T0 SET C0=1, C1 = 2;");
+    auto result = parse("UPDATE T0 SET C0=1, C1 = 2;");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::update_statement {
@@ -289,8 +280,7 @@ TEST_F(sql_parser_statement_test, update) {
 }
 
 TEST_F(sql_parser_statement_test, update_where) {
-    sql_parser parser;
-    auto result = parser("-", "UPDATE T0 SET C0=1, C1 = 2 WHERE C2 = 0;");
+    auto result = parse("UPDATE T0 SET C0=1, C1 = 2 WHERE C2 = 0;");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::update_statement {
@@ -316,8 +306,7 @@ TEST_F(sql_parser_statement_test, update_where) {
 }
 
 TEST_F(sql_parser_statement_test, update_where_current_of_cursor) {
-    sql_parser parser;
-    auto result = parser("-", "UPDATE T0 SET C0=1, C1 = 2 WHERE CURRENT OF cur;");
+    auto result = parse("UPDATE T0 SET C0=1, C1 = 2 WHERE CURRENT OF cur;");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::update_statement {
@@ -339,8 +328,7 @@ TEST_F(sql_parser_statement_test, update_where_current_of_cursor) {
 }
 
 TEST_F(sql_parser_statement_test, delete) {
-    sql_parser parser;
-    auto result = parser("-", "DELETE FROM T0;");
+    auto result = parse("DELETE FROM T0;");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::delete_statement {
@@ -349,8 +337,7 @@ TEST_F(sql_parser_statement_test, delete) {
 }
 
 TEST_F(sql_parser_statement_test, delete_where) {
-    sql_parser parser;
-    auto result = parser("-", "DELETE FROM T0 WHERE C0 = 0;");
+    auto result = parse("DELETE FROM T0 WHERE C0 = 0;");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::delete_statement {
@@ -366,8 +353,7 @@ TEST_F(sql_parser_statement_test, delete_where) {
 }
 
 TEST_F(sql_parser_statement_test, delete_where_current_of_cursor) {
-    sql_parser parser;
-    auto result = parser("-", "DELETE FROM T0 WHERE CURRENT OF cur;");
+    auto result = parse("DELETE FROM T0 WHERE CURRENT OF cur;");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::delete_statement {
@@ -379,8 +365,7 @@ TEST_F(sql_parser_statement_test, delete_where_current_of_cursor) {
 }
 
 TEST_F(sql_parser_statement_test, table_definition) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE TABLE t (id DECIMAL)");
+    auto result = parse("CREATE TABLE t (id DECIMAL)");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::table_definition {
@@ -395,8 +380,7 @@ TEST_F(sql_parser_statement_test, table_definition) {
 }
 
 TEST_F(sql_parser_statement_test, table_definition_columns) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE TABLE t (a DECIMAL, b DECIMAL, c DECIMAL)");
+    auto result = parse("CREATE TABLE t (a DECIMAL, b DECIMAL, c DECIMAL)");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::table_definition {
@@ -419,8 +403,7 @@ TEST_F(sql_parser_statement_test, table_definition_columns) {
 }
 
 TEST_F(sql_parser_statement_test, table_definition_check) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE TABLE t (CHECK(x))");
+    auto result = parse("CREATE TABLE t (CHECK(x))");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::table_definition {
@@ -437,8 +420,7 @@ TEST_F(sql_parser_statement_test, table_definition_check) {
 }
 
 TEST_F(sql_parser_statement_test, table_definition_unique) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE TABLE t (UNIQUE(x))");
+    auto result = parse("CREATE TABLE t (UNIQUE(x))");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::table_definition {
@@ -457,8 +439,7 @@ TEST_F(sql_parser_statement_test, table_definition_unique) {
 }
 
 TEST_F(sql_parser_statement_test, table_definition_unique_columns) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE TABLE t (UNIQUE(a, b, c))");
+    auto result = parse("CREATE TABLE t (UNIQUE(a, b, c))");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::table_definition {
@@ -479,8 +460,7 @@ TEST_F(sql_parser_statement_test, table_definition_unique_columns) {
 }
 
 TEST_F(sql_parser_statement_test, table_definition_unique_asc) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE TABLE t (UNIQUE(a ASC))");
+    auto result = parse("CREATE TABLE t (UNIQUE(a ASC))");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::table_definition {
@@ -502,8 +482,7 @@ TEST_F(sql_parser_statement_test, table_definition_unique_asc) {
 }
 
 TEST_F(sql_parser_statement_test, table_definition_unique_desc) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE TABLE t (UNIQUE(a DESC))");
+    auto result = parse("CREATE TABLE t (UNIQUE(a DESC))");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::table_definition {
@@ -525,8 +504,7 @@ TEST_F(sql_parser_statement_test, table_definition_unique_desc) {
 }
 
 TEST_F(sql_parser_statement_test, table_definition_unique_nulls_first) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE TABLE t (UNIQUE(a NULLS FIRST))");
+    auto result = parse("CREATE TABLE t (UNIQUE(a NULLS FIRST))");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::table_definition {
@@ -550,8 +528,7 @@ TEST_F(sql_parser_statement_test, table_definition_unique_nulls_first) {
 }
 
 TEST_F(sql_parser_statement_test, table_definition_unique_nulls_last) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE TABLE t (UNIQUE(a NULLS LAST))");
+    auto result = parse("CREATE TABLE t (UNIQUE(a NULLS LAST))");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::table_definition {
@@ -575,8 +552,7 @@ TEST_F(sql_parser_statement_test, table_definition_unique_nulls_last) {
 }
 
 TEST_F(sql_parser_statement_test, table_definition_unique_include) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE TABLE t (UNIQUE(a) INCLUDE(b, c))");
+    auto result = parse("CREATE TABLE t (UNIQUE(a) INCLUDE(b, c))");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::table_definition {
@@ -599,8 +575,7 @@ TEST_F(sql_parser_statement_test, table_definition_unique_include) {
 }
 
 TEST_F(sql_parser_statement_test, table_definition_primary_key) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE TABLE t (PRIMARY KEY(a))");
+    auto result = parse("CREATE TABLE t (PRIMARY KEY(a))");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::table_definition {
@@ -619,8 +594,7 @@ TEST_F(sql_parser_statement_test, table_definition_primary_key) {
 }
 
 TEST_F(sql_parser_statement_test, table_definition_foreign_key) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE TABLE t (FOREIGN KEY (a) REFERENCES b)");
+    auto result = parse("CREATE TABLE t (FOREIGN KEY (a) REFERENCES b)");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::table_definition {
@@ -639,8 +613,7 @@ TEST_F(sql_parser_statement_test, table_definition_foreign_key) {
 }
 
 TEST_F(sql_parser_statement_test, table_definition_foreign_key_columns) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE TABLE t (FOREIGN KEY (a, b, c) REFERENCES t (x, y, z))");
+    auto result = parse("CREATE TABLE t (FOREIGN KEY (a, b, c) REFERENCES t (x, y, z))");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::table_definition {
@@ -666,8 +639,7 @@ TEST_F(sql_parser_statement_test, table_definition_foreign_key_columns) {
 }
 
 TEST_F(sql_parser_statement_test, table_definition_foreign_key_on_update) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE TABLE t (FOREIGN KEY (a) REFERENCES t ON UPDATE CASCADE)");
+    auto result = parse("CREATE TABLE t (FOREIGN KEY (a) REFERENCES t ON UPDATE CASCADE)");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::table_definition {
@@ -689,8 +661,7 @@ TEST_F(sql_parser_statement_test, table_definition_foreign_key_on_update) {
 }
 
 TEST_F(sql_parser_statement_test, table_definition_foreign_key_on_delete) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE TABLE t (FOREIGN KEY (a) REFERENCES t ON DELETE SET NULL)");
+    auto result = parse("CREATE TABLE t (FOREIGN KEY (a) REFERENCES t ON DELETE SET NULL)");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::table_definition {
@@ -712,8 +683,7 @@ TEST_F(sql_parser_statement_test, table_definition_foreign_key_on_delete) {
 }
 
 TEST_F(sql_parser_statement_test, table_definition_foreign_key_on_update_delete) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE TABLE t (FOREIGN KEY (a) REFERENCES t ON UPDATE RESTRICT ON DELETE NO ACTION)");
+    auto result = parse("CREATE TABLE t (FOREIGN KEY (a) REFERENCES t ON UPDATE RESTRICT ON DELETE NO ACTION)");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::table_definition {
@@ -735,8 +705,7 @@ TEST_F(sql_parser_statement_test, table_definition_foreign_key_on_update_delete)
 }
 
 TEST_F(sql_parser_statement_test, table_definition_foreign_key_on_delete_update) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE TABLE t (FOREIGN KEY (a) REFERENCES t ON DELETE RESTRICT ON UPDATE NO ACTION)");
+    auto result = parse("CREATE TABLE t (FOREIGN KEY (a) REFERENCES t ON DELETE RESTRICT ON UPDATE NO ACTION)");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::table_definition {
@@ -758,8 +727,7 @@ TEST_F(sql_parser_statement_test, table_definition_foreign_key_on_delete_update)
 }
 
 TEST_F(sql_parser_statement_test, table_definition_column_null) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE TABLE t (a DECIMAL NULL)");
+    auto result = parse("CREATE TABLE t (a DECIMAL NULL)");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::table_definition {
@@ -777,8 +745,7 @@ TEST_F(sql_parser_statement_test, table_definition_column_null) {
 }
 
 TEST_F(sql_parser_statement_test, table_definition_column_not_null) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE TABLE t (a DECIMAL NOT NULL)");
+    auto result = parse("CREATE TABLE t (a DECIMAL NOT NULL)");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::table_definition {
@@ -796,8 +763,7 @@ TEST_F(sql_parser_statement_test, table_definition_column_not_null) {
 }
 
 TEST_F(sql_parser_statement_test, table_definition_column_check) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE TABLE t (a DECIMAL CHECK(x))");
+    auto result = parse("CREATE TABLE t (a DECIMAL CHECK(x))");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::table_definition {
@@ -818,8 +784,7 @@ TEST_F(sql_parser_statement_test, table_definition_column_check) {
 }
 
 TEST_F(sql_parser_statement_test, table_definition_column_default_clause) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE TABLE t (a DECIMAL DEFAULT x)");
+    auto result = parse("CREATE TABLE t (a DECIMAL DEFAULT x)");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::table_definition {
@@ -840,8 +805,7 @@ TEST_F(sql_parser_statement_test, table_definition_column_default_clause) {
 }
 
 TEST_F(sql_parser_statement_test, table_definition_column_default_next_sequence) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE TABLE t (a BIGINT DEFAULT NEXT VALUE FOR x)");
+    auto result = parse("CREATE TABLE t (a BIGINT DEFAULT NEXT VALUE FOR x)");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::table_definition {
@@ -867,8 +831,7 @@ TEST_F(sql_parser_statement_test, table_definition_column_default_next_sequence)
 }
 
 TEST_F(sql_parser_statement_test, table_definition_column_generation) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE TABLE t (a DECIMAL GENERATED ALWAYS AS (x))");
+    auto result = parse("CREATE TABLE t (a DECIMAL GENERATED ALWAYS AS (x))");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::table_definition {
@@ -889,8 +852,7 @@ TEST_F(sql_parser_statement_test, table_definition_column_generation) {
 }
 
 TEST_F(sql_parser_statement_test, table_definition_column_identity_always) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE TABLE t (a DECIMAL GENERATED ALWAYS AS IDENTITY)");
+    auto result = parse("CREATE TABLE t (a DECIMAL GENERATED ALWAYS AS IDENTITY)");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::table_definition {
@@ -910,8 +872,7 @@ TEST_F(sql_parser_statement_test, table_definition_column_identity_always) {
 }
 
 TEST_F(sql_parser_statement_test, table_definition_column_identity_by_default) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE TABLE t (a DECIMAL GENERATED BY DEFAULT AS IDENTITY)");
+    auto result = parse("CREATE TABLE t (a DECIMAL GENERATED BY DEFAULT AS IDENTITY)");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::table_definition {
@@ -931,8 +892,7 @@ TEST_F(sql_parser_statement_test, table_definition_column_identity_by_default) {
 }
 
 TEST_F(sql_parser_statement_test, table_definition_column_unique) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE TABLE t (a DECIMAL UNIQUE)");
+    auto result = parse("CREATE TABLE t (a DECIMAL UNIQUE)");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::table_definition {
@@ -952,8 +912,7 @@ TEST_F(sql_parser_statement_test, table_definition_column_unique) {
 }
 
 TEST_F(sql_parser_statement_test, table_definition_column_primary_key) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE TABLE t (a DECIMAL PRIMARY KEY)");
+    auto result = parse("CREATE TABLE t (a DECIMAL PRIMARY KEY)");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::table_definition {
@@ -973,8 +932,7 @@ TEST_F(sql_parser_statement_test, table_definition_column_primary_key) {
 }
 
 TEST_F(sql_parser_statement_test, table_definition_column_referential) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE TABLE t (a DECIMAL REFERENCES s (k))");
+    auto result = parse("CREATE TABLE t (a DECIMAL REFERENCES s (k))");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::table_definition {
@@ -998,8 +956,7 @@ TEST_F(sql_parser_statement_test, table_definition_column_referential) {
 }
 
 TEST_F(sql_parser_statement_test, table_definition_temporary) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE TEMPORARY TABLE t (id DECIMAL)");
+    auto result = parse("CREATE TEMPORARY TABLE t (id DECIMAL)");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::table_definition {
@@ -1017,8 +974,7 @@ TEST_F(sql_parser_statement_test, table_definition_temporary) {
 }
 
 TEST_F(sql_parser_statement_test, table_definition_if_not_exists) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE TABLE IF NOT EXISTS t (id DECIMAL)");
+    auto result = parse("CREATE TABLE IF NOT EXISTS t (id DECIMAL)");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::table_definition {
@@ -1036,8 +992,7 @@ TEST_F(sql_parser_statement_test, table_definition_if_not_exists) {
 }
 
 TEST_F(sql_parser_statement_test, table_definition_parameters) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE TABLE t (id DECIMAL) WITH (u=v)");
+    auto result = parse("CREATE TABLE t (id DECIMAL) WITH (u=v)");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::table_definition {
@@ -1059,8 +1014,7 @@ TEST_F(sql_parser_statement_test, table_definition_parameters) {
 }
 
 TEST_F(sql_parser_statement_test, table_definition_parameters_multiple) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE TABLE t (id DECIMAL) WITH (u=v, p=q, x=y)");
+    auto result = parse("CREATE TABLE t (id DECIMAL) WITH (u=v, p=q, x=y)");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::table_definition {
@@ -1090,8 +1044,7 @@ TEST_F(sql_parser_statement_test, table_definition_parameters_multiple) {
 }
 
 TEST_F(sql_parser_statement_test, index_definition) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE INDEX i ON t (a)");
+    auto result = parse("CREATE INDEX i ON t (a)");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::index_definition {
@@ -1104,8 +1057,7 @@ TEST_F(sql_parser_statement_test, index_definition) {
 }
 
 TEST_F(sql_parser_statement_test, index_definition_unique) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE UNIQUE INDEX i ON t (a)");
+    auto result = parse("CREATE UNIQUE INDEX i ON t (a)");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::index_definition {
@@ -1121,8 +1073,7 @@ TEST_F(sql_parser_statement_test, index_definition_unique) {
 }
 
 TEST_F(sql_parser_statement_test, index_definition_if_not_exists) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE INDEX IF NOT EXISTS i ON t (a)");
+    auto result = parse("CREATE INDEX IF NOT EXISTS i ON t (a)");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::index_definition {
@@ -1138,8 +1089,7 @@ TEST_F(sql_parser_statement_test, index_definition_if_not_exists) {
 }
 
 TEST_F(sql_parser_statement_test, index_definition_omit_name) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE INDEX ON t (a)");
+    auto result = parse("CREATE INDEX ON t (a)");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::index_definition {
@@ -1152,8 +1102,7 @@ TEST_F(sql_parser_statement_test, index_definition_omit_name) {
 }
 
 TEST_F(sql_parser_statement_test, index_definition_columns) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE INDEX i ON t (a, b, c)");
+    auto result = parse("CREATE INDEX i ON t (a, b, c)");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::index_definition {
@@ -1168,8 +1117,7 @@ TEST_F(sql_parser_statement_test, index_definition_columns) {
 }
 
 TEST_F(sql_parser_statement_test, index_definition_order) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE INDEX i ON t (a ASC)");
+    auto result = parse("CREATE INDEX i ON t (a ASC)");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::index_definition {
@@ -1184,8 +1132,7 @@ TEST_F(sql_parser_statement_test, index_definition_order) {
     }));
 }
 TEST_F(sql_parser_statement_test, index_definition_null_ordering) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE INDEX i ON t (a NULLS FIRST)");
+    auto result = parse("CREATE INDEX i ON t (a NULLS FIRST)");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::index_definition {
@@ -1203,8 +1150,7 @@ TEST_F(sql_parser_statement_test, index_definition_null_ordering) {
 }
 
 TEST_F(sql_parser_statement_test, index_definition_values) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE INDEX i ON t (a) INCLUDE (b, c)");
+    auto result = parse("CREATE INDEX i ON t (a) INCLUDE (b, c)");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::index_definition {
@@ -1221,8 +1167,7 @@ TEST_F(sql_parser_statement_test, index_definition_values) {
 }
 
 TEST_F(sql_parser_statement_test, index_definition_predicate) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE INDEX i ON t (a) WHERE p");
+    auto result = parse("CREATE INDEX i ON t (a) WHERE p");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::index_definition {
@@ -1238,8 +1183,7 @@ TEST_F(sql_parser_statement_test, index_definition_predicate) {
 }
 
 TEST_F(sql_parser_statement_test, index_definition_parameters) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE INDEX i ON t (a) WITH (p=q)");
+    auto result = parse("CREATE INDEX i ON t (a) WITH (p=q)");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::index_definition {
@@ -1261,8 +1205,7 @@ TEST_F(sql_parser_statement_test, index_definition_parameters) {
 }
 
 TEST_F(sql_parser_statement_test, view_definition) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE VIEW v AS VALUES (1)");
+    auto result = parse("CREATE VIEW v AS VALUES (1)");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::view_definition {
@@ -1277,8 +1220,7 @@ TEST_F(sql_parser_statement_test, view_definition) {
 }
 
 TEST_F(sql_parser_statement_test, view_definition_or_replace) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE OR REPLACE VIEW v AS VALUES (1)");
+    auto result = parse("CREATE OR REPLACE VIEW v AS VALUES (1)");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::view_definition {
@@ -1297,8 +1239,7 @@ TEST_F(sql_parser_statement_test, view_definition_or_replace) {
 
 
 TEST_F(sql_parser_statement_test, view_definition_temporary) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE TEMPORARY VIEW v AS VALUES (1)");
+    auto result = parse("CREATE TEMPORARY VIEW v AS VALUES (1)");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::view_definition {
@@ -1316,8 +1257,7 @@ TEST_F(sql_parser_statement_test, view_definition_temporary) {
 }
 
 TEST_F(sql_parser_statement_test, view_definition_recursive) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE RECURSIVE VIEW v AS VALUES (1)");
+    auto result = parse("CREATE RECURSIVE VIEW v AS VALUES (1)");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::view_definition {
@@ -1335,8 +1275,7 @@ TEST_F(sql_parser_statement_test, view_definition_recursive) {
 }
 
 TEST_F(sql_parser_statement_test, view_definition_if_not_exists) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE VIEW IF NOT EXISTS v AS VALUES (1)");
+    auto result = parse("CREATE VIEW IF NOT EXISTS v AS VALUES (1)");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::view_definition {
@@ -1354,8 +1293,7 @@ TEST_F(sql_parser_statement_test, view_definition_if_not_exists) {
 }
 
 TEST_F(sql_parser_statement_test, view_definition_columns) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE VIEW v (a) AS VALUES (1)");
+    auto result = parse("CREATE VIEW v (a) AS VALUES (1)");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::view_definition {
@@ -1372,8 +1310,7 @@ TEST_F(sql_parser_statement_test, view_definition_columns) {
 }
 
 TEST_F(sql_parser_statement_test, view_definition_columns_multiple) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE VIEW v (a, b, c) AS VALUES (1, 2, 3)");
+    auto result = parse("CREATE VIEW v (a, b, c) AS VALUES (1, 2, 3)");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::view_definition {
@@ -1394,8 +1331,7 @@ TEST_F(sql_parser_statement_test, view_definition_columns_multiple) {
 }
 
 TEST_F(sql_parser_statement_test, view_definition_parameters) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE VIEW v WITH (u=v) AS VALUES (1)");
+    auto result = parse("CREATE VIEW v WITH (u=v) AS VALUES (1)");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::view_definition {
@@ -1417,8 +1353,7 @@ TEST_F(sql_parser_statement_test, view_definition_parameters) {
 }
 
 TEST_F(sql_parser_statement_test, sequence_definition) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE SEQUENCE s");
+    auto result = parse("CREATE SEQUENCE s");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::sequence_definition {
@@ -1427,8 +1362,7 @@ TEST_F(sql_parser_statement_test, sequence_definition) {
 }
 
 TEST_F(sql_parser_statement_test, sequence_definition_temporary) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE TEMPORARY SEQUENCE s");
+    auto result = parse("CREATE TEMPORARY SEQUENCE s");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::sequence_definition {
@@ -1446,8 +1380,7 @@ TEST_F(sql_parser_statement_test, sequence_definition_temporary) {
 }
 
 TEST_F(sql_parser_statement_test, sequence_definition_if_not_exists) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE SEQUENCE IF NOT EXISTS s");
+    auto result = parse("CREATE SEQUENCE IF NOT EXISTS s");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::sequence_definition {
@@ -1465,8 +1398,7 @@ TEST_F(sql_parser_statement_test, sequence_definition_if_not_exists) {
 }
 
 TEST_F(sql_parser_statement_test, sequence_definition_type) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE SEQUENCE s AS DECIMAL");
+    auto result = parse("CREATE SEQUENCE s AS DECIMAL");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::sequence_definition {
@@ -1476,14 +1408,12 @@ TEST_F(sql_parser_statement_test, sequence_definition_type) {
 }
 
 TEST_F(sql_parser_statement_test, sequence_definition_type_dup) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE SEQUENCE s AS DECIMAL AS DECIMAL");
+    auto result = parse("CREATE SEQUENCE s AS DECIMAL AS DECIMAL");
     ASSERT_FALSE(result) << diagnostics(result);
 }
 
 TEST_F(sql_parser_statement_test, sequence_definition_owner) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE SEQUENCE s OWNED BY a.b");
+    auto result = parse("CREATE SEQUENCE s OWNED BY a.b");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::sequence_definition {
@@ -1498,14 +1428,12 @@ TEST_F(sql_parser_statement_test, sequence_definition_owner) {
 }
 
 TEST_F(sql_parser_statement_test, sequence_definition_owner_dup) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE SEQUENCE s OWNED BY a OWNED BY b");
+    auto result = parse("CREATE SEQUENCE s OWNED BY a OWNED BY b");
     ASSERT_FALSE(result) << diagnostics(result);
 }
 
 TEST_F(sql_parser_statement_test, sequence_definition_start) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE SEQUENCE s START WITH 1");
+    auto result = parse("CREATE SEQUENCE s START WITH 1");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::sequence_definition {
@@ -1516,8 +1444,7 @@ TEST_F(sql_parser_statement_test, sequence_definition_start) {
 }
 
 TEST_F(sql_parser_statement_test, sequence_definition_start_shorten) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE SEQUENCE s START 1");
+    auto result = parse("CREATE SEQUENCE s START 1");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::sequence_definition {
@@ -1528,14 +1455,12 @@ TEST_F(sql_parser_statement_test, sequence_definition_start_shorten) {
 }
 
 TEST_F(sql_parser_statement_test, sequence_definition_start_dup) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE SEQUENCE s START WITH 1 START WITH 1");
+    auto result = parse("CREATE SEQUENCE s START WITH 1 START WITH 1");
     ASSERT_FALSE(result) << diagnostics(result);
 }
 
 TEST_F(sql_parser_statement_test, sequence_definition_increment) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE SEQUENCE s INCREMENT BY 1");
+    auto result = parse("CREATE SEQUENCE s INCREMENT BY 1");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::sequence_definition {
@@ -1547,8 +1472,7 @@ TEST_F(sql_parser_statement_test, sequence_definition_increment) {
 }
 
 TEST_F(sql_parser_statement_test, sequence_definition_increment_shorten) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE SEQUENCE s INCREMENT 1");
+    auto result = parse("CREATE SEQUENCE s INCREMENT 1");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::sequence_definition {
@@ -1560,14 +1484,12 @@ TEST_F(sql_parser_statement_test, sequence_definition_increment_shorten) {
 }
 
 TEST_F(sql_parser_statement_test, sequence_definition_increment_dup) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE SEQUENCE s INCREMENT BY 1 INCREMENT BY 2");
+    auto result = parse("CREATE SEQUENCE s INCREMENT BY 1 INCREMENT BY 2");
     ASSERT_FALSE(result) << diagnostics(result);
 }
 
 TEST_F(sql_parser_statement_test, sequence_definition_max) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE SEQUENCE s MAXVALUE 1");
+    auto result = parse("CREATE SEQUENCE s MAXVALUE 1");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::sequence_definition {
@@ -1581,14 +1503,12 @@ TEST_F(sql_parser_statement_test, sequence_definition_max) {
 }
 
 TEST_F(sql_parser_statement_test, sequence_definition_max_dup) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE SEQUENCE s MAXVALUE 1 MAXVALUE 2");
+    auto result = parse("CREATE SEQUENCE s MAXVALUE 1 MAXVALUE 2");
     ASSERT_FALSE(result) << diagnostics(result);
 }
 
 TEST_F(sql_parser_statement_test, sequence_definition_no_max) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE SEQUENCE s NO MAXVALUE");
+    auto result = parse("CREATE SEQUENCE s NO MAXVALUE");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::sequence_definition {
@@ -1597,14 +1517,12 @@ TEST_F(sql_parser_statement_test, sequence_definition_no_max) {
 }
 
 TEST_F(sql_parser_statement_test, sequence_definition_max_conflict) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE SEQUENCE s MAXVALUE 1 NO MAXVALUE");
+    auto result = parse("CREATE SEQUENCE s MAXVALUE 1 NO MAXVALUE");
     ASSERT_FALSE(result) << diagnostics(result);
 }
 
 TEST_F(sql_parser_statement_test, sequence_definition_min) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE SEQUENCE s MINVALUE 1");
+    auto result = parse("CREATE SEQUENCE s MINVALUE 1");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::sequence_definition {
@@ -1617,14 +1535,12 @@ TEST_F(sql_parser_statement_test, sequence_definition_min) {
 }
 
 TEST_F(sql_parser_statement_test, sequence_definition_min_dup) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE SEQUENCE s MINVALUE 1 MINVALUE 2");
+    auto result = parse("CREATE SEQUENCE s MINVALUE 1 MINVALUE 2");
     ASSERT_FALSE(result) << diagnostics(result);
 }
 
 TEST_F(sql_parser_statement_test, sequence_definition_no_min) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE SEQUENCE s NO MINVALUE");
+    auto result = parse("CREATE SEQUENCE s NO MINVALUE");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::sequence_definition {
@@ -1633,14 +1549,12 @@ TEST_F(sql_parser_statement_test, sequence_definition_no_min) {
 }
 
 TEST_F(sql_parser_statement_test, sequence_definition_min_conflict) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE SEQUENCE s NO MINVALUE MINVALUE 1");
+    auto result = parse("CREATE SEQUENCE s NO MINVALUE MINVALUE 1");
     ASSERT_FALSE(result) << diagnostics(result);
 }
 
 TEST_F(sql_parser_statement_test, sequence_definition_cycle) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE SEQUENCE s CYCLE");
+    auto result = parse("CREATE SEQUENCE s CYCLE");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::sequence_definition {
@@ -1658,14 +1572,12 @@ TEST_F(sql_parser_statement_test, sequence_definition_cycle) {
 }
 
 TEST_F(sql_parser_statement_test, sequence_definition_cycle_dup) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE SEQUENCE s CYCLE CYCLE");
+    auto result = parse("CREATE SEQUENCE s CYCLE CYCLE");
     ASSERT_FALSE(result) << diagnostics(result);
 }
 
 TEST_F(sql_parser_statement_test, sequence_definition_no_cycle) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE SEQUENCE s NO CYCLE");
+    auto result = parse("CREATE SEQUENCE s NO CYCLE");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::sequence_definition {
@@ -1683,14 +1595,12 @@ TEST_F(sql_parser_statement_test, sequence_definition_no_cycle) {
 }
 
 TEST_F(sql_parser_statement_test, sequence_definition_cycle_conflict) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE SEQUENCE s CYCLE NO CYCLE");
+    auto result = parse("CREATE SEQUENCE s CYCLE NO CYCLE");
     ASSERT_FALSE(result) << diagnostics(result);
 }
 
 TEST_F(sql_parser_statement_test, sequence_definition_options) {
-    sql_parser parser;
-    auto result = parser("-",
+    auto result = parse(
             "CREATE SEQUENCE s "
             "START WITH 1 "
             "INCREMENT BY 2 "
@@ -1716,8 +1626,7 @@ TEST_F(sql_parser_statement_test, sequence_definition_options) {
 }
 
 TEST_F(sql_parser_statement_test, schema_definition) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE SCHEMA s");
+    auto result = parse("CREATE SCHEMA s");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::schema_definition {
@@ -1726,8 +1635,7 @@ TEST_F(sql_parser_statement_test, schema_definition) {
 }
 
 TEST_F(sql_parser_statement_test, schema_definition_if_not_exists) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE SCHEMA IF NOT EXISTS s");
+    auto result = parse("CREATE SCHEMA IF NOT EXISTS s");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::schema_definition {
@@ -1739,8 +1647,7 @@ TEST_F(sql_parser_statement_test, schema_definition_if_not_exists) {
 }
 
 TEST_F(sql_parser_statement_test, schema_definition_authorization) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE SCHEMA AUTHORIZATION a");
+    auto result = parse("CREATE SCHEMA AUTHORIZATION a");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::schema_definition {
@@ -1750,8 +1657,7 @@ TEST_F(sql_parser_statement_test, schema_definition_authorization) {
 }
 
 TEST_F(sql_parser_statement_test, schema_definition_name_authorization) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE SCHEMA s AUTHORIZATION a");
+    auto result = parse("CREATE SCHEMA s AUTHORIZATION a");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::schema_definition {
@@ -1761,8 +1667,7 @@ TEST_F(sql_parser_statement_test, schema_definition_name_authorization) {
 }
 
 TEST_F(sql_parser_statement_test, schema_definition_authorization_current_role) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE SCHEMA AUTHORIZATION current_role");
+    auto result = parse("CREATE SCHEMA AUTHORIZATION current_role");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::schema_definition {
@@ -1772,8 +1677,7 @@ TEST_F(sql_parser_statement_test, schema_definition_authorization_current_role) 
 }
 
 TEST_F(sql_parser_statement_test, schema_definition_elements) {
-    sql_parser parser;
-    auto result = parser("-", "CREATE SCHEMA s CREATE TABLE t (id INT)");
+    auto result = parse("CREATE SCHEMA s CREATE TABLE t (id INT)");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::schema_definition {
@@ -1794,8 +1698,7 @@ TEST_F(sql_parser_statement_test, schema_definition_elements) {
 }
 
 TEST_F(sql_parser_statement_test, schema_definition_elements_multiple) {
-    sql_parser parser;
-    auto result = parser("-",
+    auto result = parse(
             "CREATE SCHEMA s "
             "  CREATE TABLE t (id INT) "
             "  CREATE INDEX i ON t(id) "
@@ -1836,8 +1739,7 @@ TEST_F(sql_parser_statement_test, schema_definition_elements_multiple) {
 }
 
 TEST_F(sql_parser_statement_test, drop_statement) {
-    sql_parser parser;
-    auto result = parser("-", "DROP TABLE T0");
+    auto result = parse("DROP TABLE T0");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::drop_statement {
@@ -1847,8 +1749,7 @@ TEST_F(sql_parser_statement_test, drop_statement) {
 }
 
 TEST_F(sql_parser_statement_test, drop_statement_qualified) {
-    sql_parser parser;
-    auto result = parser("-", "DROP TABLE a.b.T0");
+    auto result = parse("DROP TABLE a.b.T0");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::drop_statement {
@@ -1862,8 +1763,7 @@ TEST_F(sql_parser_statement_test, drop_statement_qualified) {
 }
 
 TEST_F(sql_parser_statement_test, drop_statement_if_exists) {
-    sql_parser parser;
-    auto result = parser("-", "DROP TABLE IF EXISTS T0");
+    auto result = parse("DROP TABLE IF EXISTS T0");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::drop_statement {
@@ -1874,8 +1774,7 @@ TEST_F(sql_parser_statement_test, drop_statement_if_exists) {
 }
 
 TEST_F(sql_parser_statement_test, drop_statement_behavior) {
-    sql_parser parser;
-    auto result = parser("-", "DROP TABLE T0 CASCADE");
+    auto result = parse("DROP TABLE T0 CASCADE");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::drop_statement {
@@ -1886,8 +1785,7 @@ TEST_F(sql_parser_statement_test, drop_statement_behavior) {
 }
 
 TEST_F(sql_parser_statement_test, drop_statement_index) {
-    sql_parser parser;
-    auto result = parser("-", "DROP INDEX T0");
+    auto result = parse("DROP INDEX T0");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::drop_statement {
@@ -1897,8 +1795,7 @@ TEST_F(sql_parser_statement_test, drop_statement_index) {
 }
 
 TEST_F(sql_parser_statement_test, drop_statement_view) {
-    sql_parser parser;
-    auto result = parser("-", "DROP VIEW T0");
+    auto result = parse("DROP VIEW T0");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::drop_statement {
@@ -1908,8 +1805,7 @@ TEST_F(sql_parser_statement_test, drop_statement_view) {
 }
 
 TEST_F(sql_parser_statement_test, drop_statement_sequence) {
-    sql_parser parser;
-    auto result = parser("-", "DROP SEQUENCE T0");
+    auto result = parse("DROP SEQUENCE T0");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::drop_statement {
@@ -1919,8 +1815,7 @@ TEST_F(sql_parser_statement_test, drop_statement_sequence) {
 }
 
 TEST_F(sql_parser_statement_test, drop_statement_schema) {
-    sql_parser parser;
-    auto result = parser("-", "DROP SCHEMA T0");
+    auto result = parse("DROP SCHEMA T0");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::drop_statement {

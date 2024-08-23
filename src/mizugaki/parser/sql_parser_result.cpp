@@ -46,5 +46,21 @@ sql_parser_result::diagnostic_type const& sql_parser_result::diagnostic() const 
     return diagnostic_;
 }
 
+std::size_t &sql_parser_result::tree_node_count() noexcept {
+    return tree_node_count_;
+}
+
+std::size_t sql_parser_result::tree_node_count() const noexcept {
+    return tree_node_count_;
+}
+
+std::size_t &sql_parser_result::max_tree_depth() noexcept {
+    return max_tree_depth_;
+}
+
+std::size_t sql_parser_result::max_tree_depth() const noexcept {
+    return max_tree_depth_;
+}
+
 } // namespace mizugaki::parser
 

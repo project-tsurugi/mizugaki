@@ -28,7 +28,13 @@ namespace mizugaki::parser {
 
 using namespace testing;
 
-class sql_parser_query_test : public ::testing::Test {};
+class sql_parser_query_test : public ::testing::Test {
+protected:
+    sql_parser_result parse(std::string_view str, sql_parser parser = default_parser()) {
+        using ::takatori::util::string_builder;
+        return parser("-",std::string { str });
+    }
+};
 
 static query::expression const& extract(sql_parser::result_type const& result) {
     auto&& stmt = *result.value()->statements().at(0);
@@ -37,8 +43,7 @@ static query::expression const& extract(sql_parser::result_type const& result) {
 }
 
 TEST_F(sql_parser_query_test, query_asterisk) {
-    sql_parser parser;
-    auto result = parser("-", "SELECT * FROM T0;");
+    auto result = parse("SELECT * FROM T0;");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::query {
@@ -54,8 +59,7 @@ TEST_F(sql_parser_query_test, query_asterisk) {
 }
 
 TEST_F(sql_parser_query_test, query_distinct) {
-    sql_parser parser;
-    auto result = parser("-", "SELECT DISTINCT * FROM T0;");
+    auto result = parse("SELECT DISTINCT * FROM T0;");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::query {
@@ -72,8 +76,7 @@ TEST_F(sql_parser_query_test, query_distinct) {
 }
 
 TEST_F(sql_parser_query_test, query_asterisk_qualified) {
-    sql_parser parser;
-    auto result = parser("-", "SELECT T0.* FROM T0;");
+    auto result = parse("SELECT T0.* FROM T0;");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::query {
@@ -93,8 +96,7 @@ TEST_F(sql_parser_query_test, query_asterisk_qualified) {
 }
 
 TEST_F(sql_parser_query_test, query_column) {
-    sql_parser parser;
-    auto result = parser("-", "SELECT C0 FROM T0;");
+    auto result = parse("SELECT C0 FROM T0;");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::query {
@@ -114,8 +116,7 @@ TEST_F(sql_parser_query_test, query_column) {
 }
 
 TEST_F(sql_parser_query_test, query_column_name) {
-    sql_parser parser;
-    auto result = parser("-", "SELECT C0 AS x0 FROM T0;");
+    auto result = parse("SELECT C0 AS x0 FROM T0;");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::query {
@@ -136,8 +137,7 @@ TEST_F(sql_parser_query_test, query_column_name) {
 }
 
 TEST_F(sql_parser_query_test, query_column_name_without_as) {
-    sql_parser parser;
-    auto result = parser("-", "SELECT C0 x0 FROM T0;");
+    auto result = parse("SELECT C0 x0 FROM T0;");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::query {
@@ -158,8 +158,7 @@ TEST_F(sql_parser_query_test, query_column_name_without_as) {
 }
 
 TEST_F(sql_parser_query_test, query_where) {
-    sql_parser parser;
-    auto result = parser("-", "SELECT * FROM T0 WHERE a < 0;");
+    auto result = parse("SELECT * FROM T0 WHERE a < 0;");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::query {
@@ -184,8 +183,7 @@ TEST_F(sql_parser_query_test, query_where) {
 }
 
 TEST_F(sql_parser_query_test, query_group_by_grand_total) {
-    sql_parser parser;
-    auto result = parser("-", "SELECT C0, C1 FROM T0 GROUP BY ();");
+    auto result = parse("SELECT C0, C1 FROM T0 GROUP BY ();");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::query {
@@ -215,8 +213,7 @@ TEST_F(sql_parser_query_test, query_group_by_grand_total) {
 }
 
 TEST_F(sql_parser_query_test, query_group_by_columns) {
-    sql_parser parser;
-    auto result = parser("-", "SELECT C0, C1 FROM T0 GROUP BY C0, C1;");
+    auto result = parse("SELECT C0, C1 FROM T0 GROUP BY C0, C1;");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::query {
@@ -257,8 +254,7 @@ TEST_F(sql_parser_query_test, query_group_by_columns) {
 }
 
 TEST_F(sql_parser_query_test, query_group_by_having) {
-    sql_parser parser;
-    auto result = parser("-", "SELECT C0 FROM T0 GROUP BY C0, C1 HAVING C1 = 0;");
+    auto result = parse("SELECT C0 FROM T0 GROUP BY C0, C1 HAVING C1 = 0;");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::query {
@@ -303,8 +299,7 @@ TEST_F(sql_parser_query_test, query_group_by_having) {
 }
 
 TEST_F(sql_parser_query_test, query_order_by) {
-    sql_parser parser;
-    auto result = parser("-", "SELECT C0 FROM T0 ORDER BY C0, C1 ASC, C2 DESC;");
+    auto result = parse("SELECT C0 FROM T0 ORDER BY C0, C1 ASC, C2 DESC;");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::query {
@@ -341,8 +336,7 @@ TEST_F(sql_parser_query_test, query_order_by) {
 }
 
 TEST_F(sql_parser_query_test, query_limit) {
-    sql_parser parser;
-    auto result = parser("-", "SELECT C0 FROM T0 LIMIT 10;");
+    auto result = parse("SELECT C0 FROM T0 LIMIT 10;");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::query {
@@ -371,8 +365,7 @@ TEST_F(sql_parser_query_test, query_limit) {
 }
 
 TEST_F(sql_parser_query_test, query_wo_from) {
-    sql_parser parser;
-    auto result = parser("-", "SELECT 1;");
+    auto result = parse("SELECT 1;");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::query {
@@ -385,8 +378,7 @@ TEST_F(sql_parser_query_test, query_wo_from) {
 }
 
 TEST_F(sql_parser_query_test, explicit_table) {
-    sql_parser parser;
-    auto result = parser("-", "TABLE T0;");
+    auto result = parse("TABLE T0;");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::table_reference {
@@ -395,8 +387,7 @@ TEST_F(sql_parser_query_test, explicit_table) {
 }
 
 TEST_F(sql_parser_query_test, table_value_constructor) {
-    sql_parser parser;
-    auto result = parser("-", "VALUES (1);");
+    auto result = parse("VALUES (1);");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::table_value_constructor {
@@ -407,8 +398,7 @@ TEST_F(sql_parser_query_test, table_value_constructor) {
 }
 
 TEST_F(sql_parser_query_test, table_value_constructor_columns) {
-    sql_parser parser;
-    auto result = parser("-", "VALUES (1, 2, 3);");
+    auto result = parse("VALUES (1, 2, 3);");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::table_value_constructor {
@@ -421,8 +411,7 @@ TEST_F(sql_parser_query_test, table_value_constructor_columns) {
 }
 
 TEST_F(sql_parser_query_test, table_value_constructor_rows) {
-    sql_parser parser;
-    auto result = parser("-", "VALUES (1), (2), (3);");
+    auto result = parse("VALUES (1), (2), (3);");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::table_value_constructor {
@@ -439,8 +428,7 @@ TEST_F(sql_parser_query_test, table_value_constructor_rows) {
 }
 
 TEST_F(sql_parser_query_test, binary_expression_union) {
-    sql_parser parser;
-    auto result = parser("-", "TABLE a UNION TABLE b;");
+    auto result = parse("TABLE a UNION TABLE b;");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::binary_expression {
@@ -455,8 +443,7 @@ TEST_F(sql_parser_query_test, binary_expression_union) {
 }
 
 TEST_F(sql_parser_query_test, binary_expression_outer_union) {
-    sql_parser parser;
-    auto result = parser("-", "TABLE a OUTER UNION TABLE b;");
+    auto result = parse("TABLE a OUTER UNION TABLE b;");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::binary_expression {
@@ -471,8 +458,7 @@ TEST_F(sql_parser_query_test, binary_expression_outer_union) {
 }
 
 TEST_F(sql_parser_query_test, binary_expression_except) {
-    sql_parser parser;
-    auto result = parser("-", "TABLE a EXCEPT TABLE b;");
+    auto result = parse("TABLE a EXCEPT TABLE b;");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::binary_expression {
@@ -487,8 +473,7 @@ TEST_F(sql_parser_query_test, binary_expression_except) {
 }
 
 TEST_F(sql_parser_query_test, binary_expression_intersect) {
-    sql_parser parser;
-    auto result = parser("-", "TABLE a INTERSECT TABLE b;");
+    auto result = parse("TABLE a INTERSECT TABLE b;");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::binary_expression {
@@ -503,8 +488,7 @@ TEST_F(sql_parser_query_test, binary_expression_intersect) {
 }
 
 TEST_F(sql_parser_query_test, binary_expression_precedence) {
-    sql_parser parser;
-    auto result = parser("-", "TABLE T0 UNION TABLE T1 EXCEPT TABLE T2 INTERSECT TABLE T3;");
+    auto result = parse("TABLE T0 UNION TABLE T1 EXCEPT TABLE T2 INTERSECT TABLE T3;");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::binary_expression {
@@ -531,8 +515,7 @@ TEST_F(sql_parser_query_test, binary_expression_precedence) {
 }
 
 TEST_F(sql_parser_query_test, binary_expression_all) {
-    sql_parser parser;
-    auto result = parser("-", "TABLE a UNION ALL TABLE b;");
+    auto result = parse("TABLE a UNION ALL TABLE b;");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::binary_expression {
@@ -548,8 +531,7 @@ TEST_F(sql_parser_query_test, binary_expression_all) {
 }
 
 TEST_F(sql_parser_query_test, binary_expression_distinct) {
-    sql_parser parser;
-    auto result = parser("-", "TABLE a UNION DISTINCT TABLE b;");
+    auto result = parse("TABLE a UNION DISTINCT TABLE b;");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::binary_expression {
@@ -565,8 +547,7 @@ TEST_F(sql_parser_query_test, binary_expression_distinct) {
 }
 
 TEST_F(sql_parser_query_test, binary_expression_corresponding) {
-    sql_parser parser;
-    auto result = parser("-", "TABLE a UNION ALL CORRESPONDING TABLE b;");
+    auto result = parse("TABLE a UNION ALL CORRESPONDING TABLE b;");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::binary_expression {
@@ -583,8 +564,7 @@ TEST_F(sql_parser_query_test, binary_expression_corresponding) {
 }
 
 TEST_F(sql_parser_query_test, binary_expression_corresponding_by) {
-    sql_parser parser;
-    auto result = parser("-", "TABLE a UNION ALL CORRESPONDING BY (C0, C1, C2) TABLE b;");
+    auto result = parse("TABLE a UNION ALL CORRESPONDING BY (C0, C1, C2) TABLE b;");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::binary_expression {
@@ -605,8 +585,7 @@ TEST_F(sql_parser_query_test, binary_expression_corresponding_by) {
 }
 
 TEST_F(sql_parser_query_test, with_expression) {
-    sql_parser parser;
-    auto result = parser("-", "WITH q AS (SELECT * FROM T0) SELECT * FROM q;");
+    auto result = parse("WITH q AS (SELECT * FROM T0) SELECT * FROM q;");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::with_expression {
@@ -641,8 +620,7 @@ TEST_F(sql_parser_query_test, with_expression) {
 }
 
 TEST_F(sql_parser_query_test, with_expression_recursive) {
-    sql_parser parser;
-    auto result = parser("-", "WITH RECURSIVE q AS (SELECT * FROM T0) SELECT * FROM q;");
+    auto result = parse("WITH RECURSIVE q AS (SELECT * FROM T0) SELECT * FROM q;");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::with_expression {
@@ -678,8 +656,7 @@ TEST_F(sql_parser_query_test, with_expression_recursive) {
 }
 
 TEST_F(sql_parser_query_test, with_expression_columns) {
-    sql_parser parser;
-    auto result = parser("-", "WITH q (x, y) AS (SELECT * FROM T0) SELECT * FROM q;");
+    auto result = parse("WITH q (x, y) AS (SELECT * FROM T0) SELECT * FROM q;");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::with_expression {
@@ -718,8 +695,7 @@ TEST_F(sql_parser_query_test, with_expression_columns) {
 }
 
 TEST_F(sql_parser_query_test, with_expression_multiple_elements) {
-    sql_parser parser;
-    auto result = parser("-",
+    auto result = parse(
             "WITH q AS (SELECT * FROM T0)"
             ",  r AS (SELECT * FROM q)"
             ",  s AS (SELECT * FROM r)"
@@ -782,8 +758,7 @@ TEST_F(sql_parser_query_test, with_expression_multiple_elements) {
 }
 
 TEST_F(sql_parser_query_test, parenthesize) {
-    sql_parser parser;
-    auto result = parser("-", "TABLE T0 UNION (TABLE T1 EXCEPT TABLE T2);");
+    auto result = parse("TABLE T0 UNION (TABLE T1 EXCEPT TABLE T2);");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (query::binary_expression {
