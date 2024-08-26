@@ -761,7 +761,14 @@ public:
             case from::natural_left_outer: return process_join(to::left_outer, true, expr, scope);
             case from::natural_right_outer: return process_join(to::left_outer, true, expr, scope, true);
             case from::natural_full_outer: return process_join(to::full_outer, true, expr, scope);
-            case from::union_: return process_union_join(expr, scope);
+            case from::union_:
+                // FIXME: enable union join
+                // return process_union_join(expr, scope);
+                context_.report(
+                        sql_analyzer_code::unsupported_feature,
+                        "UNION JOIN is not yet supported",
+                        expr.operator_kind().region());
+                return {};
         }
         ::takatori::util::fail();
     }
