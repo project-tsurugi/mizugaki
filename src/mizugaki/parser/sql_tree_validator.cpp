@@ -65,7 +65,7 @@ public:
             result_ = sql_parser_diagnostic {
                     sql_parser_code::exceed_number_of_elements,
                     string_builder {}
-                            << "the number of syntax elements is exceeded the limit: "
+                            << "exceeds the max number of elements in the SQL syntax tree: "
                             << "count=" << node_count_
                             << ", kind=" << element.node_kind()
                             << string_builder::to_string,
@@ -79,7 +79,7 @@ public:
             result_ = sql_parser_diagnostic {
                     sql_parser_code::exceed_number_of_elements,
                     string_builder {}
-                        << "depth of the SQL syntax tree is too deep: "
+                        << "exceeds the max depth of the SQL syntax tree: "
                         << "depth=" << depth
                         << ", kind=" << element.node_kind()
                         << string_builder::to_string,
