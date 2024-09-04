@@ -200,9 +200,10 @@ target_link_libraries(mizugaki
     PRIVATE Threads::Threads
 )
 
-if (FORCE_INSTALL_RPATH)
-    force_install_rpath(mizugaki)
-endif (FORCE_INSTALL_RPATH)
+set_target_properties(mizugaki
+    PROPERTIES
+        INSTALL_RPATH "\$ORIGIN/../lib"
+)
 
 install(
     TARGETS

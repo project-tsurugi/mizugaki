@@ -20,11 +20,12 @@ set_target_properties(parser-cli
             ${output_name}
 )
 
-if (INSTALL_EXAMPLES)
-    if (FORCE_INSTALL_RPATH)
-        force_install_rpath(parser-cli)
-    endif (FORCE_INSTALL_RPATH)
+set_target_properties(parser-cli
+    PROPERTIES
+        INSTALL_RPATH "\$ORIGIN/../lib"
+)
 
+if (INSTALL_EXAMPLES)
     install(
         TARGETS
             parser-cli

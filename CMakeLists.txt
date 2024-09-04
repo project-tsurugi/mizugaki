@@ -15,10 +15,13 @@ option(BUILD_SHARED_LIBS "build shared libraries instead of static" ON)
 
 option(FORCE_INSTALL_RPATH "automatically add library directory of custom prefixes to INSTALL_RPATH" OFF)
 
+if (FORCE_INSTALL_RPATH)
+    message(DEPRECATION "FORCE_INSTALL_RPATH is obsoleted")
+endif (FORCE_INSTALL_RPATH)
+
 option(ENABLE_COVERAGE "enable coverage on debug build" OFF)
 
 include(GNUInstallDirs)
-include(force_install_rpath)
 
 find_package(takatori REQUIRED)
 find_package(yugawara REQUIRED)
