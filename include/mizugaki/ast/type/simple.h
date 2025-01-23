@@ -29,6 +29,8 @@ public:
             node_kind_type::double_precision,
             node_kind_type::boolean,
             node_kind_type::date,
+            node_kind_type::binary_large_object,
+            node_kind_type::character_large_object,
     };
 
     /**

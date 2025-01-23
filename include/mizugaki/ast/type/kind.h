@@ -46,7 +46,7 @@ enum class kind {
     /**
      * @brief character large object type.
      */
-    character_large_object, // FIXME: impl
+    character_large_object,
 
     /**
      * @brief bit string type.
@@ -75,7 +75,7 @@ enum class kind {
     /**
      * @brief binary large object type.
      */
-    binary_large_object, // FIXME: impl
+    binary_large_object,
 
     /**
      * @brief exact numeric type.
@@ -221,7 +221,7 @@ template<> struct type_of<kind, kind::character> : ::takatori::util::meta_type<c
 /// @brief provides implementation type of kind::character_varying.
 template<> struct type_of<kind, kind::character_varying> : ::takatori::util::meta_type<character_string> {};
 
-/// @brief FIXME:  provides implementation type of kind::character_large_object.
+/// @brief provides implementation type of kind::character_large_object.
 template<> struct type_of<kind, kind::character_large_object> : ::takatori::util::meta_type<simple> {};
 
 /// @brief provides implementation type of kind::bit.
@@ -236,7 +236,7 @@ template<> struct type_of<kind, kind::octet> : ::takatori::util::meta_type<octet
 /// @brief provides implementation type of kind::octet_varying.
 template<> struct type_of<kind, kind::octet_varying> : ::takatori::util::meta_type<octet_string> {};
 
-/// @brief FIXME: provides implementation type of kind::binary_large_object.
+/// @brief provides implementation type of kind::binary_large_object.
 template<> struct type_of<kind, kind::binary_large_object> : ::takatori::util::meta_type<simple> {};
 
 /// @brief provides implementation type of kind::numeric.

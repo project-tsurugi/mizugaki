@@ -625,7 +625,7 @@
 %token NOT "NOT"
 %token NULL_ "NULL"
 %token NUMERIC "NUMERIC"
-// %token <ast::common::chars> OBJECT "OBJECT"
+%token OBJECT "OBJECT"
 %token OF "OF"
 // %token <ast::common::chars> OFF "OFF"
 %token OLD "OLD"
@@ -4088,7 +4088,22 @@ data_type_system
         {
             $$ = driver.node<ast::type::interval>(@$);
         }
-    // FIXME: large object types
+    | BLOB
+        {
+            $$ = driver.node<ast::type::simple>(ast::type::kind::binary_large_object, @$);
+        }
+    | BINARY LARGE OBJECT
+        {
+            $$ = driver.node<ast::type::simple>(ast::type::kind::binary_large_object, @$);
+        }
+    | CLOB
+        {
+            $$ = driver.node<ast::type::simple>(ast::type::kind::character_large_object, @$);
+        }
+    | character_type_name LARGE OBJECT
+        {
+            $$ = driver.node<ast::type::simple>(ast::type::kind::character_large_object, @$);
+        }
     ;
 
 data_type_composite

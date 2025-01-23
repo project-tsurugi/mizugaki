@@ -489,6 +489,51 @@ TEST_F(sql_parser_type_test, DISABLED_interval_qualifier) {
     }));
 }
 
+TEST_F(sql_parser_type_test, blob) {
+    auto result = parse("BLOB");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (type::simple {
+            type::kind::binary_large_object,
+    }));
+}
+
+TEST_F(sql_parser_type_test, binary_large_object) {
+    auto result = parse("BINARY LARGE OBJECT");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (type::simple {
+            type::kind::binary_large_object,
+    }));
+}
+
+TEST_F(sql_parser_type_test, clob) {
+    auto result = parse("CLOB");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (type::simple {
+            type::kind::character_large_object,
+    }));
+}
+
+TEST_F(sql_parser_type_test, character_large_object) {
+    auto result = parse("CHARACTER LARGE OBJECT");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (type::simple {
+            type::kind::character_large_object,
+    }));
+}
+
+TEST_F(sql_parser_type_test, char_large_object) {
+    auto result = parse("CHAR LARGE OBJECT");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (type::simple {
+            type::kind::character_large_object,
+    }));
+}
+
 TEST_F(sql_parser_type_test, row) {
     auto result = parse("ROW (a int)");
     ASSERT_TRUE(result) << diagnostics(result);

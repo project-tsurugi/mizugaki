@@ -331,6 +331,7 @@ UTF8_CHAR {ASCII}|{UTF8_2}{U}|{UTF8_3}{U}{U}|{UTF8_4}{U}{U}{U}
 "NOT" { return parser_type::make_NOT(location()); }
 "NULL" { return parser_type::make_NULL_(location()); }
 "NUMERIC" { return parser_type::make_NUMERIC(location()); }
+"OBJECT" { return parser_type::make_OBJECT(location()); }
 "OF" { return parser_type::make_OF(location()); }
 "OLD" { return parser_type::make_OLD(location()); }
 "ON" { return parser_type::make_ON(location()); }
