@@ -8,6 +8,7 @@
 #include <takatori/type/date.h>
 #include <takatori/type/time_of_day.h>
 #include <takatori/type/time_point.h>
+#include <takatori/type/lob.h>
 
 #include <takatori/util/string_builder.h>
 
@@ -70,6 +71,10 @@ public:
                 return build(type, ttype::boolean {});
             case k::date:
                 return build(type, ttype::date {});
+            case k::binary_large_object:
+                return build(type, ttype::blob {});
+            case k::character_large_object:
+                return build(type, ttype::clob {});
             default:
                 break;
         }

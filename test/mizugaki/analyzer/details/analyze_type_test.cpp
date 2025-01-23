@@ -11,6 +11,7 @@
 #include <takatori/type/time_of_day.h>
 #include <takatori/type/time_point.h>
 #include <takatori/type/datetime_interval.h>
+#include <takatori/type/lob.h>
 
 #include <mizugaki/ast/type/simple.h>
 #include <mizugaki/ast/type/character_string.h>
@@ -767,6 +768,30 @@ TEST_F(analyze_type_test, timestamp_timezone) {
     expect_no_error();
 
     EXPECT_EQ(*r, (ttype::time_point { ttype::with_time_zone }));
+}
+
+TEST_F(analyze_type_test, binary_large_object) {
+        auto r = analyze_type(
+                context(),
+                ast::type::simple {
+                        ast::type::kind::binary_large_object,
+                });
+        ASSERT_TRUE(r) << diagnostics();
+        expect_no_error();
+
+        EXPECT_EQ(*r, (ttype::blob {}));
+}
+
+TEST_F(analyze_type_test, character_large_object) {
+        auto r = analyze_type(
+                context(),
+                ast::type::simple {
+                        ast::type::kind::character_large_object,
+                });
+        ASSERT_TRUE(r) << diagnostics();
+        expect_no_error();
+
+        EXPECT_EQ(*r, (ttype::clob {}));
 }
 
 TEST_F(analyze_type_test, user_defined_unsupported) {
