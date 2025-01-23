@@ -6,12 +6,15 @@ bugprone-*,\
 -bugprone-branch-clone,\
 -bugprone-easily-swappable-parameters,\
 cert-*,\
+-cert-dcl58-cpp,\
 -cert-oop54-cpp,\
 cppcoreguidelines-*,\
 -cppcoreguidelines-avoid-const-or-ref-data-members,\
 -cppcoreguidelines-pro-type-const-cast,\
 -cppcoreguidelines-avoid-magic-numbers,\
 -cppcoreguidelines-macro-usage,\
+-cppcoreguidelines-missing-std-forward,\
+-cppcoreguidelines-rvalue-reference-param-not-moved,\
 fuchsia-*,\
 -fuchsia-default-arguments,\
 -fuchsia-default-arguments-calls,\
@@ -37,9 +40,11 @@ misc-*,\
 -misc-include-cleaner,\
 -misc-no-recursion,\
 -misc-unused-parameters,\
+-misc-use-anonymous-namespace,\
 modernize-*,\
 -modernize-use-trailing-return-type,\
 performance-*,\
+-performance-enum-size,\
 readability-*,\
 -readability-braces-around-statements,\
 -readability-identifier-length,\
@@ -47,6 +52,7 @@ readability-*,\
 -readability-named-parameter,\
 -readability-magic-numbers,\
 -readability-qualified-auto,\
+-readability-redundant-inline-specifier,\
 -readability-redundant-member-init,\
 "
 CheckOptions:

@@ -23,8 +23,10 @@ value_context::operator bool() const noexcept {
 
 value_context::kind_type value_context::kind() const noexcept {
     switch (alternatives_.index()) {
+        case static_cast<std::size_t>(kind_type::unspecified): return kind_type::unspecified;
         case static_cast<std::size_t>(kind_type::scalar): return kind_type::scalar;
         case static_cast<std::size_t>(kind_type::row): return kind_type::row;
+        default: break;
     }
     return kind_type::unspecified;
 }
@@ -38,7 +40,7 @@ value_context::position_type value_context::size() const noexcept {
     std::abort();
 }
 
-scalar_value_context const& value_context::find(value_context::position_type position) const {
+scalar_value_context const& value_context::find(position_type position) const {
     switch (kind()) {
         case kind_type::unspecified:
             break;

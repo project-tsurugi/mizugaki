@@ -95,16 +95,16 @@ public:
                         string_builder {}
                                 << "flexible length is not supported in char type"
                                 << string_builder::to_string,
-                        type.length().value().region());
+                        type.length().value().region()); // NOLINT(bugprone-unchecked-optional-access) - checked in is_flexible_length()
                 return {};
             }
         } else if (auto len = type.length()) {
-            size = type.length().value().value();
+            size = len.value().value();
             if (size == 0) {
                 context_.report(
                         sql_analyzer_code::invalid_type_length,
                         "character type must not be empty",
-                        type.length().value().region());
+                        len.value().region());
                 return {};
             }
         } else if (!type.is_varying()) {
@@ -128,16 +128,16 @@ public:
                         string_builder {}
                                 << "flexible length is not supported in char type"
                                 << string_builder::to_string,
-                        type.length().value().region());
+                        type.length().value().region()); // NOLINT(bugprone-unchecked-optional-access) - checked in is_flexible_length()
                 return {};
             }
         } else if (auto len = type.length()) {
-            size = type.length().value().value();
+            size = len.value().value();
             if (size == 0) {
                 context_.report(
                         sql_analyzer_code::invalid_type_length,
                         "bit type must not be empty",
-                        type.length().value().region());
+                        len.value().region());
                 return {};
             }
         } else if (!type.is_varying()) {
@@ -161,16 +161,16 @@ public:
                         string_builder {}
                                 << "flexible length is not supported in char type"
                                 << string_builder::to_string,
-                        type.length().value().region());
+                        type.length().value().region()); // NOLINT(bugprone-unchecked-optional-access) - checked in is_flexible_length()
                 return {};
             }
         } else if (auto len = type.length()) {
-            size = type.length().value().value();
+            size = len.value().value();
             if (size == 0) {
                 context_.report(
                         sql_analyzer_code::invalid_type_length,
                         "binary type must not be empty",
-                        type.length().value().region());
+                        len.value().region());
                 return {};
             }
         } else if (!type.is_varying()) {
@@ -189,25 +189,25 @@ public:
         std::optional<ttype::decimal::size_type> scale {
                 0,
         };
-        if (type.precision()) {
+        if (auto precision_opt = type.precision()) {
             if (type.is_flexible_precision()) {
                 precision = std::nullopt;
             } else {
-                precision = **type.precision();
+                precision = **precision_opt;
             }
         }
-        if (type.scale()) {
+        if (auto scale_opt = type.scale()) {
             if (type.is_flexible_scale()) {
                 scale = std::nullopt;
             } else {
-                scale = **type.scale();
+                scale = **scale_opt;
             }
         }
         if (precision && precision == 0) {
             context_.report(
                     sql_analyzer_code::invalid_type_length,
                     "decimal type precision must not be zero",
-                    type.precision().value().region());
+                    type.precision().value().region()); // NOLINT(bugprone-unchecked-optional-access) - checked because it is non-default value
             return {};
         }
         if (precision && precision > options().max_decimal_precision()) {
@@ -217,7 +217,7 @@ public:
                             << "too large decimal precision: " << precision.value()
                             << " (max precision is " << options().max_decimal_precision() << ")"
                             << string_builder::to_string,
-                    type.precision()->region());
+                    type.precision()->region()); // NOLINT(bugprone-unchecked-optional-access) - checked because it is non-default value
             return {};
         }
         if (scale && scale.value() > precision.value_or(options().max_decimal_precision())) {
@@ -226,7 +226,7 @@ public:
                     string_builder {}
                             << "too large scale value: " << scale.value()
                             << string_builder::to_string,
-                    type.scale()->region());
+                    type.scale()->region()); // NOLINT(bugprone-unchecked-optional-access) - checked because it is non-default value
             return {};
         }
 
@@ -249,7 +249,7 @@ public:
                     context_.report(
                             sql_analyzer_code::invalid_type_length,
                             "integer type precision must not be zero",
-                            type.precision().value().region());
+                            prec.value().region());
                     return {};
                 }
                 if (**prec <= options().max_binary_integer1_precision()) {
@@ -281,7 +281,7 @@ public:
                     context_.report(
                             sql_analyzer_code::invalid_type_length,
                             "float type precision must not be zero",
-                            type.precision().value().region());
+                            prec.value().region());
                     return {};
                 }
                 if (**prec <= options().max_binary_float4_precision()) {

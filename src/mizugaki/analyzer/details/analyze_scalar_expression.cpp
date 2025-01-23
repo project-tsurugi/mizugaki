@@ -542,7 +542,7 @@ public:
                             context_.create<tscalar::variable_reference>(expr.target()->region(), v_target),
                             context_.create<tscalar::variable_reference>(expr.left()->region(), v_left)));
             auto body = context_.create<tscalar::binary>(
-                    expr.operator_kind()->region(),
+                    expr.operator_kind()->region(), // NOLINT(bugprone-unchecked-optional-access) - checked in surrounding if
                     tscalar::binary_operator::conditional_or,
                     std::move(forward),
                     std::move(backward));
@@ -882,8 +882,8 @@ public:
             string_builder buffer {};
             buffer << "set function not found: "
                    << expr.function();
-            if (expr.quantifier()) {
-                buffer << "[" << *expr.quantifier() << "]";
+            if (auto quantifier = expr.quantifier()) {
+                buffer << "[" << *quantifier << "]";
             }
             append_string(buffer, argument_types);
             context_.report(

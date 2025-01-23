@@ -159,7 +159,7 @@ using has_region = std::is_same<
 
 /// @copydoc has_region
 template<class T>
-inline constexpr bool has_region_v = has_region<T>::value;
+inline constexpr bool has_region_v = has_region<T>::value; // NOLINT(modernize-type-traits)
 
 /**
  * @brief sets a region into the given element.

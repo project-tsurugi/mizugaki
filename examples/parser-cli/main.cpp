@@ -15,14 +15,14 @@ bool run(std::string_view source, std::size_t repeat, bool quiet, bool stats, pa
         if (auto&& error = result.diagnostic()) {
             std::cerr << error.message() << "; "
                       << "occurred at " << error.region().first()
-                      << ", token: `" << error.document()->contents(error.region().first(), error.region().size()) << "`" << std::endl;
+                      << ", token: `" << error.document()->contents(error.region().first(), error.region().size()) << "`" << '\n';
             return false;
         }
         if (!quiet && round == 0) {
-            std::cout << *result.value() << std::endl;
+            std::cout << *result.value() << '\n';
             if (stats) {
-                std::cout << "AST nodes: " << result.tree_node_count() << std::endl;
-                std::cout << "AST depth: " << result.max_tree_depth() << std::endl;
+                std::cout << "AST nodes: " << result.tree_node_count() << '\n';
+                std::cout << "AST depth: " << result.max_tree_depth() << '\n';
             }
         }
     }
@@ -57,7 +57,7 @@ int main(int argc, char* argv[]) {
     } else {
         std::ifstream ifs { FLAGS_file };
         if (ifs.fail()) {
-            std::cerr << "failed to open file: " << FLAGS_file << std::endl;
+            std::cerr << "failed to open file: " << FLAGS_file << '\n';
             return 2;
         }
         source.assign(
