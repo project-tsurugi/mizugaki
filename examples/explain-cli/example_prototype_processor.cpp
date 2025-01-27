@@ -12,8 +12,8 @@ bool example_prototype_processor::ensure(
         ::yugawara::storage::index& primary_index_prototype,
         diagnostic_consumer_type const& diagnostic_consumer) {
     (void) location;
-    (void) table_prototype;
     (void) diagnostic_consumer;
+    primary_index_prototype.simple_name(std::string { "." }.append(table_prototype.simple_name()));
     primary_index_prototype.features() = {
         feature_type::primary,
         feature_type::find,
