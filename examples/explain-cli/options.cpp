@@ -9,6 +9,7 @@
 
 #include <takatori/value/primitive.h>
 #include <takatori/value/character.h>
+#include <takatori/value/decimal.h>
 
 #include <yugawara/runtime_feature.h>
 
@@ -36,21 +37,25 @@ namespace mizugaki::examples::explain_cli {
 
 [[nodiscard]] static std::shared_ptr<::yugawara::aggregate::provider> set_function_provider();
 
+std::shared_ptr<::yugawara::schema::declaration> create_default_schema(std::string name) {
+    auto schema = std::make_shared<::yugawara::schema::declaration>(
+            std::nullopt,
+            std::move(name),
+            storage_provider(),
+            std::shared_ptr<::yugawara::variable::provider> {},
+            function_provider(),
+            set_function_provider());
+    return schema;
+}
+
 parser::sql_parser_options parser_options() {
     parser::sql_parser_options options {};
     return options;
 }
 
-analyzer::sql_analyzer_options analyzer_options() {
+analyzer::sql_analyzer_options analyzer_options(std::shared_ptr<::yugawara::schema::declaration> default_schema) {
     auto schema_provider = std::make_shared<::yugawara::schema::configurable_provider>();
-    auto schema = schema_provider->add({
-            "public",
-            std::nullopt,
-            storage_provider(),
-            {},
-            function_provider(),
-            set_function_provider(),
-    });
+    auto schema = schema_provider->add(std::move(default_schema));
     auto catalog = std::make_shared<::yugawara::schema::catalog>(
             "tsurugi",
             std::nullopt,
@@ -94,18 +99,18 @@ std::shared_ptr<::yugawara::storage::provider> storage_provider() {
                             {},
                     },
                     {
-                            // s DECIMAL(18, 2) DEFAULT NULL
+                            // s DECIMAL(18, 2) DEFAULT 0.00
                             "s",
                             ::takatori::type::decimal { 18, 2 },
                             ::yugawara::variable::nullable,
-                            ::takatori::value::unknown {},
+                            ::takatori::value::decimal {{ 0, -2 }},
                     },
                     {
-                            // v VARCHAR(*) DEFAULT NULL
+                            // v VARCHAR(*) DEFAULT ''
                             "v",
                             ::takatori::type::character { ::takatori::type::varying, {} },
                             ::yugawara::variable::nullable,
-                            ::takatori::value::unknown {},
+                            ::takatori::value::character { "" },
                     },
             },
     });

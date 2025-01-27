@@ -105,6 +105,8 @@ int main(int argc, char* argv[]) {
     }
     auto compilation_unit = std::move(parser_result.value());
 
+    auto schema = create_default_schema("public");
+
     auto compiler_opts = compiler_options();
     for (auto&& statement : compilation_unit->statements()) {
         if (FLAGS_echo) {
@@ -114,7 +116,7 @@ int main(int argc, char* argv[]) {
                     << '\n';
         }
 
-        auto analyzer_opts = analyzer_options();
+        auto analyzer_opts = analyzer_options(schema);
         auto analyzer_result = analyze(*statement, *compilation_unit, analyzer_opts);
 
         ::yugawara::compiler_result compiler_result {};
