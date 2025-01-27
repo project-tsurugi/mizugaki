@@ -44,7 +44,7 @@ Please build this project with `-DINSTALL_EXAMPLES=ON` option, then `cmake --bui
 
 ```sh
 # compile a statement
-./mizugaki-explain-cli -echo -text "SELECT * FROM T0;"
+./mizugaki-explain-cli -echo -text "SELECT * FROM ksv;"
 
 # compile statements in file
 ./mizugaki-explain-cli -echo -file "example.sql"
