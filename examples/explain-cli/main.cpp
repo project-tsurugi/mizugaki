@@ -21,6 +21,7 @@
 
 #include <mizugaki/analyzer/sql_analyzer.h>
 
+#include "ddl_interpreter.h"
 #include "options.h"
 
 namespace mizugaki::examples::explain_cli {
@@ -161,6 +162,8 @@ int main(int argc, char* argv[]) {
             scanner(compiled, printer);
             std::cout << '\n' << std::flush;
         }
+
+        interpret(compiler_result.statement());
     }
     return 0;
 }

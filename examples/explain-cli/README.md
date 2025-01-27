@@ -6,8 +6,11 @@ Compiles SQL program and prints its execution plan as JSON format.
 mizugaki-explain-cli [options]
 ```
 
-This only compiles the SQL programs but does not execute them, so DDLs like "CREATE TABLE" does not change the database schema.
-The available symbols are [listed here](#available-symbols).
+This only compiles the SQL programs and then interprets only DDL statements, such as `CREATE TABLE`, `CREATE INDEX`, `DROP TABLE`, and `DROP INDEX`.
+The other DML statements, such as `SELECT` and `INSERT`, are only show their execution plan.
+Note that, the defined tables and indexes are only available in the same execution, so that you can only access them in the trailing statements like `"CREATE TABLE t (...); SELECT * FROM t"`.
+
+The pre-defined symbols are [listed here](#pre-defined-symbols).
 
 Available options:
 
@@ -22,7 +25,7 @@ Available options:
 * `-help`
   * print help messages
 
-## Available symbols
+## Pre-defined symbols
 
 * tables
   * `ksv`
@@ -48,6 +51,9 @@ Please build this project with `-DINSTALL_EXAMPLES=ON` option, then `cmake --bui
 
 # compile statements in file
 ./mizugaki-explain-cli -echo -file "example.sql"
+
+# compile a DDL and then access to the defined table
+./mizugaki-explain-cli -echo -text "CREATE TABLE other (k BIGINT PRIMARY KEY); SELECT * FROM ksv JOIN other ON ksv.k = other.k;"
 
 # compile a statement and pretty print by https://stedolan.github.io/jq/
 ./mizugaki-explain-cli -text "TABLE ksv;" | jq .
