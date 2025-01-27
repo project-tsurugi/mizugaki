@@ -1,6 +1,7 @@
 add_executable(explain-cli
     main.cpp
     options.cpp
+    example_prototype_processor.cpp
 )
 
 target_include_directories(explain-cli

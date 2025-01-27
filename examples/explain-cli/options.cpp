@@ -26,6 +26,8 @@
 #include <yugawara/storage/column.h>
 #include <yugawara/storage/index.h>
 
+#include "example_prototype_processor.h"
+
 namespace mizugaki::examples::explain_cli {
 
 [[nodiscard]] static std::shared_ptr<::yugawara::storage::provider> storage_provider();
@@ -74,6 +76,7 @@ analyzer::sql_analyzer_options analyzer_options() {
     features.insert(::yugawara::runtime_feature::broadcast_join_scan);
     features.insert(::yugawara::runtime_feature::always_inline_scalar_local_variables);
     ::yugawara::compiler_options options { features };
+    options.storage_processor(std::make_shared<example_prototype_processor>());
     return options;
 }
 
