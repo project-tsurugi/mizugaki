@@ -6,6 +6,8 @@
 #include <takatori/type/primitive.h>
 #include <takatori/type/character.h>
 #include <takatori/type/decimal.h>
+#include <takatori/type/octet.h>
+#include <takatori/type/lob.h>
 
 #include <takatori/value/primitive.h>
 #include <takatori/value/character.h>
@@ -144,12 +146,47 @@ std::shared_ptr<::yugawara::storage::provider> storage_provider() {
 }
 
 std::shared_ptr<::yugawara::function::provider> function_provider() {
+    auto definition_id = ::yugawara::function::declaration::minimum_user_function_id;
+    namespace tt = ::takatori::type;
     auto provider = std::make_shared<::yugawara::function::configurable_provider>();
+    provider->add({ // OCTET_LENGTH(VARCHAR(*))
+            ++definition_id,
+            "octet_length",
+            tt::int8 {},
+            { tt::character { tt::varying, {} } },
+    });
+    provider->add({ // OCTET_LENGTH(VARBINARY(*))
+            ++definition_id,
+            "octet_length",
+            tt::int8 {},
+            { tt::octet { tt::varying, {} } },
+    });
+    provider->add({ // OCTET_LENGTH(CLOB)
+            ++definition_id,
+            "octet_length",
+            tt::int8 {},
+            { tt::clob {} },
+    });
+    provider->add({ // OCTET_LENGTH(BLOB)
+            ++definition_id,
+            "octet_length",
+            tt::int8 {},
+            { tt::blob {} },
+    });
     return provider;
 }
 
 std::shared_ptr<::yugawara::aggregate::provider> set_function_provider() {
+    auto definition_id = ::yugawara::aggregate::declaration::minimum_user_function_id;
+    namespace tt = ::takatori::type;
     auto provider = std::make_shared<::yugawara::aggregate::configurable_provider>();
+    provider->add({ // COUNT(*)
+            ++definition_id,
+            "count",
+            tt::int8 {},
+            {},
+            true,
+    });
     return provider;
 }
 

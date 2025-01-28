@@ -35,9 +35,13 @@ Available options:
 * indexes
   * `ksv_s` (index of `k.s`)
 * scalar functions
-  * not available
+  * `OCTET_LENGTH(T)`
+    * `VARCHAR(*)`
+    * `VARBINARY(*)`
+    * `BLOB`
+    * `CLOB`
 * aggregate functions
-  * not available
+  * `COUNT(*)`
 
 ## How to install
 
