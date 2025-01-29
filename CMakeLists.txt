@@ -21,8 +21,6 @@ endif (FORCE_INSTALL_RPATH)
 
 option(ENABLE_COVERAGE "enable coverage on debug build" OFF)
 
-include(GNUInstallDirs)
-
 find_package(takatori REQUIRED)
 find_package(yugawara REQUIRED)
 find_package(mpdecpp REQUIRED)
@@ -69,7 +67,7 @@ add_library(mizugaki-api INTERFACE)
 target_include_directories(mizugaki-api
     INTERFACE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${export_name}>
+        $<INSTALL_INTERFACE:include/${export_name}>
 )
 
 add_subdirectory(src)
@@ -90,19 +88,19 @@ install(
     EXPORT
         ${export_name}
     LIBRARY
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        DESTINATION lib
         COMPONENT Runtime
     ARCHIVE
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/${export_name}
+        DESTINATION lib/${export_name}
         COMPONENT Development
     RUNTIME
-        DESTINATION ${CMAKE_INSTALL_BINDIR}
+        DESTINATION bin
         COMPONENT Runtime
 )
 
 install(
     DIRECTORY include/
-    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${export_name}"
+    DESTINATION "include/${export_name}"
     COMPONENT Development
     FILES_MATCHING PATTERN "*.h"
 )
@@ -123,12 +121,12 @@ install(
         ${CMAKE_CURRENT_BINARY_DIR}/${package_name}-config.cmake
         ${CMAKE_CURRENT_BINARY_DIR}/${package_name}-config-version.cmake
     DESTINATION
-        ${CMAKE_INSTALL_LIBDIR}/cmake/${package_name}
+        lib/cmake/${package_name}
 )
 
 install(
     EXPORT ${package_name}
     FILE ${package_name}-targets.cmake
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${package_name}
+    DESTINATION lib/cmake/${package_name}
     EXPORT_LINK_INTERFACE_LIBRARIES
 )

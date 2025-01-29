@@ -35,7 +35,7 @@ if (INSTALL_EXAMPLES)
         EXPORT
             ${export_name}
         RUNTIME
-            DESTINATION ${CMAKE_INSTALL_BINDIR}
+            DESTINATION bin
             COMPONENT Runtime
     )
 endif()

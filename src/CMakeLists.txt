@@ -211,13 +211,13 @@ install(
     EXPORT
         ${export_name}
     LIBRARY
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        DESTINATION lib
         COMPONENT Runtime
     ARCHIVE
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/${export_name}
+        DESTINATION lib/${export_name}
         COMPONENT Development
     RUNTIME
-        DESTINATION ${CMAKE_INSTALL_BINDIR}
+        DESTINATION bin
         COMPONENT Runtime
 )
 
