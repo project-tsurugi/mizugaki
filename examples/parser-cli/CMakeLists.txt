@@ -22,7 +22,7 @@ set_target_properties(parser-cli
 
 set_target_properties(parser-cli
     PROPERTIES
-        INSTALL_RPATH "\$ORIGIN/../lib"
+        INSTALL_RPATH "\$ORIGIN/../${CMAKE_INSTALL_LIBDIR}"
 )
 
 if (INSTALL_EXAMPLES)
