@@ -113,7 +113,7 @@ int main(int argc, char* argv[]) {
         if (FLAGS_echo) {
             auto&& region = statement->region();
             std::cout << "> "
-                    << compilation_unit->document()->contents(region.begin, region.end)
+                    << compilation_unit->document()->contents(region.begin, region.size())
                     << '\n';
         }
 
