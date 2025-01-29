@@ -84,7 +84,6 @@ available options:
 * `-DBUILD_DOCUMENTS=OFF` - don't build documents by doxygen
 * `-DBUILD_EXAMPLES=OFF` - don't build example applications
 * `-DINSTALL_EXAMPLES=ON` - also install example applications
-* `-DFORCE_INSTALL_RPATH=ON` - automatically configure `INSTALL_RPATH` for non-default library paths
 
 ### install
 

@@ -25,7 +25,7 @@ set_target_properties(explain-cli
 
 set_target_properties(explain-cli
     PROPERTIES
-        INSTALL_RPATH "\$ORIGIN/../lib"
+        INSTALL_RPATH "\$ORIGIN/../${CMAKE_INSTALL_LIBDIR}"
 )
 
 if (INSTALL_EXAMPLES)

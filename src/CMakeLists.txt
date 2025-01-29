@@ -202,7 +202,7 @@ target_link_libraries(mizugaki
 
 set_target_properties(mizugaki
     PROPERTIES
-        INSTALL_RPATH "\$ORIGIN/../lib"
+        INSTALL_RPATH "\$ORIGIN"
 )
 
 install(
