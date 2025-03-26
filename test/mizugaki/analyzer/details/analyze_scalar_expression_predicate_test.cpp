@@ -7,12 +7,14 @@
 #include <takatori/scalar/binary.h>
 #include <takatori/scalar/compare.h>
 #include <takatori/scalar/let.h>
+#include <takatori/scalar/match.h>
 #include <takatori/scalar/unary.h>
 
 #include <mizugaki/ast/scalar/between_predicate.h>
 #include <mizugaki/ast/scalar/binary_expression.h>
 #include <mizugaki/ast/scalar/comparison_predicate.h>
 #include <mizugaki/ast/scalar/in_predicate.h>
+#include <mizugaki/ast/scalar/pattern_match_predicate.h>
 
 #include <mizugaki/ast/query/table_value_constructor.h>
 #include <mizugaki/ast/query/table_reference.h>
@@ -470,6 +472,125 @@ TEST_F(analyze_scalar_expression_predicate_test, in_predicate_query) {
             ast::query::table_reference {
                     id("t"),
             },
+    });
+}
+
+TEST_F(analyze_scalar_expression_predicate_test, pattern_match_predicate_simple) {
+    auto r = analyze_scalar_expression(
+            context(),
+            ast::scalar::pattern_match_predicate {
+                    literal(string("'input'")),
+                    ast::scalar::pattern_match_operator::like,
+                    literal(string("'p%'")),
+                    {},
+            },
+            {},
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
+    EXPECT_EQ(*r, (tscalar::match {
+            tscalar::match_operator::like,
+            immediate("input"),
+            immediate("p%"),
+            immediate(""),
+    }));
+}
+
+TEST_F(analyze_scalar_expression_predicate_test, pattern_match_predicate_similar_to) {
+    auto r = analyze_scalar_expression(
+            context(),
+            ast::scalar::pattern_match_predicate {
+                    literal(string("'input'")),
+                    ast::scalar::pattern_match_operator::similar_to,
+                    literal(string("'p.*'")),
+                    {},
+            },
+            {},
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
+    EXPECT_EQ(*r, (tscalar::match {
+            tscalar::match_operator::similar,
+            immediate("input"),
+            immediate("p.*"),
+            immediate(""),
+    }));
+}
+
+TEST_F(analyze_scalar_expression_predicate_test, pattern_match_predicate_escape) {
+    auto r = analyze_scalar_expression(
+            context(),
+            ast::scalar::pattern_match_predicate {
+                    literal(string("'input'")),
+                    ast::scalar::pattern_match_operator::like,
+                    literal(string("'p\\%'")),
+                    literal(string("'\\'")),
+            },
+            {},
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
+    EXPECT_EQ(*r, (tscalar::match {
+            tscalar::match_operator::like,
+            immediate("input"),
+            immediate("p\\%"),
+            immediate("\\"),
+    }));
+}
+
+TEST_F(analyze_scalar_expression_predicate_test, pattern_match_predicate_not) {
+    auto r = analyze_scalar_expression(
+            context(),
+            ast::scalar::pattern_match_predicate {
+                    literal(string("'input'")),
+                    ast::scalar::pattern_match_operator::like,
+                    literal(string("'p%'")),
+                    {},
+                    { true },
+            },
+            {},
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
+    EXPECT_EQ(*r, (tscalar::unary {
+            tscalar::unary_operator::conditional_not,
+            tscalar::match {
+                    tscalar::match_operator::like,
+                    immediate("input"),
+                    immediate("p%"),
+                    immediate(""),
+            }
+    }));
+}
+
+TEST_F(analyze_scalar_expression_predicate_test, pattern_match_predicate_invalid_input) {
+    invalid(ast::scalar::pattern_match_predicate {
+            erroneous_expression(),
+            ast::scalar::pattern_match_operator::like,
+            literal(string("'p%'")),
+            {},
+    });
+}
+
+TEST_F(analyze_scalar_expression_predicate_test, pattern_match_predicate_invalid_pattern) {
+    invalid(ast::scalar::pattern_match_predicate {
+            literal(string("'input'")),
+            ast::scalar::pattern_match_operator::like,
+            erroneous_expression(),
+            {},
+    });
+}
+
+TEST_F(analyze_scalar_expression_predicate_test, pattern_match_predicate_invalid_escape) {
+    invalid(ast::scalar::pattern_match_predicate {
+            literal(string("'input'")),
+            ast::scalar::pattern_match_operator::like,
+            literal(string("'p%'")),
+            erroneous_expression(),
     });
 }
 

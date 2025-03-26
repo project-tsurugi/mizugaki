@@ -15,6 +15,7 @@
 #include <takatori/scalar/coalesce.h>
 #include <takatori/scalar/variable_reference.h>
 #include <takatori/scalar/let.h>
+#include <takatori/scalar/match.h>
 #include <takatori/scalar/function_call.h>
 
 #include <takatori/util/string_builder.h>
@@ -32,6 +33,8 @@
 #include <mizugaki/analyzer/details/analyze_literal.h>
 #include <mizugaki/analyzer/details/analyze_name.h>
 #include <mizugaki/analyzer/details/analyze_type.h>
+#include <takatori/type/character.h>
+#include <takatori/value/character.h>
 
 #include "name_print_support.h"
 
@@ -666,7 +669,71 @@ public:
 
     // FIXME: impl pattern_match_predicate,
     // FIXME: impl table_predicate,
-    // FIXME: impl <match predicate>
+
+    [[nodiscard]] std::unique_ptr<tscalar::expression> operator()(
+            ast::scalar::pattern_match_predicate const& expr,
+            value_context const& context) {
+        (void) context;
+        auto operator_ = convert(*expr.operator_kind());
+        if (!operator_) {
+            return {};
+        }
+        auto input = process(*expr.match_value(), {});
+        if (!input) {
+            return {};
+        }
+        auto pattern = process(*expr.pattern(), {});
+        if (!pattern) {
+            return {};
+        }
+        std::unique_ptr<tscalar::expression> escape {};
+        if (expr.escape()) {
+            auto r = process(*expr.escape(), {});
+            if (!r) {
+                return {};
+            }
+            escape = r.release();
+        } else {
+            escape = context_.create<tscalar::immediate>(
+                    expr.region(),
+                    context_.values().get(::takatori::value::character { "" }),
+                    context_.types().get(::takatori::type::character { ::takatori::type::varying }));
+        }
+
+        auto result = context_.create<tscalar::match>(
+                expr.region(),
+                *operator_,
+                input.release(),
+                pattern.release(),
+                std::move(escape));
+        if (*expr.is_not()) {
+            return context_.create<tscalar::unary>(
+                    expr.is_not().region(),
+                    tscalar::unary_operator::conditional_not,
+                    std::move(result));
+        }
+        return result;
+    }
+
+    [[nodiscard]] std::optional<tscalar::match_operator> convert(
+            ast::common::regioned<ast::scalar::pattern_match_operator> const& source) {
+        using kind = ast::scalar::pattern_match_operator;
+        switch (*source) {
+            case kind::like:
+                return tscalar::match_operator::like;
+            case kind::similar_to:
+                return tscalar::match_operator::similar;
+        }
+        context_.report(
+                sql_analyzer_code::unsupported_feature,
+                string_builder {}
+                        << "unsupported pattern match operator: " << source
+                        << string_builder::to_string,
+                source.region());
+        return {};
+    }
+
+
     // FIXME: impl <type predicate>
     // FIXME: impl function_invocation,
 
