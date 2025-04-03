@@ -7,10 +7,12 @@
 
 #include <takatori/util/maybe_shared_ptr.h>
 
-#include <yugawara/storage/relation.h>
+#include <yugawara/aggregate/declaration.h>
+#include <yugawara/function/declaration.h>
 #include <yugawara/schema/declaration.h>
-#include <yugawara/storage/table.h>
 #include <yugawara/storage/index.h>
+#include <yugawara/storage/relation.h>
+#include <yugawara/storage/table.h>
 
 #include <mizugaki/ast/name/name.h>
 #include <mizugaki/ast/name/simple.h>
@@ -37,6 +39,16 @@ using schema_element = std::pair<
 [[nodiscard]] ::takatori::util::optional_ptr<::yugawara::storage::relation const> analyze_relation_name(
         analyzer_context& context,
         ast::name::name const& name);
+
+[[nodiscard]] std::vector<std::shared_ptr<::yugawara::function::declaration const>> analyze_function_name(
+        analyzer_context& context,
+        ast::name::name const& name,
+        std::size_t argument_count);
+
+[[nodiscard]] std::vector<std::shared_ptr<::yugawara::aggregate::declaration const>> analyze_aggregation_name(
+        analyzer_context& context,
+        ast::name::name const& name,
+        std::size_t argument_count);
 
 [[nodiscard]] std::optional<schema_element<::yugawara::storage::table>> analyze_table_name(
         analyzer_context& context,

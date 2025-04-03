@@ -34,6 +34,8 @@ using catalog_decl = ::yugawara::schema::catalog;
 using table_decl = ::yugawara::storage::table;
 using index_decl = ::yugawara::storage::index;
 using relation_decl = ::yugawara::storage::relation;
+using function_decl = ::yugawara::function::declaration;
+using aggregation_decl = ::yugawara::aggregate::declaration;
 
 using ::takatori::util::optional_ptr;
 using ::takatori::util::string_builder;
@@ -127,6 +129,52 @@ public:
                         << "'" << print_support { name } << "' is not found"
                         << string_builder::to_string,
                 name.region());
+        return {};
+    }
+
+    [[nodiscard]] std::vector<std::shared_ptr<function_decl const>> collect_function_decl(
+            ast::name::name const& name,
+            std::size_t argument_count) {
+        if (auto qualifier = name.optional_qualifier()) {
+            auto alternatives = find_symbol(scope_, *qualifier, { symbol_kind::schema_decl }, false);
+            if (saw_error(alternatives)) {
+                return {};
+            }
+            if (auto parent = std::get_if<std::shared_ptr<schema_decl const>>(&alternatives)) {
+                auto candidates = collect_function_decl_in_schema(**parent, name.last_name(), argument_count);
+                return candidates;
+            }
+            return {};
+        }
+        for (auto&& s : context_.options()->schema_search_path().elements()) {
+            auto candidates = collect_function_decl_in_schema(*s, name.last_name(), argument_count);
+            if (!candidates.empty()) {
+                return candidates;
+            }
+        }
+        return {};
+    }
+
+    [[nodiscard]] std::vector<std::shared_ptr<aggregation_decl const>> collect_aggregation_decl(
+            ast::name::name const& name,
+            std::size_t argument_count) {
+        if (auto qualifier = name.optional_qualifier()) {
+            auto alternatives = find_symbol(scope_, *qualifier, { symbol_kind::schema_decl }, false);
+            if (saw_error(alternatives)) {
+                return {};
+            }
+            if (auto parent = std::get_if<std::shared_ptr<schema_decl const>>(&alternatives)) {
+                auto candidates = collect_aggregation_decl_in_schema(**parent, name.last_name(), argument_count);
+                return candidates;
+            }
+            return {};
+        }
+        for (auto&& s : context_.options()->schema_search_path().elements()) {
+            auto candidates = collect_aggregation_decl_in_schema(*s, name.last_name(), argument_count);
+            if (!candidates.empty()) {
+                return candidates;
+            }
+        }
         return {};
     }
 
@@ -713,6 +761,38 @@ private:
         return {};
     }
 
+    [[nodiscard]] std::vector<std::shared_ptr<function_decl const>> collect_function_decl_in_schema(
+            schema_decl const& parent,
+            ast::name::simple const& name,
+            std::size_t argument_count) {
+        ast::common::chars buffer;
+        auto id = to_identifier(name, buffer);
+        std::vector<std::shared_ptr<function_decl const>> result;
+        parent.function_provider().each(
+                id,
+                argument_count,
+                [&] (std::shared_ptr<function_decl const> const& f) -> void {
+                    result.push_back(f);
+                });
+        return result;
+    }
+
+    [[nodiscard]] std::vector<std::shared_ptr<aggregation_decl const>> collect_aggregation_decl_in_schema(
+            schema_decl const& parent,
+            ast::name::simple const& name,
+            std::size_t argument_count) {
+        ast::common::chars buffer;
+        auto id = to_identifier(name, buffer);
+        std::vector<std::shared_ptr<aggregation_decl const>> result;
+        parent.set_function_provider().each(
+                id,
+                argument_count,
+                [&] (std::shared_ptr<aggregation_decl const> const& f) -> void {
+                    result.push_back(f);
+                });
+        return result;
+    }
+
     [[nodiscard]] find_symbol_result<table_decl const*> find_table_decl_in_schema(schema_decl const& parent, ast::name::simple const& name) {
         ast::common::chars buffer;
         auto id = to_identifier(name, buffer);
@@ -762,6 +842,24 @@ std::unique_ptr<tscalar::expression> analyze_variable_name(
         query_scope const& scope) {
     engine e { context, scope };
     return e.find_variable(name);
+}
+
+std::vector<std::shared_ptr<function_decl const>> analyze_function_name(
+        analyzer_context& context,
+        ast::name::name const& name,
+        std::size_t argument_count) {
+    query_scope empty_scope;
+    engine e { context, empty_scope };
+    return e.collect_function_decl(name, argument_count);
+}
+
+std::vector<std::shared_ptr<aggregation_decl const>> analyze_aggregation_name(
+        analyzer_context& context,
+        ast::name::name const& name,
+        std::size_t argument_count) {
+    query_scope empty_scope;
+    engine e { context, empty_scope };
+    return e.collect_aggregation_decl(name, argument_count);
 }
 
 optional_ptr<relation_info const> analyze_relation_info_name(

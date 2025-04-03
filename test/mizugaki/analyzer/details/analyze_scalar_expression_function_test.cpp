@@ -17,6 +17,7 @@
 
 #include <mizugaki/ast/scalar/binary_expression.h>
 #include <mizugaki/ast/scalar/builtin_function_invocation.h>
+#include <mizugaki/ast/scalar/function_invocation.h>
 
 #include "test_parent.h"
 
@@ -226,6 +227,169 @@ TEST_F(analyze_scalar_expression_function_test, builtin_ambiguous) {
                     literal(string("'testing'")),
             },
             {},
+    });
+}
+
+TEST_F(analyze_scalar_expression_function_test, function_simple) {
+    auto func = functions_->add(::yugawara::function::declaration {
+            ::yugawara::function::declaration::minimum_user_function_id + 1,
+            "constant",
+            ttype::int8 {},
+            {},
+    });
+
+    auto r = analyze_scalar_expression(
+            context(),
+            ast::scalar::function_invocation {
+                    id("constant"),
+                    {},
+            },
+            {},
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
+    EXPECT_FALSE(r.saw_aggregate());
+    EXPECT_EQ(*r, (tscalar::function_call {
+            descriptor(func),
+            {},
+    }));
+}
+
+TEST_F(analyze_scalar_expression_function_test, function_arguments) {
+    auto func = functions_->add(::yugawara::function::declaration {
+            ::yugawara::function::declaration::minimum_user_function_id + 1,
+            "substr",
+            ttype::character { ttype::varying, {} },
+            {
+                    ttype::character { ttype::varying, {} },
+                    ttype::int8 {},
+            },
+    });
+
+    auto r = analyze_scalar_expression(
+            context(),
+            ast::scalar::function_invocation {
+                    id("SUBSTR"),
+                    {
+                            literal(string("'Hello, world!'")),
+                            literal(number("8")),
+                    },
+            },
+            {},
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
+    EXPECT_FALSE(r.saw_aggregate());
+    EXPECT_EQ(*r, (tscalar::function_call {
+            descriptor(func),
+            {
+                    immediate("Hello, world!"),
+                    immediate(8),
+            },
+    }));
+}
+
+TEST_F(analyze_scalar_expression_function_test, function_overload) {
+    auto f_char = functions_->add(::yugawara::function::declaration {
+            ::yugawara::function::declaration::minimum_user_function_id + 1,
+            "substr",
+            ttype::character { ttype::varying, {} },
+            {
+                    ttype::character { ttype::varying, {} },
+                    ttype::int8 {},
+            },
+    });
+    auto f_octet = functions_->add(::yugawara::function::declaration {
+            ::yugawara::function::declaration::minimum_user_function_id + 2,
+            "substr",
+            ttype::octet { ttype::varying, {} },
+            {
+                    ttype::octet { ttype::varying, {} },
+                    ttype::int8 {},
+            },
+    });
+
+    auto r = analyze_scalar_expression(
+            context(),
+            ast::scalar::function_invocation {
+                    id("SUBSTR"),
+                    {
+                            literal(binary("'CAFEBABE'")),
+                            literal(number("3")),
+                    },
+            },
+            {},
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
+    EXPECT_FALSE(r.saw_aggregate());
+    EXPECT_EQ(*r, (tscalar::function_call {
+            descriptor(f_octet),
+            {
+                    immediate_octet("\xca\xfe\xba\xbe"),
+                    immediate(3),
+            },
+    }));
+}
+
+TEST_F(analyze_scalar_expression_function_test, function_mismatch_argument) {
+    auto f_char = functions_->add(::yugawara::function::declaration {
+            ::yugawara::function::declaration::minimum_user_function_id + 1,
+            "substr",
+            ttype::character { ttype::varying, {} },
+            {
+                    ttype::character { ttype::varying, {} },
+                    ttype::int8 {},
+            },
+    });
+
+    invalid(sql_analyzer_code::function_not_found, ast::scalar::function_invocation {
+            id("SUBSTR"),
+            {
+                    literal(binary("'CAFEBABE'")),
+                    literal(number("3")),
+            },
+    });
+}
+
+TEST_F(analyze_scalar_expression_function_test, function_invalid_argument) {
+    invalid(ast::scalar::function_invocation {
+            id("invalid"),
+            {
+                    erroneous_expression(),
+            },
+    });
+}
+
+TEST_F(analyze_scalar_expression_function_test, function_ambiguous) {
+    functions_->add(::yugawara::function::declaration {
+            ::yugawara::function::declaration::minimum_user_function_id + 1,
+            "substr",
+            ttype::character { ttype::varying, {} },
+            {
+                    ttype::character { ttype::varying, {} },
+                    ttype::int8 {},
+            },
+    });
+    functions_->add(::yugawara::function::declaration {
+            ::yugawara::function::declaration::minimum_user_function_id + 2,
+            "substr",
+            ttype::character { ttype::varying, {} },
+            {
+                    ttype::character { ttype::varying, {} },
+                    ttype::int8 {},
+            },
+    });
+
+    invalid(sql_analyzer_code::function_ambiguous, ast::scalar::function_invocation {
+            id("SUBSTR"),
+            {
+                    literal(string("'Hello, world!'")),
+                    literal(number("8")),
+            },
     });
 }
 

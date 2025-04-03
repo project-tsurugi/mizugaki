@@ -74,6 +74,16 @@ protected:
         expect_no_error();
     }
 
+    template<class T1, class T2>
+    void validate(std::vector<std::shared_ptr<T1>> const& result, std::shared_ptr<T2> const& expect) {
+        auto iter = std::find(result.begin(), result.end(), expect);
+        if (iter == result.end()) {
+            ADD_FAILURE() << "expected: " << *expect << "\n" << diagnostics();
+            return;
+        }
+        expect_no_error();
+    }
+
     template<class T>
     void validate(
             std::optional<schema_element<T>> result,
@@ -366,6 +376,178 @@ TEST_F(analyze_name_qualified_test, relation_decl_in_schema_decl_missing) {
             context(),
             id("s0", "MISSING"));
     invalid(r, sql_analyzer_code::table_not_found);
+}
+
+TEST_F(analyze_name_qualified_test, function_decl_in_schema_decl) {
+    auto fs0 = std::make_shared<::yugawara::function::configurable_provider>();
+    auto s0 = schemas_->add({ "s0", {}, {}, {}, fs0, });
+
+    auto f0 = fs0->add({
+            ::yugawara::function::declaration::minimum_user_function_id + 1,
+            "f",
+            ttype::int8 {},
+            {
+                    ttype::int8 {},
+            },
+    });
+
+    auto r = analyze_function_name(
+            context(),
+            id("s0", "f"),
+            1);
+    EXPECT_EQ(r.size(), 1);
+    validate(r, f0);
+
+    auto as = analyze_aggregation_name(
+            context(),
+            id("s0", "f"),
+            1);
+    EXPECT_EQ(as.size(), 0);
+}
+
+TEST_F(analyze_name_qualified_test, function_decl_in_schema_decl_multiple) {
+    auto fs0 = std::make_shared<::yugawara::function::configurable_provider>();
+    auto s0 = schemas_->add({ "s0", {}, {}, {}, fs0, });
+
+    auto f0 = fs0->add({
+            ::yugawara::function::declaration::minimum_user_function_id + 1,
+            "f",
+            ttype::int8 {},
+            {
+                    ttype::int8 {},
+            },
+    });
+    auto f1 = fs0->add({
+            ::yugawara::function::declaration::minimum_user_function_id + 2,
+            "f",
+            ttype::int8 {},
+            {
+                    ttype::character { ttype::varying, {} },
+            },
+    });
+    auto f2 = fs0->add({
+            ::yugawara::function::declaration::minimum_user_function_id + 3,
+            "f",
+            ttype::int8 {},
+            {
+                    ttype::octet { ttype::varying, {} },
+            },
+    });
+
+    auto r = analyze_function_name(
+            context(),
+            id("s0", "f"),
+            1);
+    EXPECT_EQ(r.size(), 3);
+    validate(r, f0);
+    validate(r, f1);
+    validate(r, f2);
+}
+
+TEST_F(analyze_name_qualified_test, function_decl_in_schema_decl_missing) {
+    auto fs0 = std::make_shared<::yugawara::function::configurable_provider>();
+    auto s0 = schemas_->add({ "s0", {}, {}, {}, fs0, });
+
+    fs0->add({
+            ::yugawara::function::declaration::minimum_user_function_id + 1,
+            "f",
+            ttype::int8 {},
+            {
+                    ttype::int8 {},
+            },
+    });
+
+    auto r = analyze_function_name(
+            context(),
+            id("s0", "g"),
+            1);
+    EXPECT_EQ(r.size(), 0);
+}
+
+TEST_F(analyze_name_qualified_test, aggregation_decl_in_schema_decl) {
+    auto fs0 = std::make_shared<::yugawara::aggregate::configurable_provider>();
+    auto s0 = schemas_->add({ "s0", {}, {}, {}, {}, fs0, });
+
+    auto f0 = fs0->add({
+            ::yugawara::aggregate::declaration::minimum_user_function_id + 1,
+            "f",
+            ttype::int8 {},
+            {
+                    ttype::int8 {},
+            },
+    });
+
+    auto r = analyze_aggregation_name(
+            context(),
+            id("s0", "f"),
+            1);
+    EXPECT_EQ(r.size(), 1);
+    validate(r, f0);
+
+    auto as = analyze_function_name(
+            context(),
+            id("s0", "f"),
+            1);
+    EXPECT_EQ(as.size(), 0);
+}
+
+TEST_F(analyze_name_qualified_test, aggregation_decl_in_schema_decl_multiple) {
+    auto fs0 = std::make_shared<::yugawara::aggregate::configurable_provider>();
+    auto s0 = schemas_->add({ "s0", {}, {}, {}, {}, fs0, });
+
+    auto f0 = fs0->add({
+            ::yugawara::aggregate::declaration::minimum_user_function_id + 1,
+            "f",
+            ttype::int8 {},
+            {
+                    ttype::int8 {},
+            },
+    });
+    auto f1 = fs0->add({
+            ::yugawara::aggregate::declaration::minimum_user_function_id + 2,
+            "f",
+            ttype::int8 {},
+            {
+                    ttype::character { ttype::varying, {} },
+            },
+    });
+    auto f2 = fs0->add({
+            ::yugawara::aggregate::declaration::minimum_user_function_id + 3,
+            "f",
+            ttype::int8 {},
+            {
+                    ttype::octet { ttype::varying, {} },
+            },
+    });
+
+    auto r = analyze_aggregation_name(
+            context(),
+            id("s0", "f"),
+            1);
+    EXPECT_EQ(r.size(), 3);
+    validate(r, f0);
+    validate(r, f1);
+    validate(r, f2);
+}
+
+TEST_F(analyze_name_qualified_test, aggregation_decl_in_schema_decl_missing) {
+    auto fs0 = std::make_shared<::yugawara::aggregate::configurable_provider>();
+    auto s0 = schemas_->add({ "s0", {}, {}, {}, {}, fs0, });
+
+    fs0->add({
+            ::yugawara::aggregate::declaration::minimum_user_function_id + 1,
+            "f",
+            ttype::int8 {},
+            {
+                    ttype::int8 {},
+            },
+    });
+
+    auto r = analyze_aggregation_name(
+            context(),
+            id("s0", "g"),
+            1);
+    EXPECT_EQ(r.size(), 0);
 }
 
 TEST_F(analyze_name_qualified_test, table_decl_in_schema_decl) {

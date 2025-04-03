@@ -735,7 +735,80 @@ public:
 
 
     // FIXME: impl <type predicate>
-    // FIXME: impl function_invocation,
+
+    [[nodiscard]] std::unique_ptr<tscalar::expression> operator()(
+            ast::scalar::function_invocation const& expr,
+            value_context const&) {
+        ::takatori::util::reference_vector<tscalar::expression> arguments {};
+        arguments.reserve(expr.arguments().size());
+        std::vector<std::shared_ptr<ttype::data const>> argument_types {};
+        argument_types.reserve(expr.arguments().size());
+        for (auto&& arg : expr.arguments()) {
+            auto value = process(*arg, {});
+            if (!value) {
+                return {};
+            }
+            auto type = context_.resolve(*value);
+            if (!type) {
+                return {};
+            }
+            arguments.push_back(value.release());
+            argument_types.emplace_back(type);
+        }
+
+        // search for scalar functions
+        auto function_list = analyze_function_name(context_, *expr.name(), expr.arguments().size());
+        std::vector<std::shared_ptr<::yugawara::function::declaration const>> function_candidates {};
+        function_candidates.reserve(function_list.size());
+        for (auto&& function: function_list) {
+            if (is_applicable(argument_types, function->shared_parameter_types())) {
+                function_candidates.emplace_back(function);
+            }
+        }
+        if (!function_candidates.empty()) {
+            auto target = resolve_overload(*expr.name(), function_candidates);
+            if (!target) {
+                return {};
+            }
+            auto result = context_.create<tscalar::function_call>(
+                    expr.region(),
+                    factory_(std::move(target)),
+                    std::move(arguments));
+            return result;
+        }
+
+        // search for set functions
+        auto aggregate_list = analyze_aggregation_name(context_, *expr.name(), expr.arguments().size());
+        std::vector<std::shared_ptr<::yugawara::aggregate::declaration const>> aggregate_candidates {};
+        aggregate_candidates.reserve(aggregate_list.size());
+        for (auto&& aggregate: aggregate_list) {
+            if (is_applicable(argument_types, aggregate->shared_parameter_types())) {
+                aggregate_candidates.emplace_back(aggregate);
+            }
+        }
+        if (!aggregate_candidates.empty()) {
+            auto target = resolve_overload(*expr.name(), aggregate_candidates);
+            if (!target) {
+                return {};
+            }
+            auto result = context_.create<::yugawara::extension::scalar::aggregate_function_call>(
+                    expr.region(),
+                    factory_(std::move(target)),
+                    std::move(arguments));
+            saw_aggregate_ = true;
+            return result;
+        }
+
+        string_builder buffer {};
+        buffer << "function not found: "
+               << print_support { *expr.name() };
+        append_string(buffer, argument_types);
+        context_.report(
+                sql_analyzer_code::function_not_found,
+                buffer << string_builder::to_string,
+                expr.region());
+        return {};
+    }
 
     [[nodiscard]] std::unique_ptr<tscalar::expression> operator()(
             ast::scalar::builtin_function_invocation const& expr,
@@ -992,7 +1065,7 @@ public:
 
     template<class TDecl, class TNode>
     [[nodiscard]] std::shared_ptr<TDecl> resolve_overload(
-            ast::common::regioned<TNode> const& title,
+            TNode const& title,
             std::vector<std::shared_ptr<TDecl>> const& candidates) {
         std::size_t left_idx = 0;
         for (std::size_t right_idx = 1, n = candidates.size(); right_idx < n; ++right_idx) {

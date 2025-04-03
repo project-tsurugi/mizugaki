@@ -38,7 +38,6 @@ protected:
         }
     }
 
-
     template<class T1, class T2>
     void validate(::takatori::util::optional_ptr<T1> result, find_element_result<T2> expect) {
         if (!expect.is_found()) {
@@ -70,6 +69,16 @@ protected:
             return;
         }
         EXPECT_EQ(*result, *expect) << diagnostics();
+        expect_no_error();
+    }
+
+    template<class T1, class T2>
+    void validate(std::vector<std::shared_ptr<T1>> const& result, std::shared_ptr<T2> const& expect) {
+        auto iter = std::find(result.begin(), result.end(), expect);
+        if (iter == result.end()) {
+            ADD_FAILURE() << "expected: " << *expect << "\n" << diagnostics();
+            return;
+        }
         expect_no_error();
     }
 
@@ -408,6 +417,262 @@ TEST_F(analyze_name_primary_test, relation_decl_missing) {
             context(),
             id("r0"));
     invalid(r, diagnostic_code::table_not_found);
+}
+
+TEST_F(analyze_name_primary_test, function_decl) {
+    auto functions = std::make_shared<::yugawara::function::configurable_provider>();
+    ::yugawara::schema::declaration s {
+            "s",
+            {},
+            {},
+            {},
+            functions,
+    };
+    auto f0 = functions->add({
+            ::yugawara::function::declaration::minimum_user_function_id + 1,
+            "f",
+            ttype::int8 {},
+            {},
+    });
+    search_path_->elements().emplace_back(&s);
+
+    auto r = analyze_function_name(
+            context(),
+            id("f"),
+            0);
+    EXPECT_EQ(r.size(), 1);
+    validate(r, f0);
+
+    auto as = analyze_aggregation_name(
+            context(),
+            id("f"),
+            0);
+    EXPECT_EQ(as.size(), 0);
+}
+
+TEST_F(analyze_name_primary_test, function_decl_multiple) {
+    auto functions = std::make_shared<::yugawara::function::configurable_provider>();
+    ::yugawara::schema::declaration s {
+        "s",
+        {},
+        {},
+        {},
+        functions,
+    };
+    auto f0 = functions->add({
+            ::yugawara::function::declaration::minimum_user_function_id + 1,
+            "f",
+            ttype::int8 {},
+            {
+                    ttype::int8 {},
+            },
+    });
+    auto f1 = functions->add({
+            ::yugawara::function::declaration::minimum_user_function_id + 2,
+            "f",
+            ttype::int8 {},
+            {
+                    ttype::character { ttype::varying, {} },
+            },
+    });
+    auto f2 = functions->add({
+            ::yugawara::function::declaration::minimum_user_function_id + 3,
+            "f",
+            ttype::int8 {},
+            {
+                    ttype::octet { ttype::varying, {} },
+            },
+    });
+    search_path_->elements().emplace_back(&s);
+
+    auto r = analyze_function_name(
+            context(),
+            id("f"),
+            1);
+    EXPECT_EQ(r.size(), 3);
+    validate(r, f0);
+    validate(r, f1);
+    validate(r, f2);
+}
+
+TEST_F(analyze_name_primary_test, function_decl_mismatch_name) {
+    auto functions = std::make_shared<::yugawara::function::configurable_provider>();
+    ::yugawara::schema::declaration s {
+            "s",
+            {},
+            {},
+            {},
+            functions,
+    };
+    auto f0 = functions->add({
+            ::yugawara::function::declaration::minimum_user_function_id + 1,
+            "f",
+            ttype::int8 {},
+            {},
+    });
+    search_path_->elements().emplace_back(&s);
+
+    auto r = analyze_function_name(
+            context(),
+            id("g"),
+            0);
+    EXPECT_EQ(r.size(), 0);
+}
+
+TEST_F(analyze_name_primary_test, function_decl_mismatch_argument_count) {
+    auto functions = std::make_shared<::yugawara::function::configurable_provider>();
+    ::yugawara::schema::declaration s {
+            "s",
+            {},
+            {},
+            {},
+            functions,
+    };
+    auto f0 = functions->add({
+            ::yugawara::function::declaration::minimum_user_function_id + 1,
+            "f",
+            ttype::int8 {},
+            {
+                    ttype::int8 {},
+            },
+    });
+    search_path_->elements().emplace_back(&s);
+
+    auto r = analyze_function_name(
+            context(),
+            id("f"),
+            0);
+    EXPECT_EQ(r.size(), 0);
+}
+
+TEST_F(analyze_name_primary_test, aggregation_decl) {
+    auto functions = std::make_shared<::yugawara::aggregate::configurable_provider>();
+    ::yugawara::schema::declaration s {
+            "s",
+            {},
+            {},
+            {},
+            {},
+            functions,
+    };
+    auto f0 = functions->add({
+            ::yugawara::aggregate::declaration::minimum_user_function_id + 1,
+            "f",
+            ttype::int8 {},
+            {},
+    });
+    search_path_->elements().emplace_back(&s);
+
+    auto r = analyze_aggregation_name(
+            context(),
+            id("f"),
+            0);
+    EXPECT_EQ(r.size(), 1);
+    validate(r, f0);
+
+    auto fs = analyze_function_name(
+            context(),
+            id("f"),
+            0);
+    EXPECT_EQ(fs.size(), 0);
+}
+
+TEST_F(analyze_name_primary_test, aggregation_decl_multiple) {
+    auto functions = std::make_shared<::yugawara::aggregate::configurable_provider>();
+    ::yugawara::schema::declaration s {
+            "s",
+            {},
+            {},
+            {},
+            {},
+            functions,
+    };
+    auto f0 = functions->add({
+            ::yugawara::aggregate::declaration::minimum_user_function_id + 1,
+            "f",
+            ttype::int8 {},
+            {
+                    ttype::int8 {},
+            },
+    });
+    auto f1 = functions->add({
+            ::yugawara::aggregate::declaration::minimum_user_function_id + 2,
+            "f",
+            ttype::int8 {},
+            {
+                    ttype::character { ttype::varying, {} },
+            },
+    });
+    auto f2 = functions->add({
+            ::yugawara::aggregate::declaration::minimum_user_function_id + 3,
+            "f",
+            ttype::int8 {},
+            {
+                    ttype::octet { ttype::varying, {} },
+            },
+    });
+    search_path_->elements().emplace_back(&s);
+
+    auto r = analyze_aggregation_name(
+            context(),
+            id("f"),
+            1);
+    EXPECT_EQ(r.size(), 3);
+    validate(r, f0);
+    validate(r, f1);
+    validate(r, f2);
+}
+
+TEST_F(analyze_name_primary_test, aggregation_decl_mismatch_name) {
+    auto functions = std::make_shared<::yugawara::aggregate::configurable_provider>();
+    ::yugawara::schema::declaration s {
+            "s",
+            {},
+            {},
+            {},
+            {},
+            functions,
+    };
+    auto f0 = functions->add({
+            ::yugawara::aggregate::declaration::minimum_user_function_id + 1,
+            "f",
+            ttype::int8 {},
+            {},
+    });
+    search_path_->elements().emplace_back(&s);
+
+    auto r = analyze_aggregation_name(
+            context(),
+            id("g"),
+            0);
+    EXPECT_EQ(r.size(), 0);
+}
+
+TEST_F(analyze_name_primary_test, aggregation_decl_mismatch_argument_count) {
+    auto functions = std::make_shared<::yugawara::aggregate::configurable_provider>();
+    ::yugawara::schema::declaration s {
+            "s",
+            {},
+            {},
+            {},
+            {},
+            functions,
+    };
+    auto f0 = functions->add({
+            ::yugawara::aggregate::declaration::minimum_user_function_id + 1,
+            "f",
+            ttype::int8 {},
+            {
+                    ttype::int8 {},
+            },
+    });
+    search_path_->elements().emplace_back(&s);
+
+    auto r = analyze_aggregation_name(
+            context(),
+            id("f"),
+            0);
+    EXPECT_EQ(r.size(), 0);
 }
 
 TEST_F(analyze_name_primary_test, table_decl) {

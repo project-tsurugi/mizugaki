@@ -2,7 +2,6 @@
 
 #include <takatori/util/clone_tag.h>
 
-#include <mizugaki/ast/common/regioned.h>
 #include <mizugaki/ast/common/rvalue_list.h>
 #include <mizugaki/ast/common/vector.h>
 #include <mizugaki/ast/name/name.h>

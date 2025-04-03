@@ -4,9 +4,11 @@
 
 #include <takatori/type/primitive.h>
 #include <takatori/type/character.h>
+#include <takatori/type/octet.h>
 
 #include <takatori/value/primitive.h>
 #include <takatori/value/character.h>
+#include <takatori/value/octet.h>
 
 #include <takatori/scalar/immediate.h>
 #include <takatori/scalar/variable_reference.h>
@@ -71,6 +73,13 @@ inline ast::literal::string string(std::string_view token = "'x'") {
     };
 }
 
+inline ast::literal::string binary(std::string_view token = "'00'") {
+    return ast::literal::string {
+        ast::literal::kind::hex_string,
+        token,
+};
+}
+
 inline ast::scalar::literal_expression literal(ast::literal::literal&& literal = number()) {
     return ast::scalar::literal_expression {
             std::move(literal),
@@ -95,6 +104,17 @@ inline tscalar::immediate immediate_bool(bool value = true) {
     return tscalar::immediate {
             tvalue::boolean { value },
             ttype::boolean {},
+    };
+}
+
+inline tscalar::immediate immediate_octet(std::string_view value, bool fit_size = true) {
+    std::optional<std::size_t> length = {};
+    if (fit_size) {
+        length.emplace(value.size());
+    }
+    return tscalar::immediate {
+            tvalue::octet { value },
+            ttype::octet { ttype::varying, length },
     };
 }
 
