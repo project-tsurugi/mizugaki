@@ -545,6 +545,84 @@ TEST_F(analyze_name_primary_test, function_decl_mismatch_argument_count) {
     EXPECT_EQ(r.size(), 0);
 }
 
+TEST_F(analyze_name_primary_test, function_decl_case_sensitive) {
+    options_.lowercase_regular_identifiers() = false;
+    auto functions = std::make_shared<::yugawara::function::configurable_provider>();
+    ::yugawara::schema::declaration s {
+            "s",
+            {},
+            {},
+            {},
+            functions,
+    };
+    auto f0 = functions->add({
+            ::yugawara::function::declaration::minimum_user_function_id + 1,
+            "f",
+            ttype::int8 {},
+            {},
+    });
+    search_path_->elements().emplace_back(&s);
+
+    auto r = analyze_function_name(
+            context(),
+            id("F"),
+            0);
+    EXPECT_EQ(r.size(), 0);
+}
+
+TEST_F(analyze_name_primary_test, function_decl_case_insensitive_default) {
+    options_.lowercase_regular_identifiers() = true;
+    auto functions = std::make_shared<::yugawara::function::configurable_provider>();
+    ::yugawara::schema::declaration s {
+            "s",
+            {},
+            {},
+            {},
+            functions,
+    };
+    auto f0 = functions->add({
+            ::yugawara::function::declaration::minimum_user_function_id + 1,
+            "f",
+            ttype::int8 {},
+            {},
+    });
+    search_path_->elements().emplace_back(&s);
+
+    auto r = analyze_function_name(
+            context(),
+            id("F"),
+            0);
+    EXPECT_EQ(r.size(), 1);
+    validate(r, f0);
+}
+
+TEST_F(analyze_name_primary_test, function_decl_case_insensitive_individual) {
+    options_.lowercase_regular_identifiers() = false;
+    options_.lowercase_function_regular_identifiers() = true;
+    auto functions = std::make_shared<::yugawara::function::configurable_provider>();
+    ::yugawara::schema::declaration s {
+            "s",
+            {},
+            {},
+            {},
+            functions,
+    };
+    auto f0 = functions->add({
+            ::yugawara::function::declaration::minimum_user_function_id + 1,
+            "f",
+            ttype::int8 {},
+            {},
+    });
+    search_path_->elements().emplace_back(&s);
+
+    auto r = analyze_function_name(
+            context(),
+            id("F"),
+            0);
+    EXPECT_EQ(r.size(), 1);
+    validate(r, f0);
+}
+
 TEST_F(analyze_name_primary_test, aggregation_decl) {
     auto functions = std::make_shared<::yugawara::aggregate::configurable_provider>();
     ::yugawara::schema::declaration s {
@@ -675,6 +753,87 @@ TEST_F(analyze_name_primary_test, aggregation_decl_mismatch_argument_count) {
     EXPECT_EQ(r.size(), 0);
 }
 
+TEST_F(analyze_name_primary_test, aggregation_decl_case_sensitive) {
+    options_.lowercase_regular_identifiers() = false;
+    auto functions = std::make_shared<::yugawara::aggregate::configurable_provider>();
+    ::yugawara::schema::declaration s {
+            "s",
+            {},
+            {},
+            {},
+            {},
+            functions,
+    };
+    auto f0 = functions->add({
+            ::yugawara::aggregate::declaration::minimum_user_function_id + 1,
+            "f",
+            ttype::int8 {},
+            {},
+    });
+    search_path_->elements().emplace_back(&s);
+
+    auto r = analyze_aggregation_name(
+            context(),
+            id("F"),
+            0);
+    EXPECT_EQ(r.size(), 0);
+}
+
+TEST_F(analyze_name_primary_test, aggregation_decl_case_insensitive_default) {
+    options_.lowercase_regular_identifiers() = true;
+    auto functions = std::make_shared<::yugawara::aggregate::configurable_provider>();
+    ::yugawara::schema::declaration s {
+            "s",
+            {},
+            {},
+            {},
+            {},
+            functions,
+    };
+    auto f0 = functions->add({
+            ::yugawara::aggregate::declaration::minimum_user_function_id + 1,
+            "f",
+            ttype::int8 {},
+            {},
+    });
+    search_path_->elements().emplace_back(&s);
+
+    auto r = analyze_aggregation_name(
+            context(),
+            id("F"),
+            0);
+    EXPECT_EQ(r.size(), 1);
+    validate(r, f0);
+}
+
+TEST_F(analyze_name_primary_test, aggregation_decl_case_insensitive_individual) {
+    options_.lowercase_regular_identifiers() = false;
+    options_.lowercase_function_regular_identifiers() = true;
+    auto functions = std::make_shared<::yugawara::aggregate::configurable_provider>();
+    ::yugawara::schema::declaration s {
+            "s",
+            {},
+            {},
+            {},
+            {},
+            functions,
+    };
+    auto f0 = functions->add({
+            ::yugawara::aggregate::declaration::minimum_user_function_id + 1,
+            "f",
+            ttype::int8 {},
+            {},
+    });
+    search_path_->elements().emplace_back(&s);
+
+    auto r = analyze_aggregation_name(
+            context(),
+            id("F"),
+            0);
+    EXPECT_EQ(r.size(), 1);
+    validate(r, f0);
+}
+
 TEST_F(analyze_name_primary_test, table_decl) {
     auto storage = std::make_shared<::yugawara::storage::configurable_provider>();
     ::yugawara::schema::declaration s {
@@ -706,6 +865,24 @@ TEST_F(analyze_name_primary_test, table_decl_missing_optional) {
             false);
     EXPECT_FALSE(r);
     expect_no_error();
+}
+
+TEST_F(analyze_name_primary_test, table_decl_case_sensitive) {
+    options_.lowercase_regular_identifiers() = false;
+    auto storage = std::make_shared<::yugawara::storage::configurable_provider>();
+    ::yugawara::schema::declaration s {
+            "s",
+            {},
+            storage,
+    };
+    auto t0 = storage->add_table({ "t0", {} });
+    search_path_->elements().emplace_back(&s);
+
+    auto r = analyze_table_name(
+            context(),
+            id("T0"),
+            true);
+    invalid(r, sql_analyzer_code::table_not_found);
 }
 
 TEST_F(analyze_name_primary_test, index_decl) {

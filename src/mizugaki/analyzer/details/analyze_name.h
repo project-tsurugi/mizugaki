@@ -21,6 +21,15 @@
 
 namespace mizugaki::analyzer::details {
 
+enum class name_kind {
+    not_specified,
+    variable,
+    function,
+    relation,
+    schema,
+    catalog,
+};
+
 template<class T>
 using schema_element = std::pair<
         ::takatori::util::maybe_shared_ptr<::yugawara::schema::declaration const>,
@@ -67,6 +76,7 @@ using schema_element = std::pair<
 
 [[nodiscard]] std::string normalize_identifier(
         analyzer_context& context,
-        ast::name::simple const& name);
+        ast::name::simple const& name,
+        name_kind kind);
 
 } // namespace mizugaki::analyzer::details

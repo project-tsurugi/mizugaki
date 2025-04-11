@@ -234,11 +234,12 @@ public:
 
     [[nodiscard]] static ast::common::chars const& to_identifier(
             ast::name::simple const& name,
-            bool lowercase_regular_identifiers,
+            sql_analyzer_options const& options,
             ast::common::chars& buffer,
+            name_kind kind,
             bool always_to_buffer = false) {
         auto&& id = name.identifier();
-        if (name.identifier_kind() == ast::name::identifier_kind::regular && lowercase_regular_identifiers) {
+        if (name.identifier_kind() == ast::name::identifier_kind::regular && is_lowercase(options, kind)) {
             buffer.resize(id.size());
             for (std::size_t i = 0, n = id.size(); i < n; ++i) {
                 buffer[i] = static_cast<char>(std::tolower(id[i])); // FIXME: using the default locale
@@ -250,6 +251,27 @@ public:
             return buffer;
         }
         return id;
+    }
+
+    [[nodiscard]] static bool is_lowercase(sql_analyzer_options const& options, name_kind kind) {
+        if (options.lowercase_regular_identifiers()) {
+            return true;
+        }
+        switch (kind) {
+            case name_kind::not_specified:
+                break;
+            case name_kind::variable:
+                return options.lowercase_variable_regular_identifiers();
+            case name_kind::function:
+                return options.lowercase_function_regular_identifiers();
+            case name_kind::relation:
+                return options.lowercase_relation_regular_identifiers();
+            case name_kind::schema:
+                return options.lowercase_schema_regular_identifiers();
+            case name_kind::catalog:
+                return options.lowercase_catalog_regular_identifiers();
+        }
+        return false;
     }
 
 private:
@@ -270,8 +292,11 @@ private:
         return {};
     }
 
-    [[nodiscard]] ast::common::chars const& to_identifier(ast::name::simple const& name, ast::common::chars& buffer) {
-        return to_identifier(name, context_.options()->lowercase_regular_identifiers(), buffer);
+    [[nodiscard]] ast::common::chars const& to_identifier(
+            ast::name::simple const& name,
+            ast::common::chars& buffer,
+            name_kind kind) {
+        return to_identifier(name, *context_.options(), buffer, kind);
     }
 
     [[nodiscard]] symbol_info find_symbol(
@@ -665,7 +690,7 @@ private:
         ast::common::chars buffer;
         std::optional<descriptor::variable> found {};
         for (auto&& r : scope.references()) {
-            for (auto v = r.find(to_identifier(name, buffer)); !v.is_absent(); v = r.next(*v)) {
+            for (auto v = r.find(to_identifier(name, buffer, name_kind::variable)); !v.is_absent(); v = r.next(*v)) {
                 if (v.is_ambiguous()) {
                     report_column_ambiguous(name);
                     return find_symbol_result<descriptor::variable>::error;
@@ -704,7 +729,7 @@ private:
             ast::name::name const& name) {
         ast::common::chars buffer;
         std::optional<descriptor::variable> found {};
-        for (auto v = parent.find(to_identifier(name.last_name(), buffer));; v = parent.next(*v)) {
+        for (auto v = parent.find(to_identifier(name.last_name(), buffer, name_kind::variable));; v = parent.next(*v)) {
             if (v.is_ambiguous()) {
                 report_column_ambiguous(name);
                 return find_symbol_result<descriptor::variable>::error;
@@ -729,7 +754,7 @@ private:
             schema_decl const& schema,
             ast::name::simple const& name) {
         ast::common::chars buffer;
-        auto id = to_identifier(name.last_name(), buffer);
+        auto id = to_identifier(name.last_name(), buffer, name_kind::variable);
         if (auto v = schema.variable_provider().find(id)) {
             return { context_.bless(to_descriptor(std::move(v)), name.region()) };
         }
@@ -740,7 +765,7 @@ private:
             query_scope const& query,
             ast::name::simple const& name) {
         ast::common::chars buffer;
-        auto id = to_identifier(name.last_name(), buffer);
+        auto id = to_identifier(name.last_name(), buffer, name_kind::relation);
         auto r = query.find(id);
         if (r.is_ambiguous()) {
             report_relation_ambiguous(name);
@@ -754,7 +779,7 @@ private:
 
     [[nodiscard]] find_symbol_result<relation_decl const&> find_relation_decl_in_schema(schema_decl const& parent, ast::name::simple const& name) {
         ast::common::chars buffer;
-        auto id = to_identifier(name, buffer);
+        auto id = to_identifier(name, buffer, name_kind::relation);
         if (auto t = parent.storage_provider().find_relation(id)) {
             return { *t };
         }
@@ -766,7 +791,7 @@ private:
             ast::name::simple const& name,
             std::size_t argument_count) {
         ast::common::chars buffer;
-        auto id = to_identifier(name, buffer);
+        auto id = to_identifier(name, buffer, name_kind::function);
         std::vector<std::shared_ptr<function_decl const>> result;
         parent.function_provider().each(
                 id,
@@ -782,7 +807,7 @@ private:
             ast::name::simple const& name,
             std::size_t argument_count) {
         ast::common::chars buffer;
-        auto id = to_identifier(name, buffer);
+        auto id = to_identifier(name, buffer, name_kind::function);
         std::vector<std::shared_ptr<aggregation_decl const>> result;
         parent.set_function_provider().each(
                 id,
@@ -795,7 +820,7 @@ private:
 
     [[nodiscard]] find_symbol_result<table_decl const*> find_table_decl_in_schema(schema_decl const& parent, ast::name::simple const& name) {
         ast::common::chars buffer;
-        auto id = to_identifier(name, buffer);
+        auto id = to_identifier(name, buffer, name_kind::relation);
         if (auto t = parent.storage_provider().find_table(id)) {
             return { std::move(t) };
         }
@@ -804,7 +829,7 @@ private:
 
     [[nodiscard]] find_symbol_result<index_decl const*> find_index_decl_in_schema(schema_decl const& parent, ast::name::simple const& name) {
         ast::common::chars buffer;
-        auto id = to_identifier(name, buffer);
+        auto id = to_identifier(name, buffer, name_kind::relation);
         if (auto t = parent.storage_provider().find_index(id)) {
             return { std::move(t) };
         }
@@ -813,7 +838,7 @@ private:
 
     find_symbol_result<schema_decl const*> find_schema_in_catalog(catalog_decl const& parent, ast::name::simple const& name) {
         ast::common::chars buffer;
-        auto id = to_identifier(name, buffer);
+        auto id = to_identifier(name, buffer, name_kind::schema);
         if (auto s = parent.schema_provider().find(id)) {
             return { std::move(s) };
         }
@@ -825,7 +850,7 @@ private:
             return {};
         }
         ast::common::chars buffer;
-        auto id = to_identifier(name, buffer);
+        auto id = to_identifier(name, buffer, name_kind::catalog);
         auto&& c = context_.options()->catalog();
         if (!c.name().empty() && id == c.name()) {
             return { c };
@@ -907,9 +932,10 @@ std::shared_ptr<schema_decl const> analyze_schema_name(
 
 std::string normalize_identifier(
         analyzer_context& context,
-        ast::name::simple const& name) {
+        ast::name::simple const& name,
+        name_kind kind) {
     std::string buffer;
-    (void) engine::to_identifier(name, context.options()->lowercase_regular_identifiers(), buffer, true);
+    (void) engine::to_identifier(name, *context.options(), buffer, kind, true);
     return buffer;
 }
 

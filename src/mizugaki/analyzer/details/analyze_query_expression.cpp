@@ -804,9 +804,9 @@ public:
         bool saw_aggregate { false };
     };
 
-    [[nodiscard]] std::optional<std::string> maybe_name(std::unique_ptr<ast::name::simple> const& n) noexcept {
+    [[nodiscard]] std::optional<std::string> maybe_column_name(std::unique_ptr<ast::name::simple> const& n) noexcept {
         if (n) {
-            return normalize_identifier(context_, *n);
+            return normalize_identifier(context_, *n, name_kind::variable);
         }
         return std::nullopt;
     }
@@ -821,14 +821,14 @@ public:
             return {};
         }
         std::string name;
-        if (auto n = maybe_name(elem.name())) {
+        if (auto n = maybe_column_name(elem.name())) {
             name = std::move(*n);
         } else if (name.empty() && elem.value()->node_kind() == ast::scalar::variable_reference::tag) {
             auto&& var = unsafe_downcast<ast::scalar::variable_reference>(*elem.value());
-            name = normalize_identifier(context_, var.name()->last_name());
+            name = normalize_identifier(context_, var.name()->last_name(), name_kind::variable);
         }
 
-        auto column = factory_.stream_variable(maybe_name(elem.name()).value_or(""));
+        auto column = factory_.stream_variable(maybe_column_name(elem.name()).value_or(""));
         column.region() = result.value().region();
         target.columns().emplace_back(column, result.release());
         info.add({
@@ -947,7 +947,7 @@ public:
         std::unique_ptr<tscalar::expression> result {};
 
         for (auto&& name : elem.columns()) {
-            auto&& id = normalize_identifier(context_, *name);
+            auto&& id = normalize_identifier(context_, *name, name_kind::variable);
             auto&& rels = scope.references();
             optional_ptr<tdescriptor::variable const> left {};
             for (query_scope::position_type i = 0, n = pivot; i < n; ++i) {
@@ -1106,12 +1106,12 @@ private:
                     correlation.region());
             return {};
         }
-        info.identifier() = normalize_identifier(context_, *correlation.correlation_name());
+        info.identifier() = normalize_identifier(context_, *correlation.correlation_name(), name_kind::relation);
         if (!correlation.column_names().empty()) {
             auto&& rel = info.columns();
             auto&& cor = correlation.column_names();
             for (std::size_t index = 0, n = cor.size(); index < n; ++index) {
-                rel[index].identifier() = normalize_identifier(context_, *cor[index]);
+                rel[index].identifier() = normalize_identifier(context_, *cor[index], name_kind::variable);
             }
             // project relation if correlation columns are reduced
             info.erase(cor.size(), rel.size());

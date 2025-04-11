@@ -163,7 +163,7 @@ public:
             destination_columns.reserve(stmt.columns().size());
             columns_context.reserve(stmt.columns().size());
             for (auto&& column_name : stmt.columns()) {
-                auto identifier = normalize_identifier(context_, *column_name);
+                auto identifier = normalize_identifier(context_, *column_name, name_kind::variable);
                 auto column = info.find(identifier);
                 if (!column || !column->declaration() || !column->exported()) {
                     // may not ambiguous
@@ -429,7 +429,7 @@ public:
                 return {};
             }
 
-            auto identifier = normalize_identifier(context_, element.target()->last_name());
+            auto identifier = normalize_identifier(context_, element.target()->last_name(), name_kind::variable);
             auto column = info.find(identifier);
             if (!column || !column->declaration()) {
                 context_.report(
@@ -668,7 +668,7 @@ public:
             return {};
         }
 
-        auto table_name = normalize_identifier(context_, stmt.name()->last_name());
+        auto table_name = normalize_identifier(context_, stmt.name()->last_name(), name_kind::relation);
 
         // extract columns
         ::takatori::util::reference_vector<::yugawara::storage::column> table_columns {};
@@ -681,7 +681,7 @@ public:
                 continue;
             }
             auto&& column = unsafe_downcast<ast::statement::column_definition>(*element);
-            auto column_name = normalize_identifier(context_, *column.name());
+            auto column_name = normalize_identifier(context_, *column.name(), name_kind::variable);
             auto column_type = analyze_type(context_, *column.type());
             if (!column_type) {
                 return {}; // error
@@ -1323,7 +1323,7 @@ public:
                         stmt.name()->region());
                 return {};
             }
-            name = normalize_identifier(context_, stmt.name()->last_name());
+            name = normalize_identifier(context_, stmt.name()->last_name(), name_kind::relation);
             region = stmt.name()->region();
         }
 

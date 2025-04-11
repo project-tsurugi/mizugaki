@@ -23,7 +23,7 @@ public:
     using size_type = std::size_t;
 
     /**
-     * @brief the default value of whether or not regular identifiers are treated as lowercase characters.
+     * @brief the default value of whether regular identifiers are treated as lowercase characters.
      * @see lowercase_regular_identifiers()
      */
     static constexpr bool default_lowercase_regular_identifiers = true;
@@ -78,13 +78,13 @@ public:
     static constexpr size_type default_max_binary_float8_precision = 53;
 
     /**
-     * @brief the default value of whether or not to prefer to use write statement for simple insert operations.
+     * @brief the default value of whether to prefer to use write statement for simple insert operations.
      * @see prefer_write_statement()
      */
     static constexpr bool default_prefer_write_statement = true;
 
     /**
-     * @brief the default value of whether or not to consider small integer literals (~2^31-1) as smaller data types.
+     * @brief the default value of whether to consider small integer literals (~2^31-1) as smaller data types.
      * @see prefer_small_integer_literals()
      */
     static constexpr bool default_prefer_small_integer_literals = false;
@@ -109,25 +109,25 @@ public:
     static constexpr bool default_prefer_small_decimal_literals = false;
 
     /**
-     * @brief the default value of whether or not each host parameter declaration must be starts with column.
+     * @brief the default value of whether each host parameter declaration must be starts with column.
      * @see host_parameter_declaration_starts_with_colon()
      */
     static constexpr bool default_host_parameter_declaration_starts_with_colon = false;
 
     /**
-     * @brief the default value of whether or not context independent `NULL` is allowed.
+     * @brief the default value of whether context independent `NULL` is allowed.
      * @see allow_context_independent_null()
      */
     static constexpr bool default_allow_context_independent_null = false;
 
     /**
-     * @brief the default value of whether or not to validate all scalar expressions.
+     * @brief the default value of whether to validate all scalar expressions.
      * @see validate_all_scalar_expressions()
      */
     static constexpr bool default_validate_scalar_expressions = false;
 
     /**
-     * @brief the default value of whether or not to automatically cast literals if the context type is specified.
+     * @brief the default value of whether to automatically cast literals if the context type is specified.
      * @see cast_literals_in_context()
      */
     static constexpr bool default_cast_literals_in_context = true;
@@ -188,7 +188,7 @@ public:
     [[nodiscard]] ::takatori::util::maybe_shared_ptr<::yugawara::schema::declaration const>  default_schema_shared() const noexcept;
 
     /**
-     * @brief returns whether or not regular identifiers are treated as lowercase characters.
+     * @brief returns whether regular identifiers are treated as lowercase characters.
      * @return true if th regular identifiers are treated as lowercase characters
      * @return false otherwise
      */
@@ -199,6 +199,76 @@ public:
     /// @copydoc lowercase_regular_identifiers()
     [[nodiscard]] bool lowercase_regular_identifiers() const noexcept {
         return lowercase_regular_identifiers_;
+    }
+
+    /**
+     * @brief returns whether regular identifiers for variables (columns and parameters) are treated as lowercase characters.
+     * @return true if the variable names are treated as lowercase characters
+     * @return false it depends the lowercase_regular_identifiers()
+     */
+    [[nodiscard]] bool& lowercase_variable_regular_identifiers() noexcept {
+        return lowercase_variable_regular_identifiers_;
+    }
+
+    /// @copydoc lowercase_variable_regular_identifiers()
+    [[nodiscard]] bool lowercase_variable_regular_identifiers() const noexcept {
+        return lowercase_variable_regular_identifiers_;
+    }
+
+    /**
+     * @brief returns whether regular identifiers for functions (scalar or set) are treated as lowercase characters.
+     * @return true if the function names are treated as lowercase characters
+     * @return false it depends the lowercase_regular_identifiers()
+     */
+    [[nodiscard]] bool& lowercase_function_regular_identifiers() noexcept {
+        return lowercase_function_regular_identifiers_;
+    }
+
+    /// @copydoc lowercase_function_regular_identifiers()
+    [[nodiscard]] bool lowercase_function_regular_identifiers() const noexcept {
+        return lowercase_function_regular_identifiers_;
+    }
+
+    /**
+     * @brief returns whether regular identifiers for relations (tables, correlations, views, and indexes) are treated as lowercase characters.
+     * @return true if the relation names are treated as lowercase characters
+     * @return false it depends the lowercase_regular_identifiers()
+     */
+    [[nodiscard]] bool& lowercase_relation_regular_identifiers() noexcept {
+        return lowercase_relation_regular_identifiers_;
+    }
+
+    /// @copydoc lowercase_relation_regular_identifiers()
+    [[nodiscard]] bool lowercase_relation_regular_identifiers() const noexcept {
+        return lowercase_relation_regular_identifiers_;
+    }
+
+    /**
+     * @brief returns whether regular identifiers for schemas are treated as lowercase characters.
+     * @return true if the schema names are treated as lowercase characters
+     * @return false it depends the lowercase_regular_identifiers()
+     */
+    [[nodiscard]] bool& lowercase_schema_regular_identifiers() noexcept {
+        return lowercase_schema_regular_identifiers_;
+    }
+
+    /// @copydoc lowercase_schema_regular_identifiers()
+    [[nodiscard]] bool lowercase_schema_regular_identifiers() const noexcept {
+        return lowercase_schema_regular_identifiers_;
+    }
+
+    /**
+     * @brief returns whether regular identifiers for catalogs are treated as lowercase characters.
+     * @return true if the catalog names are treated as lowercase characters
+     * @return false it depends the lowercase_regular_identifiers()
+     */
+    [[nodiscard]] bool& lowercase_catalog_regular_identifiers() noexcept {
+        return lowercase_catalog_regular_identifiers_;
+    }
+
+    /// @copydoc lowercase_catalog_regular_identifiers()
+    [[nodiscard]] bool lowercase_catalog_regular_identifiers() const noexcept {
+        return lowercase_catalog_regular_identifiers_;
     }
 
     /**
@@ -314,7 +384,7 @@ public:
     }
 
     /**
-     * @brief returns whether or not context independent `NULL` values are allowed.
+     * @brief returns whether context independent `NULL` values are allowed.
      * @return true if they are allowed
      * @return false otherwise
      */
@@ -328,7 +398,7 @@ public:
     }
 
     /**
-     * @brief returns whether or not to prefer to use write statement for simple insert operations.
+     * @brief returns whether to prefer to use write statement for simple insert operations.
      * @return true if prefer to use write statement
      * @return false otherwise
      */
@@ -342,7 +412,7 @@ public:
     }
 
     /**
-     * @brief returns whether or not each host parameter declaration must be starts with column.
+     * @brief returns whether each host parameter declaration must be starts with column.
      * @details If this is true, analyzer users must declare host parameters with column prefix.
      * @return true if each host parameter declaration must be starts with column
      * @return false otherwise
@@ -357,7 +427,7 @@ public:
     }
 
     /**
-     * @brief returns whether or not to consider small integer literals (~2^31-1) as smaller data types.
+     * @brief returns whether to consider small integer literals (~2^31-1) as smaller data types.
      * @return true if prefer to smaller data types
      * @return false otherwise
      */
@@ -371,7 +441,7 @@ public:
     }
 
     /**
-     * @brief returns whether or not to consider small character literals as smaller data types.
+     * @brief returns whether to consider small character literals as smaller data types.
      * @return true if prefer to smaller data types
      * @return false otherwise
      */
@@ -385,7 +455,7 @@ public:
     }
 
     /**
-     * @brief returns whether or not to consider small binary string literals as smaller data types.
+     * @brief returns whether to consider small binary string literals as smaller data types.
      * @return true if prefer to smaller data types
      * @return false otherwise
      */
@@ -399,7 +469,7 @@ public:
     }
 
     /**
-     * @brief returns whether or not to consider small decimal literals as smaller data types.
+     * @brief returns whether to consider small decimal literals as smaller data types.
      * @return true if prefer to smaller data types
      * @return false otherwise
      */
@@ -413,7 +483,7 @@ public:
     }
 
     /**
-     * @brief returns whether or not to validate all scalar expressions.
+     * @brief returns whether to validate all scalar expressions.
      * @details If disabled, the analyzer only check minimal scalar expressions to avoid unnecessary overhead.
      * @return true if validate all scalar expressions
      * @return false otherwise
@@ -428,7 +498,7 @@ public:
     }
 
     /**
-     * @brief returns whether or not to automatically cast literals if the context type is specified.
+     * @brief returns whether to automatically cast literals if the context type is specified.
      * @return true if inserting cast is enabled
      * @return false otherwise
      */
@@ -442,7 +512,7 @@ public:
     }
 
     /**
-     * @brief returns whether or not to wrap the sequence values.
+     * @brief returns whether to wrap the sequence values.
      * @return true if the sequence values are wrapped
      * @return false otherwise
      */
@@ -489,6 +559,11 @@ private:
     ::takatori::util::maybe_shared_ptr<::yugawara::schema::declaration const> default_schema_;
 
     bool lowercase_regular_identifiers_ { default_lowercase_regular_identifiers };
+    bool lowercase_variable_regular_identifiers_ { false };
+    bool lowercase_function_regular_identifiers_ { false };
+    bool lowercase_relation_regular_identifiers_ { false };
+    bool lowercase_schema_regular_identifiers_ { false };
+    bool lowercase_catalog_regular_identifiers_ { false };
     size_type max_decimal_precision_ { default_max_decimal_precision };
     std::optional<size_type> default_decimal_precision_ { default_default_decimal_precision };
 
