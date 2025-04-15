@@ -21,6 +21,7 @@ index_definition::index_definition(
         std::unique_ptr<scalar::expression> predicate,
         std::vector<option_type> options,
         std::vector<storage_parameter> parameters,
+        region_type description,
         region_type region) noexcept :
     super { region },
     name_ { std::move(name) },
@@ -29,7 +30,8 @@ index_definition::index_definition(
     values_ { std::move(values) },
     predicate_ { std::move(predicate) },
     options_ { std::move(options) },
-    parameters_ { std::move(parameters) }
+    parameters_ { std::move(parameters) },
+    description_ { description }
 {}
 
 index_definition::index_definition(
@@ -40,6 +42,7 @@ index_definition::index_definition(
         ::takatori::util::rvalue_ptr<scalar::expression> predicate,
         std::initializer_list<option_type> options,
         std::initializer_list<storage_parameter> parameters,
+        region_type description,
         region_type region) :
     index_definition {
             clone_unique(name),
@@ -49,6 +52,7 @@ index_definition::index_definition(
             clone_unique(predicate),
             options,
             parameters,
+            description,
             region,
     }
 {}
@@ -62,6 +66,7 @@ index_definition::index_definition(::takatori::util::clone_tag_t, index_definiti
             clone_unique(other.predicate_),
             clone_vector(other.options_),
             clone_vector(other.parameters_),
+            other.description_,
             other.region(),
     }
 {}
@@ -75,6 +80,7 @@ index_definition::index_definition(::takatori::util::clone_tag_t, index_definiti
             std::move(other.predicate_),
             std::move(other.options_),
             std::move(other.parameters_),
+            other.description_,
             other.region(),
     }
 {}
@@ -147,6 +153,13 @@ std::vector<storage_parameter> const& index_definition::parameters() const noexc
     return parameters_;
 }
 
+index_definition::region_type& index_definition::description() noexcept {
+    return description_;
+}
+
+index_definition::region_type const& index_definition::description() const noexcept {
+    return description_;
+}
 
 bool operator==(index_definition const& a, index_definition const& b) noexcept {
     return eq(a.name_, b.name_)
@@ -178,6 +191,7 @@ void index_definition::serialize(takatori::serializer::object_acceptor& acceptor
     property(acceptor, "predicate"sv, predicate_);
     property(acceptor, "options"sv, options_);
     property(acceptor, "parameters"sv, parameters_);
+    property(acceptor, "description"sv, description_);
     region_property(acceptor, *this);
 }
 

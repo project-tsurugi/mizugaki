@@ -46,6 +46,8 @@ public:
 
     void add_comment(location_type location);
 
+    void add_comment_separator(location_type location);
+
     [[nodiscard]] std::size_t& max_expected_candidates() noexcept;
 
     [[nodiscard]] ::takatori::util::optional_ptr<sql_parser_element_map<std::size_t> const>& element_limits() noexcept;
@@ -53,6 +55,14 @@ public:
     [[nodiscard]] std::vector<location_type>& comments() noexcept;
 
     [[nodiscard]] std::vector<location_type> const& comments() const noexcept;
+
+    [[nodiscard]] std::vector<location_type> leading_comments(location_type token) const;
+
+    [[nodiscard]] std::vector<location_type> following_comments(location_type token) const;
+
+    [[nodiscard]] bool& enable_description_comments() noexcept;
+
+    [[nodiscard]] location_type leading_description_comment(location_type token) const;
 
     template<class T, class... Args>
     [[nodiscard]] node_ptr<T> node(Args&&... args) {
@@ -119,11 +129,19 @@ public:
 
 private:
     ::takatori::util::maybe_shared_ptr<document_type const> document_;
-    std::vector<location_type> comments_;
+    std::vector<location_type> comments_ {};
+    std::vector<location_type::position_type> comment_separators_ {};
+    bool saw_comments_ { false };
+    location_type last_comment_separator_ {};
     result_type result_ {};
 
     std::size_t max_expected_candidates_ {};
     ::takatori::util::optional_ptr<sql_parser_element_map<std::size_t> const> element_limits_;
+    bool enable_description_comments_ { true };
+
+    [[nodiscard]] std::vector<location_type> comments_in_range(
+            location_type::position_type from,
+            location_type::position_type to) const;
 };
 
 } // namespace sandbox

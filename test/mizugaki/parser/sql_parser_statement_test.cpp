@@ -54,7 +54,8 @@ protected:
     }
 };
 
-static statement::statement const& extract(sql_parser::result_type const& result) {
+template<class T = statement::statement>
+static T const& extract(sql_parser::result_type const& result) {
     auto&& statements = result.value()->statements();
     if (statements.size() >= 2) {
         using ::takatori::util::string_builder;
@@ -62,7 +63,43 @@ static statement::statement const& extract(sql_parser::result_type const& result
                 << "extra statements: " << *result.value()
                 << string_builder::to_string);
     }
-    return *statements.at(0);
+    return downcast<T>(*statements.at(0));
+}
+
+static std::string source(sql_parser::result_type const& result, ast::node const& element) {
+    auto region = element.region();
+    if (!region) {
+        return {};
+    }
+    std::string text { result.value()->document()->contents(region.begin, region.size()) };
+    return text;
+}
+
+static std::string source(sql_parser::result_type const& result) {
+    return source(result, extract(result));
+}
+
+template<class T, class U>
+static std::string description(sql_parser::result_type const& result, U const& element) {
+    auto&& elem = downcast<T>(element);
+    auto region = elem.description();
+    if (!region) {
+        return {};
+    }
+    std::string description { result.value()->document()->contents(region.begin, region.size()) };
+    return description;
+}
+
+template<class T>
+static std::string description(sql_parser::result_type const& result) {
+    auto&& statement = extract(result);
+    return description<T>(result, statement);
+}
+
+static statement::column_definition const& extract_column(sql_parser::result_type const& result, std::size_t column_position) {
+    auto&& table = extract<statement::table_definition>(result);
+    auto&& column = table.elements().at(column_position);
+    return downcast<statement::column_definition>(*column);
 }
 
 TEST_F(sql_parser_statement_test, empty_document) {
@@ -377,6 +414,7 @@ TEST_F(sql_parser_statement_test, table_definition) {
                 },
             },
     }));
+    EXPECT_EQ(description<statement::table_definition>(result), "");
 }
 
 TEST_F(sql_parser_statement_test, table_definition_columns) {
@@ -400,6 +438,8 @@ TEST_F(sql_parser_statement_test, table_definition_columns) {
                     },
             },
     }));
+    auto&& column = extract_column(result, 0);
+    EXPECT_EQ(description<statement::column_definition>(result, column), "");
 }
 
 TEST_F(sql_parser_statement_test, table_definition_check) {
@@ -1043,6 +1083,31 @@ TEST_F(sql_parser_statement_test, table_definition_parameters_multiple) {
     }));
 }
 
+TEST_F(sql_parser_statement_test, table_definition_description) {
+    auto result = parse(R"(
+        /** description */
+        CREATE TABLE t (id DECIMAL)
+    )");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(description<statement::table_definition>(result), "/** description */");
+    EXPECT_EQ(source(result).find("CREATE TABLE", 0), 0);
+}
+
+TEST_F(sql_parser_statement_test, table_definition_column_description) {
+    auto result = parse(R"(
+        CREATE TABLE t (
+            /** column description */
+            id DECIMAL
+        )
+    )");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    auto&& column = extract_column(result, 0);
+    EXPECT_EQ(description<statement::column_definition>(result, column), "/** column description */");
+    EXPECT_EQ(source(result, column).find("id DECIMAL", 0), 0);
+}
+
 TEST_F(sql_parser_statement_test, index_definition) {
     auto result = parse("CREATE INDEX i ON t (a)");
     ASSERT_TRUE(result) << diagnostics(result);
@@ -1054,6 +1119,7 @@ TEST_F(sql_parser_statement_test, index_definition) {
                     name::simple { "a" },
             },
     }));
+    EXPECT_EQ(description<statement::index_definition>(result), "");
 }
 
 TEST_F(sql_parser_statement_test, index_definition_unique) {
@@ -1204,6 +1270,16 @@ TEST_F(sql_parser_statement_test, index_definition_parameters) {
     }));
 }
 
+TEST_F(sql_parser_statement_test, index_definition_description) {
+    auto result = parse(R"(
+        /** description */
+        CREATE INDEX i ON t (a)
+    )");
+    ASSERT_TRUE(result) << diagnostics(result);
+    EXPECT_EQ(description<statement::index_definition>(result), "/** description */");
+    EXPECT_EQ(source(result).find("CREATE INDEX", 0), 0);
+}
+
 TEST_F(sql_parser_statement_test, view_definition) {
     auto result = parse("CREATE VIEW v AS VALUES (1)");
     ASSERT_TRUE(result) << diagnostics(result);
@@ -1217,6 +1293,7 @@ TEST_F(sql_parser_statement_test, view_definition) {
                     },
             },
     }));
+    EXPECT_EQ(description<statement::view_definition>(result), "");
 }
 
 TEST_F(sql_parser_statement_test, view_definition_or_replace) {
@@ -1351,6 +1428,15 @@ TEST_F(sql_parser_statement_test, view_definition_parameters) {
             }
     }));
 }
+TEST_F(sql_parser_statement_test, view_definition_description) {
+    auto result = parse(R"(
+        /** description */
+        CREATE VIEW v AS VALUES (1)
+    )");
+    ASSERT_TRUE(result) << diagnostics(result);
+    EXPECT_EQ(description<statement::view_definition>(result), "/** description */");
+    EXPECT_EQ(source(result).find("CREATE VIEW", 0), 0);
+}
 
 TEST_F(sql_parser_statement_test, sequence_definition) {
     auto result = parse("CREATE SEQUENCE s");
@@ -1359,6 +1445,7 @@ TEST_F(sql_parser_statement_test, sequence_definition) {
     EXPECT_EQ(extract(result), (statement::sequence_definition {
             name::simple { "s" },
     }));
+    EXPECT_EQ(description<statement::sequence_definition>(result), "");
 }
 
 TEST_F(sql_parser_statement_test, sequence_definition_temporary) {
@@ -1625,6 +1712,16 @@ TEST_F(sql_parser_statement_test, sequence_definition_options) {
     }));
 }
 
+TEST_F(sql_parser_statement_test, sequence_definition_description) {
+    auto result = parse(R"(
+        /** description */
+        CREATE SEQUENCE s
+    )");
+    ASSERT_TRUE(result) << diagnostics(result);
+    EXPECT_EQ(description<statement::sequence_definition>(result), "/** description */");
+    EXPECT_EQ(source(result).find("CREATE SEQUENCE", 0), 0);
+}
+
 TEST_F(sql_parser_statement_test, schema_definition) {
     auto result = parse("CREATE SCHEMA s");
     ASSERT_TRUE(result) << diagnostics(result);
@@ -1632,6 +1729,7 @@ TEST_F(sql_parser_statement_test, schema_definition) {
     EXPECT_EQ(extract(result), (statement::schema_definition {
             name::simple { "s" },
     }));
+    EXPECT_EQ(description<statement::schema_definition>(result), "");
 }
 
 TEST_F(sql_parser_statement_test, schema_definition_if_not_exists) {
@@ -1698,11 +1796,12 @@ TEST_F(sql_parser_statement_test, schema_definition_elements) {
 }
 
 TEST_F(sql_parser_statement_test, schema_definition_elements_multiple) {
-    auto result = parse(
-            "CREATE SCHEMA s "
-            "  CREATE TABLE t (id INT) "
-            "  CREATE INDEX i ON t(id) "
-            "  CREATE VIEW v AS VALUES(1) ");
+    auto result = parse(R"(
+        CREATE SCHEMA s
+            CREATE TABLE t (id INT)
+            CREATE INDEX i ON t(id)
+            CREATE VIEW v AS VALUES(1)
+    )");
     ASSERT_TRUE(result) << diagnostics(result);
 
     EXPECT_EQ(extract(result), (statement::schema_definition {
@@ -1736,6 +1835,38 @@ TEST_F(sql_parser_statement_test, schema_definition_elements_multiple) {
                     },
             },
     }));
+}
+
+TEST_F(sql_parser_statement_test, schema_definition_description) {
+    auto result = parse(R"(
+        /** description */
+        CREATE SCHEMA s
+    )");
+    ASSERT_TRUE(result) << diagnostics(result);
+    EXPECT_EQ(description<statement::schema_definition>(result), "/** description */");
+    EXPECT_EQ(source(result).find("CREATE SCHEMA", 0), 0);
+}
+
+TEST_F(sql_parser_statement_test, schema_definition_elements_multiple_description) {
+    auto result = parse(R"(
+        CREATE SCHEMA s
+            /** table */
+            CREATE TABLE t (id INT)
+            /** index */
+            CREATE INDEX i ON t(id)
+            /** view */
+            CREATE VIEW v AS VALUES(1)
+    )");
+    ASSERT_TRUE(result) << diagnostics(result);
+    auto&& schema = extract<statement::schema_definition>(result);
+
+    ASSERT_EQ(schema.elements().size(), 3);
+    EXPECT_EQ(description<statement::table_definition>(result, *schema.elements()[0]), "/** table */");
+    EXPECT_EQ(description<statement::index_definition>(result, *schema.elements()[1]), "/** index */");
+    EXPECT_EQ(description<statement::view_definition>(result, *schema.elements()[2]), "/** view */");
+    EXPECT_EQ(source(result, *schema.elements()[0]).find("CREATE TABLE", 0), 0);
+    EXPECT_EQ(source(result, *schema.elements()[1]).find("CREATE INDEX", 0), 0);
+    EXPECT_EQ(source(result, *schema.elements()[2]).find("CREATE VIEW", 0), 0);
 }
 
 TEST_F(sql_parser_statement_test, drop_statement) {

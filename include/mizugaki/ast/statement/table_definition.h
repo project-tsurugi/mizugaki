@@ -39,6 +39,7 @@ public:
      * @param elements the table elements
      * @param options the declared options
      * @param parameters the storage parameters
+     * @param description the region of description comment
      * @param region the node region
      */
     explicit table_definition(
@@ -46,6 +47,7 @@ public:
             std::vector<std::unique_ptr<table_element>> elements,
             std::vector<option_type> options = {},
             std::vector<storage_parameter> parameters = {},
+            region_type description = {},
             region_type region = {}) noexcept;
 
     /**
@@ -54,6 +56,7 @@ public:
      * @param elements the table elements
      * @param options the declared options
      * @param parameters the storage parameters
+     * @param description the region of description comment
      * @param region the node region
      * @attention this will take copy of arguments
      */
@@ -62,6 +65,7 @@ public:
             common::rvalue_list<table_element> elements,
             std::initializer_list<option_type> options = {},
             std::initializer_list<storage_parameter> parameters = {},
+            region_type description = {},
             region_type region = {});
 
     /**
@@ -118,6 +122,16 @@ public:
     [[nodiscard]] std::vector<storage_parameter> const& parameters() const noexcept;
 
     /**
+     * @brief returns the region of description comment for this definition.
+     * @return the description comment region
+     * @return the empty region if not specified
+     */
+    [[nodiscard]] region_type& description() noexcept;
+
+    /// @copydoc description()
+    [[nodiscard]] region_type const& description() const noexcept;
+
+    /**
      * @brief compares two values.
      * @param a the first value
      * @param b the second value
@@ -144,6 +158,7 @@ private:
     std::vector<std::unique_ptr<table_element>> elements_ {};
     std::vector<option_type> options_ {};
     std::vector<storage_parameter> parameters_ {};
+    region_type description_ {};
 };
 
 /**

@@ -15,6 +15,10 @@ void sql_scanner::LexerError(char const* msg) {
     super::LexerError(msg);
 }
 
+void sql_scanner::on_token(::mizugaki::parser::sql_driver& driver, bool eof) {
+    driver.add_comment_separator(location(eof));
+}
+
 void sql_scanner::user_action() noexcept {
     cursor_ += yyleng;
 }

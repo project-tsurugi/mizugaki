@@ -42,6 +42,7 @@ sql_parser::result_type sql_parser::operator()(takatori::util::maybe_shared_ptr<
     sql_driver driver { std::move(document) };
     driver.max_expected_candidates() = options_.max_expected_candidates();
     driver.element_limits() = options_.element_limits();
+    driver.enable_description_comments() = options_.enable_description_comments();
 
     sql_parser_generated parser { scanner, driver };
 

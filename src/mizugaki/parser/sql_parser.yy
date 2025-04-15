@@ -1081,7 +1081,7 @@ statement
                     $w,
                     @$);
         }
-    | CREATE SCHEMA if_not_exists_opt schema_name_opt[name]
+    | CREATE[c] SCHEMA if_not_exists_opt schema_name_opt[name]
             schema_authorization_opt[authorization]
             schema_element_list_opt[elements]
         {
@@ -1094,6 +1094,7 @@ statement
                     $authorization,
                     $elements,
                     std::move(options),
+                    driver.leading_description_comment(@c),
                     @$);
         }
     | schema_element[d]
@@ -1260,7 +1261,7 @@ schema_element_list_opt
     ;
 
 schema_element
-    : CREATE temporary_opt[temporary] TABLE if_not_exists_opt[exists] table_name[n]
+    : CREATE[c] temporary_opt[temporary] TABLE if_not_exists_opt[exists] table_name[n]
             "(" table_element_list_opt[L] ")"
             storage_parameter_list_opt[P]
         {
@@ -1276,9 +1277,10 @@ schema_element
                     $L,
                     std::move(options),
                     $P,
+                    driver.leading_description_comment(@c),
                     @$);
         }
-    | CREATE unique_opt INDEX if_not_exists_opt table_name_opt[iname]
+    | CREATE[c] unique_opt INDEX if_not_exists_opt table_name_opt[iname]
             ON table_name[tname]
             "(" sort_specification_list[key] ")"
             index_value_list_opt[values]
@@ -1300,9 +1302,10 @@ schema_element
                     $predicate,
                     std::move(options),
                     $parameters,
+                    driver.leading_description_comment(@c),
                     @$);
         }
-    | CREATE temporary_opt recursive_opt VIEW if_not_exists_opt table_name[name]
+    | CREATE[c] temporary_opt recursive_opt VIEW if_not_exists_opt table_name[name]
             column_list_opt[columns]
             storage_parameter_list_opt[parameters]
             AS query_expression[query]
@@ -1323,10 +1326,11 @@ schema_element
                     $query,
                     std::move(options),
                     $parameters,
+                    driver.leading_description_comment(@c),
                     @$);
         }
     // note: we fork `CREATE ... VIEW` and `CREATE OR REPLACE ... VIEW` to avoid shift/reduce conflict for epsilon rules
-    | CREATE OR REPLACE[k] temporary_opt recursive_opt VIEW if_not_exists_opt table_name[name]
+    | CREATE[c] OR REPLACE[k] temporary_opt recursive_opt VIEW if_not_exists_opt table_name[name]
             column_list_opt[columns]
             storage_parameter_list_opt[parameters]
             AS query_expression[query]
@@ -1348,9 +1352,10 @@ schema_element
                     $query,
                     std::move(options),
                     $parameters,
+                    driver.leading_description_comment(@c),
                     @$);
         }
-    | CREATE temporary_opt SEQUENCE if_not_exists_opt table_name[name]
+    | CREATE[c] temporary_opt SEQUENCE if_not_exists_opt table_name[name]
             sequence_options
         {
             auto sequence = $sequence_options;
@@ -1378,6 +1383,7 @@ schema_element
                     std::move(sequence.max_value),
                     std::move(sequence.owner),
                     std::move(options),
+                    driver.leading_description_comment(@c),
                     @$);
         }
     ;
@@ -1410,10 +1416,13 @@ table_element_list
 table_element
     : column_name[n] data_type[t] column_constraint_definition_list[c]
         {
+            auto name = $n;
+            auto description = driver.leading_description_comment(name->region());
             $$ = driver.node<ast::statement::column_definition>(
-                    $n,
+                    std::move(name),
                     $t,
                     $c,
+                    description,
                     @$);
         }
     | CONSTRAINT constraint_name[n] table_constraint_body[b]

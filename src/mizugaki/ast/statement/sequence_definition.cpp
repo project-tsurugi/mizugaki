@@ -22,6 +22,7 @@ sequence_definition::sequence_definition(
         std::unique_ptr<scalar::expression> max_value,
         std::unique_ptr<name::name> owner,
         std::vector<option_type> options,
+        region_type description,
         region_type region) noexcept :
     super { region },
     name_ { std::move(name) },
@@ -31,7 +32,8 @@ sequence_definition::sequence_definition(
     min_value_ { std::move(min_value) },
     max_value_ { std::move(max_value) },
     owner_ { std::move(owner) },
-    options_ { std::move(options) }
+    options_ { std::move(options) },
+    description_ { description }
 {}
 
 sequence_definition::sequence_definition(
@@ -43,6 +45,7 @@ sequence_definition::sequence_definition(
         ::takatori::util::rvalue_ptr<scalar::expression> max_value,
         ::takatori::util::rvalue_ptr<name::name> owner,
         std::initializer_list<option_type> options,
+        region_type description,
         region_type region) :
     sequence_definition {
             clone_unique(std::move(name)),
@@ -53,6 +56,7 @@ sequence_definition::sequence_definition(
             clone_unique(max_value),
             clone_unique(owner),
             options,
+            description,
             region,
     }
 {}
@@ -67,6 +71,7 @@ sequence_definition::sequence_definition(::takatori::util::clone_tag_t, sequence
             clone_unique(other.max_value_),
             clone_unique(other.owner_),
             clone_vector(other.options_),
+            other.description_,
             other.region(),
     }
 {}
@@ -81,6 +86,7 @@ sequence_definition::sequence_definition(::takatori::util::clone_tag_t, sequence
             std::move(other.max_value_),
             std::move(other.owner_),
             std::move(other.options_),
+            other.description_,
             other.region(),
     }
 {}
@@ -161,6 +167,14 @@ std::vector<sequence_definition::option_type> const& sequence_definition::option
     return options_;
 }
 
+sequence_definition::region_type& sequence_definition::description() noexcept {
+    return description_;
+}
+
+sequence_definition::region_type const& sequence_definition::description() const noexcept {
+    return description_;
+}
+
 bool operator==(sequence_definition const& a, sequence_definition const& b) noexcept {
     return eq(a.name_, b.name_)
         && eq(a.type_, b.type_)
@@ -193,6 +207,7 @@ void sequence_definition::serialize(takatori::serializer::object_acceptor& accep
     property(acceptor, "max_value"sv, max_value_);
     property(acceptor, "owner"sv, owner_);
     property(acceptor, "options"sv, options_);
+    property(acceptor, "description"sv, description_);
     region_property(acceptor, *this);
 }
 

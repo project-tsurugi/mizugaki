@@ -17,22 +17,26 @@ column_definition::column_definition(
         std::unique_ptr<name::simple> name,
         std::unique_ptr<type::type> type,
         std::vector<column_constraint_definition> constraints,
+        region_type description,
         region_type region) noexcept :
     super { region },
     name_ { std::move(name) },
     type_ { std::move(type) },
-    constraints_ { std::move(constraints) }
+    constraints_ { std::move(constraints) },
+    description_ { description }
 {}
 
 column_definition::column_definition(
         name::simple&& name,
         type::type&& type,
         std::initializer_list<column_constraint_definition> constraints,
+        region_type description,
         element::region_type region) :
     column_definition {
             clone_unique(std::move(name)),
             clone_unique(std::move(type)),
             constraints,
+            description,
             region,
     }
 {}
@@ -42,6 +46,7 @@ column_definition::column_definition(::takatori::util::clone_tag_t, column_defin
             clone_unique(other.name_),
             clone_unique(other.type_),
             clone_vector(other.constraints_),
+            other.description_,
             other.region(),
     }
 {}
@@ -51,6 +56,7 @@ column_definition::column_definition(::takatori::util::clone_tag_t, column_defin
             std::move(other.name_),
             std::move(other.type_),
             std::move(other.constraints_),
+            other.description_,
             other.region(),
     }
 {}
@@ -91,6 +97,14 @@ std::vector<column_constraint_definition> const& column_definition::constraints(
     return constraints_;
 }
 
+column_definition::region_type& column_definition::description() noexcept {
+    return description_;
+}
+
+column_definition::region_type const& column_definition::description() const noexcept {
+    return description_;
+}
+
 bool operator==(column_definition const& a, column_definition const& b) noexcept {
     return eq(a.name_, b.name_)
         && eq(a.type_, b.type_)
@@ -113,6 +127,7 @@ void column_definition::serialize(takatori::serializer::object_acceptor& accepto
     property(acceptor, "name"sv, name_);
     property(acceptor, "type"sv, type_);
     property(acceptor, "constraints"sv, constraints_);
+    property(acceptor, "description"sv, description_);
     region_property(acceptor, *this);
 }
 

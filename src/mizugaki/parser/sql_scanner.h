@@ -40,6 +40,8 @@ private:
     std::size_t cursor_ {};
     std::size_t comment_begin_ { npos };
 
+    void on_token(::mizugaki::parser::sql_driver& driver, bool eof = false);
+
     void user_action() noexcept;
     [[nodiscard]] location_type location(bool eof = false) noexcept;
 

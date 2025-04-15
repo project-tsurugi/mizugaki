@@ -18,12 +18,14 @@ table_definition::table_definition(
         std::vector<std::unique_ptr<table_element>> elements,
         std::vector<option_type> options,
         std::vector<storage_parameter> parameters,
+        region_type description,
         region_type region) noexcept :
     super { region },
     name_ { std::move(name) },
     elements_ { std::move(elements) },
     options_ { std::move(options) },
-    parameters_ { std::move(parameters) }
+    parameters_ { std::move(parameters) },
+    description_ { description }
 {}
 
 table_definition::table_definition(
@@ -31,12 +33,14 @@ table_definition::table_definition(
         common::rvalue_list<table_element> elements,
         std::initializer_list<option_type> options,
         std::initializer_list<storage_parameter> parameters,
+        region_type description,
         region_type region) :
     table_definition {
             clone_unique(std::move(name)),
             common::to_vector(elements),
             options,
             parameters,
+            description,
             region,
     }
 {}
@@ -47,6 +51,7 @@ table_definition::table_definition(::takatori::util::clone_tag_t, table_definiti
             clone_vector(other.elements_),
             clone_vector(other.options_),
             clone_vector(other.parameters_),
+            other.description_,
             other.region(),
     }
 {}
@@ -57,6 +62,7 @@ table_definition::table_definition(::takatori::util::clone_tag_t, table_definiti
             std::move(other.elements_),
             std::move(other.options_),
             std::move(other.parameters_),
+            other.description_,
             other.region(),
     }
 {}
@@ -105,8 +111,16 @@ std::vector<storage_parameter> const& table_definition::parameters() const noexc
     return parameters_;
 }
 
+table_definition::region_type& table_definition::description() noexcept {
+    return description_;
+}
+
+table_definition::region_type const& table_definition::description() const noexcept {
+    return description_;
+}
 
 bool operator==(table_definition const& a, table_definition const& b) noexcept {
+    // NOTE: never compare description_ here, because it is supplemental information for the definition.
     return eq(a.name_, b.name_)
         && eq(a.elements_, b.elements_)
         && eq(a.options_, b.options_)
@@ -130,6 +144,7 @@ void table_definition::serialize(takatori::serializer::object_acceptor& acceptor
     property(acceptor, "elements"sv, elements_);
     property(acceptor, "options"sv, options_);
     property(acceptor, "parameters"sv, parameters_);
+    property(acceptor, "description"sv, description_);
     region_property(acceptor, *this);
 }
 

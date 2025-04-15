@@ -4,6 +4,10 @@
 #include <cerrno>
 #include <cstdlib>
 
+#include <algorithm>
+#include <iterator>
+#include <string_view>
+
 #include <takatori/util/assertion.h>
 #include <takatori/util/downcast.h>
 #include <takatori/util/string_builder.h>
@@ -22,6 +26,16 @@ using ::takatori::util::unsafe_downcast;
 using ::takatori::util::maybe_shared_ptr;
 
 using document_type = sql_driver::document_type;
+
+namespace {
+
+using std::string_view_literals::operator""sv;
+
+constexpr std::string_view prefix_description_comment = "/**"sv;
+
+constexpr std::string_view suffix_description_comment = "*/"sv;
+
+} // namespace
 
 sql_driver::sql_driver(maybe_shared_ptr<document_type const> document) noexcept :
     document_ { std::move(document) }
@@ -66,7 +80,26 @@ void sql_driver::error(
 }
 
 void sql_driver::add_comment(location_type location) {
+    if (!saw_comments_) {
+        auto separator = last_comment_separator_ ? last_comment_separator_.begin : 0;
+        if (comment_separators_.empty() || comment_separators_.back() < separator) {
+            comment_separators_.emplace_back(separator);
+        }
+        saw_comments_ = true;
+    }
     comments_.emplace_back(location);
+}
+
+void sql_driver::add_comment_separator(location_type location) {
+    if (saw_comments_) {
+        // NOTE: comment_separators_ are not empty if saw_comments_ is true
+        auto separator = location.begin;
+        if (comment_separators_.back() < separator) {
+            comment_separators_.emplace_back(separator);
+        }
+        saw_comments_ = false;
+    }
+    last_comment_separator_ = location;
 }
 
 std::size_t& sql_driver::max_expected_candidates() noexcept {
@@ -83,6 +116,120 @@ std::vector<sql_driver::location_type>& sql_driver::comments() noexcept {
 
 std::vector<sql_driver::location_type> const& sql_driver::comments() const noexcept {
     return comments_;
+}
+
+std::vector<sql_driver::location_type> sql_driver::leading_comments(location_type token) const {
+    if (!token) {
+        return {};
+    }
+    auto key = token.begin;
+    auto iter = std::lower_bound(
+            comment_separators_.begin(),
+            comment_separators_.end(),
+            key);
+    if (iter == comment_separators_.end() || *iter != key) {
+        return {}; // separator not found
+    }
+    if (iter == comment_separators_.begin()) {
+        return {}; // no leading comments
+    }
+    auto prev = std::prev(iter);
+    return comments_in_range(*prev, *iter);
+}
+
+std::vector<sql_driver::location_type> sql_driver::following_comments(location_type token) const {
+    if (!token) {
+        return {};
+    }
+    auto key = token.begin;
+    auto iter = std::lower_bound(
+            comment_separators_.begin(),
+            comment_separators_.end(),
+            key);
+    if (iter == comment_separators_.end() || *iter != key) {
+        return {}; // separator not found
+    }
+    auto next = std::next(iter);
+    if (next == comment_separators_.end()) {
+        if (!document_) {
+            return {};
+        }
+        return comments_in_range(*iter, document_->size());
+    }
+    return comments_in_range(*iter, *next);
+}
+
+bool& sql_driver::enable_description_comments() noexcept {
+    return enable_description_comments_;
+}
+
+sql_driver::location_type sql_driver::leading_description_comment(location_type token) const {
+    if (!enable_description_comments_) {
+        return {};
+    }
+    auto comments = leading_comments(token);
+    if (comments.empty()) {
+        return {};
+    }
+    if (!document_) {
+        return {};
+    }
+    auto&& doc = *document_;
+    auto iter = std::find_if(
+            comments.rbegin(),
+            comments.rend(),
+            [&doc](location_type comment) {
+                if (comment.size() < prefix_description_comment.size() + suffix_description_comment.size()) {
+                    return false;
+                }
+                auto prefix = doc.contents(
+                        comment.begin,
+                        prefix_description_comment.size());
+                if (prefix != prefix_description_comment) {
+                    return false;
+                }
+                auto suffix = doc.contents(
+                        comment.end - suffix_description_comment.size(),
+                        suffix_description_comment.size());
+                if (suffix != suffix_description_comment) {
+                    return false; // NOLINT
+                }
+                return true;
+            });
+    if (iter == comments.rend()) {
+        return {};
+    }
+    return *iter;
+}
+
+std::vector<sql_driver::location_type> sql_driver::comments_in_range(
+        location_type::position_type from,
+        location_type::position_type to) const {
+    if (from > to) {
+        return {};
+    }
+    auto iter_lower = std::lower_bound(
+            comments_.begin(),
+            comments_.end(),
+            location_type { from, from },
+            [](location_type a, location_type b) {
+                return a.begin < b.begin;
+            });
+    if (iter_lower == comments_.end()) {
+        return {};
+    }
+    auto iter_upper = std::upper_bound(
+            comments_.begin(),
+            comments_.end(),
+            location_type { to, to },
+            [](location_type a, location_type b) {;
+                return a.begin < b.begin;
+            });
+    if (iter_upper <= iter_lower) {
+        return {};
+    }
+
+    return { iter_lower, iter_upper };
 }
 
 sql_driver::node_ptr<ast::scalar::expression> sql_driver::try_merge_identifier_chain(

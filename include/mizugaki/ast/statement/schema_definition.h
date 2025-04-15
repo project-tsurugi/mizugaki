@@ -38,6 +38,7 @@ public:
      * @param user_name the schema user name expression, may be special keyword like `CURRENT_USER`
      * @param elements the schema elements
      * @param options the declared options
+     * @param description the region of description comment
      * @param region the node region
      */
     explicit schema_definition(
@@ -45,6 +46,7 @@ public:
             std::unique_ptr<name::simple> user_name = {},
             std::vector<std::unique_ptr<statement>> elements = {},
             std::vector<option_type> options = {},
+            region_type description = {},
             region_type region = {}) noexcept;
 
     /**
@@ -53,6 +55,7 @@ public:
      * @param user_name the schema user name expression, may be special keyword like `CURRENT_USER`
      * @param elements the schema elements
      * @param options the declared options
+     * @param description the region of description comment
      * @param region the node region
      */
     explicit schema_definition(
@@ -60,6 +63,7 @@ public:
             ::takatori::util::rvalue_ptr<name::simple> user_name = {},
             common::rvalue_list<statement> elements = {},
             std::initializer_list<option_type> options = {},
+            region_type description = {},
             region_type region = {});
 
     /**
@@ -116,6 +120,16 @@ public:
     [[nodiscard]] std::vector<option_type> const& options() const noexcept;
 
     /**
+     * @brief returns the region of description comment for this definition.
+     * @return the description comment region
+     * @return the empty region if not specified
+     */
+    [[nodiscard]] region_type& description() noexcept;
+
+    /// @copydoc description()
+    [[nodiscard]] region_type const& description() const noexcept;
+
+    /**
      * @brief compares two values.
      * @param a the first value
      * @param b the second value
@@ -142,6 +156,7 @@ private:
     std::unique_ptr<name::simple> user_name_ {};
     std::vector<std::unique_ptr<statement>> elements_ {};
     std::vector<option_type> options_ {};
+    region_type description_ {};
 };
 
 /**

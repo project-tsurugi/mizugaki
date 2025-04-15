@@ -18,12 +18,14 @@ schema_definition::schema_definition(
         std::unique_ptr<name::simple> user_name,
         std::vector<std::unique_ptr<statement>> elements,
         std::vector<option_type> options,
+        region_type description,
         region_type region) noexcept :
     super { region },
     name_ { std::move(name) },
     user_name_ { std::move(user_name) },
     elements_ { std::move(elements) },
-    options_ { std::move(options) }
+    options_ { std::move(options) },
+    description_ { description }
 {}
 
 schema_definition::schema_definition(
@@ -31,12 +33,14 @@ schema_definition::schema_definition(
         ::takatori::util::rvalue_ptr<name::simple> user_name,
         common::rvalue_list<statement> elements,
         std::initializer_list<option_type> options,
+        region_type description,
         region_type region) :
     schema_definition {
             clone_unique(name),
             clone_unique(user_name),
             common::to_vector(elements),
             options,
+            description,
             region,
     }
 {}
@@ -47,6 +51,7 @@ schema_definition::schema_definition(::takatori::util::clone_tag_t, schema_defin
             clone_unique(other.user_name_),
             clone_vector(other.elements_),
             clone_vector(other.options_),
+            other.description_,
             other.region(),
     }
 {}
@@ -57,6 +62,7 @@ schema_definition::schema_definition(::takatori::util::clone_tag_t, schema_defin
             std::move(other.user_name_),
             std::move(other.elements_),
             std::move(other.options_),
+            other.description_,
             other.region(),
     }
 {}
@@ -105,6 +111,14 @@ std::vector<schema_definition::option_type> const& schema_definition::options() 
     return options_;
 }
 
+schema_definition::region_type& schema_definition::description() noexcept {
+    return description_;
+}
+
+schema_definition::region_type const& schema_definition::description() const noexcept {
+    return description_;
+}
+
 bool operator==(schema_definition const& a, schema_definition const& b) noexcept {
     return eq(a.name_, b.name_)
         && eq(a.user_name_, b.user_name_)
@@ -129,6 +143,7 @@ void schema_definition::serialize(takatori::serializer::object_acceptor& accepto
     property(acceptor, "user_name"sv, user_name_);
     property(acceptor, "elements"sv, elements_);
     property(acceptor, "options"sv, options_);
+    property(acceptor, "description"sv, description_);
     region_property(acceptor, *this);
 }
 

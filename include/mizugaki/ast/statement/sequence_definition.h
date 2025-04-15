@@ -44,6 +44,7 @@ public:
      * @param max_value the maximum value, or empty if it is not defined
      * @param owner the owner column name
      * @param options the declared options
+     * @param description the region of description comment
      * @param region the node region
      */
     explicit sequence_definition(
@@ -55,6 +56,7 @@ public:
             std::unique_ptr<scalar::expression> max_value = {},
             std::unique_ptr<name::name> owner = {},
             std::vector<option_type> options = {},
+            region_type description = {},
             region_type region = {}) noexcept;
 
     /**
@@ -67,6 +69,7 @@ public:
      * @param max_value the maximum value, or empty if it is not defined
      * @param owner the owner column name
      * @param options the declared options
+     * @param description the region of description comment
      * @param region the node region
      */
     explicit sequence_definition(
@@ -78,6 +81,7 @@ public:
             ::takatori::util::rvalue_ptr<scalar::expression> max_value = {},
             ::takatori::util::rvalue_ptr<name::name> owner = {},
             std::initializer_list<option_type> options = {},
+            region_type description = {},
             region_type region = {});
 
     /**
@@ -166,8 +170,18 @@ public:
     [[nodiscard]] std::vector<option_type> const& options() const noexcept;
 
     /**
+     * @brief returns the region of description comment for this definition.
+     * @return the description comment region
+     * @return the empty region if not specified
+     */
+    [[nodiscard]] region_type& description() noexcept;
+
+    /// @copydoc description()
+    [[nodiscard]] region_type const& description() const noexcept;
+
+    /**
      * @brief returns the owner column name.
-     * @return owner owner column name
+     * @return owner column name
      * @return empty if it is not defined
      */
     [[nodiscard]] std::unique_ptr<name::name>& owner() noexcept;
@@ -206,6 +220,7 @@ private:
     std::unique_ptr<scalar::expression> max_value_ {};
     std::unique_ptr<name::name> owner_ {};
     std::vector<option_type> options_ {};
+    region_type description_ {};
 };
 
 /**

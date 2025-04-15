@@ -40,6 +40,14 @@ sql_parser_options::size_type const& sql_parser_options::tree_depth_limit() cons
     return tree_depth_limit_;
 }
 
+bool& sql_parser_options::enable_description_comments() noexcept {
+    return enable_description_comments_;
+}
+
+bool const& sql_parser_options::enable_description_comments() const noexcept {
+    return enable_description_comments_;
+}
+
 int& sql_parser_options::debug() noexcept {
     return debug_;
 }

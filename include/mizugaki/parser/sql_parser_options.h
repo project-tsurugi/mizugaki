@@ -21,6 +21,9 @@ public:
     /// @brief default limit of syntax tree depth.
     static constexpr size_type default_tree_depth_limit = 0;
 
+    /// @brief default value of whether description comments are enabled for each declaration.
+    static constexpr bool default_enable_description_comments = true;
+
     /**
      * @brief creates a new instance.
      */
@@ -68,6 +71,17 @@ public:
     [[nodiscard]] size_type const& tree_depth_limit() const noexcept;
 
     /**
+     * @brief returns whether description comments are enabled.
+     * @return true if the parser collects description comments for each declaration
+     * @return false if the parser omits any description comments
+     * @see default_enable_description_comments
+     */
+    [[nodiscard]] bool& enable_description_comments() noexcept;
+
+    /// @copydoc enable_description_comments()
+    [[nodiscard]] bool const& enable_description_comments() const noexcept;
+
+    /**
      * @brief returns the debug level.
      * @return the debug level
      * @note this feature is only available for debug configurations
@@ -83,6 +97,7 @@ private:
     std::unique_ptr<sql_parser_element_map<size_type>> element_limits_;
     size_type tree_node_limit_ { default_tree_node_limit };
     size_type tree_depth_limit_ { default_tree_depth_limit };
+    bool enable_description_comments_ { default_enable_description_comments };
 };
 
 } // namespace mizugaki::parser

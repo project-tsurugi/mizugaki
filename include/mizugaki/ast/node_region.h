@@ -104,7 +104,7 @@ struct node_region {
 [[nodiscard]] node_region operator|(node_region a, node_region b) noexcept;
 
 /**
- * @brief returns whether or not the two regions are equivalent.
+ * @brief returns whether the two regions are equivalent.
  * @param a the first region
  * @param b the second region
  * @return true if the both are equivalent
@@ -113,7 +113,7 @@ struct node_region {
 [[nodiscard]] bool operator==(node_region a, node_region b) noexcept;
 
 /**
- * @brief returns whether or not the two regions are different.
+ * @brief returns whether the two regions are different.
  * @param a the first region
  * @param b the second region
  * @return true if the both are different

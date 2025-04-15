@@ -42,6 +42,7 @@ public:
      * @param predicate the index predicate for partial indices
      * @param options the declared options
      * @param parameters the storage parameters
+     * @param description the region of description comment
      * @param region the node region
      */
     explicit index_definition(
@@ -52,6 +53,7 @@ public:
             std::unique_ptr<scalar::expression> predicate = {},
             std::vector<option_type> options = {},
             std::vector<storage_parameter> parameters = {},
+            region_type description = {},
             region_type region = {}) noexcept;
 
     /**
@@ -63,6 +65,7 @@ public:
      * @param predicate the index predicate for partial indices
      * @param options the declared options
      * @param parameters the storage parameters
+     * @param description the region of description comment
      * @param region the node region
      * @attention this will take copy of arguments
      */
@@ -74,6 +77,7 @@ public:
             ::takatori::util::rvalue_ptr<scalar::expression> predicate = {},
             std::initializer_list<option_type> options = {},
             std::initializer_list<storage_parameter> parameters = {},
+            region_type description = {},
             region_type region = {});
 
     /**
@@ -158,6 +162,16 @@ public:
     [[nodiscard]] std::vector<storage_parameter> const& parameters() const noexcept;
 
     /**
+     * @brief returns the region of description comment for this definition.
+     * @return the description comment region
+     * @return the empty region if not specified
+     */
+    [[nodiscard]] region_type& description() noexcept;
+
+    /// @copydoc description()
+    [[nodiscard]] region_type const& description() const noexcept;
+
+    /**
      * @brief compares two values.
      * @param a the first value
      * @param b the second value
@@ -187,6 +201,7 @@ private:
     std::unique_ptr<scalar::expression> predicate_ {};
     std::vector<option_type> options_ {};
     std::vector<storage_parameter> parameters_ {};
+    region_type description_ {};
 };
 
 /**

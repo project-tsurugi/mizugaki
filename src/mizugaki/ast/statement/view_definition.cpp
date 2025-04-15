@@ -19,13 +19,15 @@ view_definition::view_definition(
         std::unique_ptr<query::expression> query,
         std::vector<option_type> options,
         std::vector<storage_parameter> parameters,
+        region_type description,
         region_type region) noexcept :
     super { region },
     name_ { std::move(name) },
     columns_ { std::move(columns) },
     query_ { std::move(query) },
     options_ { std::move(options) },
-    parameters_ { std::move(parameters) }
+    parameters_ { std::move(parameters) },
+    description_ { description }
 {}
 
 view_definition::view_definition(
@@ -34,6 +36,7 @@ view_definition::view_definition(
         query::expression&& query,
         std::initializer_list<option_type> options,
         std::initializer_list<storage_parameter> parameters,
+        region_type description,
         region_type region) :
     view_definition {
             clone_unique(std::move(name)),
@@ -41,6 +44,7 @@ view_definition::view_definition(
             clone_unique(std::move(query)),
             options,
             parameters,
+            description,
             region,
     }
 {}
@@ -52,6 +56,7 @@ view_definition::view_definition(::takatori::util::clone_tag_t, view_definition 
             clone_unique(other.query_),
             clone_vector(other.options_),
             clone_vector(other.parameters_),
+            other.description_,
             other.region(),
     }
 {}
@@ -63,6 +68,7 @@ view_definition::view_definition(::takatori::util::clone_tag_t, view_definition&
             std::move(other.query_),
             std::move(other.options_),
             std::move(other.parameters_),
+            other.description_,
             other.region(),
     }
 {}
@@ -119,6 +125,14 @@ std::vector<storage_parameter> const& view_definition::parameters() const noexce
     return parameters_;
 }
 
+view_definition::region_type& view_definition::description() noexcept {
+    return description_;
+}
+
+view_definition::region_type const& view_definition::description() const noexcept {
+    return description_;
+}
+
 bool operator==(view_definition const& a, view_definition const& b) noexcept {
     return eq(a.name_, b.name_)
         && eq(a.columns_, b.columns_)
@@ -145,6 +159,7 @@ void view_definition::serialize(takatori::serializer::object_acceptor& acceptor)
     property(acceptor, "query"sv, query_);
     property(acceptor, "options"sv, options_);
     property(acceptor, "parameters"sv, parameters_);
+    property(acceptor, "description"sv, description_);
     region_property(acceptor, *this);
 }
 

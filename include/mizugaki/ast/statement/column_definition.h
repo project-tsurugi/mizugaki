@@ -31,12 +31,14 @@ public:
      * @param name the column name
      * @param type the column type
      * @param constraints the column constraints, including default value
+     * @param description the region of description comment
      * @param region the element region
      */
     explicit column_definition(
             std::unique_ptr<name::simple> name,
             std::unique_ptr<type::type> type,
             std::vector<column_constraint_definition> constraints = {},
+            region_type description = {},
             region_type region = {}) noexcept;
 
     /**
@@ -44,6 +46,7 @@ public:
      * @param name the column name
      * @param type the column type
      * @param constraints the column constraints, including default value
+     * @param description the region of description comment
      * @param region the element region
      * @attention this will take copy of arguments
      */
@@ -51,6 +54,7 @@ public:
             name::simple&& name,
             type::type&& type,
             std::initializer_list<column_constraint_definition> constraints = {},
+            region_type description = {},
             region_type region = {});
 
     /**
@@ -99,6 +103,16 @@ public:
     [[nodiscard]] std::vector<column_constraint_definition> const& constraints() const noexcept;
 
     /**
+     * @brief returns the region of description comment for this definition.
+     * @return the description comment region
+     * @return the empty region if not specified
+     */
+    [[nodiscard]] region_type& description() noexcept;
+
+    /// @copydoc description()
+    [[nodiscard]] region_type const& description() const noexcept;
+
+    /**
      * @brief compares two values.
      * @param a the first value
      * @param b the second value
@@ -124,6 +138,7 @@ private:
     std::unique_ptr<name::simple> name_ {};
     std::unique_ptr<type::type> type_ {};
     std::vector<column_constraint_definition> constraints_ {};
+    region_type description_ {};
 };
 
 /**

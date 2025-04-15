@@ -131,6 +131,26 @@ struct element_serializer<T, std::enable_if_t<std::is_enum_v<T>>> {
     }
 };
 
+template<>
+struct element_serializer<node_region> {
+    void operator()(object_acceptor& acceptor, node_region value) {
+        using namespace std::string_view_literals;
+        if (value.begin != node_region::npos && value.end != node_region::npos) {
+            auto block = struct_block(acceptor);
+            if (value) {
+                {
+                    auto property = property_block(acceptor, "begin"sv);
+                    acceptor.unsigned_integer(value.begin);
+                }
+                {
+                    auto property = property_block(acceptor, "end"sv);
+                    acceptor.unsigned_integer(value.end);
+                }
+            }
+        }
+    }
+};
+
 } // namespace impl
 /// @endcond
 
