@@ -29,7 +29,7 @@ using document_type = sql_driver::document_type;
 
 namespace {
 
-using std::string_view_literals::operator""sv;
+using std::string_view_literals::operator""sv; // NOLINT(misc-unused-using-decls)
 
 constexpr std::string_view prefix_description_comment = "/**"sv;
 
