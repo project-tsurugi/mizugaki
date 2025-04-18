@@ -1,5 +1,7 @@
 #include "test_parent.h"
 
+#include <takatori/document/basic_document.h>
+
 namespace mizugaki::analyzer::details {
 
 using namespace ::mizugaki::analyzer::testing;
@@ -48,7 +50,12 @@ test_parent::test_parent() :
 analyzer_context &test_parent::context() {
     if (!context_finalizer_) {
         options_.validate_scalar_expressions() = validate_scalar_expressions_;
-        context_finalizer_ = context_.initialize(options_, {}, {}, placeholders_, host_parameters_);
+        context_finalizer_ = context_.initialize(
+                options_,
+                ::takatori::util::optional_ptr { source_.get() },
+                {},
+                placeholders_,
+                host_parameters_);
     }
     return context_;
 }
@@ -129,6 +136,20 @@ test_parent::vd(std::string_view name, ::takatori::util::rvalue_ptr<ttype::data>
         context_.resolve_as(result, type.value());
     }
     return result;
+}
+
+ast::node_region test_parent::add_comment(std::string_view text) {
+    std::string source {};
+    if (source_) {
+        source = source_->contents(0, source_->size());
+    }
+    ast::node_region region {
+            source.size(),
+            source.size() + text.size(),
+    };
+    source.append(text);
+    source_ = std::make_shared<::takatori::document::basic_document>("<input>", std::move(source));
+    return region;
 }
 
 } // namespace mizugaki::analyzer::details

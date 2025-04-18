@@ -2,6 +2,10 @@
 
 #include <gtest/gtest.h>
 
+#include <string_view>
+
+#include <takatori/document/basic_document.h>
+
 #include <takatori/type/data.h>
 
 #include <yugawara/schema/catalog.h>
@@ -48,6 +52,8 @@ public:
             std::string_view name = "id",
             ::takatori::util::rvalue_ptr<::takatori::type::data> type = {});
 
+    ast::node_region add_comment(std::string_view text);
+
 protected:
     std::shared_ptr<::yugawara::storage::configurable_provider> storages_;
     std::shared_ptr<::yugawara::function::configurable_provider> functions_;
@@ -58,6 +64,7 @@ protected:
     std::shared_ptr<::yugawara::schema::search_path> search_path_;
 
     sql_analyzer_options options_;
+    std::shared_ptr<::takatori::document::basic_document> source_ {};
     placeholder_map placeholders_ {};
     ::yugawara::variable::configurable_provider host_parameters_ {};
 

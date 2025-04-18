@@ -85,6 +85,7 @@ TEST_F(analyze_statement_table_definition_test, simple) {
         EXPECT_EQ(column.type(), ttype::int4 {});
         EXPECT_EQ(column.criteria().nullity(), ::yugawara::variable::nullable);
         EXPECT_EQ(column.default_value(), ::yugawara::storage::column_value { tvalue::unknown {} });
+        EXPECT_EQ(column.description(), "");
     }
 
     auto&& key = extract<::yugawara::storage::index>(stmt.primary_key());
@@ -93,6 +94,9 @@ TEST_F(analyze_statement_table_definition_test, simple) {
     EXPECT_EQ(key.features(), (::yugawara::storage::index_feature_set {
             ::yugawara::storage::index_feature::primary,
     }));
+    EXPECT_EQ(key.description(), "");
+
+    EXPECT_EQ(table.description(), "");
 }
 
 TEST_F(analyze_statement_table_definition_test, column_multiple) {
@@ -556,6 +560,61 @@ TEST_F(analyze_statement_table_definition_test, table_primary_key_missing_column
                     },
             },
     });
+}
+
+TEST_F(analyze_statement_table_definition_test, description) {
+    auto desc_table = add_comment("/** table */");
+    auto r = analyze_statement(context(), ast::statement::table_definition {
+            id("testing"),
+            {
+                    ast::statement::column_definition {
+                            id("c1"),
+                            ast::type::simple { ast::type::kind::integer },
+                    },
+            },
+            {},
+            {},
+            desc_table,
+    });
+    auto alternative = std::get_if<statement_result_type>(&r);
+    ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
+    ASSERT_EQ((*alternative)->kind(), tstatement::statement_kind::create_table);
+
+    auto&& stmt = downcast<tstatement::create_table>(**alternative);
+    EXPECT_EQ(extract(stmt.schema()), *default_schema_);
+
+    auto&& table = extract(stmt.definition());
+    EXPECT_EQ(table.description(), "table");
+}
+
+TEST_F(analyze_statement_table_definition_test, column_description) {
+    auto column_desc = add_comment("/** column */");
+    auto r = analyze_statement(context(), ast::statement::table_definition {
+            id("testing"),
+            {
+                    ast::statement::column_definition {
+                            id("c1"),
+                            ast::type::simple { ast::type::kind::integer },
+                            {},
+                            column_desc,
+                    },
+            },
+    });
+    auto alternative = std::get_if<statement_result_type>(&r);
+    ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
+    ASSERT_EQ((*alternative)->kind(), tstatement::statement_kind::create_table);
+
+    auto&& stmt = downcast<tstatement::create_table>(**alternative);
+    EXPECT_EQ(extract(stmt.schema()), *default_schema_);
+
+    auto&& table = extract(stmt.definition());
+    auto&& table_columns = table.columns();
+    ASSERT_EQ(table_columns.size(), 1);
+    EXPECT_EQ(table_columns[0].description(), "column");
 }
 
 TEST_F(analyze_statement_table_definition_test, duplicate_target) {

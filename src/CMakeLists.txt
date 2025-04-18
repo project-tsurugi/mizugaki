@@ -177,6 +177,7 @@ add_library(mizugaki
     mizugaki/analyzer/details/analyze_literal.cpp
     mizugaki/analyzer/details/analyze_type.cpp
     mizugaki/analyzer/details/analyze_name.cpp
+    mizugaki/analyzer/details/analyze_description.cpp
     mizugaki/analyzer/details/set_function_processor.cpp
 
     # common tools

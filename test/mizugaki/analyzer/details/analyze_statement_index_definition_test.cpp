@@ -75,6 +75,8 @@ TEST_F(analyze_statement_index_definition_test, simple) {
 
     ASSERT_EQ(index.values().size(), 0);
     ASSERT_EQ(index.features(), ::yugawara::storage::index::feature_set_type {});
+
+    EXPECT_EQ(index.description(), "");
 }
 
 TEST_F(analyze_statement_index_definition_test, anonymous) {
@@ -208,6 +210,37 @@ TEST_F(analyze_statement_index_definition_test, direction) {
         EXPECT_EQ(&key.column(), &table->columns()[2]);
         EXPECT_EQ(key.direction(), ::yugawara::storage::index::key::direction_type::descendant);
     }
+}
+
+TEST_F(analyze_statement_index_definition_test, description) {
+    auto index_desc = add_comment("/** index */");
+    auto table = install_table("testing_table");
+    auto r = analyze_statement(context(), ast::statement::index_definition {
+            id("testing"),
+            id("testing_table"),
+            {
+                    {
+                            id("v"),
+                    }
+            },
+            {},
+            {},
+            {},
+            {},
+            index_desc,
+    });
+    auto alternative = std::get_if<statement_result_type>(&r);
+    ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
+    ASSERT_EQ((*alternative)->kind(), tstatement::statement_kind::create_index);
+
+    auto&& stmt = downcast<tstatement::create_index>(**alternative);
+    EXPECT_EQ(&extract(stmt.schema()), default_schema_.get());
+
+    auto&& index = extract<::yugawara::storage::index>(stmt.definition());
+    EXPECT_EQ(index.simple_name(), "testing");
+    EXPECT_EQ(index.description(), "index");
 }
 
 TEST_F(analyze_statement_index_definition_test, invalid_unique_option) {

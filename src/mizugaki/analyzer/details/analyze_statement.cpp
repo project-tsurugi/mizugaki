@@ -41,6 +41,7 @@
 
 #include <mizugaki/ast/statement/dispatch.h>
 
+#include <mizugaki/analyzer/details/analyze_description.h>
 #include <mizugaki/analyzer/details/analyze_name.h>
 #include <mizugaki/analyzer/details/analyze_query_expression.h>
 #include <mizugaki/analyzer/details/analyze_scalar_expression.h>
@@ -700,12 +701,14 @@ public:
                         column.name()->region());
                 return {};
             }
+            auto description = extract_description(column.description());
             auto prototype = std::make_unique<::yugawara::storage::column>(
                     std::move(column_name),
                     std::move(column_type),
                     ::yugawara::variable::criteria {},
                     ::yugawara::storage::column_value {},
-                    ::yugawara::storage::column_feature_set {});
+                    ::yugawara::storage::column_feature_set {},
+                    std::move(description));
             saw_columns.insert(prototype->simple_name());
             bool saw_nullity = false;
             for (auto&& constraint_def : column.constraints()) {
@@ -828,10 +831,13 @@ public:
         }
         saw_columns.clear();
 
+        auto description = extract_description(stmt.description());
+
         auto declaration = std::make_shared<::yugawara::storage::table>(
                 std::nullopt,
                 std::move(table_name),
-                std::move(table_columns));
+                std::move(table_columns),
+                std::move(description));
 
         std::shared_ptr<::yugawara::storage::index> primary_index {};
         if (primary_key_column) {
@@ -1335,13 +1341,16 @@ public:
             return {};
         }
 
+        auto description = extract_description(stmt.description());
+
         auto declaration = std::make_shared<::yugawara::storage::index>(
                 std::nullopt,
                 table_result->second,
                 std::move(name),
                 std::move(index_keys),
                 std::vector<::yugawara::storage::index::column_ref>(),
-                ::yugawara::storage::index_feature_set  {});
+                ::yugawara::storage::index_feature_set {},
+                std::move(description));
 
         auto result = context_.create<tstatement::create_index>(
                 stmt.region(),
@@ -1495,6 +1504,11 @@ private:
         if (capacity > 0) {
             result.reserve(capacity);
         }
+        return result;
+    }
+
+    [[nodiscard]] std::string extract_description(ast::node_region region) const {
+        auto result = analyze_description(context_, region);
         return result;
     }
 };
