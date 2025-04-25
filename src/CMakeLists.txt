@@ -32,6 +32,12 @@ ADD_FLEX_BISON_DEPENDENCY(
     sql_parser
 )
 
+set_source_files_properties(
+    ${BISON_sql_parser_OUTPUTS}
+    PROPERTIES
+    COMPILE_OPTIONS -Wno-unused-but-set-variable
+)
+
 add_library(mizugaki
 
     # AST models
