@@ -318,6 +318,7 @@
 // %token <ast::common::chars> CALLED "CALLED"
 %token CARDINALITY "CARDINALITY"
 // %token <ast::common::chars> CATALOG_NAME "CATALOG_NAME"
+%token CEIL "CEIL"
 // %token <ast::common::chars> CHAIN "CHAIN"
 %token CHAR_LENGTH "CHAR_LENGTH"
 %token CHARACTER_LENGTH "CHARACTER_LENGTH"
@@ -3491,6 +3492,10 @@ simple_system_function_name
     | ABS
         {
             $$ = { ast::scalar::builtin_function_kind::abs, @$ };
+        }
+    | CEIL
+        {
+            $$ = { ast::scalar::builtin_function_kind::ceil, @$ };
         }
     | MOD
         {

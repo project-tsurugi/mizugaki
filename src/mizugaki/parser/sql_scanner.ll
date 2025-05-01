@@ -166,6 +166,7 @@ UTF8_CHAR {ASCII}|{UTF8_2}{U}|{UTF8_3}{U}{U}|{UTF8_4}{U}{U}{U}
 "BIT_LENGTH" { TRACE_RETURN parser_type::make_BIT_LENGTH(location()); }
 "BITVAR" { TRACE_RETURN parser_type::make_BITVAR(location()); }
 "CARDINALITY" { TRACE_RETURN parser_type::make_CARDINALITY(location()); }
+"CEIL" { TRACE_RETURN parser_type::make_CEIL(location()); }
 "CHAR_LENGTH" { TRACE_RETURN parser_type::make_CHAR_LENGTH(location()); }
 "CHARACTER_LENGTH" { TRACE_RETURN parser_type::make_CHARACTER_LENGTH(location()); }
 "COALESCE" { TRACE_RETURN parser_type::make_COALESCE(location()); }
