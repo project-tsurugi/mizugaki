@@ -235,6 +235,18 @@ TEST_F(sql_parser_function_test, ceil) {
     }));
 }
 
+TEST_F(sql_parser_function_test, floor) {
+    auto result = parse("FLOOR(a)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (scalar::builtin_function_invocation {
+            scalar::builtin_function_kind::floor,
+            {
+                    v("a"),
+            },
+    }));
+}
+
 TEST_F(sql_parser_function_test, mod) {
     auto result = parse("MOD(a, b)");
     ASSERT_TRUE(result) << diagnostics(result);
