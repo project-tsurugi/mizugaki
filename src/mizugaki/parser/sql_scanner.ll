@@ -174,6 +174,7 @@ UTF8_CHAR {ASCII}|{UTF8_2}{U}|{UTF8_3}{U}{U}|{UTF8_4}{U}{U}{U}
 "COUNT" { TRACE_RETURN parser_type::make_COUNT(location()); }
 "EXISTS" { TRACE_RETURN parser_type::make_EXISTS(location()); }
 "EXTRACT" { TRACE_RETURN parser_type::make_EXTRACT(location()); }
+"FLOOR" { TRACE_RETURN parser_type::make_FLOOR(location()); }
 "GENERATED" { TRACE_RETURN parser_type::make_GENERATED(location()); }
 "LENGTH" { TRACE_RETURN parser_type::make_LENGTH(location()); }
 "LOWER" { TRACE_RETURN parser_type::make_LOWER(location()); }

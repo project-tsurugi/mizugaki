@@ -356,6 +356,7 @@
 %token EXISTS "EXISTS"
 %token EXTRACT "EXTRACT"
 // %token <ast::common::chars> FINAL "FINAL"
+%token FLOOR "FLOOR"
 // %token <ast::common::chars> FORTRAN "FORTRAN"
 // %token <ast::common::chars> G "G"
 %token GENERATED "GENERATED"
@@ -3496,6 +3497,10 @@ simple_system_function_name
     | CEIL
         {
             $$ = { ast::scalar::builtin_function_kind::ceil, @$ };
+        }
+    | FLOOR
+        {
+            $$ = { ast::scalar::builtin_function_kind::floor, @$ };
         }
     | MOD
         {
