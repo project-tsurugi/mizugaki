@@ -12,6 +12,7 @@ option(BUILD_DOCUMENTS "build documents" ON)
 option(BUILD_EXAMPLES "build examples" ON)
 option(INSTALL_EXAMPLES "install examples" OFF)
 option(BUILD_SHARED_LIBS "build shared libraries instead of static" ON)
+option(BUILD_STRICT "build with option strictly determine of success" ON)
 
 option(FORCE_INSTALL_RPATH "automatically add library directory of custom prefixes to INSTALL_RPATH" OFF)
 
@@ -46,7 +47,11 @@ find_package(Doxygen
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror")
+if (BUILD_STRICT)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror")
+else()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
+endif()
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address")

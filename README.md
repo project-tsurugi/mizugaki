@@ -83,6 +83,7 @@ available options:
 * `-DBUILD_TESTS=OFF` - don't build test programs
 * `-DBUILD_DOCUMENTS=OFF` - don't build documents by doxygen
 * `-DBUILD_EXAMPLES=OFF` - don't build example applications
+* `-DBUILD_STRICT=OFF` - don't treat compile warnings as build errors
 * `-DINSTALL_EXAMPLES=ON` - also install example applications
 
 ### install
