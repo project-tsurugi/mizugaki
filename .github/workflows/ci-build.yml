@@ -8,6 +8,9 @@ on:
       os:
         type: string
         default: 'ubuntu-22.04'
+      cmake_build_option:
+        type: string
+        default: ''
 
 jobs:
   Test:
@@ -34,12 +37,14 @@ jobs:
 
       - name: Install_Dependencies
         uses: ./.github/actions/install-dependencies
+        with:
+          cmake_build_option: ${{ inputs.cmake_build_option }}
 
       - name: CMake_Build
         run: |
           mkdir build
           cd build
-          cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DBUILD_TESTS=ON -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/.local -DCMAKE_PREFIX_PATH=${GITHUB_WORKSPACE}/.local ..
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DBUILD_TESTS=ON -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/.local -DCMAKE_PREFIX_PATH=${GITHUB_WORKSPACE}/.local ${{ inputs.cmake_build_option }} ..
           cmake --build . --target all --clean-first
 
       - name: CTest
@@ -78,12 +83,14 @@ jobs:
 
       - name: Install_Dependencies
         uses: ./.github/actions/install-dependencies
+        with:
+          cmake_build_option: ${{ inputs.cmake_build_option }}
 
       - name: CMake_Generate
         run: |
           mkdir build
           cd build
-          cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/.local -DCMAKE_PREFIX_PATH=${GITHUB_WORKSPACE}/.local ..
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/.local -DCMAKE_PREFIX_PATH=${GITHUB_WORKSPACE}/.local ${{ inputs.cmake_build_option }} ..
 
       - name: Clang-Tidy
         run: |
