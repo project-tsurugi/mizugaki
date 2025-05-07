@@ -223,6 +223,18 @@ TEST_F(sql_parser_function_test, abs) {
     }));
 }
 
+TEST_F(sql_parser_function_test, ceil) {
+    auto result = parse("CEIL(a)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (scalar::builtin_function_invocation {
+            scalar::builtin_function_kind::ceil,
+            {
+                    v("a"),
+            },
+    }));
+}
+
 TEST_F(sql_parser_function_test, mod) {
     auto result = parse("MOD(a, b)");
     ASSERT_TRUE(result) << diagnostics(result);

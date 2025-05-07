@@ -68,7 +68,12 @@ enum class builtin_function_kind {
      * @note format: `(:0)`
      */
     abs,
-
+    /**
+     * @brief `CEIL`,
+     * @note `6.17 <numeric value function>` - `<absolute value expression>`
+     * @note format: `(:0)`
+     */
+    ceil,
     /**
      * @brief `MOD`
      * @note `6.17 <numeric value function>` - `<modulus expression>`
@@ -241,6 +246,7 @@ inline constexpr std::string_view to_string_view(builtin_function_kind value) no
         case kind::bit_length: return "bit_length"sv;
         case kind::cardinality: return "cardinality"sv;
         case kind::abs: return "abs"sv;
+        case kind::ceil: return "ceil"sv;
         case kind::mod: return "mod"sv;
         case kind::substring: return "substring"sv;
         case kind::upper: return "upper"sv;
