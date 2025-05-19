@@ -186,6 +186,7 @@ UTF8_CHAR {ASCII}|{UTF8_2}{U}|{UTF8_3}{U}{U}|{UTF8_4}{U}{U}{U}
 "OVERLAPS" { TRACE_RETURN parser_type::make_OVERLAPS(location()); }
 "OVERLAY" { TRACE_RETURN parser_type::make_OVERLAY(location()); }
 "POSITION" { TRACE_RETURN parser_type::make_POSITION(location()); }
+"POWER" { TRACE_RETURN parser_type::make_POWER(location()); }
 "SIMILAR" { TRACE_RETURN parser_type::make_SIMILAR(location()); }
 "SUBLIST" { TRACE_RETURN parser_type::make_SUBLIST(location()); }
 "SUBSTRING" { TRACE_RETURN parser_type::make_SUBSTRING(location()); }
