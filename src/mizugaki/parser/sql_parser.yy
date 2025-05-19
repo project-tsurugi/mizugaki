@@ -406,6 +406,7 @@
 // %token <ast::common::chars> RETURNED_LENGTH "RETURNED_LENGTH"
 // %token <ast::common::chars> RETURNED_OCTET_LENGTH "RETURNED_OCTET_LENGTH"
 // %token <ast::common::chars> RETURNED_SQLSTATE "RETURNED_SQLSTATE"
+%token ROUND "ROUND"
 // %token <ast::common::chars> ROUTINE_CATALOG "ROUTINE_CATALOG"
 // %token <ast::common::chars> ROUTINE_NAME "ROUTINE_NAME"
 // %token <ast::common::chars> ROUTINE_SCHEMA "ROUTINE_SCHEMA"
@@ -3347,6 +3348,21 @@ system_function_invocation
             $$ = driver.node<ast::scalar::extract_expression>(
                     $k,
                     $e,
+                    @$);
+        }
+    | ROUND[f] "(" scalar_value_expression[l] COMMA scalar_value_expression[r] ")"
+        {
+            $$ = driver.node<ast::scalar::builtin_function_invocation>(
+                    regioned { ast::scalar::builtin_function_kind::round, @f },
+                    driver.to_node_vector<ast::scalar::expression>($l, $r),
+                    @$);
+        }
+    | ROUND[f] "(" scalar_value_expression[l]
+                ")"
+        {
+            $$ = driver.node<ast::scalar::builtin_function_invocation>(
+                    regioned { ast::scalar::builtin_function_kind::round, @f },
+                    driver.to_node_vector<ast::scalar::expression>($l),
                     @$);
         }
     // 6.18 <string value function>

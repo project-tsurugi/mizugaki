@@ -260,6 +260,19 @@ TEST_F(sql_parser_function_test, mod) {
     }));
 }
 
+TEST_F(sql_parser_function_test, round) {
+    auto result = parse("ROUND(a, b)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (scalar::builtin_function_invocation {
+            scalar::builtin_function_kind::round,
+            {
+                    v("a"),
+                    v("b"),
+            },
+    }));
+}
+
 TEST_F(sql_parser_function_test, substring_arity2) {
     auto result = parse("SUBSTRING(a FROM b)");
     ASSERT_TRUE(result) << diagnostics(result);
