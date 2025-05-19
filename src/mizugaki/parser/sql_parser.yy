@@ -402,6 +402,7 @@
 // %token <ast::common::chars> PARAMETER_SPECIFIC_SCHEMA "PARAMETER_SPECIFIC_SCHEMA"
 // %token <ast::common::chars> PLI "PLI"
 %token POSITION "POSITION"
+%token POWER "POWER"
 // %token <ast::common::chars> REPEATABLE "REPEATABLE"
 // %token <ast::common::chars> RETURNED_LENGTH "RETURNED_LENGTH"
 // %token <ast::common::chars> RETURNED_OCTET_LENGTH "RETURNED_OCTET_LENGTH"
@@ -3347,6 +3348,13 @@ system_function_invocation
             $$ = driver.node<ast::scalar::extract_expression>(
                     $k,
                     $e,
+                    @$);
+        }
+    | POWER[f] "(" scalar_value_expression[l] COMMA scalar_value_expression[r] ")"
+        {
+            $$ = driver.node<ast::scalar::builtin_function_invocation>(
+                    regioned { ast::scalar::builtin_function_kind::power, @f },
+                    driver.to_node_vector<ast::scalar::expression>($l, $r),
                     @$);
         }
     // 6.18 <string value function>

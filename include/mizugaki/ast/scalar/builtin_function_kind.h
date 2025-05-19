@@ -91,6 +91,13 @@ enum class builtin_function_kind {
     mod,
 
     /**
+     * @brief `POWER`
+     * @note `6.17 <numeric value function>` - `<power expression>`
+     * @note format: `(:0 , :1)`
+     */
+    power,
+
+    /**
      * @brief `SUBSTRING`
      * @note `6.18 <string value function>` - `<character substring function>`
      * @note `6.18 <string value function>` - `<regular expression substring function>`
@@ -258,6 +265,7 @@ inline constexpr std::string_view to_string_view(builtin_function_kind value) no
         case kind::ceil: return "ceil"sv;
         case kind::floor: return "floor"sv;
         case kind::mod: return "mod"sv;
+        case kind::power: return "power"sv;
         case kind::substring: return "substring"sv;
         case kind::upper: return "upper"sv;
         case kind::lower: return "lower"sv;
