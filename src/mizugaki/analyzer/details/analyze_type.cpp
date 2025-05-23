@@ -372,7 +372,7 @@ private:
     [[nodiscard]] result_type build(ast::type::type const& source, Type&& type) {
         static_assert(std::is_rvalue_reference_v<decltype(type)>);
         (void) source;
-        return context_.types().template get(std::forward<Type>(type));
+        return context_.types().template get<Type&&>(std::forward<Type>(type));
     }
 };
 
