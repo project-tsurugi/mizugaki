@@ -19,6 +19,7 @@
 #include <mizugaki/ast/scalar/cast_expression.h>
 #include <mizugaki/ast/scalar/host_parameter_reference.h>
 #include <mizugaki/ast/scalar/unary_expression.h>
+#include <mizugaki/ast/scalar/placeholder_reference.h>
 
 #include "test_parent.h"
 
@@ -549,6 +550,36 @@ TEST_F(analyze_scalar_expression_test, binary_expression_invalid_right) {
             ast::scalar::binary_operator::concatenation,
             erroneous_expression(),
     });
+}
+
+TEST_F(analyze_scalar_expression_test, placeholder_reference_value_with_colon) {
+    options_.host_parameter_declaration_starts_with_colon() = true;
+    auto c0 = vdesc();
+    placeholders_.add(":1", { ttype::int8 {}, tvalue::int8 { 1 } });
+
+    auto r = analyze_scalar_expression(
+            context(),
+            ast::scalar::placeholder_reference { 1 },
+            {},
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+    EXPECT_EQ(*r, immediate(1));
+}
+
+TEST_F(analyze_scalar_expression_test, placeholder_reference_value_without_colon) {
+    options_.host_parameter_declaration_starts_with_colon() = false;
+    auto c0 = vdesc();
+    placeholders_.add("23", { ttype::int8 {}, tvalue::int8 { 1 } });
+
+    auto r = analyze_scalar_expression(
+            context(),
+            ast::scalar::placeholder_reference { 23 },
+            {},
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+    EXPECT_EQ(*r, immediate(1));
 }
 
 } // namespace mizugaki::analyzer::details
