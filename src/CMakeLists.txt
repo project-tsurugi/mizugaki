@@ -101,6 +101,7 @@ add_library(mizugaki
     mizugaki/ast/scalar/static_method_invocation.cpp
     mizugaki/ast/scalar/subquery.cpp
     mizugaki/ast/scalar/current_of_cursor.cpp
+    mizugaki/ast/scalar/placeholder_reference.cpp
 
     mizugaki/ast/table/expression.cpp
     mizugaki/ast/table/table_reference.cpp

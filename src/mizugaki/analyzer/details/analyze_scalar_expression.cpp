@@ -1111,6 +1111,7 @@ public:
     // FIXME: impl method_invocation,
     // FIXME: impl static_method_invocation,
     // FIXME: impl current_of_cursor,
+    // FIXME: impl placeholder_reference,
 
 private:
     analyzer_context& context_;
