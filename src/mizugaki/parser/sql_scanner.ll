@@ -149,7 +149,10 @@ UTF8_CHAR {ASCII}|{UTF8_2}{U}|{UTF8_3}{U}{U}|{UTF8_4}{U}{U}{U}
 "<" { TRACE_RETURN parser_type::make_LESS_THAN_OPERATOR(location()); }
 "=" { TRACE_RETURN parser_type::make_EQUALS_OPERATOR(location()); }
 ">" { TRACE_RETURN parser_type::make_GREATER_THAN_OPERATOR(location()); }
-"?" { TRACE_RETURN parser_type::make_QUESTION_MARK(location()); }
+"?" {
+    driver.add_placeholder_mark(location());
+    TRACE_RETURN parser_type::make_QUESTION_MARK(location());
+}
 "[" { TRACE_RETURN parser_type::make_LEFT_BRACKET(location()); }
 "]" { TRACE_RETURN parser_type::make_RIGHT_BRACKET(location()); }
 "^" { TRACE_RETURN parser_type::make_CIRCUMFLEX(location()); }

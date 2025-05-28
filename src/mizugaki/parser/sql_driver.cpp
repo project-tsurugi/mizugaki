@@ -102,6 +102,29 @@ void sql_driver::add_comment_separator(location_type location) {
     last_comment_separator_ = location;
 }
 
+void sql_driver::add_placeholder_mark(location_type token) {
+    if (!token) {
+        return;
+    }
+    placeholder_marks_.emplace_back(token.begin);
+}
+
+std::size_t sql_driver::find_placeholder_mark(location_type token) const {
+    if (!token) {
+        return 0;
+    }
+    auto key = token.begin;
+    auto iter = std::lower_bound(
+            placeholder_marks_.begin(),
+            placeholder_marks_.end(),
+            key);
+    if (iter == placeholder_marks_.end() || *iter != key) {
+        return 0; // placeholder is not found
+    }
+    // compute the placeholder position (1-origin)
+    return static_cast<std::size_t>(std::distance(placeholder_marks_.begin(), iter)) + 1;
+}
+
 std::size_t& sql_driver::max_expected_candidates() noexcept {
     return max_expected_candidates_;
 }
