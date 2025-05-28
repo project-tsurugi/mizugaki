@@ -49,7 +49,7 @@ placeholder_reference::index_type const& placeholder_reference::index() const no
 
 bool operator==(placeholder_reference const& a, placeholder_reference const& b) noexcept {
     if (std::addressof(a) == std::addressof(b)) {
-        return false;
+        return true;
     }
     return a.index_ == b.index_;
 }
