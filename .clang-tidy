@@ -2,6 +2,7 @@
 Checks: "-*,\
 abseil-*,\
 boost-*,\
+-boost-use-ranges,\
 bugprone-*,\
 -bugprone-branch-clone,\
 -bugprone-easily-swappable-parameters,\
@@ -49,6 +50,7 @@ readability-*,\
 -readability-braces-around-statements,\
 -readability-identifier-length,\
 -readability-convert-member-functions-to-static,\
+-readability-math-missing-parentheses,\
 -readability-named-parameter,\
 -readability-magic-numbers,\
 -readability-qualified-auto,\
