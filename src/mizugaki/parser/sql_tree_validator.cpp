@@ -630,6 +630,12 @@ public:
         return true;
     }
 
+    [[nodiscard]] bool operator()(ast::scalar::placeholder_reference const& element, std::size_t depth) {
+        (void) element;
+        (void) depth;
+        return true;
+    }
+
     [[nodiscard]] bool operator()(ast::literal::boolean const& element, std::size_t depth) {
         (void) element;
         (void) depth;

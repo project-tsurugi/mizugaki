@@ -1112,6 +1112,40 @@ public:
     // FIXME: impl static_method_invocation,
     // FIXME: impl current_of_cursor,
 
+
+    [[nodiscard]] std::unique_ptr<tscalar::expression> operator()(
+            ast::scalar::placeholder_reference const& expr,
+            value_context const&) {
+        auto identifier = std::to_string(expr.index());
+        if (context_.options()->host_parameter_declaration_starts_with_colon()) {
+            identifier.insert(0, 1, ':');
+        }
+        if (auto placeholders = context_.placeholders()) {
+            if (auto value = placeholders->find(identifier)) {
+                auto result = value->resolve();
+                result->region() = context_.convert(expr.region());
+                return result;
+            }
+        }
+        if (auto host_parameters = context_.host_parameters()) {
+            if (auto variable = host_parameters->find(identifier)) {
+                auto descriptor = context_.bless(factory_(std::move(variable)), expr.region());
+                return context_.create<tscalar::variable_reference>(
+                        expr.region(),
+                        std::move(descriptor));
+            }
+        }
+        context_.report(
+                sql_analyzer_code::variable_not_found,
+                string_builder {}
+                        << "placeholder is not found: "
+                        << "\"" << identifier << "\""
+                        << string_builder::to_string,
+                expr.region());
+        return {};
+    }
+
+
 private:
     analyzer_context& context_;
     query_scope const& scope_;

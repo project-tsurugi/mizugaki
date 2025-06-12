@@ -34,6 +34,7 @@ class new_invocation;
 class method_invocation;
 class static_method_invocation;
 class current_of_cursor;
+class placeholder_reference;
 
 /**
  * @brief represents a kind of scalar expression.
@@ -197,13 +198,19 @@ enum class kind {
      * @see current_of_cursor
      */
     current_of_cursor,
+
+    /**
+     * @copydoc placeholder_reference
+     * @see placeholder_reference
+     */
+    placeholder_reference,
 };
 
 /// @brief set of scalar expression kind.
 using kind_set = ::takatori::util::enum_set<
         kind,
         kind::literal_expression,
-        kind::static_method_invocation>;
+        kind::placeholder_reference>;
 
 /**
  * @brief provides the implementation type of the scalar expression kind.
@@ -293,6 +300,9 @@ template<> struct type_of<kind, kind::static_method_invocation> : ::takatori::ut
 /// @brief provides implementation type of kind::current_of_cursor.
 template<> struct type_of<kind, kind::current_of_cursor> : ::takatori::util::meta_type<current_of_cursor> {};
 
+/// @brief provides implementation type of kind::placeholder_reference.
+template<> struct type_of<kind, kind::placeholder_reference> : ::takatori::util::meta_type<placeholder_reference> {};
+
 /**
  * @brief returns string representation of the value.
  * @param value the target value
@@ -326,6 +336,7 @@ inline constexpr std::string_view to_string_view(kind value) noexcept {
         case kind::method_invocation: return "method_invocation"sv;
         case kind::static_method_invocation: return "static_method_invocation"sv;
         case kind::current_of_cursor: return "current_of_cursor"sv;
+        case kind::placeholder_reference: return "placeholder_reference"sv;
     }
     std::abort();
 }

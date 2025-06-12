@@ -30,6 +30,7 @@
 #include <mizugaki/ast/scalar/method_invocation.h>
 #include <mizugaki/ast/scalar/static_method_invocation.h>
 #include <mizugaki/ast/scalar/current_of_cursor.h>
+#include <mizugaki/ast/scalar/placeholder_reference.h>
 
 namespace mizugaki::ast::scalar {
 
@@ -93,6 +94,7 @@ inline auto dispatch(Callback&& callback, E&& object, Args&&... args) {
         case method_invocation::tag: return polymorphic_callback<method_invocation>(std::forward<Callback>(callback), std::forward<E>(object), std::forward<Args>(args)...);
         case static_method_invocation::tag: return polymorphic_callback<static_method_invocation>(std::forward<Callback>(callback), std::forward<E>(object), std::forward<Args>(args)...);
         case current_of_cursor::tag: return polymorphic_callback<current_of_cursor>(std::forward<Callback>(callback), std::forward<E>(object), std::forward<Args>(args)...);
+        case placeholder_reference::tag: return polymorphic_callback<placeholder_reference>(std::forward<Callback>(callback), std::forward<E>(object), std::forward<Args>(args)...);
     }
     impl::unsupported(object);
 }

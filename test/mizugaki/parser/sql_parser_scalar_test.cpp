@@ -19,6 +19,7 @@
 #include <mizugaki/ast/scalar/value_constructor.h>
 #include <mizugaki/ast/scalar/builtin_function_invocation.h>
 #include <mizugaki/ast/scalar/subquery.h>
+#include <mizugaki/ast/scalar/placeholder_reference.h>
 
 #include <mizugaki/ast/type/simple.h>
 #include <mizugaki/ast/type/user_defined.h>
@@ -594,6 +595,27 @@ TEST_F(sql_parser_scalar_test, subquery) {
     EXPECT_EQ(extract(result), (scalar::subquery {
             query::table_reference {
                     name::simple { "a" },
+            },
+    }));
+}
+
+TEST_F(sql_parser_scalar_test, placeholder_reference) {
+    auto result = parse("?");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (scalar::placeholder_reference { 1 }));
+}
+
+TEST_F(sql_parser_scalar_test, placeholder_reference_multiple) {
+    auto result = parse("(?, ?, ?)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (scalar::value_constructor {
+            scalar::value_constructor_kind::row,
+            {
+                    scalar::placeholder_reference { 1 },
+                    scalar::placeholder_reference { 2 },
+                    scalar::placeholder_reference { 3 },
             },
     }));
 }

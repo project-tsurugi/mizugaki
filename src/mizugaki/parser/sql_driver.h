@@ -48,6 +48,10 @@ public:
 
     void add_comment_separator(location_type location);
 
+    void add_placeholder_mark(location_type token);
+
+    [[nodiscard]] std::size_t find_placeholder_mark(location_type token) const;
+
     [[nodiscard]] std::size_t& max_expected_candidates() noexcept;
 
     [[nodiscard]] ::takatori::util::optional_ptr<sql_parser_element_map<std::size_t> const>& element_limits() noexcept;
@@ -133,6 +137,7 @@ private:
     std::vector<location_type::position_type> comment_separators_ {};
     bool saw_comments_ { false };
     location_type last_comment_separator_ {};
+    std::vector<location_type::position_type> placeholder_marks_ {};
     result_type result_ {};
 
     std::size_t max_expected_candidates_ {};

@@ -90,6 +90,7 @@
     #include <mizugaki/ast/scalar/method_invocation.h>
     #include <mizugaki/ast/scalar/static_method_invocation.h>
     #include <mizugaki/ast/scalar/current_of_cursor.h>
+    #include <mizugaki/ast/scalar/placeholder_reference.h>
 
     #include <mizugaki/ast/literal/literal.h>
     #include <mizugaki/ast/literal/boolean.h>
@@ -986,6 +987,7 @@
 %nterm <node_ptr<ast::name::simple>> user_identifier
 
 %nterm <node_ptr<ast::name::simple>> host_parameter_name
+%nterm <std::size_t> placeholder_mark
 
 %nterm <node_ptr<ast::name::name>> identifier_chain
 %nterm <node_ptr<ast::name::simple>> identifier
@@ -3105,6 +3107,12 @@ value_expression_primary
                     $n,
                     @$);
         }
+    | placeholder_mark[v]
+        {
+            $$ = driver.node<ast::scalar::placeholder_reference>(
+                    $v,
+                    @$);
+        }
     // 6.8 <field reference>
     | value_expression_primary[q] "."[o] identifier[n]
         {
@@ -4420,6 +4428,21 @@ host_parameter_name
                     $t,
                     ast::name::simple::identifier_kind_type::regular,
                     @$);
+        }
+    ;
+
+placeholder_mark
+    : QUESTION_MARK[t]
+        {
+            auto index = driver.find_placeholder_mark(@t);
+            if (index == 0) {
+                driver.error(
+                        sql_parser_code::unknown,
+                        @t,
+                        "unhandled placeholder mark (?)");
+                YYABORT;
+            }
+            $$ = index;
         }
     ;
 
