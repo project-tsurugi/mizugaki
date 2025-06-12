@@ -18,6 +18,7 @@
 #include <mizugaki/ast/query/query.h>
 #include <mizugaki/ast/query/select_column.h>
 #include <mizugaki/ast/query/grouping_column.h>
+#include <mizugaki/ast/scalar/host_parameter_reference.h>
 
 #include <mizugaki/ast/table/table_reference.h>
 
@@ -1027,6 +1028,157 @@ TEST_F(analyze_query_expression_aggregate_test, where_aggregated) {
                     },
             },
     });
+}
+
+TEST_F(analyze_query_expression_aggregate_test, host_variable_bare) {
+    auto hv = host_parameters_.add({
+            "hv",
+            ttype::int8 {},
+    });
+
+    auto table = install_table("testing");
+    trelation::graph_type graph {};
+
+    auto r = analyze_query_expression(
+            context(),
+            graph,
+            // SELECT :hv, COUNT(*) FROM testing
+            ast::query::query {
+                    {
+                            ast::query::select_column {
+                                    ast::scalar::host_parameter_reference {
+                                            id("hv"),
+                                    }
+                            },
+                            ast::query::select_column {
+                                    ast::scalar::builtin_set_function_invocation {
+                                            ast::scalar::builtin_set_function_kind::count,
+                                            {},
+                                            {},
+                                    }
+                            },
+                    },
+                    {
+                            ast::table::table_reference {
+                                    id("testing"),
+                            }
+                    },
+            },
+            {},
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
+    // scan - aggregate - project -
+
+    ASSERT_EQ(graph.size(), 3);
+    EXPECT_FALSE(r.output().opposite());
+
+    auto&& relation = r.relation();
+
+    auto&& project = downcast<trelation::project>(r.output().owner());
+    auto&& aggregate = *find_prev<trelation::intermediate::aggregate>(project);
+    auto&& scan = *find_prev<trelation::scan>(aggregate);
+
+    auto&& scan_columns = scan.columns();
+    ASSERT_EQ(scan_columns.size(), 4);
+
+    auto&& grouping_columns = aggregate.group_keys();
+    ASSERT_EQ(grouping_columns.size(), 0);
+
+    auto&& aggregation_columns = aggregate.columns();
+    ASSERT_EQ(aggregation_columns.size(), 1);
+
+    auto&& project_columns = project.columns();
+    ASSERT_EQ(project_columns.size(), 2);
+    EXPECT_EQ(project_columns[0].value(), vref(factory_(hv)));
+    EXPECT_EQ(project_columns[1].value(), vref(aggregation_columns[0].destination()));
+
+    // output
+
+    auto relation_columns = relation.columns();
+    ASSERT_EQ(relation_columns.size(), 2);
+    EXPECT_EQ(relation_columns[0].variable(), project_columns[0].variable());
+    EXPECT_EQ(relation_columns[1].variable(), project_columns[1].variable());
+}
+
+TEST_F(analyze_query_expression_aggregate_test, host_variable_in_set_function) {
+    auto hv = host_parameters_.add({
+            "hv",
+            ttype::character { ttype::varying },
+    });
+    auto table = install_table("testing");
+    trelation::graph_type graph {};
+
+    auto r = analyze_query_expression(
+            context(),
+            graph,
+            // SELECT COUNT(:hv) FROM testing
+            ast::query::query {
+                    {
+                            ast::query::select_column {
+                                    ast::scalar::builtin_set_function_invocation {
+                                            ast::scalar::builtin_set_function_kind::count,
+                                            {},
+                                            {
+                                                    ast::scalar::host_parameter_reference {
+                                                            id("hv"),
+                                                    },
+                                            },
+                                    }
+                            },
+                    },
+                    {
+                            ast::table::table_reference {
+                                    id("testing"),
+                            }
+                    },
+            },
+            {},
+            {});
+    ASSERT_TRUE(r);
+    expect_no_error();
+
+    // scan - project - aggregate - project -
+
+    ASSERT_EQ(graph.size(), 4);
+    EXPECT_FALSE(r.output().opposite());
+
+    auto&& relation = r.relation();
+
+    auto&& project = downcast<trelation::project>(r.output().owner());
+    auto&& aggregate = *find_prev<trelation::intermediate::aggregate>(project);
+    auto&& aggregate_args = *find_prev<trelation::project>(aggregate);
+    auto&& scan = *find_prev<trelation::scan>(aggregate_args);
+
+    auto&& scan_columns = scan.columns();
+    ASSERT_EQ(scan_columns.size(), 4);
+
+    auto&& aggargs_columns = aggregate_args.columns();
+    ASSERT_EQ(aggargs_columns.size(), 1);
+    EXPECT_EQ(aggargs_columns[0].value(), vref(factory_(hv)));
+
+    auto&& grouping_columns = aggregate.group_keys();
+    ASSERT_EQ(grouping_columns.size(), 0);
+
+    auto&& aggregation_columns = aggregate.columns();
+    ASSERT_EQ(aggregation_columns.size(), 1);
+    {
+        auto&& column = aggregation_columns[0];
+        EXPECT_EQ(column.function(), factory_(count_str));
+        ASSERT_EQ(column.arguments().size(), 1);
+        EXPECT_EQ(column.arguments()[0], aggargs_columns[0].variable());
+    }
+
+    auto&& project_columns = project.columns();
+    ASSERT_EQ(project_columns.size(), 1);
+    EXPECT_EQ(project_columns[0].value(), vref(aggregation_columns[0].destination()));
+
+    // output
+
+    auto relation_columns = relation.columns();
+    ASSERT_EQ(relation_columns.size(), 1);
+    EXPECT_EQ(relation_columns[0].variable(), project_columns[0].variable());
 }
 
 } // namespace mizugaki::analyzer::details

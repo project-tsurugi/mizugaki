@@ -8,7 +8,9 @@
 #include <takatori/util/optional_ptr.h>
 #include <takatori/util/string_builder.h>
 
+#include <yugawara/binding/extract.h>
 #include <yugawara/binding/factory.h>
+#include <yugawara/binding/variable_info.h>
 
 namespace mizugaki::analyzer::details {
 
@@ -67,6 +69,12 @@ public:
     }
 
     bool operator()(tscalar::variable_reference const& expr, std::size_t depth) {
+        // check only if it is stream variable
+        auto&& variable = ::yugawara::binding::unwrap(expr.variable());
+        if (variable.kind() != ::yugawara::binding::variable_info_kind::stream_variable) {
+            return false;
+        }
+
         if (depth == 0) {
             // NOTE: in aggregation depth = 0, you can use grouping keys or aggregated values
             if (!processor_.is_grouping(expr.variable()) && !processor_.is_aggregated(expr.variable())) {
