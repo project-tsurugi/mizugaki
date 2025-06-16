@@ -9,7 +9,7 @@
 
 namespace mizugaki::examples::parser_cli {
 
-bool run(std::string_view source, std::size_t repeat, bool quiet, bool stats, parser::sql_parser engine) {
+static bool run(std::string_view source, std::size_t repeat, bool quiet, bool stats, parser::sql_parser engine) {
     for (std::size_t round = 0; round < repeat; ++round) {
         auto result = engine("-", std::string { source });
         if (auto&& error = result.diagnostic()) {
