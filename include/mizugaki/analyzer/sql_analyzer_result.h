@@ -40,7 +40,7 @@ struct unwrap_if_unique_ptr {
 
     /// @copydoc operator()()
     T const& operator()(T const& value) noexcept {
-        return value;
+        return value; // NOLINT(bugprone-return-const-ref-from-parameter)
     }
 };
 
@@ -70,7 +70,7 @@ struct unwrap_if_unique_ptr<T, std::enable_if_t<std::is_trivially_copyable_v<T>>
 
     /// @copydoc operator()()
     T const& operator()(T const& value) noexcept {
-        return value;
+        return value; // NOLINT(bugprone-return-const-ref-from-parameter)
     }
 };
 

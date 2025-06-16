@@ -722,7 +722,7 @@ public:
             return {};
         }
 
-        if (auto corr = expr.correlation()) {
+        if (auto&& corr = expr.correlation()) {
             if (!rebuild_relation_info(info, *corr)) {
                 return {};
             }
