@@ -63,6 +63,15 @@ enum class sql_parser_element_kind : std::size_t {
 
     /// @brief elements in string literal concatenations.
     string_literal_concatenation,
+
+    /// @brief privilege actions in `GRANT` or `REVOKE` statements.
+    privilege_action,
+
+    /// @brief resources in `GRANT` or `REVOKE` statements.
+    privilege_object,
+
+    /// @brief target users in `GRANT` or `REVOKE` statements.
+    privilege_user,
 };
 
 /// @private
@@ -71,7 +80,7 @@ constexpr sql_parser_element_kind sql_parser_element_kind_first = sql_parser_ele
 
 /// @private
 /// @brief the last element of sql_parser_element_kind.
-constexpr sql_parser_element_kind sql_parser_element_kind_last = sql_parser_element_kind::string_literal_concatenation;
+constexpr sql_parser_element_kind sql_parser_element_kind_last = sql_parser_element_kind::privilege_user;
 
 /**
  * @brief represents an associated list of sql_parser_element_map.
@@ -157,6 +166,9 @@ inline constexpr std::string_view to_string_view(sql_parser_element_kind value) 
         case kind::scalar_expression: return "scalar_expression"sv;
         case kind::when_clause: return "when_clause"sv;
         case kind::string_literal_concatenation: return "string_literal_concatenation"sv;
+        case kind::privilege_action: return "privilege_action"sv;
+        case kind::privilege_object: return "privilege_object"sv;
+        case kind::privilege_user: return "privilege_user"sv;
     }
     std::abort();
 }

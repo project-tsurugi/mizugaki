@@ -29,6 +29,8 @@
 #include <takatori/statement/create_index.h>
 #include <takatori/statement/drop_table.h>
 #include <takatori/statement/drop_index.h>
+#include <takatori/statement/grant_table.h>
+#include <takatori/statement/revoke_table.h>
 #include <takatori/statement/write.h>
 
 #include <takatori/util/string_builder.h>
@@ -1484,6 +1486,200 @@ public:
                 stmt.region(),
                 factory_.schema(std::move(schema).ownership()),
                 factory_.index(std::move(target)));
+    }
+
+    [[nodiscard]] result_type operator()(ast::statement::grant_privilege_statement const& stmt) {
+        return process_privilege<tstatement::grant_table>(stmt);
+    }
+
+    [[nodiscard]] result_type operator()(ast::statement::revoke_privilege_statement const& stmt) {
+        return process_privilege<tstatement::revoke_table>(stmt);
+    }
+
+    template<class TTable, class TFrom>
+    [[nodiscard]] result_type process_privilege(TFrom const& stmt) {
+        if (stmt.actions().empty()) {
+            context_.report(
+                    sql_analyzer_code::malformed_syntax,
+                    "statement requires at least one privilege action",
+                    stmt.region());
+            return {};
+        }
+        if (stmt.objects().empty()) {
+            context_.report(
+                    sql_analyzer_code::malformed_syntax,
+                    string_builder {}
+                            << "statement requires at least one object"
+                            << string_builder::to_string,
+                    stmt.region());
+            return {};
+        }
+        if (stmt.users().empty()) {
+            context_.report(
+                    sql_analyzer_code::malformed_syntax,
+                    "statement requires at least one authorization targets",
+                    stmt.region());
+            return {};
+        }
+        using ast::statement::privilege_object_kind;
+        auto object_kind = extract_privilege_object_kind(stmt);
+        if (!object_kind) {
+            return {};
+        }
+        switch (*object_kind) {
+            case privilege_object_kind::table:
+                return process_table_privilege<TTable>(stmt);
+            case privilege_object_kind::schema: // not supported
+                break;
+        }
+        context_.report(
+                sql_analyzer_code::unsupported_feature,
+                string_builder {}
+                        << "unsupported privilege object kind: "
+                        << *object_kind
+                        << string_builder::to_string,
+                stmt.region());
+        return {};
+    }
+
+    template<class T>
+    [[nodiscard]] std::optional<ast::statement::privilege_object_kind> extract_privilege_object_kind(T const& stmt) {
+        using ast::statement::privilege_object_kind;
+        std::optional<privilege_object_kind> result {};
+        for (auto&& object : stmt.objects()) {
+            auto kind = *object.object_kind().value_or(privilege_object_kind::table);
+            if (!result || result == kind) {
+                result.emplace(kind);
+            } else {
+                context_.report(
+                        sql_analyzer_code::unsupported_feature,
+                        string_builder {}
+                                << "cannot specify multiple object types: "
+                                << *result << " <=> " << kind
+                                << string_builder::to_string,
+                        stmt.region());
+                return {};
+            }
+        }
+        return result;
+    }
+
+    template<class TTo, class TFrom>
+    [[nodiscard]] result_type process_table_privilege(TFrom const& stmt) {
+        std::vector<tstatement::details::table_privilege_element> elements {};
+        elements.reserve(stmt.objects().size());
+
+        ::tsl::hopscotch_set<::yugawara::storage::table const*> saw_tables { stmt.objects().size() };
+
+        for (auto&& object : stmt.objects()) {
+            auto&& table_decl = analyze_table_name(context_, *object.object_name(), true);
+            if (!table_decl) {
+                return {}; // error already reported
+            }
+            auto table = std::move(table_decl->second);
+            if (saw_tables.find(table.get()) != saw_tables.end()) {
+                // skip duplicated tables
+                continue;
+            }
+            saw_tables.insert(table.get());
+
+            auto actions = process_table_privilege_actions(*table, stmt.actions());
+            if (actions.empty()) {
+                return {}; // error already reported
+            }
+            auto table_privilege = process_table_privilege(
+                    std::move(table),
+                    std::move(actions),
+                    stmt.users());
+            if (!table_privilege) {
+                return {};
+            }
+            elements.emplace_back(std::move(*table_privilege));
+        }
+
+        return context_.create<TTo>(
+                stmt.region(),
+                std::move(elements));
+    }
+
+    [[nodiscard]] std::vector<tstatement::details::table_privilege_action> process_table_privilege_actions(
+            ::yugawara::storage::table const& table,
+            std::vector<ast::statement::privilege_action> const& actions) {
+        (void) table; // unused, but may be used in future
+        std::vector<tstatement::details::table_privilege_action> result {};
+        result.reserve(actions.size());
+        for (auto&& action : actions) {
+            using from = ast::statement::privilege_action_kind;
+            using to = tstatement::table_action_kind;
+            switch (*action.action_kind()) {
+                case from::all_privileges:
+                    result.emplace_back(to::control);
+                    break;
+                case from::select:
+                    result.emplace_back(to::select);
+                    break;
+                case from::insert:
+                    result.emplace_back(to::insert);
+                    break;
+                case from::update:
+                    result.emplace_back(to::update);
+                    break;
+                case from::delete_:
+                    result.emplace_back(to::delete_);
+                    break;
+                default:
+                    context_.report(
+                            sql_analyzer_code::unsupported_feature,
+                            string_builder {}
+                                    << "unsupported table privilege: "
+                                    << action.action_kind()
+                                    << string_builder::to_string,
+                            action.region());
+                    return {};
+            }
+        }
+        return result;
+    }
+
+    [[nodiscard]] std::optional<tstatement::details::table_privilege_element> process_table_privilege(
+            std::shared_ptr<::yugawara::storage::table const> table,
+            std::vector<tstatement::details::table_privilege_action> actions,
+            std::vector<ast::statement::privilege_user> const& users) {
+
+        std::vector<tstatement::details::table_privilege_action> defaults {};
+        std::vector<tstatement::details::table_authorization_entry> entries {};
+        entries.reserve(users.size());
+
+        ::tsl::hopscotch_set<std::string> saw_users { users.size() };
+
+        for (auto&& user : users) {
+            if (auto&& id = user.authorization_identifier()) {
+                // for individual users
+                if (saw_users.find(id->identifier()) != saw_users.end()) {
+                    // skip duplicated users
+                    continue;
+                }
+                saw_users.insert(id->identifier());
+                auto entry = tstatement::details::table_authorization_entry {
+                    id->identifier(),
+                    actions,
+                };
+                entries.emplace_back(id->identifier(), actions);
+            } else {
+                // for PUBLIC
+                if (defaults.empty()) {
+                    defaults = actions;
+                }
+            }
+        }
+        actions.clear();
+
+        auto privilege = tstatement::details::table_privilege_element {
+                factory_.storage(std::move(table)),
+                std::move(defaults),
+                std::move(entries),
+        };
+        return privilege;
     }
 
     [[nodiscard]] result_type operator()(ast::statement::empty_statement const& stmt) {

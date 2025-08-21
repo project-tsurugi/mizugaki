@@ -354,7 +354,9 @@ UTF8_CHAR {ASCII}|{UTF8_2}{U}|{UTF8_3}{U}{U}|{UTF8_4}{U}{U}{U}
 "PRECISION" { TRACE_RETURN parser_type::make_PRECISION(location()); }
 "PREPARE" { TRACE_RETURN parser_type::make_PREPARE(location()); }
 "PRIMARY" { TRACE_RETURN parser_type::make_PRIMARY(location()); }
+"PRIVILEGES" { TRACE_RETURN parser_type::make_PRIVILEGES(location()); }
 "PROCEDURE" { TRACE_RETURN parser_type::make_PROCEDURE(location()); }
+"PUBLIC" { TRACE_RETURN parser_type::make_PUBLIC(location()); }
 "REAL" { TRACE_RETURN parser_type::make_REAL(location()); }
 "RECURSIVE" { TRACE_RETURN parser_type::make_RECURSIVE(location()); }
 "REF" { TRACE_RETURN parser_type::make_REF(location()); }

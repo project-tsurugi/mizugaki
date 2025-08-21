@@ -35,6 +35,8 @@
     #include <mizugaki/ast/statement/sequence_definition.h>
     #include <mizugaki/ast/statement/schema_definition.h>
     #include <mizugaki/ast/statement/drop_statement.h>
+    #include <mizugaki/ast/statement/grant_privilege_statement.h>
+    #include <mizugaki/ast/statement/revoke_privilege_statement.h>
     #include <mizugaki/ast/statement/table_element.h>
     #include <mizugaki/ast/statement/column_definition.h>
     #include <mizugaki/ast/statement/table_constraint_definition.h>
@@ -656,9 +658,9 @@
 // %token <ast::common::chars> PRESERVE "PRESERVE"
 %token PRIMARY "PRIMARY"
 // %token <ast::common::chars> PRIOR "PRIOR"
-// %token <ast::common::chars> PRIVILEGES "PRIVILEGES"
+%token PRIVILEGES "PRIVILEGES"
 %token PROCEDURE "PROCEDURE"
-// %token <ast::common::chars> PUBLIC "PUBLIC"
+%token PUBLIC "PUBLIC"
 // %token <ast::common::chars> READ "READ"
 // %token <ast::common::chars> READS "READS"
 %token REAL "REAL"
@@ -856,6 +858,16 @@
 %nterm <ast::common::regioned<bool>> if_not_exists_opt
 %nterm <std::optional<ast::common::regioned<ast::statement::drop_statement_option>>> drop_behavior_opt
 
+%nterm <element_vector<ast::statement::privilege_action>> privilege_list
+%nterm <element_vector<ast::statement::privilege_action>> privilege_action_list
+%nterm <ast::statement::privilege_action> privilege_action
+
+%nterm <element_vector<ast::statement::privilege_object>> privilege_object_list
+%nterm <ast::statement::privilege_object> privilege_object
+
+%nterm <element_vector<ast::statement::privilege_user>> privilege_user_list
+%nterm <ast::statement::privilege_user> privilege_user
+
 %nterm <node_ptr<ast::query::expression>> query_expression
 %nterm <node_ptr<ast::query::expression>> query_expression_body
 %nterm <node_ptr<ast::query::expression>> query_expression_primary
@@ -985,6 +997,7 @@
 %nterm <node_ptr<ast::name::simple>> field_name
 %nterm <node_ptr<ast::name::simple>> cursor_name
 %nterm <node_ptr<ast::name::simple>> user_identifier
+%nterm <node_ptr<ast::name::simple>> authorization_identifier
 
 %nterm <node_ptr<ast::name::simple>> host_parameter_name
 %nterm <std::size_t> placeholder_mark
@@ -1178,6 +1191,22 @@ statement
                     regioned { ast::statement::kind::drop_schema_statement, @k },
                     $n,
                     std::move(options),
+                    @$);
+        }
+    | GRANT privilege_list[a] ON privilege_object_list[o] TO privilege_user_list[u]
+        {
+            $$ = driver.node<ast::statement::grant_privilege_statement>(
+                    $a,
+                    $o,
+                    $u,
+                    @$);
+        }
+    | REVOKE privilege_list[a] ON privilege_object_list[o] FROM privilege_user_list[u]
+        {
+            $$ = driver.node<ast::statement::revoke_privilege_statement>(
+                    $a,
+                    $o,
+                    $u,
                     @$);
         }
     | %empty
@@ -2020,6 +2049,134 @@ drop_behavior_opt
         }
     ;
 
+privilege_list
+    : ALL PRIVILEGES
+        {
+            $$ = driver.element_vector<ast::statement::privilege_action>();
+            $$.emplace_back(ast::statement::privilege_action {
+                    regioned { ast::statement::privilege_action_kind::all_privileges, @$ },
+                    @$
+            });
+        }
+    | privilege_action_list[l]
+        {
+            $$ = $l;
+        }
+    ;
+
+privilege_action_list
+    : privilege_action_list[L] ","[s] privilege_action[e]
+        {
+            $$ = $L;
+            $$.emplace_back($e);
+            if (!driver.validate(@s, $$, element_kind::privilege_action)) {
+                YYABORT;
+            }
+        }
+    | privilege_action[e]
+        {
+            $$ = driver.element_vector<ast::statement::privilege_action>();
+            $$.emplace_back($e);
+        }
+    ;
+
+privilege_action
+    : SELECT
+        {
+            $$ = ast::statement::privilege_action {
+                    regioned { ast::statement::privilege_action_kind::select, @$ },
+                    @$,
+            };
+        }
+    | INSERT
+        {
+            $$ = ast::statement::privilege_action {
+                    regioned { ast::statement::privilege_action_kind::insert, @$ },
+                    @$,
+            };
+        }
+    | UPDATE
+        {
+            $$ = ast::statement::privilege_action {
+                    regioned { ast::statement::privilege_action_kind::update, @$ },
+                    @$,
+            };
+        }
+    | DELETE
+        {
+            $$ = ast::statement::privilege_action {
+                    regioned { ast::statement::privilege_action_kind::delete_, @$ },
+                    @$,
+            };
+        }
+    ;
+
+privilege_object_list
+    : privilege_object_list[L] ","[s] privilege_object[e]
+        {
+            $$ = $L;
+            $$.emplace_back($e);
+            if (!driver.validate(@s, $$, element_kind::privilege_object)) {
+                YYABORT;
+            }
+        }
+    | privilege_object[e]
+        {
+            $$ = driver.element_vector<ast::statement::privilege_object>();
+            $$.emplace_back($e);
+        }
+    ;
+
+privilege_object
+    : table_name[n]
+        {
+            $$ = ast::statement::privilege_object {
+                    std::nullopt,
+                    $n,
+                    @$
+            };
+        }
+    | TABLE table_name[n]
+        {
+            $$ = ast::statement::privilege_object {
+                    regioned { ast::statement::privilege_object_kind::table, @$ },
+                    $n,
+                    @$
+            };
+        }
+    ;
+
+privilege_user_list
+    : privilege_user_list[L] ","[s] privilege_user[e]
+        {
+            $$ = $L;
+            $$.emplace_back($e);
+            if (!driver.validate(@s, $$, element_kind::privilege_user)) {
+                YYABORT;
+            }
+        }
+    | privilege_user[e]
+        {
+            $$ = driver.element_vector<ast::statement::privilege_user>();
+            $$.emplace_back($e);
+        }
+    ;
+
+privilege_user
+    : PUBLIC
+        {
+            $$ = ast::statement::privilege_user {
+                    @$,
+            };
+        }
+    | authorization_identifier[n]
+        {
+            $$ = ast::statement::privilege_user {
+                    $n,
+                    @$,
+            };
+        }
+    ;
 
 query_expression
     : WITH recursive_opt[r] with_list[w] query_expression_body[e]
@@ -4415,6 +4572,13 @@ cursor_name
     ;
 
 user_identifier
+    : identifier[n]
+        {
+            $$ = $n;
+        }
+    ;
+
+authorization_identifier
     : identifier[n]
         {
             $$ = $n;

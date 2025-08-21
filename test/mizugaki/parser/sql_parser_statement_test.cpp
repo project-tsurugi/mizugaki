@@ -15,6 +15,8 @@
 #include <mizugaki/ast/statement/sequence_definition.h>
 #include <mizugaki/ast/statement/schema_definition.h>
 #include <mizugaki/ast/statement/drop_statement.h>
+#include <mizugaki/ast/statement/grant_privilege_statement.h>
+#include <mizugaki/ast/statement/revoke_privilege_statement.h>
 #include <mizugaki/ast/statement/column_definition.h>
 #include <mizugaki/ast/statement/table_constraint_definition.h>
 #include <mizugaki/ast/statement/simple_constraint.h>
@@ -1952,6 +1954,362 @@ TEST_F(sql_parser_statement_test, drop_statement_schema) {
     EXPECT_EQ(extract(result), (statement::drop_statement {
             statement::kind::drop_schema_statement,
             name::simple { "T0" },
+    }));
+}
+
+TEST_F(sql_parser_statement_test, grant_privilege_statement) {
+    auto result = parse("GRANT SELECT ON t TO u");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::grant_privilege_statement {
+            {
+                    {
+                            statement::privilege_action_kind::select,
+                    },
+            },
+            {
+                    {
+                            name::simple { "t" },
+                    },
+            },
+            {
+                    {
+                            name::simple { "u" },
+                    },
+            },
+    }));
+}
+
+TEST_F(sql_parser_statement_test, grant_privilege_statement_all_privileges) {
+    auto result = parse("GRANT ALL PRIVILEGES ON t TO u");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::grant_privilege_statement {
+            {
+                    {
+                            statement::privilege_action_kind::all_privileges,
+                    },
+            },
+            {
+                    {
+                            name::simple { "t" },
+                    },
+            },
+            {
+                    {
+                            name::simple { "u" },
+                    },
+            },
+    }));
+}
+
+TEST_F(sql_parser_statement_test, grant_privilege_statement_multiple_actions) {
+    auto result = parse("GRANT INSERT, UPDATE, DELETE ON t TO u");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::grant_privilege_statement {
+            {
+                    {
+                            statement::privilege_action_kind::insert,
+                    },
+                    {
+                            statement::privilege_action_kind::update,
+                    },
+                    {
+                            statement::privilege_action_kind::delete_,
+                    },
+            },
+            {
+                    {
+                            name::simple { "t" },
+                    },
+            },
+            {
+                    {
+                            name::simple { "u" },
+                    },
+            },
+    }));
+}
+
+TEST_F(sql_parser_statement_test, grant_privilege_statement_table_object) {
+    auto result = parse("GRANT SELECT ON TABLE t TO u");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::grant_privilege_statement {
+            {
+                    {
+                            statement::privilege_action_kind::select,
+                    },
+            },
+            {
+                    {
+                            statement::privilege_object_kind::table,
+                            name::simple { "t" },
+                    },
+            },
+            {
+                    {
+                            name::simple { "u" },
+                    },
+            },
+    }));
+}
+
+TEST_F(sql_parser_statement_test, grant_privilege_statement_multiple_objects) {
+    auto result = parse("GRANT SELECT ON t1, t2, t3 TO u");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::grant_privilege_statement {
+            {
+                    {
+                            statement::privilege_action_kind::select,
+                    },
+            },
+            {
+                    {
+                            name::simple { "t1" },
+                    },
+                    {
+                            name::simple { "t2" },
+                    },
+                    {
+                            name::simple { "t3" },
+                    },
+            },
+            {
+                    {
+                            name::simple { "u" },
+                    },
+            },
+    }));
+}
+
+TEST_F(sql_parser_statement_test, grant_privilege_statement_user_public) {
+    auto result = parse("GRANT SELECT ON t TO PUBLIC");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::grant_privilege_statement {
+            {
+                    {
+                            statement::privilege_action_kind::select,
+                    },
+            },
+            {
+                    {
+                            name::simple { "t" },
+                    },
+            },
+            {
+                    {},
+            },
+    }));
+}
+
+TEST_F(sql_parser_statement_test, grant_privilege_statement_multiple_users) {
+    auto result = parse("GRANT SELECT ON t TO u1, u2, u3");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::grant_privilege_statement {
+            {
+                    {
+                            statement::privilege_action_kind::select,
+                    },
+            },
+            {
+                    {
+                            name::simple { "t" },
+                    },
+            },
+            {
+                    {
+                            name::simple { "u1" },
+                    },
+                    {
+                            name::simple { "u2" },
+                    },
+                    {
+                            name::simple { "u3" },
+                    },
+            },
+    }));
+}
+
+TEST_F(sql_parser_statement_test, revoke_privilege_statement) {
+    auto result = parse("REVOKE SELECT ON t FROM u");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::revoke_privilege_statement {
+            {
+                    {
+                            statement::privilege_action_kind::select,
+                    },
+            },
+            {
+                    {
+                            name::simple { "t" },
+                    },
+            },
+            {
+                    {
+                            name::simple { "u" },
+                    },
+            },
+    }));
+}
+
+TEST_F(sql_parser_statement_test, revoke_privilege_statement_all_privileges) {
+    auto result = parse("REVOKE ALL PRIVILEGES ON t FROM u");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::revoke_privilege_statement {
+            {
+                    {
+                            statement::privilege_action_kind::all_privileges,
+                    },
+            },
+            {
+                    {
+                            name::simple { "t" },
+                    },
+            },
+            {
+                    {
+                            name::simple { "u" },
+                    },
+            },
+    }));
+}
+
+TEST_F(sql_parser_statement_test, revoke_privilege_statement_multiple_actions) {
+    auto result = parse("REVOKE INSERT, UPDATE, DELETE ON t FROM u");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::revoke_privilege_statement {
+            {
+                    {
+                            statement::privilege_action_kind::insert,
+                    },
+                    {
+                            statement::privilege_action_kind::update,
+                    },
+                    {
+                            statement::privilege_action_kind::delete_,
+                    },
+            },
+            {
+                    {
+                            name::simple { "t" },
+                    },
+            },
+            {
+                    {
+                            name::simple { "u" },
+                    },
+            },
+    }));
+}
+
+TEST_F(sql_parser_statement_test, revoke_privilege_statement_table_object) {
+    auto result = parse("REVOKE SELECT ON TABLE t FROM u");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::revoke_privilege_statement {
+            {
+                    {
+                            statement::privilege_action_kind::select,
+                    },
+            },
+            {
+                    {
+                            statement::privilege_object_kind::table,
+                            name::simple { "t" },
+                    },
+            },
+            {
+                    {
+                            name::simple { "u" },
+                    },
+            },
+    }));
+}
+
+TEST_F(sql_parser_statement_test, revoke_privilege_statement_multiple_objects) {
+    auto result = parse("REVOKE SELECT ON t1, t2, t3 FROM u");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::revoke_privilege_statement {
+            {
+                    {
+                            statement::privilege_action_kind::select,
+                    },
+            },
+            {
+                    {
+                            name::simple { "t1" },
+                    },
+                    {
+                            name::simple { "t2" },
+                    },
+                    {
+                            name::simple { "t3" },
+                    },
+            },
+            {
+                    {
+                            name::simple { "u" },
+                    },
+            },
+    }));
+}
+
+TEST_F(sql_parser_statement_test, revoke_privilege_statement_user_public) {
+    auto result = parse("REVOKE SELECT ON t FROM PUBLIC");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::revoke_privilege_statement {
+            {
+                    {
+                            statement::privilege_action_kind::select,
+                    },
+            },
+            {
+                    {
+                            name::simple { "t" },
+                    },
+            },
+            {
+                    {},
+            },
+    }));
+}
+
+TEST_F(sql_parser_statement_test, revoke_privilege_statement_multiple_users) {
+    auto result = parse("REVOKE SELECT ON t FROM u1, u2, u3");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::revoke_privilege_statement {
+            {
+                    {
+                            statement::privilege_action_kind::select,
+                    },
+            },
+            {
+                    {
+                            name::simple { "t" },
+                    },
+            },
+            {
+                    {
+                            name::simple { "u1" },
+                    },
+                    {
+                            name::simple { "u2" },
+                    },
+                    {
+                            name::simple { "u3" },
+                    },
+            },
     }));
 }
 

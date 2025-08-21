@@ -20,6 +20,8 @@ class view_definition;
 class sequence_definition;
 class schema_definition;
 class drop_statement;
+class grant_privilege_statement;
+class revoke_privilege_statement;
 
 /**
  * @brief represents a kind of SQL statements.
@@ -113,6 +115,18 @@ enum class kind {
     drop_schema_statement,
 
     /**
+     * @copydoc grant_privilege_statement
+     * @see grant_privilege_statement
+     */
+    grant_privilege_statement,
+
+    /**
+     * @copydoc revoke_privilege_statement
+     * @see revoke_privilege_statement
+     */
+    revoke_privilege_statement,
+
+    /**
      * @copydoc empty_statement
      * @see empty_statement
      */
@@ -180,6 +194,12 @@ template<> struct type_of<kind, kind::drop_sequence_statement> : ::takatori::uti
 /// @brief provides implementation type of kind::drop_schema_statement.
 template<> struct type_of<kind, kind::drop_schema_statement> : ::takatori::util::meta_type<drop_statement> {};
 
+/// @brief provides implementation type of kind::drop_schema_statement.
+template<> struct type_of<kind, kind::grant_privilege_statement> : ::takatori::util::meta_type<grant_privilege_statement> {};
+
+/// @brief provides implementation type of kind::drop_schema_statement.
+template<> struct type_of<kind, kind::revoke_privilege_statement> : ::takatori::util::meta_type<revoke_privilege_statement> {};
+
 /// @brief provides implementation type of kind::empty_statement.
 template<> struct type_of<kind, kind::empty_statement> : ::takatori::util::meta_type<empty_statement> {};
 
@@ -205,6 +225,8 @@ inline constexpr std::string_view to_string_view(kind value) noexcept {
         case kind::drop_view_statement: return "drop_view_statement"sv;
         case kind::drop_sequence_statement: return "drop_sequence_statement"sv;
         case kind::drop_schema_statement: return "drop_schema_statement"sv;
+        case kind::grant_privilege_statement: return "grant_privilege_statement"sv;
+        case kind::revoke_privilege_statement: return "revoke_privilege_statement"sv;
         case kind::empty_statement: return "empty_statement"sv;
     }
     std::abort();

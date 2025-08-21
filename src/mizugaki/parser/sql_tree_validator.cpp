@@ -327,6 +327,26 @@ public:
         return true;
     }
 
+    [[nodiscard]] bool operator()(ast::statement::grant_privilege_statement const& element, std::size_t depth) {
+        for (auto&& object : element.objects()) {
+            ACCEPT(object.object_name());
+        }
+        for (auto&& user : element.users()) { // NOLINT(*-use-anyofallof)
+            ACCEPT(user.authorization_identifier());
+        }
+        return true;
+    }
+
+    [[nodiscard]] bool operator()(ast::statement::revoke_privilege_statement const& element, std::size_t depth) {
+        for (auto&& object : element.objects()) {
+            ACCEPT(object.object_name());
+        }
+        for (auto&& user : element.users()) { // NOLINT(*-use-anyofallof)
+            ACCEPT(user.authorization_identifier());
+        }
+        return true;
+    }
+
     [[nodiscard]] bool operator()(ast::statement::column_definition const& element, std::size_t depth) {
         ACCEPT(element.name());
         ACCEPT(element.type());
