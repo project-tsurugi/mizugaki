@@ -256,6 +256,7 @@ TEST_F(analyze_statement_ddl_test, grant_table_simple) {
         ASSERT_EQ(as.size(), 1);
         {
             auto&& a = as[0];
+            EXPECT_EQ(a.user_kind(), tstatement::authorization_user_kind::specified);
             EXPECT_EQ(a.authorization_identifier(), "u");
 
             auto&& aps = a.privileges();
@@ -302,7 +303,9 @@ TEST_F(analyze_statement_ddl_test, grant_table_public) {
                     id("testing"),
             },
             {
-                    {},
+                    {
+                            ast::statement::privilege_user_kind::public_,
+                    },
             },
     });
     auto alternative = std::get_if<statement_result_type>(&r);
@@ -327,6 +330,54 @@ TEST_F(analyze_statement_ddl_test, grant_table_public) {
 
         auto&& as = e.authorization_entries();
         ASSERT_EQ(as.size(), 0);
+    }
+}
+
+TEST_F(analyze_statement_ddl_test, grant_table_current_user) {
+    auto table = install_table("testing");
+    auto r = analyze_statement(context(), ast::statement::grant_privilege_statement {
+            {
+                    { ast::statement::privilege_action_kind::all_privileges },
+            },
+            {
+                    id("testing"),
+            },
+            {
+                    {
+                            ast::statement::privilege_user_kind::current_user,
+                    },
+            },
+    });
+    auto alternative = std::get_if<statement_result_type>(&r);
+    ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
+    ASSERT_EQ((*alternative)->kind(), tstatement::statement_kind::grant_table);
+
+    auto&& stmt = downcast<tstatement::grant_table>(**alternative);
+    std::cout << stmt << std::endl;
+
+    auto&& elems = stmt.elements();
+    ASSERT_EQ(elems.size(), 1);
+
+    {
+        auto&& e = elems[0];
+        EXPECT_EQ(extract(e.table()), *table);
+
+        auto&& ps = e.default_privileges();
+        ASSERT_EQ(ps.size(), 0);
+
+        auto&& as = e.authorization_entries();
+        ASSERT_EQ(as.size(), 1);
+        {
+            auto&& a = as[0];
+            EXPECT_EQ(a.user_kind(), tstatement::authorization_user_kind::current_user);
+            EXPECT_EQ(a.authorization_identifier(), "");
+
+            auto&& aps = a.privileges();
+            ASSERT_EQ(aps.size(), 1);
+            EXPECT_EQ(aps[0].action_kind(), tstatement::table_action_kind::control);
+        }
     }
 }
 
@@ -647,6 +698,23 @@ TEST_F(analyze_statement_ddl_test, grant_mixed_objects) {
     });
 }
 
+TEST_F(analyze_statement_ddl_test, grant_table_all_users) {
+    auto table = install_table("testing");
+    invalid(sql_analyzer_code::malformed_syntax, ast::statement::grant_privilege_statement {
+            {
+                    { ast::statement::privilege_action_kind::all_privileges },
+            },
+            {
+                    id("testing"),
+            },
+            {
+                    {
+                            ast::statement::privilege_user_kind::all_users,
+                    },
+            },
+    });
+}
+
 TEST_F(analyze_statement_ddl_test, grant_schema) {
     invalid(sql_analyzer_code::unsupported_feature, ast::statement::grant_privilege_statement {
             {
@@ -698,11 +766,58 @@ TEST_F(analyze_statement_ddl_test, revoke_table_simple) {
         ASSERT_EQ(as.size(), 1);
         {
             auto&& a = as[0];
+            EXPECT_EQ(a.user_kind(), tstatement::authorization_user_kind::specified);
             EXPECT_EQ(a.authorization_identifier(), "u");
 
             auto&& aps = a.privileges();
             ASSERT_EQ(aps.size(), 1);
             EXPECT_EQ(aps[0].action_kind(), tstatement::table_action_kind::select);
+        }
+    }
+}
+
+TEST_F(analyze_statement_ddl_test, revoke_table_all_users) {
+    auto table = install_table("testing");
+    auto r = analyze_statement(context(), ast::statement::revoke_privilege_statement {
+            {
+                    { ast::statement::privilege_action_kind::all_privileges },
+            },
+            {
+                    id("testing"),
+            },
+            {
+                    {
+                            ast::statement::privilege_user_kind::all_users,
+                    },
+            },
+    });
+    auto alternative = std::get_if<statement_result_type>(&r);
+    ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
+    ASSERT_EQ((*alternative)->kind(), tstatement::statement_kind::revoke_table);
+
+    auto&& stmt = downcast<tstatement::revoke_table>(**alternative);
+    auto&& elems = stmt.elements();
+    ASSERT_EQ(elems.size(), 1);
+
+    {
+        auto&& e = elems[0];
+        EXPECT_EQ(extract(e.table()), *table);
+
+        auto&& ps = e.default_privileges();
+        ASSERT_EQ(ps.size(), 0);
+
+        auto&& as = e.authorization_entries();
+        ASSERT_EQ(as.size(), 1);
+        {
+            auto&& a = as[0];
+            EXPECT_EQ(a.user_kind(), tstatement::authorization_user_kind::all_users);
+            EXPECT_EQ(a.authorization_identifier(), "");
+
+            auto&& aps = a.privileges();
+            ASSERT_EQ(aps.size(), 1);
+            EXPECT_EQ(aps[0].action_kind(), tstatement::table_action_kind::control);
         }
     }
 }

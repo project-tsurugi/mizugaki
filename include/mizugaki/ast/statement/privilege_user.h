@@ -6,6 +6,8 @@
 #include <mizugaki/ast/common/clone_wrapper.h>
 #include <mizugaki/ast/name/simple.h>
 
+#include "privilege_user_kind.h"
+
 namespace mizugaki::ast::statement {
 
 /**
@@ -14,21 +16,29 @@ namespace mizugaki::ast::statement {
  */
 class privilege_user : public element {
 public:
+    /// @brief the user kind type
+    using user_kind_type = privilege_user_kind;
+
     /**
      * creates a new instance.
+     * @param user_kind the user kind
      * @param authorization_identifier the user identifier, or empty pointer if not specified
      * @param region the element region
      */
     explicit privilege_user(
+            user_kind_type user_kind,
             std::unique_ptr<name::simple> authorization_identifier,
             region_type region) noexcept;
 
     /**
      * creates a new instance.
+     * @param user_kind the user kind
      * @param region the element region
+     * @throws std::invalid_argument if `user_kind is privilege_user_kind::identifier
      */
     privilege_user( // NOLINT
-            region_type region = {}) noexcept;
+            user_kind_type user_kind = user_kind_type::all_users,
+            region_type region = {});
 
     /**
      * creates a new instance.
@@ -50,6 +60,15 @@ public:
      * @param other the move source
      */
     explicit privilege_user(::takatori::util::clone_tag_t, privilege_user&& other);
+
+    /**
+     * @brief returns the user kind of this element.
+     * @return the user kind
+     */
+    [[nodiscard]] user_kind_type& user_kind() noexcept;
+
+    /// @copydoc user_kind()
+    [[nodiscard]] user_kind_type const& user_kind() const noexcept;
 
     /**
      * @brief returns the user of this element.
@@ -90,6 +109,7 @@ public:
             privilege_user const& value);
 
 private:
+    user_kind_type user_kind_;
     common::clone_wrapper<std::unique_ptr<name::simple>> authorization_identifier_ {};
 };
 

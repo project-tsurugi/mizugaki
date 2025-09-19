@@ -2101,7 +2101,55 @@ TEST_F(sql_parser_statement_test, grant_privilege_statement_user_public) {
                     },
             },
             {
-                    {},
+                    {
+                            statement::privilege_user_kind::public_,
+                    },
+            },
+    }));
+}
+
+TEST_F(sql_parser_statement_test, grant_privilege_statement_user_asterisk) {
+    auto result = parse("GRANT SELECT ON t TO *");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::grant_privilege_statement {
+            {
+                    {
+                            statement::privilege_action_kind::select,
+                    },
+            },
+            {
+                    {
+                            name::simple { "t" },
+                    },
+            },
+            {
+                    {
+                            statement::privilege_user_kind::all_users,
+                    },
+            },
+    }));
+}
+
+TEST_F(sql_parser_statement_test, grant_privilege_statement_user_current_user) {
+    auto result = parse("GRANT SELECT ON t TO CURRENT_USER");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::grant_privilege_statement {
+            {
+                    {
+                            statement::privilege_action_kind::select,
+                    },
+            },
+            {
+                    {
+                            name::simple { "t" },
+                    },
+            },
+            {
+                    {
+                            statement::privilege_user_kind::current_user,
+                    },
             },
     }));
 }
@@ -2279,7 +2327,55 @@ TEST_F(sql_parser_statement_test, revoke_privilege_statement_user_public) {
                     },
             },
             {
-                    {},
+                    {
+                            statement::privilege_user_kind::public_,
+                    },
+            },
+    }));
+}
+
+TEST_F(sql_parser_statement_test, revoke_privilege_statement_user_asterisk) {
+    auto result = parse("REVOKE SELECT ON t FROM *");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::revoke_privilege_statement {
+            {
+                    {
+                            statement::privilege_action_kind::select,
+                    },
+            },
+            {
+                    {
+                            name::simple { "t" },
+                    },
+            },
+            {
+                    {
+                            statement::privilege_user_kind::all_users,
+                    },
+            },
+    }));
+}
+
+TEST_F(sql_parser_statement_test, revoke_privilege_statement_user_current_user) {
+    auto result = parse("REVOKE SELECT ON t FROM CURRENT_USER");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::revoke_privilege_statement {
+            {
+                    {
+                            statement::privilege_action_kind::select,
+                    },
+            },
+            {
+                    {
+                            name::simple { "t" },
+                    },
+            },
+            {
+                    {
+                            statement::privilege_user_kind::current_user,
+                    },
             },
     }));
 }

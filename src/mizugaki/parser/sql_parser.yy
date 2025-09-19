@@ -2163,16 +2163,35 @@ privilege_user_list
     ;
 
 privilege_user
-    : PUBLIC
+    : authorization_identifier[n]
         {
             $$ = ast::statement::privilege_user {
+                    ast::statement::privilege_user_kind::identifier,
+                    $n,
                     @$,
             };
         }
-    | authorization_identifier[n]
+    | PUBLIC
         {
             $$ = ast::statement::privilege_user {
-                    $n,
+                    ast::statement::privilege_user_kind::public_,
+                    nullptr,
+                    @$,
+            };
+        }
+    | CURRENT_USER
+        {
+            $$ = ast::statement::privilege_user {
+                    ast::statement::privilege_user_kind::current_user,
+                    nullptr,
+                    @$,
+            };
+        }
+    | "*"
+        {
+            $$ = ast::statement::privilege_user {
+                    ast::statement::privilege_user_kind::all_users,
+                    nullptr,
                     @$,
             };
         }

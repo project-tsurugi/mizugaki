@@ -37,7 +37,6 @@
 
 #include <yugawara/binding/extract.h>
 #include <yugawara/binding/factory.h>
-#include <yugawara/binding/table_column_info.h>
 
 #include <yugawara/storage/sequence.h>
 
@@ -1489,15 +1488,15 @@ public:
     }
 
     [[nodiscard]] result_type operator()(ast::statement::grant_privilege_statement const& stmt) {
-        return process_privilege<tstatement::grant_table>(stmt);
+        return process_privilege<tstatement::grant_table>(stmt, false);
     }
 
     [[nodiscard]] result_type operator()(ast::statement::revoke_privilege_statement const& stmt) {
-        return process_privilege<tstatement::revoke_table>(stmt);
+        return process_privilege<tstatement::revoke_table>(stmt, true);
     }
 
     template<class TTable, class TFrom>
-    [[nodiscard]] result_type process_privilege(TFrom const& stmt) {
+    [[nodiscard]] result_type process_privilege(TFrom const& stmt, bool accept_all_users) {
         if (stmt.actions().empty()) {
             context_.report(
                     sql_analyzer_code::malformed_syntax,
@@ -1528,7 +1527,7 @@ public:
         }
         switch (*object_kind) {
             case privilege_object_kind::table:
-                return process_table_privilege<TTable>(stmt);
+                return process_table_privilege<TTable>(stmt, accept_all_users);
             case privilege_object_kind::schema: // not supported
                 break;
         }
@@ -1565,7 +1564,7 @@ public:
     }
 
     template<class TTo, class TFrom>
-    [[nodiscard]] result_type process_table_privilege(TFrom const& stmt) {
+    [[nodiscard]] result_type process_table_privilege(TFrom const& stmt, bool accept_all_users) {
         std::vector<tstatement::details::table_privilege_element> elements {};
         elements.reserve(stmt.objects().size());
 
@@ -1590,7 +1589,8 @@ public:
             auto table_privilege = process_table_privilege(
                     std::move(table),
                     std::move(actions),
-                    stmt.users());
+                    stmt.users(),
+                    accept_all_users);
             if (!table_privilege) {
                 return {};
             }
@@ -1644,7 +1644,8 @@ public:
     [[nodiscard]] std::optional<tstatement::details::table_privilege_element> process_table_privilege(
             std::shared_ptr<::yugawara::storage::table const> table,
             std::vector<tstatement::details::table_privilege_action> actions,
-            std::vector<ast::statement::privilege_user> const& users) {
+            std::vector<ast::statement::privilege_user> const& users,
+            bool accept_all_users) {
 
         std::vector<tstatement::details::table_privilege_action> defaults {};
         std::vector<tstatement::details::table_authorization_entry> entries {};
@@ -1653,22 +1654,41 @@ public:
         ::tsl::hopscotch_set<std::string> saw_users { users.size() };
 
         for (auto&& user : users) {
-            if (auto&& id = user.authorization_identifier()) {
-                // for individual users
-                if (saw_users.find(id->identifier()) != saw_users.end()) {
-                    // skip duplicated users
-                    continue;
+            using kind = ast::statement::privilege_user_kind;
+            switch (user.user_kind()) {
+                case kind::identifier: {
+                    auto&& id = user.authorization_identifier();
+                    if (saw_users.find(id->identifier()) != saw_users.end()) {
+                        // skip duplicated users
+                        continue;
+                    }
+                    saw_users.insert(id->identifier());
+                    entries.emplace_back(tstatement::authorization_user_kind::specified, id->identifier(), actions);
+                    break;
                 }
-                saw_users.insert(id->identifier());
-                auto entry = tstatement::details::table_authorization_entry {
-                    id->identifier(),
-                    actions,
-                };
-                entries.emplace_back(id->identifier(), actions);
-            } else {
-                // for PUBLIC
-                if (defaults.empty()) {
-                    defaults = actions;
+
+                case kind::public_: {
+                    if (defaults.empty()) {
+                        defaults = actions;
+                    }
+                    break;
+                }
+
+                case kind::all_users: {
+                    if (!accept_all_users) {
+                        context_.report(
+                                sql_analyzer_code::malformed_syntax,
+                                "control privileges for all users (*) are not permitted here",
+                                user.region());
+                        return {};
+                    }
+                    entries.emplace_back(tstatement::authorization_user_kind::all_users, "", actions);
+                    break;
+                }
+
+                case kind::current_user: {
+                    entries.emplace_back(tstatement::authorization_user_kind::current_user, "", actions);
+                    break;
                 }
             }
         }
