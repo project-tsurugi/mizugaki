@@ -20,6 +20,8 @@ enum class comparison_operator {
     equals,
     /// @brief `<>`
     not_equals,
+    /// @brief `!=`
+    not_equals_alternative,
     /// @brief `<`
     less_than,
     /// @brief `>`
@@ -47,6 +49,7 @@ inline constexpr std::string_view to_string_view(comparison_operator value) noex
     switch (value) {
         case kind::equals: return "equals"sv;
         case kind::not_equals: return "not_equals"sv;
+        case kind::not_equals_alternative: return "not_equals_alternative"sv;
         case kind::less_than: return "less_than"sv;
         case kind::greater_than: return "greater_than"sv;
         case kind::less_than_or_equals: return "less_than_or_equals"sv;

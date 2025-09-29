@@ -199,6 +199,17 @@ TEST_F(sql_parser_predicate_test, comparison_predicate_ne) {
     }));
 }
 
+TEST_F(sql_parser_predicate_test, comparison_predicate_ne_alternative) {
+    auto result = parse("a != b");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (scalar::comparison_predicate {
+            v("a"),
+            scalar::comparison_operator::not_equals_alternative,
+            v("b"),
+    }));
+}
+
 TEST_F(sql_parser_predicate_test, comparison_predicate_lt) {
     auto result = parse("a < b");
     ASSERT_TRUE(result) << diagnostics(result);
