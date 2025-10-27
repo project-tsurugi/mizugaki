@@ -300,6 +300,7 @@
 
 /* <delimiter token> */
 %token NOT_EQUALS_OPERATOR "<>"
+%token NOT_EQUALS_ALTERNATIVE_OPERATOR "!="
 %token GREATER_THAN_OR_EQUALS_OPERATOR ">="
 %token LESS_THAN_OR_EQUALS_OPERATOR "<="
 %token CONCATENATION_OPERATOR "||"
@@ -3041,6 +3042,10 @@ comparison_operator
     | "<>"
         {
             $$ = { ast::scalar::comparison_operator::not_equals, @$ };
+        }
+    | "!="
+        {
+            $$ = { ast::scalar::comparison_operator::not_equals_alternative, @$ };
         }
     | "<"
         {

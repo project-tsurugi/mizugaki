@@ -127,6 +127,7 @@ UTF8_CHAR {ASCII}|{UTF8_2}{U}|{UTF8_3}{U}{U}|{UTF8_4}{U}{U}{U}
 {dot_asterisk} { TRACE_RETURN parser_type::make_DOT_ASTERISK(location()); }
 
 "<>" { TRACE_RETURN parser_type::make_NOT_EQUALS_OPERATOR(location()); }
+"!=" { TRACE_RETURN parser_type::make_NOT_EQUALS_ALTERNATIVE_OPERATOR(location()); }
 ">=" { TRACE_RETURN parser_type::make_GREATER_THAN_OR_EQUALS_OPERATOR(location()); }
 "<=" { TRACE_RETURN parser_type::make_LESS_THAN_OR_EQUALS_OPERATOR(location()); }
 "||" { TRACE_RETURN parser_type::make_CONCATENATION_OPERATOR(location()); }

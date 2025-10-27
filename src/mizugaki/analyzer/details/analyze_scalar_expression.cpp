@@ -467,6 +467,7 @@ public:
             case from::equals:
                 return to::equal;
             case from::not_equals:
+            case from::not_equals_alternative:
                 return to::not_equal;
             case from::less_than:
                 return to::less;

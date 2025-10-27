@@ -110,6 +110,28 @@ TEST_F(analyze_scalar_expression_predicate_test, comparison_predicate_not_equals
     }));
 }
 
+TEST_F(analyze_scalar_expression_predicate_test, comparison_predicate_not_equals_alternative) {
+    auto from = ast::scalar::comparison_operator::not_equals_alternative;
+    auto to = tscalar::comparison_operator::not_equal;
+    auto r = analyze_scalar_expression(
+            context(),
+            ast::scalar::comparison_predicate {
+                    literal(number("1")),
+                    from,
+                    literal(number("2")),
+            },
+            {},
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
+    EXPECT_EQ(*r, (tscalar::compare {
+            to,
+            immediate(1),
+            immediate(2),
+    }));
+}
+
 TEST_F(analyze_scalar_expression_predicate_test, comparison_predicate_less_than) {
     auto from = ast::scalar::comparison_operator::less_than;
     auto to = tscalar::comparison_operator::less;
