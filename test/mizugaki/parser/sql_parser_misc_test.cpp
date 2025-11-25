@@ -207,16 +207,20 @@ TEST_F(sql_parser_misc_test, null_in_string_literal) {
 
 TEST_F(sql_parser_misc_test, null_in_delimited_identifier) {
     sql_parser parser;
-    auto result = parser("-", "VALUES (\"\0 NUL\")"s);
-    ASSERT_TRUE(result) << diagnostics(result);
+    auto result = parser("-", "VALUES (\"\x00 NUL\")"s);
+    EXPECT_FALSE(result) << diagnostics(result);
+}
 
-    EXPECT_EQ(extract(result), (query::table_value_constructor {
-            scalar::value_constructor {
-                    scalar::variable_reference {
-                            name::simple { "\0 NUL"s, name::identifier_kind::delimited },
-                    }
-            },
-    }));
+TEST_F(sql_parser_misc_test, u001f_in_delimited_identifier) {
+    sql_parser parser;
+    auto result = parser("-", "VALUES (\"\x1F US\")"s);
+    EXPECT_FALSE(result) << diagnostics(result);
+}
+
+TEST_F(sql_parser_misc_test, u007f_in_delimited_identifier) {
+    sql_parser parser;
+    auto result = parser("-", "VALUES (\"\x7F DEL\")"s);
+    EXPECT_FALSE(result) << diagnostics(result);
 }
 
 } // namespace mizugaki::parser
