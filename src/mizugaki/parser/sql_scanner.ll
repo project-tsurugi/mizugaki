@@ -34,7 +34,7 @@ delimited_identifier {double_quote}{delimited_identifier_body}{double_quote}
 delimited_identifier_body {delimited_identifier_part}+
 delimited_identifier_part ({nondoublequote_character}|{doublequote_symbol})
 double_quote \"
-nondoublequote_character [^\"]
+nondoublequote_character [^\"\x00-\x1F\x7F]
 doublequote_symbol {double_quote}{double_quote}
 
 /* <character string literal> */
