@@ -5,13 +5,22 @@
 #include <string>
 #include <string_view>
 
+#include <takatori/type/int.h>
+#include <takatori/type/decimal.h>
+#include <takatori/type/character.h>
+
 #include <takatori/serializer/json_printer.h>
 #include <takatori/serializer/object_acceptor.h>
+
+#include <takatori/util/optional_ptr.h>
 
 #include <yugawara/compiler.h>
 #include <yugawara/compiler_options.h>
 #include <yugawara/compiler_result.h>
 #include <yugawara/compiled_info.h>
+
+#include <yugawara/variable/configurable_provider.h>
+#include <yugawara/variable/declaration.h>
 
 #include <mizugaki/parser/sql_parser.h>
 #include <mizugaki/parser/sql_parser_options.h>
@@ -32,12 +41,53 @@ static parser::sql_parser_result parse(std::string path, std::string source, par
     return result;
 }
 
+static std::shared_ptr<::yugawara::variable::configurable_provider> parse_variables(std::string const& sequence) {
+    auto result = std::make_shared<::yugawara::variable::configurable_provider>();
+
+    // parse name:type pairs separated by ','
+    std::size_t start = 0;
+    while (start < sequence.size()) {
+        auto end = sequence.find(',', start);
+        if (end == std::string::npos) {
+            end = sequence.size();
+        }
+        // separate name and type by ':'
+        auto pair = sequence.substr(start, end - start);
+        auto equal_pos = pair.find(':');
+        if (equal_pos != std::string::npos) {
+            auto key = pair.substr(0, equal_pos);
+            auto value = pair.substr(equal_pos + 1);
+            for (auto& c : value) {
+                if ('A' <= c && c <= 'Z') {
+                    c = static_cast<char>(c - 'A' + 'a');
+                }
+            }
+            if (value == "int4" || value == "int" || value == "integer") {
+                result->add({ key, ::takatori::type::int4 {} });
+            } else if (value == "int8" || value == "bigint" || value == "bigingeger") {
+                result->add({ key, ::takatori::type::int8 {} });
+            } else if (value == "decimal") {
+                result->add({ key, ::takatori::type::decimal {} });
+            } else if (value == "varchar") {
+                result->add({ key, ::takatori::type::character { ::takatori::type::varying, {} } });
+            } else {
+                throw std::runtime_error("unsupported placeholder type: " + value);
+            }
+        } else {
+            throw std::runtime_error("invalid placeholder definition: " + pair);
+        }
+        start = end + 1;
+    }
+    return result;
+}
+
 static analyzer::sql_analyzer_result analyze(
         ast::statement::statement const& statement,
         ast::compilation_unit const& source,
-        analyzer::sql_analyzer_options const& options) {
+        analyzer::sql_analyzer_options const& options,
+        ::yugawara::variable::provider const& variables) {
     analyzer::sql_analyzer engine {};
-    auto result = engine(options, statement, source);
+    auto result = engine(options, statement, source, {}, variables);
     return result;
 }
 
@@ -66,8 +116,9 @@ DEFINE_bool(echo, false, "prints the source SQL"); // NOLINT
 DEFINE_bool(quiet, false, "only show diagnostic erroneous"); // NOLINT
 DEFINE_string(file, "", "input file path"); // NOLINT
 DEFINE_string(text, "", "input text"); // NOLINT
+DEFINE_string(placeholders, "", "placeholder definitions (name:type, separated by ,)"); // NOLINT
 
-int main(int argc, char* argv[]) {
+int main(int argc, char* argv[]) noexcept(false) {
     gflags::SetUsageMessage("mizugaki SQL parser CLI");
     gflags::ParseCommandLineFlags(&argc, &argv, true);
 
@@ -94,6 +145,8 @@ int main(int argc, char* argv[]) {
         ifs.close();
     }
 
+    auto variables = parse_variables(FLAGS_placeholders);
+
     // parse
     auto parser_opts = parser_options();
     auto parser_result = parse(std::move(path), std::move(source), std::move(parser_opts));
@@ -118,7 +171,7 @@ int main(int argc, char* argv[]) {
         }
 
         auto analyzer_opts = analyzer_options(schema);
-        auto analyzer_result = analyze(*statement, *compilation_unit, analyzer_opts);
+        auto analyzer_result = analyze(*statement, *compilation_unit, analyzer_opts, *variables);
 
         ::yugawara::compiler_result compiler_result {};
         switch (analyzer_result.kind()) {

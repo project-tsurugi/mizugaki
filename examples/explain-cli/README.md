@@ -18,6 +18,14 @@ Available options:
   * compile the given text
 * `-file <source file>`
   * compile the content of the given file
+* `-placeholders <placeholder definitions>`
+  * define placeholders for the SQL statements
+  * format: `<name1>=<type1>,<name2>=<type2>,...`
+  * available types:
+    * `int`
+    * `bigint`
+    * `decimal`
+    * `varchar`
 * `-echo`
   * print the processing SQL snippet
 * `-quiet`
