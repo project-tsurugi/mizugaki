@@ -8,8 +8,8 @@ find_path(mpdecpp_INCLUDE_DIR NAMES decimal.hh)
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(mpdecpp DEFAULT_MSG
-    mpdec_LIBRARY_FILE
     mpdecpp_LIBRARY_FILE
+    mpdec_LIBRARY_FILE
     mpdecpp_INCLUDE_DIR)
 
 if(mpdec_LIBRARY_FILE AND mpdecpp_LIBRARY_FILE AND mpdecpp_INCLUDE_DIR)
