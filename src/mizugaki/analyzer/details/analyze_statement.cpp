@@ -970,6 +970,13 @@ public:
                     return {};
                 }
                 auto&& function = ::yugawara::binding::extract_shared(value.function());
+                if (!function->features().contains(::yugawara::function::function_feature::scalar_function)) {
+                    context_.report(
+                            sql_analyzer_code::inconsistent_function_type,
+                            "function call in default value must be a scalar function",
+                            constraint.expression()->region());
+                    return {};
+                }
                 return ::yugawara::storage::column_value { std::move(function) };
             }
             case kind::cast:

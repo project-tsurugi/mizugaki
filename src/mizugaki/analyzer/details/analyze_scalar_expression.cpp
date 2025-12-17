@@ -762,6 +762,10 @@ public:
         std::vector<std::shared_ptr<::yugawara::function::declaration const>> function_candidates {};
         function_candidates.reserve(function_list.size());
         for (auto&& function: function_list) {
+            // remove non-scalar functions to prevent overloading resolution to other functional types
+            if (!function->features().contains(::yugawara::function::function_feature::scalar_function)) {
+                continue;
+            }
             if (is_applicable(argument_types, function->shared_parameter_types())) {
                 function_candidates.emplace_back(function);
             }
@@ -865,7 +869,8 @@ public:
                     function_name,
                     expr.arguments().size(),
                     [&](std::shared_ptr<::yugawara::function::declaration const> const& ptr) -> void {
-                        if (is_applicable(argument_types, ptr->shared_parameter_types())) {
+                        if (ptr->features().contains(::yugawara::function::function_feature::scalar_function) &&
+                                is_applicable(argument_types, ptr->shared_parameter_types())) {
                             candidates.emplace_back(ptr);
                         }
                     });

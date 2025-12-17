@@ -132,6 +132,7 @@ sql_analyzer_code analyzer_context::convert_code(
         case kind::inconsistent_type: return sql_analyzer_code::inconsistent_type;
         case kind::unresolved_variable: return sql_analyzer_code::unresolved_variable;
         case kind::inconsistent_elements: return sql_analyzer_code::inconsistent_elements;
+        case kind::inconsistent_function_type: return sql_analyzer_code::function_not_found;
     }
     return sql_analyzer_code::unknown;
 }

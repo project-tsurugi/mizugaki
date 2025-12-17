@@ -120,6 +120,8 @@ enum class sql_analyzer_code {
     unresolved_variable,
     /// @brief the number of values is wrong (internal error).
     inconsistent_elements,
+    /// @brief there is no such the function (internal error).
+    inconsistent_function_type,
 };
 
 /**
@@ -190,6 +192,7 @@ inline constexpr std::string_view to_string_view(sql_analyzer_code value) noexce
         case kind::inconsistent_type: return "inconsistent_type"sv;
         case kind::unresolved_variable: return "unresolved_variable"sv;
         case kind::inconsistent_elements: return "inconsistent_elements"sv;
+        case kind::inconsistent_function_type: return "inconsistent_function_type"sv;
     }
     std::abort();
 }
