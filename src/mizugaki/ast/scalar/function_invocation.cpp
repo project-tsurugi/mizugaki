@@ -3,6 +3,7 @@
 #include <takatori/util/clonable.h>
 
 #include <mizugaki/ast/common/serializers.h>
+#include <mizugaki/ast/common/vector.h>
 
 #include <mizugaki/ast/compare_utils.h>
 

@@ -1,9 +1,10 @@
 #pragma once
 
+#include <vector>
+
 #include <takatori/util/clone_tag.h>
 
 #include <mizugaki/ast/common/rvalue_list.h>
-#include <mizugaki/ast/common/vector.h>
 #include <mizugaki/ast/name/name.h>
 
 #include "expression.h"
@@ -38,7 +39,7 @@ public:
      * @param name the function name
      * @param arguments the function arguments
      * @param region the node region
-     * @attention this will take
+     * @attention this will take copy of arguments
      */
     explicit function_invocation(
             name::name&& name,
