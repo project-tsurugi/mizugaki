@@ -797,6 +797,15 @@ public:
         return result.output();
     }
 
+    [[nodiscard]] optional_ptr<output_port> operator()(
+            ast::table::apply const& expr,
+            query_scope& scope) {
+        // FIXME: impl
+        (void) expr;
+        (void) scope;
+        std::abort();
+    }
+
     // select_element
 
     struct select_element_result {

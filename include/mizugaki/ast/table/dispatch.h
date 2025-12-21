@@ -9,6 +9,7 @@
 #include <mizugaki/ast/table/unnest.h>
 #include <mizugaki/ast/table/join.h>
 #include <mizugaki/ast/table/subquery.h>
+#include <mizugaki/ast/table/apply.h>
 
 #include <mizugaki/ast/table/join_specification.h>
 #include <mizugaki/ast/table/join_condition.h>
@@ -65,6 +66,7 @@ inline auto dispatch(Callback&& callback, E&& object, Args&&... args) {
             case unnest::tag: return polymorphic_callback<unnest>(std::forward<Callback>(callback), std::forward<E>(object), std::forward<Args>(args)...);
             case join::tag: return polymorphic_callback<join>(std::forward<Callback>(callback), std::forward<E>(object), std::forward<Args>(args)...);
             case subquery::tag: return polymorphic_callback<subquery>(std::forward<Callback>(callback), std::forward<E>(object), std::forward<Args>(args)...);
+            case apply::tag: return polymorphic_callback<apply>(std::forward<Callback>(callback), std::forward<E>(object), std::forward<Args>(args)...);
         }
         impl::unsupported(object);
     } else if constexpr (std::is_base_of_v<join_specification, std::remove_const_t<std::remove_reference_t<E>>>) { // NOLINT

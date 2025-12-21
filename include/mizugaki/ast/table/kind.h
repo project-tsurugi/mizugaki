@@ -13,6 +13,7 @@ class table_reference;
 class unnest;
 class join;
 class subquery;
+class apply;
 
 /**
  * @brief represents a kind of table expression.
@@ -42,13 +43,19 @@ enum class kind {
      * @see subquery
      */
     subquery,
+
+    /**
+     * @copydoc apply
+     * @see apply
+     */
+    apply,
 };
 
 /// @brief set of table expression kind.
 using kind_set = ::takatori::util::enum_set<
         kind,
         kind::table_reference,
-        kind::subquery>;
+        kind::apply>;
 
 /**
  * @brief provides the implementation type of the table expression kind.
@@ -75,18 +82,22 @@ template<> struct type_of<kind, kind::join> : ::takatori::util::meta_type<join> 
 /// @brief provides implementation type of kind::subquery.
 template<> struct type_of<kind, kind::subquery> : ::takatori::util::meta_type<subquery> {};
 
+/// @brief provides implementation type of kind::apply.
+template<> struct type_of<kind, kind::apply> : ::takatori::util::meta_type<apply> {};
+
 /**
  * @brief returns string representation of the value.
  * @param value the target value
  * @return the corresponded string representation
  */
-inline constexpr std::string_view to_string_view(kind value) noexcept {
+constexpr std::string_view to_string_view(kind value) noexcept {
     using namespace std::string_view_literals;
     switch (value) {
         case kind::table_reference: return "table_reference"sv;
         case kind::unnest: return "unnest"sv;
         case kind::join: return "join"sv;
         case kind::subquery: return "subquery"sv;
+        case kind::apply: return "apply"sv;
     }
     std::abort();
 }

@@ -108,6 +108,7 @@ add_library(mizugaki
     mizugaki/ast/table/join.cpp
     mizugaki/ast/table/unnest.cpp
     mizugaki/ast/table/subquery.cpp
+    mizugaki/ast/table/apply.cpp
     mizugaki/ast/table/join_specification.cpp
     mizugaki/ast/table/join_condition.cpp
     mizugaki/ast/table/join_columns.cpp

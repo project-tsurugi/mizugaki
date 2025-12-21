@@ -494,6 +494,14 @@ public:
         return true;
     }
 
+    [[nodiscard]] bool operator()(ast::table::apply const& element, std::size_t depth) {
+        ACCEPT(element.name());
+        ACCEPT(element.arguments());
+        ACCEPT(element.correlation().correlation_name());
+        ACCEPT(element.correlation().column_names()); // NOLINT(*-simplify-boolean-expr)
+        return true;
+    }
+
     [[nodiscard]] bool operator()(ast::table::join_condition const& element, std::size_t depth) {
         ACCEPT(element.expression()); // NOLINT(*-simplify-boolean-expr)
         return true;
