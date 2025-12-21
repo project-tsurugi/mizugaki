@@ -4,9 +4,6 @@
 #include <takatori/util/rvalue_ptr.h>
 
 #include <mizugaki/ast/common/regioned.h>
-#include <mizugaki/ast/name/simple.h>
-#include <mizugaki/ast/scalar/expression.h>
-#include <mizugaki/ast/query/expression.h>
 
 #include "expression.h"
 #include "join_type.h"

@@ -3,8 +3,6 @@
 #include <takatori/util/clone_tag.h>
 
 #include <mizugaki/ast/element.h>
-#include <mizugaki/ast/common/clone_wrapper.h>
-#include <mizugaki/ast/name/name.h>
 #include <mizugaki/ast/scalar/expression.h>
 
 #include "join_specification.h"
