@@ -12,6 +12,7 @@
 #include <mizugaki/ast/table/unnest.h>
 #include <mizugaki/ast/table/join.h>
 #include <mizugaki/ast/table/subquery.h>
+#include <mizugaki/ast/table/apply.h>
 #include <mizugaki/ast/table/join_condition.h>
 #include <mizugaki/ast/table/join_columns.h>
 
@@ -333,6 +334,146 @@ TEST_F(sql_parser_table_test, union_join) {
                     name::simple { "T1" },
             },
     }));
+}
+
+TEST_F(sql_parser_table_test, apply) {
+        auto result = parse("T0 APPLY f(A) x");
+        ASSERT_TRUE(result) << diagnostics(result);
+
+        EXPECT_EQ(extract(result), (table::apply {
+                table::table_reference {
+                        name::simple { "T0" },
+                },
+                name::simple { "f" },
+                {
+                        scalar::variable_reference {
+                                name::simple { "A" },
+                        },
+                },
+                {
+                        name::simple { "x" },
+                },
+        }));
+}
+
+TEST_F(sql_parser_table_test, apply_arguments) {
+        auto result = parse("T0 APPLY f(A, B, C) x");
+        ASSERT_TRUE(result) << diagnostics(result);
+
+        EXPECT_EQ(extract(result), (table::apply {
+                table::table_reference {
+                        name::simple { "T0" },
+                },
+                name::simple { "f" },
+                {
+                        scalar::variable_reference {
+                                name::simple { "A" },
+                        },
+                        scalar::variable_reference {
+                                name::simple { "B" },
+                        },
+                        scalar::variable_reference {
+                                name::simple { "C" },
+                        },
+                },
+                {
+                        name::simple { "x" },
+                },
+        }));
+}
+
+TEST_F(sql_parser_table_test, apply_cross) {
+        auto result = parse("T0 CROSS APPLY f(A) x");
+        ASSERT_TRUE(result) << diagnostics(result);
+
+        EXPECT_EQ(extract(result), (table::apply {
+                table::table_reference {
+                        name::simple { "T0" },
+                },
+                name::simple { "f" },
+                {
+                        scalar::variable_reference {
+                                name::simple { "A" },
+                        },
+                },
+                {
+                        name::simple { "x" },
+                },
+                {
+                        ast::table::apply_type::cross,
+                }
+        }));
+}
+
+TEST_F(sql_parser_table_test, apply_outer) {
+        auto result = parse("T0 OUTER APPLY f(A) x");
+        ASSERT_TRUE(result) << diagnostics(result);
+
+        EXPECT_EQ(extract(result), (table::apply {
+                table::table_reference {
+                        name::simple { "T0" },
+                },
+                name::simple { "f" },
+                {
+                        scalar::variable_reference {
+                                name::simple { "A" },
+                        },
+                },
+                {
+                        name::simple { "x" },
+                },
+                {
+                        ast::table::apply_type::outer,
+                }
+        }));
+}
+
+TEST_F(sql_parser_table_test, apply_correlation_as) {
+        auto result = parse("T0 CROSS APPLY f(A) AS x");
+        ASSERT_TRUE(result) << diagnostics(result);
+
+        EXPECT_EQ(extract(result), (table::apply {
+                table::table_reference {
+                        name::simple { "T0" },
+                },
+                name::simple { "f" },
+                {
+                        scalar::variable_reference {
+                                name::simple { "A" },
+                        },
+                },
+                {
+                        name::simple { "x" },
+                },
+                {
+                        ast::table::apply_type::cross,
+                }
+        }));
+}
+
+TEST_F(sql_parser_table_test, apply_correlation_columns) {
+        auto result = parse("T0 APPLY f(A) x(a, b, c)");
+        ASSERT_TRUE(result) << diagnostics(result);
+
+        EXPECT_EQ(extract(result), (table::apply {
+                table::table_reference {
+                        name::simple { "T0" },
+                },
+                name::simple { "f" },
+                {
+                        scalar::variable_reference {
+                                name::simple { "A" },
+                        },
+                },
+                {
+                        name::simple { "x" },
+                        {
+                                name::simple { "a" },
+                                name::simple { "b" },
+                                name::simple { "c" },
+                        }
+                },
+        }));
 }
 
 } // namespace mizugaki::parser

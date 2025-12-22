@@ -65,6 +65,7 @@ exponent {signed_integer}
 
 /* special phrases */
 union_join "UNION"{space}+"JOIN"
+outer_apply "OUTER"{space}+"APPLY"
 dot_asterisk "."{space}*"*"
 
 host_parameter_name ":"{identifier}
@@ -123,6 +124,8 @@ UTF8_CHAR {ASCII}|{UTF8_2}{U}|{UTF8_3}{U}{U}|{UTF8_4}{U}{U}{U}
 }
 
 {union_join} { TRACE_RETURN parser_type::make_UNION_JOIN(location()); }
+
+{outer_apply} { TRACE_RETURN parser_type::make_OUTER_APPLY(location()); }
 
 {dot_asterisk} { TRACE_RETURN parser_type::make_DOT_ASTERISK(location()); }
 
@@ -455,6 +458,8 @@ UTF8_CHAR {ASCII}|{UTF8_2}{U}|{UTF8_3}{U}{U}|{UTF8_4}{U}{U}{U}
 "BIT_OR" { TRACE_RETURN parser_type::make_BOOL_OR(location()); }
 "BOOL_AND" { TRACE_RETURN parser_type::make_BOOL_AND(location()); }
 "BOOL_OR" { TRACE_RETURN parser_type::make_BOOL_OR(location()); }
+
+"APPLY" { TRACE_RETURN parser_type::make_APPLY(location()); }
 
 {identifier} {
     auto token = get_image(driver);

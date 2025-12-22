@@ -63,6 +63,7 @@
     #include <mizugaki/ast/table/unnest.h>
     #include <mizugaki/ast/table/join.h>
     #include <mizugaki/ast/table/subquery.h>
+    #include <mizugaki/ast/table/apply.h>
     #include <mizugaki/ast/table/join_condition.h>
     #include <mizugaki/ast/table/join_columns.h>
 
@@ -784,8 +785,11 @@
 %token BOOL_AND "BOOL_AND"
 %token BOOL_OR "BOOL_OR"
 
+%token APPLY "APPLY"
+
 %token DOT_ASTERISK ". *"
 %token UNION_JOIN "UNION JOIN"
+%token OUTER_APPLY "OUTER APPLY"
 
 %token <ast::common::chars> REGULAR_IDENTIFIER
 %token <ast::common::chars> DELIMITED_IDENTIFIER
@@ -902,6 +906,8 @@
 %nterm <regioned<ast::table::join_type>> natural_join_type
 %nterm <node_ptr<ast::table::join_specification>> join_specification
 
+%nterm <std::optional<regioned<ast::table::apply_type>>> apply_type
+
 %nterm <node_vector<ast::table::expression>> table_reference_list
 %nterm <node_ptr<ast::table::expression>> table_reference
 %nterm <node_ptr<ast::table::expression>> table_primary
@@ -994,6 +1000,7 @@
 %nterm <node_ptr<ast::name::name>> schema_name
 %nterm <node_ptr<ast::name::name>> schema_name_opt
 %nterm <node_ptr<ast::name::name>> constraint_name
+%nterm <node_ptr<ast::name::name>> function_name
 %nterm <node_ptr<ast::name::simple>> column_name
 %nterm <node_ptr<ast::name::simple>> field_name
 %nterm <node_ptr<ast::name::simple>> cursor_name
@@ -2634,6 +2641,17 @@ table_reference
                     nullptr,
                     @$);
         }
+    | table_reference[l] apply_type[t] function_name[f] routine_invocation_arguments[a] correlation_clause[c]
+        {
+            // WIP: sr conflict
+            $$ = driver.node<ast::table::apply>(
+                    $l,
+                    $t,
+                    $f,
+                    $a,
+                    $c,
+                    @$);
+        }
     | table_primary[t]
         {
             $$ = $t;
@@ -2718,6 +2736,21 @@ join_specification
     | USING "(" column_name_list[c] ")"
         {
             $$ = driver.node<ast::table::join_columns>($c, @$);
+        }
+    ;
+
+apply_type
+    : APPLY
+        {
+            $$ = std::nullopt;
+        }
+    | CROSS[t] APPLY
+        {
+            $$ = regioned { ast::table::apply_type::cross, @t };
+        }
+    | OUTER_APPLY[t]
+        {
+            $$ = regioned { ast::table::apply_type::outer, @t(0, 5) };
         }
     ;
 
@@ -4568,6 +4601,13 @@ correlation_name
     ;
 
 constraint_name
+    : identifier_chain[n]
+        {
+            $$ = $n;
+        }
+    ;
+
+function_name
     : identifier_chain[n]
         {
             $$ = $n;
