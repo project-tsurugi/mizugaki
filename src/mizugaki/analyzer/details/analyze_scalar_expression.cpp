@@ -20,6 +20,7 @@
 
 #include <takatori/util/string_builder.h>
 #include <takatori/util/downcast.h>
+#include <takatori/util/exception.h>
 
 #include <yugawara/binding/factory.h>
 #include <yugawara/type/conversion.h>
@@ -1069,10 +1070,11 @@ public:
         return true;
     }
 
-    template<class TDecl, class TNode>
-    [[nodiscard]] std::shared_ptr<TDecl> resolve_overload(
-            TNode const& title,
-            std::vector<std::shared_ptr<TDecl>> const& candidates) {
+    template<class TDecl>
+    [[nodiscard]] static std::shared_ptr<TDecl> resolve_overload(
+            analyzer_context& context,
+            std::vector<std::shared_ptr<TDecl>> const& candidates,
+            ast::node_region region) {
         std::size_t left_idx = 0;
         for (std::size_t right_idx = 1, n = candidates.size(); right_idx < n; ++right_idx) {
             auto const* left = candidates[left_idx].get();
@@ -1087,10 +1089,10 @@ public:
                 append_string(builder, left->shared_parameter_types());
                 builder << " and ";
                 append_string(builder, right->shared_parameter_types());
-                context_.report(
+                context.report(
                         sql_analyzer_code::function_ambiguous,
                         builder << string_builder::to_string,
-                        title.region());
+                        region);
                 return {};
             }
             if (reverse_applicable) {
@@ -1098,6 +1100,13 @@ public:
             }
         }
         return candidates[left_idx];
+    }
+
+    template<class TDecl, class TNode>
+    [[nodiscard]] std::shared_ptr<TDecl> resolve_overload(
+            TNode const& title,
+            std::vector<std::shared_ptr<TDecl>> const& candidates) {
+        return resolve_overload(context_, candidates, title.region());
     }
 
     static void append_string(
@@ -1225,4 +1234,19 @@ result_type analyze_scalar_expression(
     return e.process(expression, value_context);
 }
 
+bool is_parameter_applicable(
+        std::vector<std::shared_ptr<takatori::type::data const>> const& arguments,
+        std::vector<std::shared_ptr<takatori::type::data const>> const& parameters) {
+    return engine::is_applicable(arguments, parameters);
+}
+
+std::shared_ptr<yugawara::function::declaration const> resolve_function_overload(
+        analyzer_context& context,
+        std::vector<std::shared_ptr<yugawara::function::declaration const>> const& functions,
+        ast::node_region region) {
+    if (functions.empty()) {
+        ::takatori::util::throw_exception(std::runtime_error { "empty function candidates" });
+    }
+    return engine::resolve_overload(context, functions, region);
+}
 } // namespace mizugaki::analyzer::details

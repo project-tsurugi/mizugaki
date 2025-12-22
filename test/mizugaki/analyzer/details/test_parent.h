@@ -30,6 +30,8 @@
 
 namespace mizugaki::analyzer::details {
 
+using namespace ::mizugaki::analyzer::testing;
+
 class test_parent : public ::testing::Test {
 public:
     test_parent();

@@ -40,7 +40,7 @@ finalizer analyzer_context::initialize(
     expression_analyzer_.clear_diagnostics();
     expression_analyzer_.variables().clear();
     expression_analyzer_.expressions().clear();
-    expression_analyzer_.allow_unresolved(true);
+    expression_analyzer_.allow_unresolved(false);
 
     return f;
 }

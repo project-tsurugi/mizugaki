@@ -5,6 +5,8 @@
 
 #include <tsl/hopscotch_set.h>
 
+#include <takatori/type/table.h>
+
 #include <takatori/value/primitive.h>
 
 #include <takatori/scalar/immediate.h>
@@ -16,6 +18,7 @@
 #include <takatori/relation/values.h>
 #include <takatori/relation/filter.h>
 #include <takatori/relation/project.h>
+#include <takatori/relation/apply.h>
 
 #include <takatori/relation/intermediate/join.h>
 #include <takatori/relation/intermediate/distinct.h>
@@ -38,6 +41,7 @@
 
 #include <mizugaki/analyzer/details/analyze_name.h>
 #include <mizugaki/analyzer/details/analyze_scalar_expression.h>
+#include <yugawara/binding/extract.h>
 
 #include "set_function_processor.h"
 
@@ -800,10 +804,159 @@ public:
     [[nodiscard]] optional_ptr<output_port> operator()(
             ast::table::apply const& expr,
             query_scope& scope) {
-        // FIXME: impl
-        (void) expr;
-        (void) scope;
-        std::abort();
+        auto operand = dispatch(*expr.operand(), scope);
+        if (!operand) {
+            return {};
+        }
+        auto operator_kind = convert(expr.operator_kind());
+        if (!operator_kind) {
+            return {};
+        }
+
+        ::takatori::util::reference_vector<tscalar::expression> arguments {};
+        arguments.reserve(expr.arguments().size());
+        std::vector<std::shared_ptr<::takatori::type::data const>> argument_types {};
+        argument_types.reserve(expr.arguments().size());
+        for (auto&& arg : expr.arguments()) {
+            auto value = analyze_scalar_expression(context_, *arg, scope);
+            if (!value) {
+                return {};
+            }
+            auto type = context_.resolve(*value);
+            if (!type) {
+                return {};
+            }
+            arguments.push_back(value.release());
+            argument_types.emplace_back(type);
+        }
+
+        // search for table-valued functions
+        auto function_list = analyze_function_name(context_, *expr.name(), expr.arguments().size());
+        std::vector<std::shared_ptr<::yugawara::function::declaration const>> function_candidates {};
+        function_candidates.reserve(function_list.size());
+        for (auto&& function: function_list) {
+            // keep only table-valued functions to prevent overloading resolution to other functional types
+            if (!function->features().contains(::yugawara::function::function_feature::table_valued_function)) {
+                continue;
+            }
+            if (is_parameter_applicable(argument_types, function->shared_parameter_types())) {
+                function_candidates.emplace_back(function);
+            }
+        }
+        if (function_candidates.empty()) {
+            context_.report(
+                    sql_analyzer_code::function_not_found,
+                    string_builder {}
+                            << "table-valued function not declared: "
+                            << *expr.name()
+                            << string_builder::to_string,
+                    expr.region());
+            return {};
+        }
+        auto target = resolve_function_overload(context_, function_candidates, expr.region());
+        if (!target) {
+            return {};
+        }
+        if (target->return_type().kind() != ::takatori::type::table::tag) {
+            context_.report(
+                    sql_analyzer_code::inconsistent_type,
+                    string_builder {}
+                            << "function must return table type: " << target->name()
+                            << ", id=" << target->definition_id()
+                            << string_builder::to_string,
+                    expr.region());
+            return {};
+        }
+        auto&& table_type = unsafe_downcast<::takatori::type::table>(target->return_type());
+        if (table_type.columns().empty()) {
+            context_.report(
+                    sql_analyzer_code::inconsistent_type,
+                    string_builder {}
+                            << "function returned table has no columns: " << target->name()
+                            << ", id=" << target->definition_id()
+                            << string_builder::to_string,
+                    expr.region());
+            return {};
+        }
+        std::vector<trelation::apply::column_type> columns {};
+        columns.reserve(table_type.columns().size());
+        for (auto&& column_decl : table_type.columns()) {
+            auto variable = factory_.stream_variable(column_decl.name());
+            columns.emplace_back(columns.size(), std::move(variable));
+        }
+        auto&& correlation = expr.correlation();
+        if (!correlation.column_names().empty()
+                && correlation.column_names().size() != table_type.columns().size()) {
+            context_.report(
+                    sql_analyzer_code::inconsistent_columns,
+                    string_builder {}
+                            << "mismatch column count between correlation and function result: "
+                            << "function=" << target->name()
+                            << ", correlation-columns=" << correlation.column_names().size()
+                            << ", function-columns=" << table_type.columns().size()
+                            << string_builder::to_string,
+                    expr.correlation().region());
+            return {};
+        }
+
+        relation_info info { {}, correlation.correlation_name()->identifier() };
+        for (std::size_t index = 0; index < table_type.columns().size(); ++index) {
+            auto&& column_decl = table_type.columns()[index];
+            auto&& column_target = columns[index];
+            std::string name {};
+            if (!correlation.column_names().empty()) {
+                auto&& correlation_column = correlation.column_names()[index];
+                name = normalize_identifier(
+                        context_,
+                        *correlation_column,
+                        name_kind::variable);
+            } else {
+                name = normalize_identifier(
+                        context_,
+                        ast::name::simple { column_decl.name() },
+                        name_kind::variable);
+            }
+            info.add({
+                    {},
+                    column_target.variable(),
+                    std::move(name),
+            });
+        }
+        scope.add(std::move(info));
+
+        auto&& op = graph_.emplace<trelation::apply>(
+                *operator_kind,
+                factory_(std::move(target)),
+                std::move(arguments),
+                std::move(columns));
+        op.region() = context_.convert(expr.region());
+        op.input().connect_to(*operand);
+        if (!context_.resolve(op)) {
+            return {};
+        }
+        return op.output();
+    }
+
+    [[nodiscard]] std::optional<trelation::apply_kind> convert(
+            std::optional<ast::table::apply::operator_kind_type> const& source) {
+        if (!source) {
+            // the default apply kind
+            return trelation::apply_kind::cross;
+        }
+        using from = ast::table::apply_type;
+        using to = trelation::apply_kind;
+        switch (**source) {
+            case from::cross: return to::cross;
+            case from::outer: return to::outer;
+        }
+        context_.report(
+                sql_analyzer_code::unsupported_feature,
+                string_builder {}
+                        << "unsupported apply type: "
+                        << **source
+                        << string_builder::to_string,
+                source->region());
+        return {};
     }
 
     // select_element
