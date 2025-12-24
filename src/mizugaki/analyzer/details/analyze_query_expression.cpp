@@ -44,6 +44,7 @@
 #include <yugawara/binding/extract.h>
 
 #include "set_function_processor.h"
+#include "name_print_support.h"
 
 namespace mizugaki::analyzer::details {
 
@@ -848,7 +849,7 @@ public:
                     sql_analyzer_code::function_not_found,
                     string_builder {}
                             << "table-valued function not declared: "
-                            << *expr.name()
+                            << print_support { *expr.name() }
                             << string_builder::to_string,
                     expr.region());
             return {};
