@@ -8,6 +8,7 @@
 #include <takatori/type/decimal.h>
 #include <takatori/type/octet.h>
 #include <takatori/type/lob.h>
+#include <takatori/type/table.h>
 
 #include <takatori/value/primitive.h>
 #include <takatori/value/character.h>
@@ -16,8 +17,10 @@
 #include <yugawara/runtime_feature.h>
 
 #include <yugawara/aggregate/configurable_provider.h>
+#include <yugawara/aggregate/declaration.h>
 
 #include <yugawara/function/configurable_provider.h>
+#include <yugawara/function/declaration.h>
 
 #include <yugawara/schema/catalog.h>
 #include <yugawara/schema/declaration.h>
@@ -154,24 +157,43 @@ std::shared_ptr<::yugawara::function::provider> function_provider() {
             "octet_length",
             tt::int8 {},
             { tt::character { tt::varying, {} } },
+            { ::yugawara::function::function_feature::scalar_function },
     });
     provider->add({ // OCTET_LENGTH(VARBINARY(*))
             ++definition_id,
             "octet_length",
             tt::int8 {},
             { tt::octet { tt::varying, {} } },
+            { ::yugawara::function::function_feature::scalar_function },
     });
     provider->add({ // OCTET_LENGTH(CLOB)
             ++definition_id,
             "octet_length",
             tt::int8 {},
             { tt::clob {} },
+            { ::yugawara::function::function_feature::scalar_function },
     });
     provider->add({ // OCTET_LENGTH(BLOB)
             ++definition_id,
             "octet_length",
             tt::int8 {},
             { tt::blob {} },
+            { ::yugawara::function::function_feature::scalar_function },
+    });
+    provider->add({ // tvf(a:BIGINT) -> TABLE(u:BIGINT, v:VARCHAR(*), w:DECIMAL(*, *))
+            ++definition_id,
+            "tvf",
+            tt::table {
+                    {
+                            { "u", tt::int8 {} }, // u:BIGINT
+                            { "v", tt::character { tt::varying, {} } }, // v:VARCHAR(*)
+                            { "w", tt::decimal { 18, 2 } }, // w:DECIMAL(*, *)
+                    }
+            },
+            {
+                    tt::int8 {}, // a:BIGINT
+            },
+            { ::yugawara::function::function_feature::table_valued_function },
     });
     return provider;
 }

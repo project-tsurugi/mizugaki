@@ -50,6 +50,14 @@ Available options:
     * `CLOB`
 * aggregate functions
   * `COUNT(*)`
+* table-valued functions
+  * `tvf`
+    * parameters:
+      * `a: BIGINT`
+    * return columns:
+      * `u: BIGINT`
+      * `v: VARCHAR(*)`
+      * `w: DECIMAL(*, *)`
 
 ## How to install
 
