@@ -874,8 +874,17 @@
 %nterm <ast::statement::privilege_user> privilege_user
 
 %nterm <node_ptr<ast::query::expression>> query_expression
-%nterm <node_ptr<ast::query::expression>> query_expression_body
-%nterm <node_ptr<ast::query::expression>> query_expression_primary
+%nterm <node_ptr<ast::query::expression>> query_body
+%nterm <node_ptr<ast::query::expression>> query_body_root
+%nterm <node_ptr<ast::query::expression>> query_body_part
+%nterm <node_ptr<ast::query::expression>> query_term
+%nterm <node_ptr<ast::query::expression>> query_term_root
+%nterm <node_ptr<ast::query::expression>> query_term_part
+%nterm <node_ptr<ast::query::expression>> query_factor
+%nterm <node_ptr<ast::query::expression>> query_factor_root
+%nterm <node_ptr<ast::query::expression>> query_primary
+%nterm <node_ptr<ast::query::expression>> query_primary_root
+%nterm <node_ptr<ast::query::expression>> query_primary_part
 
 %nterm <element_vector<ast::query::with_element>> with_list
 %nterm <ast::query::with_element> with_element
@@ -910,6 +919,7 @@
 
 %nterm <node_vector<ast::table::expression>> table_reference_list
 %nterm <node_ptr<ast::table::expression>> table_reference
+%nterm <node_ptr<ast::table::expression>> joined_table
 %nterm <node_ptr<ast::table::expression>> table_primary
 
 %nterm <ast::table::correlation_clause> correlation_clause
@@ -1013,10 +1023,6 @@
 %nterm <node_ptr<ast::name::name>> identifier_chain
 %nterm <node_ptr<ast::name::simple>> identifier
 %nterm <node_ptr<ast::name::simple>> contextual_identifier
-
-// query expression
-%left "UNION" "EXCEPT" "OUTER"
-%left "INTERSECT"
 
 // predicate expression
 %left "OR"
@@ -2206,7 +2212,7 @@ privilege_user
     ;
 
 query_expression
-    : WITH recursive_opt[r] with_list[w] query_expression_body[e]
+    : WITH recursive_opt[r] with_list[w] query_body[e]
         {
             $$ = driver.node<ast::query::with_expression>(
                     $r,
@@ -2214,7 +2220,7 @@ query_expression
                     $e,
                     @$);
         }
-    | query_expression_body[e]
+    | query_body_root[e]
         {
             $$ = $e;
         }
@@ -2270,8 +2276,30 @@ column_list_opt
         }
     ;
 
-query_expression_body
-    : query_expression_body[l] UNION[o] set_quantifier_opt[q] corresponding_spec_opt[c] query_expression_body[r]
+query_body
+    : query_body_part[e]
+        {
+            $$ = $e;
+        }
+    | query_term[e]
+        {
+            $$ = $e;
+        }
+    ;
+
+query_body_root
+    : query_body_part[e]
+        {
+            $$ = $e;
+        }
+    | query_term_root[e]
+        {
+            $$ = $e;
+        }
+    ;
+
+query_body_part
+    : query_body[l] UNION[o] set_quantifier_opt[q] corresponding_spec_opt[c] query_term[r]
         {
             $$ = driver.node<ast::query::binary_expression>(
                     $l,
@@ -2281,7 +2309,7 @@ query_expression_body
                     $r,
                     @$);
         }
-    | query_expression_body[l] OUTER[o] UNION[u] set_quantifier_opt[q] corresponding_spec_opt[c] query_expression_body[r]
+    | query_body[l] OUTER[o] UNION[u] set_quantifier_opt[q] corresponding_spec_opt[c] query_term[r]
         {
             $$ = driver.node<ast::query::binary_expression>(
                     $l,
@@ -2291,7 +2319,7 @@ query_expression_body
                     $r,
                     @$);
         }
-    | query_expression_body[l] EXCEPT[o] set_quantifier_opt[q] corresponding_spec_opt[c] query_expression_body[r]
+    | query_body[l] EXCEPT[o] set_quantifier_opt[q] corresponding_spec_opt[c] query_term[r]
         {
             $$ = driver.node<ast::query::binary_expression>(
                     $l,
@@ -2301,7 +2329,32 @@ query_expression_body
                     $r,
                     @$);
         }
-    | query_expression_body[l] INTERSECT[o] set_quantifier_opt[q] corresponding_spec_opt[c] query_expression_body[r]
+    ;
+
+query_term
+    : query_term_part[e]
+        {
+            $$ = $e;
+        }
+    | query_factor[e]
+        {
+            $$ = $e;
+        }
+    ;
+
+query_term_root
+    : query_term_part[e]
+        {
+            $$ = $e;
+        }
+    | query_factor_root[e]
+        {
+            $$ = $e;
+        }
+    ;
+
+query_term_part
+    : query_term[l] INTERSECT[o] set_quantifier_opt[q] corresponding_spec_opt[c] query_factor[r]
         {
             $$ = driver.node<ast::query::binary_expression>(
                     $l,
@@ -2311,18 +2364,50 @@ query_expression_body
                     $r,
                     @$);
         }
-    // FIXME: to avoid conflict, parenthesized expression was moved from _primary
-    | "(" query_expression_body[e] ")"
-        {
-            $$ = $e;
-        }
-    | query_expression_primary[e]
+    ;
+
+query_factor
+    : query_primary[e]
         {
             $$ = $e;
         }
     ;
 
-query_expression_primary
+query_factor_root
+    : query_primary_root[e]
+        {
+            $$ = $e;
+        }
+    ;
+
+query_primary
+    : query_primary_part[e]
+        {
+            $$ = $e;
+        }
+    | "(" query_expression[e] ")"
+        {
+            // NOTE: WITH ... is not allowed in here, but avoid sr-conflict by reusing query_expression
+            auto expr = $e;
+            if (expr->node_kind() == ast::query::with_expression::tag) {
+                driver.error(
+                        sql_parser_code::syntax_error,
+                        @e,
+                        "common table expressions declaration (WITH ...) is not allowed in query operand");
+                YYABORT;
+            }
+            $$ = std::move(expr);
+        }
+    ;
+
+query_primary_root
+    : query_primary_part[e]
+        {
+            $$ = $e;
+        }
+    ;
+
+query_primary_part
     : SELECT
             set_quantifier_opt[q]
             select_list[s]
@@ -2605,6 +2690,17 @@ limit_clause_opt
     ;
 
 table_reference
+    : joined_table[t]
+        {
+            $$ = $t;
+        }
+    | table_primary[t]
+        {
+            $$ = $t;
+        }
+    ;
+
+joined_table
     : table_reference[l] CROSS[t] JOIN[u] table_primary[r]
         {
             $$ = driver.node<ast::table::join>(
@@ -2643,7 +2739,6 @@ table_reference
         }
     | table_reference[l] apply_type[t] function_name[f] routine_invocation_arguments[a] correlation_clause[c]
         {
-            // WIP: sr conflict
             $$ = driver.node<ast::table::apply>(
                     $l,
                     $t,
@@ -2651,10 +2746,6 @@ table_reference
                     $a,
                     $c,
                     @$);
-        }
-    | table_primary[t]
-        {
-            $$ = $t;
         }
     ;
 
@@ -2794,6 +2885,10 @@ table_primary
                     $n,
                     $c,
                     @$);
+        }
+    | "(" joined_table[e] ")"
+        {
+            $$ = $e;
         }
     ;
 
@@ -4005,8 +4100,7 @@ row_subquery
     ;
 
 subquery
-    // FIXME: to avoid conflict, subquery contains _primary instead of query expression
-    : "(" query_expression_primary[e] ")"
+    : "(" query_expression[e] ")"
         {
             $$ = $e;
         }

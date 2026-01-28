@@ -336,6 +336,48 @@ TEST_F(sql_parser_table_test, union_join) {
     }));
 }
 
+TEST_F(sql_parser_table_test, join_multiple) {
+    auto result = parse("T0 CROSS JOIN T1 CROSS JOIN T2");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (table::join {
+        table::join {
+                table::table_reference {
+                        name::simple { "T0" },
+                },
+                table::join_type::cross,
+                table::table_reference {
+                        name::simple { "T1" },
+                },
+        },
+        table::join_type::cross,
+            table::table_reference {
+                    name::simple { "T2" },
+            },
+    }));
+}
+
+TEST_F(sql_parser_table_test, join_parenthesized) {
+    auto result = parse("T0 CROSS JOIN (T1 CROSS JOIN T2)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (table::join {
+        table::table_reference {
+                name::simple { "T0" },
+        },
+        table::join_type::cross,
+        table::join {
+                table::table_reference {
+                        name::simple { "T1" },
+                },
+                table::join_type::cross,
+                table::table_reference {
+                        name::simple { "T2" },
+                },
+        }
+    }));
+}
+
 TEST_F(sql_parser_table_test, apply) {
         auto result = parse("T0 APPLY f(A) x");
         ASSERT_TRUE(result) << diagnostics(result);

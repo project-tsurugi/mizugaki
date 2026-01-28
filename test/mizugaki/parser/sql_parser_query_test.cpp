@@ -778,4 +778,10 @@ TEST_F(sql_parser_query_test, parenthesize) {
     }));
 }
 
+TEST_F(sql_parser_query_test, with_in_parens) {
+    auto result = parse("TABLE T0 UNION (WITH q AS (TABLE T1) TABLE q);");
+    ASSERT_FALSE(result) << diagnostics(result);
+    EXPECT_EQ(result.diagnostic().code(), sql_parser_code::syntax_error);
+}
+
 } // namespace mizugaki::parser
