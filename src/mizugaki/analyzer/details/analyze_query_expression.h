@@ -34,7 +34,7 @@ private:
         analyzer_context& context,
         ::takatori::relation::graph_type& graph,
         ast::query::expression const& expression,
-        ::takatori::util::optional_ptr<query_scope const> parent,
+        ::takatori::util::optional_ptr<query_scope> parent,
         row_value_context const& value_context);
 
 [[nodiscard]] relation_info build_relation_info(

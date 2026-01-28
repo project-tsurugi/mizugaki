@@ -12,7 +12,7 @@
 namespace mizugaki::ast::query {
 
 /**
- * @brief declares queries (`WITH`).
+ * @brief declares common table expressions (`WITH`).
  * @note `7.12 <query expression>` - `<with clause>`
  */
 class with_expression final : public expression {

@@ -16,6 +16,8 @@
 
 #include <yugawara/binding/extract.h>
 
+#include <yugawara/extension/relation/subquery.h>
+
 #include <mizugaki/ast/name/qualified.h>
 
 #include <mizugaki/ast/scalar/binary_expression.h>
@@ -406,6 +408,91 @@ TEST_F(analyze_query_expression_select_test, select_corelation_name) {
     }
 
     EXPECT_EQ(relation_columns[0].variable(), project_columns[0].variable());
+}
+
+TEST_F(analyze_query_expression_select_test, select_query_info) {
+    trelation::graph_type inner {};
+    auto c0 = vdesc("c0");
+    inner.insert(trelation::values {
+            {
+                    c0,
+            },
+            {
+                    {
+                            immediate(1),
+                    },
+            },
+    });
+    query_scope scope {};
+    auto added = scope.add("q", std::make_shared<query_info>(query_info {
+            std::move(inner),
+            {
+                    c0,
+            },
+            {
+                    "c0",
+            },
+    }));
+    ASSERT_TRUE(added);
+
+    trelation::graph_type graph {};
+    auto r = analyze_query_expression(
+            context(),
+            graph,
+            ast::query::query {
+                    {
+                            ast::query::select_asterisk {},
+                    },
+                    {
+                            ast::table::table_reference {
+                                    id("q"),
+                            }
+                    },
+            },
+            scope,
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
+    EXPECT_EQ(graph.size(), 2);
+    EXPECT_FALSE(r.output().opposite());
+
+    // subquery - project -
+    auto&& project = downcast<trelation::project>(r.output().owner());
+    auto&& subquery = *find_prev<::yugawara::extension::relation::subquery>(project);
+
+    auto&& project_columns = project.columns();
+    ASSERT_EQ(project_columns.size(), 0);
+
+    auto&& mappings = subquery.mappings();
+    ASSERT_EQ(mappings.size(), 1);
+    auto&& c0i = mappings[0].source();
+    auto&& c0o = mappings[0].destination();
+
+    // subquery: values -
+    auto&& sg = subquery.query_graph();
+    ASSERT_EQ(sg.size(), 1);
+
+    auto soutput = subquery.find_output_port();
+    ASSERT_TRUE(soutput);
+    ASSERT_TRUE(sg.contains(soutput->owner()));
+
+    auto&& values = downcast<trelation::values>(soutput->owner());
+    ASSERT_EQ(values.columns().size(), 1);
+    EXPECT_EQ(values.columns()[0], c0i);
+
+    ASSERT_EQ(values.rows().size(), 1);
+    EXPECT_EQ(values.rows()[0].elements().size(), 1);
+    EXPECT_EQ(values.rows()[0].elements()[0], immediate(1));
+
+    auto&& relation = r.relation();
+    EXPECT_EQ(relation.identifier(), "");
+
+    auto relation_columns = relation.columns();
+    ASSERT_EQ(relation_columns.size(), 1);
+
+    EXPECT_EQ(relation_columns[0].identifier(), "c0");
+    EXPECT_EQ(relation_columns[0].variable(), c0o);
 }
 
 TEST_F(analyze_query_expression_select_test, without_tables) {

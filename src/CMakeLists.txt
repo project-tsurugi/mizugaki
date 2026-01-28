@@ -178,6 +178,7 @@ add_library(mizugaki
 
     mizugaki/analyzer/details/relation_info.cpp
     mizugaki/analyzer/details/column_info.cpp
+    mizugaki/analyzer/details/query_info.cpp
     mizugaki/analyzer/details/query_scope.cpp
     mizugaki/analyzer/details/value_context.cpp
     mizugaki/analyzer/details/scalar_value_context.cpp

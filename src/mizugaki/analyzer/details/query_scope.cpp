@@ -116,6 +116,19 @@ query_scope::position_type query_scope::create_pivot() const noexcept {
     return relations_.size();
 }
 
+bool query_scope::add(std::string name, std::shared_ptr<query_info const> query) { // NOLINT(performance-unnecessary-value-param)
+    auto [it, added] = query_map_.try_emplace(std::move(name), std::move(query));
+    (void) it;
+    return added;
+}
+
+std::shared_ptr<query_info const> query_scope::find_query(std::string_view name) const {
+    if (auto it = query_map_.find(name); it != query_map_.end())  {
+        return it.value();
+    }
+    return {};
+}
+
 std::ostream& operator<<(std::ostream& out, query_scope const& value) {
     using ::takatori::util::print_support;
     return out << "query_scope("

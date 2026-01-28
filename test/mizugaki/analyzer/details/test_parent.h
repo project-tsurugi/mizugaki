@@ -48,7 +48,7 @@ public:
 
     void clear_error();
 
-    std::shared_ptr<::yugawara::storage::table const> install_table(std::string_view name);
+    std::shared_ptr<::yugawara::storage::table> install_table(std::string_view name);
 
     ::takatori::descriptor::variable vd(
             std::string_view name = "id",

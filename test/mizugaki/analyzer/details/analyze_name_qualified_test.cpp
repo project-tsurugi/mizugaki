@@ -19,6 +19,15 @@ protected:
         clear_error();
     }
 
+    void invalid(declared_relation const& result, sql_analyzer_code code) {
+        if (std::holds_alternative<std::monostate>(result)) {
+            EXPECT_TRUE(find_error(code)) << code << " <=> " << diagnostics();
+            clear_error();
+        } else {
+            ADD_FAILURE() << "expect is not error: " << diagnostics();
+        }
+    }
+
     void validate(std::unique_ptr<tscalar::expression> const& result, ::takatori::descriptor::variable expect) {
         if (!result) {
             ADD_FAILURE() << "expect is empty: " << diagnostics();
@@ -38,6 +47,21 @@ protected:
             EXPECT_EQ(*result, vref(f(expect))) << diagnostics();
             expect_no_error();
         }
+    }
+
+    template<class T>
+    void validate(declared_relation const& result, std::shared_ptr<T> const& expect) {
+        if (!expect) {
+            ADD_FAILURE() << "expect is empty";
+            return;
+        }
+        if (!std::holds_alternative<std::reference_wrapper<T const>>(result)) {
+            ADD_FAILURE() << diagnostics();
+            return;
+        }
+        auto& result_value = std::get<std::reference_wrapper<T const>>(result).get();
+        EXPECT_EQ(result_value, *expect) << diagnostics();
+        expect_no_error();
     }
 
     template<class T1, class T2>

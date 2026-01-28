@@ -388,7 +388,7 @@ TEST_F(analyze_query_expression_binary_test, union_type_unification) {
     ASSERT_EQ(relation_columns.size(), 1);
     {
         auto&& column = relation_columns[0];
-        EXPECT_EQ(column.identifier(), "");
+        EXPECT_EQ(column.identifier(), std::nullopt);
         EXPECT_FALSE(column.declaration());
         EXPECT_TRUE(column.exported());
     }

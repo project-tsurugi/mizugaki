@@ -14,6 +14,7 @@ enum class symbol_kind {
     schema_variable,
     relation_info,
     relation_decl,
+    query_decl,
     schema_decl,
     catalog_decl,
     table_decl,
@@ -31,7 +32,7 @@ using symbol_kind_set = ::takatori::util::enum_set<
  * @param value the target value
  * @return the corresponded string representation
  */
-inline constexpr std::string_view to_string_view(symbol_kind value) noexcept {
+constexpr std::string_view to_string_view(symbol_kind value) noexcept {
     using namespace std::string_view_literals;
     using kind = symbol_kind;
     switch (value) {
@@ -40,6 +41,7 @@ inline constexpr std::string_view to_string_view(symbol_kind value) noexcept {
         case kind::schema_variable: return "schema_variable"sv;
         case kind::relation_info: return "relation"sv;
         case kind::relation_decl: return "relation"sv;
+        case kind::query_decl: return "query"sv;
         case kind::schema_decl: return "schema"sv;
         case kind::catalog_decl: return "catalog"sv;
         case kind::table_decl: return "table"sv;

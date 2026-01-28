@@ -12,6 +12,7 @@
 #include <mizugaki/analyzer/details/relation_info.h>
 
 #include "find_element_result.h"
+#include "query_info.h"
 
 namespace mizugaki::analyzer::details {
 
@@ -39,6 +40,24 @@ public:
 
     [[nodiscard]] position_type create_pivot() const noexcept;
 
+    /**
+     * @brief adds a query info with the given name.
+     * @param name the query name
+     * @param query the query info
+     * @return true if successfully added
+     * @return false if there is already a query with the same name in this scope
+     */
+    [[nodiscard]] bool add(std::string name, std::shared_ptr<query_info const> query);
+
+    /**
+     * @brief finds a query info with the given name in this scope.
+     * @attention this does not look up from the parent scopes.
+     * @param name the query name
+     * @return the found query info
+     * @return empty if not found
+     */
+    [[nodiscard]] std::shared_ptr<query_info const> find_query(std::string_view name) const;
+
 private:
     static constexpr position_type ambiguous = std::numeric_limits<position_type>::max();
 
@@ -46,8 +65,11 @@ private:
     std::vector<relation_info> relations_ {};
     ::tsl::hopscotch_map<std::string, position_type, std::hash<std::string_view>, std::equal_to<>> name_map_ {};
     ::tsl::hopscotch_map<yugawara::storage::relation const*, position_type> reference_map_ {};
-
-    // FIXME: support WITH ...
+    ::tsl::hopscotch_map<
+            std::string,
+            std::shared_ptr<query_info const>,
+            std::hash<std::string_view>,
+            std::equal_to<>> query_map_ {};
 
     [[nodiscard]] std::optional<position_type> find_internal(std::string_view identifier) const;
     [[nodiscard]] std::optional<position_type> find_internal(::yugawara::storage::relation const& relation) const;

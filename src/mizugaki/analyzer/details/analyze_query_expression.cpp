@@ -33,6 +33,8 @@
 
 #include <yugawara/binding/factory.h>
 
+#include <yugawara/extension/relation/subquery.h>
+
 #include <mizugaki/ast/scalar/value_constructor.h>
 #include <mizugaki/ast/scalar/variable_reference.h>
 
@@ -78,15 +80,16 @@ public:
 
     [[nodiscard]] result_type process(
             ast::query::expression const& expression,
-            optional_ptr<query_scope const> parent,
+            optional_ptr<query_scope> parent,
             row_value_context const& value_context) {
         return dispatch(expression, std::move(parent), value_context);
     }
 
     [[nodiscard]] result_type operator()(
             ast::query::expression const& expr,
-            optional_ptr<query_scope const> const&,
-            row_value_context const&) {
+            optional_ptr<query_scope> const&,
+            row_value_context const&,
+            bool) {
         context_.report(
                 sql_analyzer_code::unsupported_feature,
                 string_builder {}
@@ -97,11 +100,29 @@ public:
         return {};
     }
 
-    [[nodiscard]] result_type operator()( // NOLINT(*-function-cognitive-complexity)
+    [[nodiscard]] result_type operator()(
             ast::query::query const& expr,
-            optional_ptr<query_scope const> parent,
-            row_value_context const&) {
+            optional_ptr<query_scope> parent,
+            row_value_context const&,
+            bool continue_scope) {
+        if (continue_scope) {
+            // continue to use the parent scope
+            if (!parent) {
+                context_.report(
+                        sql_analyzer_code::unknown,
+                        "scope to continue is not available",
+                        expr.region());
+                return {};
+            }
+            return process_query(expr, *parent);
+        }
         query_scope scope { parent };
+        return process_query(expr, scope);
+    }
+
+    [[nodiscard]] result_type process_query( // NOLINT(*-function-cognitive-complexity)
+            ast::query::query const& expr,
+            query_scope& scope) {
         optional_ptr<output_port> output {};
 
         // FROM ...
@@ -378,58 +399,47 @@ public:
 
     [[nodiscard]] result_type operator()(
             ast::query::table_reference const& expr,
-            optional_ptr<query_scope const> const&,
-            row_value_context const&) {
-        auto r = analyze_relation_name(context_, *expr.name());
-        if (!r) {
-            return {};
+            optional_ptr<query_scope> parent,
+            row_value_context const&,
+            bool continue_scope) {
+        if (continue_scope) {
+            // continue to use the parent scope
+            if (!parent) {
+                context_.report(
+                        sql_analyzer_code::unknown,
+                        "scope to continue is not available",
+                        expr.region());
+                return {};
+            }
+            return process_relation_reference(*expr.name(), *parent);
         }
-        if (r->kind() != ::yugawara::storage::table::tag) {
-            // FIXME: impl for views
-            context_.report(
-                    sql_analyzer_code::unsupported_feature,
-                    string_builder {}
-                            << "unsupported relation kind: "
-                            << r->kind()
-                            << string_builder::to_string,
-                    expr.region());
-            return {};
-        }
-        auto&& table = unsafe_downcast<::yugawara::storage::table>(*r);
-        auto info = build_relation_info(context_, table);
-        auto index = info.primary_index();
-        if (!index) {
-            context_.report(
-                    sql_analyzer_code::primary_index_not_found,
-                    string_builder {}
-                            << "missing primary index for table: " << table.simple_name()
-                            << string_builder::to_string,
-                    expr.region());
-            return {};
-        }
-
-        auto columns = create_vector<trelation::scan::column>(info.columns().size());
-        for (auto&& column : info.columns()) {
-            columns.emplace_back(factory_(*column.declaration()), column.variable());
-        }
-
-        auto&& op = graph_.emplace<trelation::scan>(
-                factory_(*index),
-                std::move(columns),
-                trelation::scan::endpoint {},
-                trelation::scan::endpoint {},
-                std::nullopt);
-        op.region() = context_.convert(expr.region());
-        if (!context_.resolve(op)) {
-            return {};
-        }
-
-        return { op.output(), std::move(info) };
+        query_scope scope { parent };
+            return process_relation_reference(*expr.name(), scope);
     }
 
     [[nodiscard]] result_type operator()(
             ast::query::table_value_constructor const& expr,
-            optional_ptr<query_scope const> const& parent,
+            optional_ptr<query_scope> parent,
+            row_value_context const& val,
+            bool continue_scope) {
+        if (continue_scope) {
+            // continue to use the parent scope
+            if (!parent) {
+                context_.report(
+                        sql_analyzer_code::unknown,
+                        "scope to continue is not available",
+                        expr.region());
+                return {};
+            }
+            return process_table_value_constructor(expr, *parent, val);
+        }
+        query_scope scope { parent };
+        return process_table_value_constructor(expr, scope, val);
+    }
+
+    [[nodiscard]] result_type process_table_value_constructor(
+            ast::query::table_value_constructor const& expr,
+            query_scope& scope,
             row_value_context const& val) {
         // compute row values only which is a row value constructor
         auto rows = create_vector<trelation::values::row>(expr.elements().size());
@@ -441,7 +451,7 @@ public:
                     auto elem = analyze_scalar_expression(
                             context_,
                             *elem_expr,
-                            query_scope { parent },
+                            scope,
                             get_column_value(val, index));
                     if (!elem) {
                         return {};
@@ -495,7 +505,7 @@ public:
             info.add({
                     std::nullopt,
                     column,
-                    "", // no name
+                    std::nullopt,
             });
         }
 
@@ -504,8 +514,9 @@ public:
 
     [[nodiscard]] result_type operator()(
             ast::query::binary_expression const& expr,
-            optional_ptr<query_scope const> const& parent,
-            row_value_context const& val) {
+            optional_ptr<query_scope> parent,
+            row_value_context const& val,
+            bool) {
         using kind = ast::query::binary_operator;
         switch (*expr.operator_kind()) {
             case kind::union_:
@@ -533,7 +544,7 @@ public:
 
     [[nodiscard]] result_type process_union(
             ast::query::binary_expression const& expr,
-            optional_ptr<query_scope const> const& parent,
+            optional_ptr<query_scope> parent,
             row_value_context const& val) {
         if (expr.corresponding()) {
             context_.report(
@@ -542,11 +553,11 @@ public:
                     expr.region());
             return {};
         }
-        auto left = process(*expr.left(), parent, val);
+        auto left = dispatch(*expr.left(), parent, val);
         if (!left) {
             return {};
         }
-        auto right = process(*expr.right(), parent, val);
+        auto right = dispatch(*expr.right(), parent, val);
         if (!right) {
             return {};
         }
@@ -602,7 +613,7 @@ public:
     template<class T>
     [[nodiscard]] result_type process_except_intersect(
             ast::query::binary_expression const& expr,
-            optional_ptr<query_scope const> const& parent,
+            optional_ptr<query_scope> parent,
             row_value_context const& val) {
         using operator_type = T;
         if (expr.corresponding()) {
@@ -612,11 +623,11 @@ public:
                     expr.region());
             return {};
         }
-        auto left = process(*expr.left(), parent, val);
+        auto left = dispatch(*expr.left(), parent, val);
         if (!left) {
             return {};
         }
-        auto right = process(*expr.right(), parent, val);
+        auto right = dispatch(*expr.right(), parent, val);
         if (!right) {
             return {};
         }
@@ -675,30 +686,160 @@ public:
         return results;
     }
 
-    // FIXME: impl with_expression
+    [[nodiscard]] result_type operator()(
+            ast::query::with_expression const& expr,
+            optional_ptr<query_scope> parent,
+            row_value_context const& val,
+            bool continue_scope) {
+        if (continue_scope) {
+            // continue to use the parent scope
+            if (!parent) {
+                context_.report(
+                        sql_analyzer_code::unknown,
+                        "scope to continue is not available",
+                        expr.region());
+                return {};
+            }
+            return process_with_common_table(expr, *parent, val);
+        }
+        query_scope scope { parent };
+        return process_with_common_table(expr, scope, val);
+    }
+
+    [[nodiscard]] result_type process_with_common_table(
+            ast::query::with_expression const& expr,
+            query_scope& scope,
+            row_value_context const& val) {
+        if (expr.is_recursive()) {
+            context_.report(
+                    sql_analyzer_code::unsupported_feature,
+                    "RECURSIVE is not yet supported",
+                    expr.region());
+            return {};
+        }
+        for (auto&& element : expr.elements()) {
+            auto success = process_with_common_table_element(element, scope);
+            if (!success) {
+                return {};
+            }
+        }
+        // continue right-hand-side query (continue to use the current scope)
+        return dispatch(*expr.expression(), scope, val, true);
+    }
+
+    [[nodiscard]] bool process_with_common_table_element(
+            ast::query::with_element const& element,
+            query_scope& scope) {
+        trelation::graph_type subgraph {};
+        engine subengine { context_, subgraph };
+        auto result = subengine.dispatch(*element.expression(), scope, {}, false);
+        if (!result) {
+            return {};
+        }
+        auto&& relation = result.relation();
+        std::vector<::takatori::descriptor::variable> columns;
+        columns.reserve(relation.columns().size());
+        std::vector<std::optional<std::string>> column_names;
+        column_names.reserve(relation.columns().size());
+        for (auto&& column : relation.columns()) {
+            if (!column.exported()) {
+                continue;
+            }
+            columns.emplace_back(column.variable());
+            column_names.emplace_back(column.identifier());
+        }
+
+        if (!element.column_names().empty()) {
+            if (element.column_names().size() != column_names.size()) {
+                context_.report(
+                    sql_analyzer_code::inconsistent_columns,
+                    string_builder {}
+                            << "common table expression column count mismatch: expected "
+                            << column_names.size()
+                            << " but got "
+                            << element.column_names().size()
+                            << string_builder::to_string,
+                    element.region());
+                return false;
+            }
+            for (std::size_t index = 0, size = element.column_names().size(); index < size; ++index) {
+                column_names[index] = normalize_identifier(
+                        context_,
+                        *element.column_names()[index],
+                        name_kind::variable);
+            }
+        }
+
+        auto subquery = std::make_shared<query_info>(
+                std::move(subgraph),
+                std::move(columns),
+                std::move(column_names));
+
+        auto inserted = scope.add(
+                normalize_identifier(context_, *element.name(), name_kind::relation),
+                std::move(subquery));
+
+        if (!inserted) {
+            context_.report(
+                sql_analyzer_code::view_already_exists,
+                string_builder {}
+                        << "common table element is already declared as the same name: "
+                        << print_support { *element.name() }
+                        << string_builder::to_string,
+                element.name()->region());
+            return false;
+        }
+        return true;
+    }
 
     // table expressions
     [[nodiscard]] optional_ptr<output_port> operator()(
             ast::table::table_reference const& expr,
             query_scope& scope) {
-        // FIXME: refactor - code dup with query::table_reference
         // FIXME: treat is_only()
-        auto r = analyze_relation_name(context_, *expr.name());
-        if (!r) {
+        auto result = process_relation_reference(*expr.name(), scope);
+        if (!result) {
             return {};
         }
-        if (r->kind() != ::yugawara::storage::table::tag) {
-            // FIXME: impl for views
-            context_.report(
-                    sql_analyzer_code::unsupported_feature,
-                    string_builder {}
-                            << "unsupported relation kind: "
-                            << r->kind()
-                            << string_builder::to_string,
-                    expr.region());
+        auto&& info = result.relation();
+        if (auto&& corr = expr.correlation()) {
+            if (!rebuild_relation_info(info, *corr)) {
+                return {};
+            }
+        }
+        scope.add(std::move(info));
+        return result.output();
+    }
+
+    [[nodiscard]] result_type process_relation_reference(
+            ast::name::name const& relation,
+            query_scope const& scope) {
+        auto r = analyze_relation_name(context_, relation, scope);
+        if (std::holds_alternative<std::monostate>(r)) {
             return {};
         }
-        auto&& table = unsafe_downcast<::yugawara::storage::table>(*r);
+        if (std::holds_alternative<std::reference_wrapper<::yugawara::storage::table const>>(r)) {
+            auto& table = std::get<std::reference_wrapper<::yugawara::storage::table const>>(r).get();
+            return process_table_reference(table, relation);
+        }
+        if (std::holds_alternative<std::shared_ptr<query_info const>>(r)) {
+            auto query = std::get<std::shared_ptr<query_info const>>(r);
+            return process_query_reference(query, relation);
+        }
+        // FIXME: impl for views
+        context_.report(
+                sql_analyzer_code::unsupported_feature,
+                string_builder {}
+                        << "unsupported relation kind: "
+                        << print_support { relation }
+                        << string_builder::to_string,
+                relation.region());
+        return {};
+    }
+
+    [[nodiscard]] result_type process_table_reference(
+            ::yugawara::storage::table const& table,
+            ast::name::name const& relation) {
         auto info = build_relation_info(context_, table);
         auto index = info.primary_index();
         if (!index) {
@@ -707,7 +848,7 @@ public:
                     string_builder {}
                             << "missing primary index for table: " << table.simple_name()
                             << string_builder::to_string,
-                    expr.region());
+                    relation.region());
             return {};
         }
 
@@ -722,19 +863,60 @@ public:
                 trelation::scan::endpoint {},
                 trelation::scan::endpoint {},
                 std::nullopt);
-        op.region() = context_.convert(expr.region());
+        op.region() = context_.convert(relation.region());
         if (!context_.resolve(op)) {
             return {};
         }
 
-        if (auto&& corr = expr.correlation()) {
-            if (!rebuild_relation_info(info, *corr)) {
-                return {};
-            }
-        }
-        scope.add(std::move(info));
+        return { op.output(), std::move(info) };
+    }
 
-        return op.output();
+    [[nodiscard]] result_type process_query_reference(
+            std::shared_ptr<query_info const> const& query,
+            ast::name::name const& relation) {
+        trelation::graph_type subgraph {};
+        trelation::merge_into(query->query_graph(), subgraph);
+
+        std::vector<::yugawara::extension::relation::subquery::mapping_type> mappings {};
+        mappings.reserve(query->output_columns().size());
+
+        relation_info info {
+                {},
+                normalize_identifier(context_, relation.last_name(), name_kind::relation),
+        };
+        info.reserve(query->output_columns().size());
+
+        for (std::size_t index = 0, size = query->output_columns().size(); index < size; ++index) {
+            std::optional<std::string> name {};
+            if (index < query->output_column_names().size()) {
+                name = query->output_column_names()[index];
+            }
+            auto&& source = query->output_columns()[index];
+            auto destination = factory_.stream_variable(name.value_or(std::string {}));
+            mappings.emplace_back(source, destination);
+            info.add({
+                    {},
+                    std::move(destination),
+                    std::move(name),
+            });
+        }
+        auto&& op = graph_.emplace<::yugawara::extension::relation::subquery>(
+                std::move(subgraph),
+                std::move(mappings));
+        op.region() = context_.convert(relation.region());
+        if (!context_.resolve(op)) {
+            return {};
+        }
+        auto subquery_output = op.find_output_port();
+        if (!subquery_output) {
+            context_.report(
+                    sql_analyzer_code::unknown,
+                    "failed to find output port from subquery relation",
+                    relation.region());
+            return {};
+        }
+
+        return { op.output(), std::move(info) };
     }
 
     [[nodiscard]] optional_ptr<output_port> operator()(
@@ -1215,9 +1397,10 @@ private:
 
     [[nodiscard]] result_type dispatch(
             ast::query::expression const& expr,
-            optional_ptr<query_scope const> parent,
-            row_value_context const& val) {
-        return ast::query::dispatch(*this, expr, std::move(parent), val);
+            optional_ptr<query_scope> parent,
+            row_value_context const& val,
+            bool continue_scope = false) {
+        return ast::query::dispatch(*this, expr, std::move(parent), val, continue_scope);
     }
 
     [[nodiscard]] optional_ptr<output_port> dispatch(
@@ -1524,7 +1707,7 @@ analyze_query_expression_result analyze_query_expression(
         analyzer_context& context,
         trelation::graph_type& graph,
         ast::query::expression const& expression,
-        optional_ptr<query_scope const> parent,
+        optional_ptr<query_scope> parent,
         row_value_context const& value_context) {
     engine e { context, graph };
     return e.process(expression, std::move(parent), value_context);

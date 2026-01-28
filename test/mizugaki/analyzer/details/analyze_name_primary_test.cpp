@@ -2,6 +2,8 @@
 
 #include <gtest/gtest.h>
 
+#include <takatori/relation/values.h>
+
 #include "test_parent.h"
 
 namespace mizugaki::analyzer::details {
@@ -15,6 +17,15 @@ protected:
         EXPECT_FALSE(result);
         EXPECT_TRUE(find_error(code)) << code << " <=> " << diagnostics();
         clear_error();
+    }
+
+    void invalid(declared_relation const& result, sql_analyzer_code code) {
+        if (std::holds_alternative<std::monostate>(result)) {
+            EXPECT_TRUE(find_error(code)) << code << " <=> " << diagnostics();
+            clear_error();
+        } else {
+            ADD_FAILURE() << "expect is not error: " << diagnostics();
+        }
     }
 
     void validate(std::unique_ptr<tscalar::expression> const& result, ::takatori::descriptor::variable expect) {
@@ -48,14 +59,31 @@ protected:
         }
     }
 
-    template<class T1, class T2>
-    void validate(::takatori::util::optional_ptr<T1> result, std::shared_ptr<T2> const& expect) {
+    template<class T>
+    void validate(declared_relation const& result, std::shared_ptr<T> const& expect) {
         if (!expect) {
             ADD_FAILURE() << "expect is empty";
             return;
         }
-        EXPECT_EQ(result.get(), expect.get()) << diagnostics();
-        expect_no_error();
+        if (auto v = std::get_if<std::reference_wrapper<T const>>(&result)) {
+            EXPECT_EQ(&v->get(), expect.get()) << diagnostics();
+            expect_no_error();
+            return;
+        }
+        ADD_FAILURE() << diagnostics();
+    }
+
+    void validate(declared_relation const& result, std::shared_ptr<query_info> const& expect) {
+        if (!expect) {
+            ADD_FAILURE() << "expect is empty";
+            return;
+        }
+        if (auto v = std::get_if<std::shared_ptr<query_info const>>(&result)) {
+            EXPECT_EQ(v->get(), expect.get()) << diagnostics();
+            expect_no_error();
+            return;
+        }
+        ADD_FAILURE() << diagnostics();
     }
 
     template<class T1, class T2>
@@ -408,6 +436,32 @@ TEST_F(analyze_name_primary_test, relation_decl) {
             context(),
             id("r0"));
     validate(r, r0);
+}
+
+TEST_F(analyze_name_primary_test, relation_decl_subquery) {
+    auto c0 = vdesc();
+
+    trelation::graph_type graph;
+    graph.insert(trelation::values {
+            {
+                    c0,
+            },
+            {},
+    });
+    auto info = std::make_shared<query_info>(
+            std::move(graph),
+            std::vector { c0, },
+            std::vector<std::optional<std::string>> { "c0" });
+
+    query_scope scope {};
+    auto added = scope.add("q", info);
+    ASSERT_TRUE(added);
+
+    auto r = analyze_relation_name(
+            context(),
+            id("q"),
+            scope);
+    validate(r, info);
 }
 
 TEST_F(analyze_name_primary_test, relation_decl_missing) {

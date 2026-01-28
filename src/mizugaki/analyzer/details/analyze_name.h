@@ -1,7 +1,9 @@
 #pragma once
 
+#include <functional>
 #include <utility>
 #include <optional>
+#include <variant>
 
 #include <takatori/scalar/expression.h>
 
@@ -15,9 +17,10 @@
 #include <yugawara/storage/table.h>
 
 #include <mizugaki/ast/name/name.h>
-#include <mizugaki/ast/name/simple.h>
-#include <mizugaki/analyzer/details/analyzer_context.h>
-#include <mizugaki/analyzer/details/query_scope.h>
+
+#include "analyzer_context.h"
+#include "query_info.h"
+#include "query_scope.h"
 
 namespace mizugaki::analyzer::details {
 
@@ -45,9 +48,27 @@ using schema_element = std::pair<
         ast::name::name const& name,
         query_scope const& scope);
 
-[[nodiscard]] ::takatori::util::optional_ptr<::yugawara::storage::relation const> analyze_relation_name(
+/// @brief the result of analyze_relation_name()
+using declared_relation = std::variant<
+        std::monostate, // error
+        std::reference_wrapper<::yugawara::storage::table const>, // found table
+        std::shared_ptr<query_info const>>; // found named subquery (CTE)
+
+/**
+ * @brief analyzes a declared relation name and returns its declaration.
+ * @details This function looks up the relation declaration information.
+ *    This can return the following types of relations:
+ *    - tables - returns as yugawara::storage::table
+ *    - CTEs - returns as query_info
+ * @param context The analyzer context.
+ * @param name The AST representation of the relation name.
+ * @param scope the query scope to search within (for CTEs)
+ * @return An optional pointer to the relation declaration if found; otherwise, an empty optional.
+ */
+[[nodiscard]] declared_relation analyze_relation_name(
         analyzer_context& context,
-        ast::name::name const& name);
+        ast::name::name const& name,
+        query_scope const& scope = {});
 
 [[nodiscard]] std::vector<std::shared_ptr<::yugawara::function::declaration const>> analyze_function_name(
         analyzer_context& context,

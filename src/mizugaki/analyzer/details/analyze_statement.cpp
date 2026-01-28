@@ -533,23 +533,11 @@ public:
     }
 
     [[nodiscard]] std::optional<relation_info> extract_table(ast::name::name const& table_name) {
-        auto relation = analyze_relation_name(context_, table_name);
-        if (!relation) {
+        auto result = analyze_table_name(context_, table_name, true);
+        if (!result) {
             return {}; // relation not found
         }
-        if (relation->kind() != ::yugawara::storage::table::tag) {
-            context_.report(
-                    sql_analyzer_code::unsupported_feature,
-                    string_builder {}
-                            << "unsupported relation type \""
-                            << relation->kind()
-                            << "\": "
-                            << print_support { table_name }
-                            << string_builder::to_string,
-                    table_name.region());
-            return {};
-        }
-        auto&& table = unsafe_downcast<::yugawara::storage::table>(*relation);
+        auto&& table = *result->second;
         auto info = build_relation_info(context_, table, true, true);
         if (!info.primary_index()) {
             context_.report(

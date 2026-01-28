@@ -1,8 +1,5 @@
 #include <mizugaki/analyzer/details/analyze_name.h>
 
-#include <functional>
-#include <variant>
-
 #include <takatori/descriptor/variable.h>
 
 #include <takatori/scalar/variable_reference.h>
@@ -66,6 +63,7 @@ using symbol_info = std::variant<
         descriptor::variable,
         std::reference_wrapper<relation_info const>,
         std::reference_wrapper<relation_decl const>,
+        std::shared_ptr<query_info const>,
         std::shared_ptr<schema_decl const>,
         std::reference_wrapper<catalog_decl const>,
         schema_element<table_decl>,
@@ -103,7 +101,7 @@ public:
     [[nodiscard]] optional_ptr<relation_info const> find_relation_info(ast::name::name const& name) {
         auto alternatives = find_symbol(scope_, name, { symbol_kind::relation_info });
         if (saw_error(alternatives)) {
-            return {};
+            return {}; // not found due to error
         }
         if (auto v = unwrap(std::get_if<std::reference_wrapper<relation_info const>>(&alternatives))) {
             return v;
@@ -116,20 +114,31 @@ public:
         return {};
     }
 
-    [[nodiscard]] optional_ptr<relation_decl const> find_relation_decl(ast::name::name const& name) {
-        auto alternatives = find_symbol(scope_, name, { symbol_kind::relation_decl });
+    [[nodiscard]] declared_relation find_relation_decl(ast::name::name const& name) {
+        auto alternatives = find_symbol(scope_, name, { symbol_kind::relation_decl, symbol_kind::query_decl });
         if (saw_error(alternatives)) {
-            return {};
+            return std::monostate {}; // not found due to error
         }
         if (auto v = unwrap(std::get_if<std::reference_wrapper<relation_decl const>>(&alternatives))) {
-            return v;
+            if (v->kind() == table_decl::tag) {
+                return std::ref(unsafe_downcast<table_decl const>(*v));
+            }
+            context_.report(sql_analyzer_code::table_not_found,
+                    string_builder {}
+                            << "'" << print_support { name } << "' is not a valid table"
+                            << string_builder::to_string,
+                    name.region());
+            return std::monostate {}; // not a table declaration
+        }
+        if (auto v = std::get_if<std::shared_ptr<query_info const>>(&alternatives)) {
+            return *v;
         }
         context_.report(sql_analyzer_code::table_not_found,
                 string_builder {}
                         << "'" << print_support { name } << "' is not found"
                         << string_builder::to_string,
                 name.region());
-        return {};
+        return std::monostate {}; // not found
     }
 
     [[nodiscard]] std::vector<std::shared_ptr<function_decl const>> collect_function_decl(
@@ -332,6 +341,8 @@ private:
                 return { kind::schema_decl };
             case kind::relation_decl:
                 return { kind::schema_decl };
+            case kind::query_decl:
+                return {};
             case kind::schema_decl:
                 return { kind::catalog_decl };
             case kind::catalog_decl:
@@ -370,7 +381,7 @@ private:
         if (targets.contains(symbol_kind::column_variable)) {
             auto r = find_variable_in_query(scope, name);
             if (auto&& v = r.found()) {
-                return *v;
+                return { std::move(*v) };
             }
             if (r.is_error()) {
                 return saw_error; // propagate error
@@ -391,7 +402,18 @@ private:
             }
         }
 
-        // 5-2. find relation declared from schema search path
+        // 5-2. find query declared from current scope
+        if (targets.contains(symbol_kind::query_decl)) {
+            auto r = find_query_in_query(scope, name);
+            if (auto v = r.found()) {
+                return v;
+            }
+            if (r.is_error()) {
+                return saw_error; // propagate error
+            }
+        }
+
+        // 5-3. find relation declared from schema search path
         if (targets.contains(symbol_kind::relation_decl)) {
             for (auto&& s : context_.options()->schema_search_path().elements()) {
                 auto r = find_relation_decl_in_schema(*s, name);
@@ -404,7 +426,7 @@ private:
             }
         }
 
-        // 5-3. find table declared from schema search path
+        // 5-4. find table declared from schema search path
         if (targets.contains(symbol_kind::table_decl)) {
             for (auto&& s : context_.options()->schema_search_path().elements()) {
                 auto r = find_table_decl_in_schema(*s, name);
@@ -417,7 +439,7 @@ private:
             }
         }
 
-        // 5-4. find index declared from schema search path
+        // 5-5. find index declared from schema search path
         if (targets.contains(symbol_kind::index_decl)) {
             for (auto&& s : context_.options()->schema_search_path().elements()) {
                 auto r = find_index_decl_in_schema(*s, name);
@@ -582,10 +604,23 @@ private:
                     symbol_kind::field_variable,
                     symbol_kind::schema_variable,
             };
+            constexpr symbol_kind_set relation_decls {
+                    symbol_kind::relation_decl,
+                    symbol_kind::query_decl,
+            };
             if ((targets - variables).empty()) {
                 context_.report(sql_analyzer_code::variable_not_found,
                         string_builder {}
                                 << "variable \"" << print_support { name } << "\" is not found"
+                                << ", searching for " << targets
+                                << string_builder::to_string,
+                        name.last_name().region());
+                return;
+            }
+            if ((targets - relation_decls).empty()) {
+                context_.report(sql_analyzer_code::table_not_found,
+                        string_builder {}
+                                << "table \"" << print_support { name } << "\" is not found"
                                 << ", searching for " << targets
                                 << string_builder::to_string,
                         name.last_name().region());
@@ -637,8 +672,9 @@ private:
                         name.last_name().region());
                 break;
             case symbol_kind::relation_info:
-            case symbol_kind::relation_decl: // FIXME: for views
+            case symbol_kind::relation_decl:
             case symbol_kind::table_decl:
+            case symbol_kind::query_decl:
                 context_.report(sql_analyzer_code::table_not_found,
                         string_builder {}
                                 << "table \"" << print_support { name } << "\" is not found"
@@ -681,6 +717,18 @@ private:
             return find_symbol_result<relation_info const&>::error;
         }
 
+        return {};
+    }
+
+    [[nodiscard]] find_symbol_result<query_info const*> find_query_in_query(
+            query_scope const& scope,
+            ast::name::simple const& name) {
+        ast::common::chars buffer;
+        for (optional_ptr current { scope }; current; current = current->parent()) {
+             if (auto query = current->find_query(to_identifier(name, buffer, name_kind::relation))) {
+                 return query;
+             }
+        }
         return {};
     }
 
@@ -895,11 +943,11 @@ optional_ptr<relation_info const> analyze_relation_info_name(
     return e.find_relation_info(name);
 }
 
-optional_ptr<relation_decl const> analyze_relation_name(
+declared_relation analyze_relation_name(
         analyzer_context& context,
-        ast::name::name const& name) {
-    query_scope empty_scope;
-    engine e { context, empty_scope };
+        ast::name::name const& name,
+        query_scope const& scope) {
+    engine e { context, scope };
     return e.find_relation_decl(name);
 }
 
