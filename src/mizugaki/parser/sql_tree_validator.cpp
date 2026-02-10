@@ -327,6 +327,11 @@ public:
         return true;
     }
 
+    [[nodiscard]] bool operator()(ast::statement::truncate_table_statement const& element, std::size_t depth) {
+        ACCEPT(element.name()); // NOLINT(*-simplify-boolean-expr)
+        return true;
+    }
+
     [[nodiscard]] bool operator()(ast::statement::grant_privilege_statement const& element, std::size_t depth) {
         for (auto&& object : element.objects()) {
             ACCEPT(object.object_name());

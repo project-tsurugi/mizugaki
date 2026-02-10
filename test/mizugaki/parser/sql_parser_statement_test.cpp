@@ -15,6 +15,7 @@
 #include <mizugaki/ast/statement/sequence_definition.h>
 #include <mizugaki/ast/statement/schema_definition.h>
 #include <mizugaki/ast/statement/drop_statement.h>
+#include <mizugaki/ast/statement/truncate_table_statement.h>
 #include <mizugaki/ast/statement/grant_privilege_statement.h>
 #include <mizugaki/ast/statement/revoke_privilege_statement.h>
 #include <mizugaki/ast/statement/column_definition.h>
@@ -1954,6 +1955,35 @@ TEST_F(sql_parser_statement_test, drop_statement_schema) {
     EXPECT_EQ(extract(result), (statement::drop_statement {
             statement::kind::drop_schema_statement,
             name::simple { "T0" },
+    }));
+}
+
+TEST_F(sql_parser_statement_test, truncate_table_statement) {
+    auto result = parse("TRUNCATE TABLE T0");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::truncate_table_statement {
+            name::simple { "T0" },
+    }));
+}
+
+TEST_F(sql_parser_statement_test, truncate_table_statement_restart_identity) {
+    auto result = parse("TRUNCATE TABLE T0 RESTART IDENTITY");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::truncate_table_statement {
+            name::simple { "T0" },
+            { statement::identity_column_restart_option::restart_identity },
+    }));
+}
+
+TEST_F(sql_parser_statement_test, truncate_table_statement_continue_identity) {
+    auto result = parse("TRUNCATE TABLE T0 CONTINUE IDENTITY");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::truncate_table_statement {
+            name::simple { "T0" },
+            { statement::identity_column_restart_option::continue_identity },
     }));
 }
 

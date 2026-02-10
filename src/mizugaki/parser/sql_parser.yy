@@ -35,6 +35,7 @@
     #include <mizugaki/ast/statement/sequence_definition.h>
     #include <mizugaki/ast/statement/schema_definition.h>
     #include <mizugaki/ast/statement/drop_statement.h>
+    #include <mizugaki/ast/statement/truncate_table_statement.h>
     #include <mizugaki/ast/statement/grant_privilege_statement.h>
     #include <mizugaki/ast/statement/revoke_privilege_statement.h>
     #include <mizugaki/ast/statement/table_element.h>
@@ -408,6 +409,7 @@
 // %token <ast::common::chars> PLI "PLI"
 %token POSITION "POSITION"
 // %token <ast::common::chars> REPEATABLE "REPEATABLE"
+%token <ast::common::chars> RESTART "RESTART"
 // %token <ast::common::chars> RETURNED_LENGTH "RETURNED_LENGTH"
 // %token <ast::common::chars> RETURNED_OCTET_LENGTH "RETURNED_OCTET_LENGTH"
 // %token <ast::common::chars> RETURNED_SQLSTATE "RETURNED_SQLSTATE"
@@ -503,7 +505,7 @@
 %token CONSTRAINT "CONSTRAINT"
 %token CONSTRAINTS "CONSTRAINTS"
 // %token <ast::common::chars> CONSTRUCTOR "CONSTRUCTOR"
-// %token <ast::common::chars> CONTINUE "CONTINUE"
+%token <ast::common::chars> CONTINUE "CONTINUE"
 %token CORRESPONDING "CORRESPONDING"
 %token CREATE "CREATE"
 %token CROSS "CROSS"
@@ -759,6 +761,9 @@
 %token MINVALUE "MINVALUE"
 %token INCREMENT "INCREMENT"
 
+// SQL-2011 keywords
+%token TRUNCATE "TRUNCATE"
+
 // extra operators
 %token CONTAINS_OPERATOR "<@"
 %token IS_CONTAINED_BY_OPERATOR "@>"
@@ -862,6 +867,8 @@
 %nterm <ast::common::regioned<bool>> if_exists_opt
 %nterm <ast::common::regioned<bool>> if_not_exists_opt
 %nterm <std::optional<ast::common::regioned<ast::statement::drop_statement_option>>> drop_behavior_opt
+
+%nterm <std::optional<ast::common::regioned<ast::statement::identity_column_restart_option>>> identity_column_restart_option_opt
 
 %nterm <element_vector<ast::statement::privilege_action>> privilege_list
 %nterm <element_vector<ast::statement::privilege_action>> privilege_action_list
@@ -1205,6 +1212,13 @@ statement
                     regioned { ast::statement::kind::drop_schema_statement, @k },
                     $n,
                     std::move(options),
+                    @$);
+        }
+    | TRUNCATE TABLE table_name[n] identity_column_restart_option_opt[o]
+        {
+            $$ = driver.node<ast::statement::truncate_table_statement>(
+                    $n,
+                    $o,
                     @$);
         }
     | GRANT privilege_list[a] ON privilege_object_list[o] TO privilege_user_list[u]
@@ -2060,6 +2074,21 @@ drop_behavior_opt
     | RESTRICT
         {
             $$ = { ast::statement::drop_statement_option::restrict, @$ };
+        }
+    ;
+
+identity_column_restart_option_opt
+    : %empty
+        {
+            $$ = std::nullopt;
+        }
+    | RESTART IDENTITY
+        {
+            $$ = { ast::statement::identity_column_restart_option::restart_identity, @$ };
+        }
+    | CONTINUE IDENTITY
+        {
+            $$ = { ast::statement::identity_column_restart_option::continue_identity, @$ };
         }
     ;
 
@@ -4794,11 +4823,13 @@ identifier
 
 contextual_identifier
     : ASC[t] { $$ = driver.to_regular_identifier($t, @$); }
+    | CONTINUE[t] { $$ = driver.to_regular_identifier($t, @$); }
     | DESC[t] { $$ = driver.to_regular_identifier($t, @$); }
     | KEY[t] { $$ = driver.to_regular_identifier($t, @$); }
     | IGNORE[t] { $$ = driver.to_regular_identifier($t, @$); }
     | SCHEMA[t] { $$ = driver.to_regular_identifier($t, @$); }
     | SEQUENCE[t] { $$ = driver.to_regular_identifier($t, @$); }
+    | RESTART[t] { $$ = driver.to_regular_identifier($t, @$); }
     | RESTRICT[t] { $$ = driver.to_regular_identifier($t, @$); }
     | FIRST[t] { $$ = driver.to_regular_identifier($t, @$); }
     | LAST[t] { $$ = driver.to_regular_identifier($t, @$); }

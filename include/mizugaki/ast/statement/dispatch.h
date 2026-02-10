@@ -15,6 +15,7 @@
 #include <mizugaki/ast/statement/sequence_definition.h>
 #include <mizugaki/ast/statement/schema_definition.h>
 #include <mizugaki/ast/statement/drop_statement.h>
+#include <mizugaki/ast/statement/truncate_table_statement.h>
 #include <mizugaki/ast/statement/grant_privilege_statement.h>
 #include <mizugaki/ast/statement/revoke_privilege_statement.h>
 #include <mizugaki/ast/statement/empty_statement.h>
@@ -121,6 +122,10 @@ inline auto dispatch(Callback&& callback, E&& object, Args&&... args) {
             case kind::drop_sequence_statement:
             case kind::drop_schema_statement:
                 return polymorphic_callback<drop_statement>(
+                        std::forward<Callback>(callback), std::forward<E>(object), std::forward<Args>(args)...);
+
+            case kind::truncate_table_statement:
+                return polymorphic_callback<truncate_table_statement>(
                         std::forward<Callback>(callback), std::forward<E>(object), std::forward<Args>(args)...);
 
             case kind::grant_privilege_statement:

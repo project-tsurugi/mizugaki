@@ -177,6 +177,7 @@ UTF8_CHAR {ASCII}|{UTF8_2}{U}|{UTF8_3}{U}{U}|{UTF8_4}{U}{U}{U}
 "CHAR_LENGTH" { TRACE_RETURN parser_type::make_CHAR_LENGTH(location()); }
 "CHARACTER_LENGTH" { TRACE_RETURN parser_type::make_CHARACTER_LENGTH(location()); }
 "COALESCE" { TRACE_RETURN parser_type::make_COALESCE(location()); }
+"CONTINUE" { TRACE_RETURN parser_type::make_CONTINUE(get_image(driver), location()); }
 "CONVERT" { TRACE_RETURN parser_type::make_CONVERT(location()); }
 "COUNT" { TRACE_RETURN parser_type::make_COUNT(location()); }
 "EXISTS" { TRACE_RETURN parser_type::make_EXISTS(location()); }
@@ -193,6 +194,7 @@ UTF8_CHAR {ASCII}|{UTF8_2}{U}|{UTF8_3}{U}{U}|{UTF8_4}{U}{U}{U}
 "OVERLAPS" { TRACE_RETURN parser_type::make_OVERLAPS(location()); }
 "OVERLAY" { TRACE_RETURN parser_type::make_OVERLAY(location()); }
 "POSITION" { TRACE_RETURN parser_type::make_POSITION(location()); }
+"RESTART" { TRACE_RETURN parser_type::make_RESTART(get_image(driver), location()); }
 "SIMILAR" { TRACE_RETURN parser_type::make_SIMILAR(location()); }
 "SUBLIST" { TRACE_RETURN parser_type::make_SUBLIST(location()); }
 "SUBSTRING" { TRACE_RETURN parser_type::make_SUBSTRING(location()); }
@@ -437,6 +439,9 @@ UTF8_CHAR {ASCII}|{UTF8_2}{U}|{UTF8_3}{U}{U}|{UTF8_4}{U}{U}{U}
 "NULLS" { TRACE_RETURN parser_type::make_NULLS(location()); }
 "REPLACE" { TRACE_RETURN parser_type::make_REPLACE(location()); }
 "OWNED" { TRACE_RETURN parser_type::make_OWNED(location()); }
+
+    /* SQL-2011 keywords */
+"TRUNCATE" { TRACE_RETURN parser_type::make_TRUNCATE(location()); }
 
     /* extra operators */
 "<@" { TRACE_RETURN parser_type::make_CONTAINS_OPERATOR(location()); }
