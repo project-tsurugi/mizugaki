@@ -1,4 +1,5 @@
 name: Mizugaki-Install-Dependencies
+description: Install dependencies for Mizugaki
 
 inputs:
   checkout:
@@ -38,7 +39,7 @@ runs:
         rm -fr build
         mkdir build
         cd build
-        cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DBUILD_TESTS=OFF -DBUILD_DOCUMENTS=OFF -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/.local ${{ inputs.cmake_build_option }} ..
+        cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DBUILD_TESTS=OFF -DBUILD_DOCUMENTS=OFF -DBUILD_STRICT=OFF -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/.local ${{ inputs.cmake_build_option }} ..
         cmake --build . --target install --clean-first
       shell: bash
 
@@ -58,6 +59,6 @@ runs:
         rm -fr build
         mkdir build
         cd build
-        cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DBUILD_TESTS=OFF -DBUILD_DOCUMENTS=OFF -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/.local ${{ inputs.cmake_build_option }} ..
+        cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DBUILD_TESTS=OFF -DBUILD_DOCUMENTS=OFF -DBUILD_STRICT=OFF -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/.local ${{ inputs.cmake_build_option }} ..
         cmake --build . --target install --clean-first
       shell: bash
