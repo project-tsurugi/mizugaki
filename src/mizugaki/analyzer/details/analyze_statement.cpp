@@ -29,6 +29,7 @@
 #include <takatori/statement/create_index.h>
 #include <takatori/statement/drop_table.h>
 #include <takatori/statement/drop_index.h>
+#include <takatori/statement/truncate_table.h>
 #include <takatori/statement/grant_table.h>
 #include <takatori/statement/revoke_table.h>
 #include <takatori/statement/write.h>
@@ -1480,6 +1481,27 @@ public:
                 stmt.region(),
                 factory_.schema(std::move(schema).ownership()),
                 factory_.index(std::move(target)));
+    }
+
+    [[nodiscard]] result_type operator()(ast::statement::truncate_table_statement const& stmt) {
+        auto result = analyze_table_name(context_, *stmt.name());
+        if (!result) {
+            // NOTE: error already reported
+            return {};
+        }
+        auto target = std::move(result->second);
+
+        tstatement::truncate_table::option_set_type options {};
+        if (auto&& opt = stmt.identity_column_option()) {
+            if (*opt == ast::statement::identity_column_restart_option::restart_identity) {
+                options.insert(tstatement::truncate_table_option_kind::restart_identity);
+            }
+            // NOTE: CONTINUE IDENTITY is default behavior
+        }
+        return context_.create<tstatement::truncate_table>(
+                stmt.region(),
+                factory_.storage(std::move(target)),
+                options);
     }
 
     [[nodiscard]] result_type operator()(ast::statement::grant_privilege_statement const& stmt) {

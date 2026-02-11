@@ -5,6 +5,7 @@
 #include <takatori/statement/empty.h>
 #include <takatori/statement/drop_table.h>
 #include <takatori/statement/drop_index.h>
+#include <takatori/statement/truncate_table.h>
 #include <takatori/statement/grant_table.h>
 #include <takatori/statement/revoke_table.h>
 
@@ -18,6 +19,7 @@
 #include <mizugaki/ast/statement/revoke_privilege_statement.h>
 
 #include "test_parent.h"
+#include "mizugaki/ast/statement/truncate_table_statement.h"
 
 namespace mizugaki::analyzer::details {
 
@@ -219,6 +221,74 @@ TEST_F(analyze_statement_ddl_test, drop_statement_restrict_vs_cascade) {
                     ast::statement::drop_statement_option::restrict,
                     ast::statement::drop_statement_option::cascade,
             },
+    });
+}
+
+TEST_F(analyze_statement_ddl_test, truncate_table_simple) {
+    auto table = install_table("testing");
+    auto r = analyze_statement(context(), ast::statement::truncate_table_statement {
+            id("testing"),
+            {},
+    });
+    auto alternative = std::get_if<statement_result_type>(&r);
+    ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
+    ASSERT_EQ((*alternative)->kind(), tstatement::truncate_table::tag);
+
+    auto&& stmt = downcast<tstatement::truncate_table>(**alternative);
+    auto&& target = extract(stmt.target());
+    EXPECT_EQ(&target, table.get());
+
+    EXPECT_EQ(stmt.options().size(), 0);
+}
+
+TEST_F(analyze_statement_ddl_test, truncate_table_restart_identity) {
+    auto table = install_table("testing");
+    auto r = analyze_statement(context(), ast::statement::truncate_table_statement {
+            id("testing"),
+            {
+                    ast::statement::identity_column_restart_option::restart_identity,
+            },
+    });
+    auto alternative = std::get_if<statement_result_type>(&r);
+    ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
+    ASSERT_EQ((*alternative)->kind(), tstatement::truncate_table::tag);
+
+    auto&& stmt = downcast<tstatement::truncate_table>(**alternative);
+    auto&& target = extract(stmt.target());
+    EXPECT_EQ(&target, table.get());
+
+    EXPECT_EQ(stmt.options().size(), 1);
+    EXPECT_TRUE(stmt.options().contains(tstatement::truncate_table_option_kind::restart_identity));
+}
+
+TEST_F(analyze_statement_ddl_test, truncate_table_continue_identity) {
+    auto table = install_table("testing");
+    auto r = analyze_statement(context(), ast::statement::truncate_table_statement {
+            id("testing"),
+            {
+                    ast::statement::identity_column_restart_option::continue_identity,
+            },
+    });
+    auto alternative = std::get_if<statement_result_type>(&r);
+    ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
+    ASSERT_EQ((*alternative)->kind(), tstatement::truncate_table::tag);
+
+    auto&& stmt = downcast<tstatement::truncate_table>(**alternative);
+    auto&& target = extract(stmt.target());
+    EXPECT_EQ(&target, table.get());
+
+    EXPECT_EQ(stmt.options().size(), 0);
+}
+
+TEST_F(analyze_statement_ddl_test, truncate_table_not_found) {
+    invalid(sql_analyzer_code::table_not_found, ast::statement::truncate_table_statement {
+            id("MISSING"),
     });
 }
 
