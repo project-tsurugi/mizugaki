@@ -279,6 +279,31 @@ TEST_F(analyze_query_expression_with_test, column_names_more) {
     });
 }
 
+TEST_F(analyze_query_expression_with_test, column_names_conflict) {
+    invalid(sql_analyzer_code::column_already_exists, ast::query::with_expression {
+            {
+                ast::query::with_element {
+                    id("q"),
+                    {
+                            id("a"),
+                            id("b"),
+                            id("a"), // conflict
+                    },
+                    ast::query::table_value_constructor {
+                            ast::scalar::value_constructor {
+                                    literal(number("1")),
+                                    literal(number("2")),
+                                    literal(number("3")),
+                            },
+                    },
+                },
+            },
+            ast::query::table_reference {
+                    id("q"),
+            },
+    });
+}
+
 TEST_F(analyze_query_expression_with_test, column_not_exported) {
     auto table = install_table("t");
     ::yugawara::storage::column_feature_set system_flags {

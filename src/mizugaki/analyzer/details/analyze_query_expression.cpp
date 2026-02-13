@@ -762,11 +762,25 @@ public:
                     element.region());
                 return false;
             }
+            ::tsl::hopscotch_set<std::string> saw_column_names {};
             for (std::size_t index = 0, size = element.column_names().size(); index < size; ++index) {
-                column_names[index] = normalize_identifier(
+                auto identifier = normalize_identifier(
                         context_,
                         *element.column_names()[index],
                         name_kind::variable);
+                auto [iter, success] = saw_column_names.emplace(identifier);
+                (void) iter;
+                if (!success) {
+                    context_.report(
+                        sql_analyzer_code::column_already_exists,
+                        string_builder {}
+                                << "duplicate column name in common table expression: "
+                                << print_support { *element.column_names()[index] }
+                                << string_builder::to_string,
+                        element.column_names()[index]->region());
+                    return false;
+                }
+                column_names[index] = std::move(identifier);
             }
         }
 
