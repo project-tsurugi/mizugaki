@@ -984,7 +984,7 @@ public:
         return result.output();
     }
 
-    [[nodiscard]] optional_ptr<output_port> operator()(
+    [[nodiscard]] optional_ptr<output_port> operator()( // NOLINT(*-cognitive-complexity)
             ast::table::apply const& expr,
             query_scope& scope) {
         auto operand = dispatch(*expr.operand(), scope);
@@ -1083,6 +1083,8 @@ public:
         }
 
         relation_info info { {}, correlation.correlation_name()->identifier() };
+        ::tsl::hopscotch_set<std::string> saw_column_names {};
+        saw_column_names.reserve(table_type.columns().size());
         for (std::size_t index = 0; index < table_type.columns().size(); ++index) {
             auto&& column_decl = table_type.columns()[index];
             auto&& column_target = columns[index];
@@ -1093,6 +1095,20 @@ public:
                         context_,
                         *correlation_column,
                         name_kind::variable);
+
+                // NOTE: only check correlation column names to allow duplicate column names from function result
+                auto [iter, inserted] = saw_column_names.emplace(name);
+                (void) iter;
+                if (!inserted) {
+                    context_.report(
+                            sql_analyzer_code::column_already_exists,
+                            string_builder {}
+                                    << "duplicate column name in correlation: "
+                                    << name
+                                    << string_builder::to_string,
+                            correlation_column->region());
+                    return {};
+                }
             } else {
                 name = normalize_identifier(
                         context_,
@@ -1453,11 +1469,26 @@ private:
             return {};
         }
         info.identifier() = normalize_identifier(context_, *correlation.correlation_name(), name_kind::relation);
+
+        ::tsl::hopscotch_set<std::string> saw_column_names {};
         if (!correlation.column_names().empty()) {
             auto&& rel = info.columns();
             auto&& cor = correlation.column_names();
+            saw_column_names.reserve(cor.size());
             for (std::size_t index = 0, n = cor.size(); index < n; ++index) {
-                rel[index].identifier() = normalize_identifier(context_, *cor[index], name_kind::variable);
+                auto identifier = normalize_identifier(context_, *cor[index], name_kind::variable);
+                auto [iter, inserted] = saw_column_names.emplace(identifier);
+                (void) iter;
+                if (!inserted) {
+                    context_.report(
+                            sql_analyzer_code::column_already_exists,
+                            string_builder {}
+                                    << "duplicate correlation column name: " << identifier
+                                    << string_builder::to_string,
+                            cor[index]->region());
+                    return {};
+                }
+                rel[index].identifier() = std::move(identifier);
             }
             // project relation if correlation columns are reduced
             info.erase(cor.size(), rel.size());

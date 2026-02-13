@@ -293,4 +293,37 @@ TEST_F(analyze_query_expression_subquery_test, invalid_correlation_too_many) {
     });
 }
 
+TEST_F(analyze_query_expression_subquery_test, invalid_correlation_column_conflict) {
+    invalid(sql_analyzer_code::column_already_exists, ast::query::query {
+            {
+                    ast::query::select_asterisk {},
+            },
+            {
+                    ast::table::subquery {
+                            ast::query::query {
+                                    {
+                                            ast::query::select_column {
+                                                    literal(number("1")),
+                                            },
+                                            ast::query::select_column {
+                                                    literal(number("2")),
+                                            },
+                                            ast::query::select_column {
+                                                    literal(number("3")),
+                                            },
+                                    },
+                            },
+                            {
+                                    id("Q"),
+                                    {
+                                            id("c0"),
+                                            id("c1"),
+                                            id("C0"), // conflict column name
+                                    },
+                            },
+                    },
+            },
+    });
+}
+
 } // namespace mizugaki::analyzer::details

@@ -1028,4 +1028,54 @@ TEST_F(analyze_query_expression_apply_test, invalid_correlation_columns) {
     });
 }
 
+TEST_F(analyze_query_expression_apply_test, invalid_correlation_columns_conflict) {
+    /*
+     * -- t: table(k:int8, ...)
+     * -- f: (int8) -> table(c0:int4, c1:int4, c2:int4)
+     * SELECT x.c0
+     * FROM t
+     * APPLY f(t.k) x(r0, r1, r0) -- conflict correlation column names
+     */
+    auto table = install_table("t");
+    auto function = functions_->add({
+            ::yugawara::function::declaration::minimum_builtin_function_id + 1,
+            "f",
+            ttype::table {
+                    {
+                            { "c0", ttype::int4 {} },
+                            { "c1", ttype::int4 {} },
+                            { "c2", ttype::int4 {} },
+                    },
+            },
+            {
+                    ttype::int8 {},
+            },
+            { ::yugawara::function::function_feature::table_valued_function },
+    });
+    invalid(sql_analyzer_code::column_already_exists, ast::query::query {
+            {
+                    ast::query::select_column { vref(id("x", "c0")) },
+            },
+            {
+                    ast::table::apply {
+                            ast::table::table_reference {
+                                id("t"),
+                            },
+                            id("f"),
+                            {
+                                    vref(id("t", "k"))
+                            },
+                            {
+                                    id("x"),
+                                    {
+                                            id("r0"),
+                                            id("r1"),
+                                            id("R0"),
+                                    },
+                            },
+                    },
+            },
+    });
+}
+
 } // namespace mizugaki::analyzer::details
