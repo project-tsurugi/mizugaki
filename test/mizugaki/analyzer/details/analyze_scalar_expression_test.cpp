@@ -29,11 +29,13 @@ using namespace ::mizugaki::analyzer::testing;
 
 class analyze_scalar_expression_test : public test_parent {
 protected:
+    query_scope scope;
+
     void invalid(ast::scalar::expression const& expression) {
         auto r = analyze_scalar_expression(
                 context(),
                 expression,
-                {},
+                scope,
                 {});
         EXPECT_FALSE(r) << diagnostics();
         EXPECT_NE(count_error(), 0);
@@ -57,7 +59,7 @@ TEST_F(analyze_scalar_expression_test, literal_expression) {
     auto r = analyze_scalar_expression(
             context(),
             literal(number("1")),
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -104,7 +106,7 @@ TEST_F(analyze_scalar_expression_test, host_parameter_reference_value_with_colon
     auto r = analyze_scalar_expression(
             context(),
             ast::scalar::host_parameter_reference { id(":x") },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -117,7 +119,7 @@ TEST_F(analyze_scalar_expression_test, host_parameter_reference_variable_with_co
     auto r = analyze_scalar_expression(
             context(),
             ast::scalar::host_parameter_reference { id(":x") },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -132,7 +134,7 @@ TEST_F(analyze_scalar_expression_test, host_parameter_reference_value_without_co
     auto r = analyze_scalar_expression(
             context(),
             ast::scalar::host_parameter_reference { id(":x") },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -145,7 +147,7 @@ TEST_F(analyze_scalar_expression_test, host_parameter_reference_variable_without
     auto r = analyze_scalar_expression(
             context(),
             ast::scalar::host_parameter_reference { id(":x") },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -164,7 +166,7 @@ TEST_F(analyze_scalar_expression_test, cast_expression) {
                     literal(number("1")),
                     ast::type::simple { ast::type::kind::tiny_integer },
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -200,7 +202,7 @@ TEST_F(analyze_scalar_expression_test, unary_expression_plus) {
                     from,
                     literal(number("1")),
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -219,7 +221,7 @@ TEST_F(analyze_scalar_expression_test, unary_expression_minus) {
                     from,
                     literal(number("1")),
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -238,7 +240,7 @@ TEST_F(analyze_scalar_expression_test, unary_expression_not) {
                     from,
                     literal(ast::literal::boolean { true }),
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -265,7 +267,7 @@ TEST_F(analyze_scalar_expression_test, binary_expression_plus) {
                     from,
                     literal(number("2")),
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -286,7 +288,7 @@ TEST_F(analyze_scalar_expression_test, binary_expression_minus) {
                     from,
                     literal(number("2")),
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -308,7 +310,7 @@ TEST_F(analyze_scalar_expression_test, binary_expression_asterisk) {
                     from,
                     literal(number("2")),
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -330,7 +332,7 @@ TEST_F(analyze_scalar_expression_test, binary_expression_solidus) {
                     from,
                     literal(number("2")),
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -352,7 +354,7 @@ TEST_F(analyze_scalar_expression_test, binary_expression_percent) {
                     from,
                     literal(number("2")),
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -374,7 +376,7 @@ TEST_F(analyze_scalar_expression_test, binary_expression_concatenation) {
                     from,
                     literal(string("'b'")),
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -396,7 +398,7 @@ TEST_F(analyze_scalar_expression_test, binary_expression_and) {
                     from,
                     literal(ast::literal::boolean { false }),
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -418,7 +420,7 @@ TEST_F(analyze_scalar_expression_test, binary_expression_or) {
                     from,
                     literal(ast::literal::boolean { false }),
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -438,7 +440,7 @@ TEST_F(analyze_scalar_expression_test, binary_expression_is_null) {
                     ast::scalar::binary_operator::is,
                     literal(ast::literal::null {}),
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -457,7 +459,7 @@ TEST_F(analyze_scalar_expression_test, binary_expression_is_true) {
                     ast::scalar::binary_operator::is,
                     literal(ast::literal::boolean { true }),
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -476,7 +478,7 @@ TEST_F(analyze_scalar_expression_test, binary_expression_is_false) {
                     ast::scalar::binary_operator::is,
                     literal(ast::literal::boolean { false }),
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -495,7 +497,7 @@ TEST_F(analyze_scalar_expression_test, binary_expression_is_unknown) {
                     ast::scalar::binary_operator::is,
                     literal(ast::literal::boolean { ast::literal::boolean_kind::unknown }),
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -522,7 +524,7 @@ TEST_F(analyze_scalar_expression_test, binary_expression_is_not_null) {
                     ast::scalar::binary_operator::is_not,
                     literal(ast::literal::null {}),
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -560,7 +562,7 @@ TEST_F(analyze_scalar_expression_test, placeholder_reference_value_with_colon) {
     auto r = analyze_scalar_expression(
             context(),
             ast::scalar::placeholder_reference { 1 },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -575,7 +577,7 @@ TEST_F(analyze_scalar_expression_test, placeholder_reference_value_without_colon
     auto r = analyze_scalar_expression(
             context(),
             ast::scalar::placeholder_reference { 23 },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();

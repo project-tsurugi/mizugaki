@@ -31,6 +31,8 @@ using namespace ::mizugaki::analyzer::testing;
 
 class analyze_scalar_expression_set_function_test : public test_parent {
 protected:
+    query_scope scope {};
+
     ::takatori::descriptor::aggregate_function descriptor(std::shared_ptr<::yugawara::aggregate::declaration const> decl) {
         return ::yugawara::binding::factory {}(std::move(decl));
     }
@@ -39,7 +41,7 @@ protected:
         auto r = analyze_scalar_expression(
                 context(),
                 expression,
-                {},
+                scope,
                 {});
         EXPECT_FALSE(r) << diagnostics();
         EXPECT_NE(count_error(), 0);
@@ -75,7 +77,7 @@ TEST_F(analyze_scalar_expression_set_function_test, builtin_simple) {
                     {},
                     {},
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -114,7 +116,7 @@ TEST_F(analyze_scalar_expression_set_function_test, builtin_args) {
                             literal(number("1")),
                     },
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -157,7 +159,7 @@ TEST_F(analyze_scalar_expression_set_function_test, builtin_distinct) {
                             literal(number("1")),
                     },
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -209,7 +211,7 @@ TEST_F(analyze_scalar_expression_set_function_test, builtin_overload) {
                             literal(number("1")),
                     },
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -269,7 +271,7 @@ TEST_F(analyze_scalar_expression_set_function_test, builtin_overload_limited_dec
                             },
                     },
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -309,7 +311,6 @@ TEST_F(analyze_scalar_expression_set_function_test, builtin_overload_timestamp) 
 
     auto&& ctxt = context();
     auto v = vd("v", ttype::time_point {});
-    query_scope scope {};
     auto&& rinfo = scope.add({});
     rinfo.add({ {}, v, "v" });
 
@@ -358,7 +359,6 @@ TEST_F(analyze_scalar_expression_set_function_test, builtin_overload_timestamp_t
 
     auto&& ctxt = context();
     auto v = vd("v", ttype::time_point { ttype::with_time_zone });
-    query_scope scope {};
     auto&& rinfo = scope.add({});
     rinfo.add({ {}, v, "v" });
 

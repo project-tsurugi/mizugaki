@@ -24,11 +24,13 @@ using namespace ::mizugaki::analyzer::testing;
 
 class analyze_scalar_expression_case_test : public test_parent {
 protected:
+    query_scope scope {};
+
     void invalid(ast::scalar::expression const& expression) {
         auto r = analyze_scalar_expression(
                 context(),
                 expression,
-                {},
+                scope,
                 {});
         EXPECT_FALSE(r) << diagnostics();
         EXPECT_NE(count_error(), 0);
@@ -74,7 +76,7 @@ TEST_F(analyze_scalar_expression_case_test, case_searched) {
                             },
                     },
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -109,7 +111,7 @@ TEST_F(analyze_scalar_expression_case_test, case_searched_default) {
                     },
                     literal(number("0")),
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -160,7 +162,7 @@ TEST_F(analyze_scalar_expression_case_test, case_searched_multiple) {
                             },
                     },
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -213,7 +215,7 @@ TEST_F(analyze_scalar_expression_case_test, case_simple) {
                             },
                     },
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -251,7 +253,7 @@ TEST_F(analyze_scalar_expression_case_test, case_simple_default) {
                     },
                     literal(number("9999")),
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -297,7 +299,7 @@ TEST_F(analyze_scalar_expression_case_test, case_simple_multiple) {
                             },
                     },
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -355,7 +357,7 @@ TEST_F(analyze_scalar_expression_case_test, nullif) {
                             literal(number("2")),
                     },
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -402,7 +404,7 @@ TEST_F(analyze_scalar_expression_case_test, coalesce) {
                             literal(number("1")),
                     },
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -425,7 +427,7 @@ TEST_F(analyze_scalar_expression_case_test, coalesce_multiple) {
                             literal(number("3")),
                     },
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();

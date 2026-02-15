@@ -12,7 +12,6 @@
 
 #include <yugawara/function/declaration.h>
 
-#include <mizugaki/ast/type/simple.h>
 #include <mizugaki/ast/type/character_string.h>
 
 #include <mizugaki/ast/scalar/binary_expression.h>
@@ -27,6 +26,8 @@ using namespace ::mizugaki::analyzer::testing;
 
 class analyze_scalar_expression_function_test : public test_parent {
 protected:
+    query_scope scope {};
+
     ::takatori::descriptor::function descriptor(std::shared_ptr<::yugawara::function::declaration const> decl) {
         return ::yugawara::binding::factory {}(std::move(decl));
     }
@@ -35,7 +36,7 @@ protected:
         auto r = analyze_scalar_expression(
                 context(),
                 expression,
-                {},
+                scope,
                 {});
         EXPECT_FALSE(r) << diagnostics();
         EXPECT_NE(count_error(), 0);
@@ -70,7 +71,7 @@ TEST_F(analyze_scalar_expression_function_test, builtin_simple) {
                     {},
                     {},
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -101,7 +102,7 @@ TEST_F(analyze_scalar_expression_function_test, builtin_args) {
                     },
                     {},
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -151,7 +152,7 @@ TEST_F(analyze_scalar_expression_function_test, builtin_overload) {
                     },
                     {},
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -253,7 +254,7 @@ TEST_F(analyze_scalar_expression_function_test, function_simple) {
                     id("constant"),
                     {},
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -285,7 +286,7 @@ TEST_F(analyze_scalar_expression_function_test, function_arguments) {
                             literal(number("8")),
                     },
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -339,7 +340,7 @@ TEST_F(analyze_scalar_expression_function_test, function_overload) {
                             literal(number("3")),
                     },
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();

@@ -3,8 +3,10 @@
 #include <vector>
 
 #include <takatori/type/boolean.h>
+#include <takatori/type/character.h>
 
 #include <takatori/value/unknown.h>
+#include <takatori/value/character.h>
 
 #include <takatori/scalar/immediate.h>
 #include <takatori/scalar/cast.h>
@@ -34,8 +36,7 @@
 #include <mizugaki/analyzer/details/analyze_literal.h>
 #include <mizugaki/analyzer/details/analyze_name.h>
 #include <mizugaki/analyzer/details/analyze_type.h>
-#include <takatori/type/character.h>
-#include <takatori/value/character.h>
+#include <mizugaki/analyzer/details/analyze_query_expression.h>
 
 #include "name_print_support.h"
 
@@ -55,7 +56,7 @@ class engine {
 public:
     explicit engine(
             analyzer_context& context,
-            query_scope const& scope) noexcept :
+            query_scope& scope) noexcept :
         context_ { context },
         scope_ { scope }
     {}
@@ -435,7 +436,13 @@ public:
     // FIXME: impl extract_expression
     // FIXME: impl trim_expression
     // FIXME: impl value_constructor
+
     // FIXME: impl subquery (scalar/row)
+    // [[nodiscard]] std::unique_ptr<tscalar::expression> operator()(
+    //         ast::scalar::subquery const& expr,
+    //         value_context const&) {
+    //
+    // }
 
     [[nodiscard]] std::unique_ptr<tscalar::expression> operator()(
             ast::scalar::comparison_predicate const& expr,
@@ -1163,7 +1170,7 @@ public:
 
 private:
     analyzer_context& context_;
-    query_scope const& scope_;
+    query_scope& scope_;
 
     ::yugawara::binding::factory factory_;
 
@@ -1228,7 +1235,7 @@ bool analyze_scalar_expression_result::saw_aggregate() const noexcept {
 result_type analyze_scalar_expression(
         analyzer_context& context,
         ast::scalar::expression const& expression,
-        query_scope const& scope,
+        query_scope& scope,
         value_context const& value_context) {
     engine e { context, scope };
     return e.process(expression, value_context);

@@ -1188,7 +1188,7 @@ public:
 
     [[nodiscard]] select_element_result operator()(
             ast::query::select_column const& elem,
-            query_scope const& scope,
+            query_scope& scope,
             trelation::project& target,
             relation_info& info) {
         auto result = analyze_scalar_expression(context_, *elem.value(), scope);
@@ -1271,7 +1271,7 @@ public:
     [[nodiscard]] bool operator()(
             ast::query::grouping_column const& elem,
             set_function_processor& processor,
-            query_scope const& scope) {
+            query_scope& scope) {
         auto r = analyze_scalar_expression(context_, *elem.column(), scope);
         if (!r) {
             return {};
@@ -1299,7 +1299,7 @@ public:
 
     [[nodiscard]] std::unique_ptr<tscalar::expression> operator()(
             ast::table::join_condition const& elem,
-            query_scope const& scope,
+            query_scope& scope,
             query_scope::position_type) {
         auto r = analyze_scalar_expression(context_, *elem.expression(), scope);
         if (!r) {
@@ -1441,7 +1441,7 @@ private:
 
     [[nodiscard]] select_element_result dispatch(
             ast::query::select_element const& elem,
-            query_scope const& scope,
+            query_scope& scope,
             trelation::project& project,
             relation_info& relation) {
         return ast::query::dispatch(*this, elem, scope, project, relation);
@@ -1450,7 +1450,7 @@ private:
     [[nodiscard]] bool dispatch(
             ast::query::grouping_element const& elem,
             set_function_processor& processor,
-            query_scope const& scope) {
+            query_scope& scope) {
         return ast::query::dispatch(*this, elem, processor, scope);
     }
 

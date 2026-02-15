@@ -574,7 +574,7 @@ public:
 
     [[nodiscard]] std::unique_ptr<trelation::filter> build_filter(
             ast::scalar::expression const& expr,
-            query_scope const& scope) {
+            query_scope& scope) {
         auto predicate = analyze_scalar_expression(
                 context_,
                 expr,
@@ -925,10 +925,11 @@ public:
     [[nodiscard]] std::optional<::yugawara::storage::column_value> process_column_value(
             ast::statement::expression_constraint const& constraint,
             ::yugawara::storage::column const& prototype) {
+        query_scope scope {};
         auto result = analyze_scalar_expression(
                 context_,
                 *constraint.expression(),
-                {},
+                scope,
                 { prototype.shared_type() });
         if (!result) {
             return {}; // error
@@ -1087,10 +1088,11 @@ public:
     [[nodiscard]] std::optional<std::int64_t> extract_sequence_value(
             ast::scalar::expression const& expr,
             bool is_int8) {
+        query_scope scope {};
         auto result = analyze_scalar_expression(
                 context_,
                 expr,
-                {},
+                scope,
                 {});
         if (!result) {
             return {};
@@ -1196,7 +1198,7 @@ public:
 
     [[nodiscard]] std::vector<::yugawara::storage::index::key> build_index_keys(
             std::vector<ast::common::sort_element> const& source_keys,
-            query_scope const& scope,
+            query_scope& scope,
             ast::node_region region) {
         ::tsl::hopscotch_set<::yugawara::storage::column const*> saw_columns { source_keys.size() };
         auto index_keys = create_vector<::yugawara::storage::index::key>(source_keys.size());

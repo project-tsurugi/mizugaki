@@ -27,11 +27,13 @@ using namespace ::mizugaki::analyzer::testing;
 
 class analyze_scalar_expression_predicate_test : public test_parent {
 protected:
+    query_scope scope {};
+
     void invalid(ast::scalar::expression const& expression) {
         auto r = analyze_scalar_expression(
                 context(),
                 expression,
-                {},
+                scope,
                 {});
         EXPECT_FALSE(r) << diagnostics();
         EXPECT_NE(count_error(), 0);
@@ -76,7 +78,7 @@ TEST_F(analyze_scalar_expression_predicate_test, comparison_predicate_equals) {
                     from,
                     literal(number("2")),
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -98,7 +100,7 @@ TEST_F(analyze_scalar_expression_predicate_test, comparison_predicate_not_equals
                     from,
                     literal(number("2")),
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -120,7 +122,7 @@ TEST_F(analyze_scalar_expression_predicate_test, comparison_predicate_not_equals
                     from,
                     literal(number("2")),
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -142,7 +144,7 @@ TEST_F(analyze_scalar_expression_predicate_test, comparison_predicate_less_than)
                     from,
                     literal(number("2")),
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -164,7 +166,7 @@ TEST_F(analyze_scalar_expression_predicate_test, comparison_predicate_greater_th
                     from,
                     literal(number("2")),
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -186,7 +188,7 @@ TEST_F(analyze_scalar_expression_predicate_test, comparison_predicate_less_than_
                     from,
                     literal(number("2")),
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -208,7 +210,7 @@ TEST_F(analyze_scalar_expression_predicate_test, comparison_predicate_greater_th
                     from,
                     literal(number("2")),
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -244,7 +246,7 @@ TEST_F(analyze_scalar_expression_predicate_test, between_predicate) {
                     literal(number("2")),
                     literal(number("3")),
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -279,7 +281,7 @@ TEST_F(analyze_scalar_expression_predicate_test, between_predicate_not) {
                     true,
                     ast::scalar::between_operator::asymmetric,
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -317,7 +319,7 @@ TEST_F(analyze_scalar_expression_predicate_test, between_predicate_symmetric) {
                     false,
                     ast::scalar::between_operator::symmetric,
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -371,7 +373,7 @@ TEST_F(analyze_scalar_expression_predicate_test, in_predicate_values) {
                             literal(number("2")),
                     }
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -399,7 +401,7 @@ TEST_F(analyze_scalar_expression_predicate_test, in_predicate_values_multiple) {
                             literal(number("4")),
                     }
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -451,7 +453,7 @@ TEST_F(analyze_scalar_expression_predicate_test, in_predicate_values_not) {
                     },
                     true,
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -506,7 +508,7 @@ TEST_F(analyze_scalar_expression_predicate_test, pattern_match_predicate_simple)
                     literal(string("'p%'")),
                     {},
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -528,7 +530,7 @@ TEST_F(analyze_scalar_expression_predicate_test, pattern_match_predicate_similar
                     literal(string("'p.*'")),
                     {},
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -550,7 +552,7 @@ TEST_F(analyze_scalar_expression_predicate_test, pattern_match_predicate_escape)
                     literal(string("'p\\%'")),
                     literal(string("'\\'")),
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
@@ -573,7 +575,7 @@ TEST_F(analyze_scalar_expression_predicate_test, pattern_match_predicate_not) {
                     {},
                     { true },
             },
-            {},
+            scope,
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();

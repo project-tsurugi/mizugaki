@@ -35,7 +35,7 @@ private:
 [[nodiscard]] analyze_scalar_expression_result analyze_scalar_expression(
         analyzer_context& context,
         ast::scalar::expression const& expression,
-        query_scope const& scope,
+        query_scope& scope,
         value_context const& value_context = {});
 
 /**
