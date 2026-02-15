@@ -20,6 +20,8 @@
 #include <takatori/scalar/match.h>
 #include <takatori/scalar/function_call.h>
 
+#include <takatori/relation/graph.h>
+
 #include <takatori/util/string_builder.h>
 #include <takatori/util/downcast.h>
 #include <takatori/util/exception.h>
@@ -28,6 +30,7 @@
 #include <yugawara/type/conversion.h>
 
 #include <yugawara/extension/scalar/aggregate_function_call.h>
+#include <yugawara/extension/scalar/subquery.h>
 
 #include <mizugaki/ast/scalar/dispatch.h>
 #include <mizugaki/ast/literal/boolean.h>
@@ -437,12 +440,45 @@ public:
     // FIXME: impl trim_expression
     // FIXME: impl value_constructor
 
-    // FIXME: impl subquery (scalar/row)
-    // [[nodiscard]] std::unique_ptr<tscalar::expression> operator()(
-    //         ast::scalar::subquery const& expr,
-    //         value_context const&) {
-    //
-    // }
+    [[nodiscard]] std::unique_ptr<tscalar::expression> operator()(
+            ast::scalar::subquery const& expr,
+            value_context const&) {
+        if (expr.context_kind() == ast::scalar::expression_context_kind::row) {
+            context_.report(
+                    sql_analyzer_code::unsupported_feature,
+                    "row subqueries are not yet supported",
+                    expr.region());
+            return {};
+        }
+
+        ::takatori::relation::graph_type subgraph {};
+        auto query = analyze_query_expression(
+                context_,
+                subgraph,
+                *expr.query(),
+                scope_,
+                {}); // NOTE: don't propagate value context into subqueries
+        if (!query) {
+            return {};
+        }
+        auto&& relation = query.relation();
+        if (relation.columns().size() != 1) {
+            context_.report(
+                    sql_analyzer_code::inconsistent_columns,
+                    string_builder {}
+                            << "subquery must return exactly one column, but got "
+                            << relation.columns().size()
+                            << string_builder::to_string,
+                    expr.region());
+            return {};
+        }
+        auto&& column = relation.columns().front();
+        auto result = context_.create<::yugawara::extension::scalar::subquery>(
+                expr.region(),
+                std::move(subgraph),
+                column.variable());
+        return result;
+    }
 
     [[nodiscard]] std::unique_ptr<tscalar::expression> operator()(
             ast::scalar::comparison_predicate const& expr,
