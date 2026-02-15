@@ -19,6 +19,7 @@
 #include <mizugaki/ast/scalar/variable_reference.h>
 #include <mizugaki/ast/scalar/comparison_predicate.h>
 #include <mizugaki/ast/scalar/value_constructor.h>
+#include <mizugaki/ast/scalar/subquery.h>
 
 #include <mizugaki/ast/name/simple.h>
 
@@ -423,6 +424,32 @@ TEST_F(sql_parser_query_test, table_value_constructor_rows) {
             },
             scalar::value_constructor {
                     int_literal("3"),
+            },
+    }));
+}
+
+TEST_F(sql_parser_query_test, table_value_constructor_row_subquery) {
+    auto result = parse("VALUES (TABLE t0), (TABLE t1), (TABLE t2);");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (query::table_value_constructor {
+            scalar::subquery {
+                    query::table_reference {
+                            name::simple { "t0" },
+                    },
+                    scalar::expression_context_kind::row,
+            },
+            scalar::subquery {
+                    query::table_reference {
+                            name::simple { "t1" },
+                    },
+                    scalar::expression_context_kind::row,
+            },
+            scalar::subquery {
+                    query::table_reference {
+                            name::simple { "t2" },
+                    },
+                    scalar::expression_context_kind::row,
             },
     }));
 }

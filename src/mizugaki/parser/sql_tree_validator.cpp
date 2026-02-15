@@ -582,7 +582,7 @@ public:
     }
 
     [[nodiscard]] bool operator()(ast::scalar::subquery const& element, std::size_t depth) {
-        ACCEPT(element.expression()); // NOLINT(*-simplify-boolean-expr)
+        ACCEPT(element.query()); // NOLINT(*-simplify-boolean-expr)
         return true;
     }
 

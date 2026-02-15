@@ -588,7 +588,7 @@ TEST_F(sql_parser_scalar_test, row_value_constructor_implicit_multiple) {
     }));
 }
 
-TEST_F(sql_parser_scalar_test, subquery) {
+TEST_F(sql_parser_scalar_test, scalar_subquery) {
     auto result = parse("(TABLE a)");
     ASSERT_TRUE(result) << diagnostics(result);
 
@@ -596,6 +596,7 @@ TEST_F(sql_parser_scalar_test, subquery) {
             query::table_reference {
                     name::simple { "a" },
             },
+            scalar::expression_context_kind::scalar,
     }));
 }
 

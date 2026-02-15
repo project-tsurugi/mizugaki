@@ -3024,7 +3024,10 @@ explicit_row_value_expression
         }
     | row_subquery[e]
         {
-            $$ = driver.node<ast::scalar::subquery>($e, @$);
+            $$ = driver.node<ast::scalar::subquery>(
+                    $e,
+                    ast::scalar::expression_context_kind::row,
+                    @$);
         }
     ;
 
@@ -3635,7 +3638,10 @@ value_expression_primary
     // 7.14 <subquery>
     | scalar_subquery[e]
         {
-            $$ = driver.node<ast::scalar::subquery>($e, @$);
+            $$ = driver.node<ast::scalar::subquery>(
+                    $e,
+                    ast::scalar::expression_context_kind::scalar,
+                    @$);
         }
     // 6.11 <method invocation> - <generalized invocation>
     | "(" value_expression[e] AS data_type[t] ")"

@@ -2,10 +2,10 @@
 
 #include <takatori/util/clone_tag.h>
 
-#include <mizugaki/ast/common/regioned.h>
 #include <mizugaki/ast/query/expression.h>
 
 #include "expression.h"
+#include "expression_context_kind.h"
 
 namespace mizugaki::ast::scalar {
 
@@ -22,23 +22,30 @@ public:
     /// @brief the node kind of this.
     static constexpr node_kind_type tag = node_kind_type::subquery;
 
+    /// @brief the sub-query kind.
+    using context_kind_type = expression_context_kind;
+
     /**
      * @brief creates a new instance.
-     * @param expression the query expression
+     * @param query the query expression
+     * @param context_kind the sub-query kind
      * @param region the node region
      */
     explicit subquery(
-            std::unique_ptr<query::expression> expression,
+            std::unique_ptr<ast::query::expression> query,
+            context_kind_type context_kind = context_kind_type::scalar,
             region_type region = {}) noexcept;
 
     /**
      * @brief creates a new instance.
-     * @param expression the query expression
+     * @param query the query expression
+     * @param context_kind the sub-query kind
      * @param region the node region
      * @attention this will take a copy of argument
      */
     explicit subquery(
-            query::expression&& expression,
+            ast::query::expression&& query,
+            context_kind_type context_kind = context_kind_type::scalar,
             region_type region = {}) noexcept;
 
     /**
@@ -62,10 +69,19 @@ public:
      * @brief returns the query expression.
      * @return the query expression
      */
-    [[nodiscard]] std::unique_ptr<query::expression>& expression() noexcept;
+    [[nodiscard]] std::unique_ptr<ast::query::expression>& query() noexcept;
 
-    /// @copydoc expression()
-    [[nodiscard]] std::unique_ptr<query::expression> const& expression() const noexcept;
+    /// @copydoc query()
+    [[nodiscard]] std::unique_ptr<ast::query::expression> const& query() const noexcept;
+
+    /**
+     * @brief returns the sub-query kind.
+     * @return the sub-query kind
+     */
+    [[nodiscard]] context_kind_type& context_kind() noexcept;
+
+    /// @copydoc context_kind()
+    [[nodiscard]] context_kind_type const& context_kind() const noexcept;
 
     /**
      * @brief compares two values.
@@ -90,7 +106,8 @@ protected:
     void serialize(::takatori::serializer::object_acceptor& acceptor) const override;
 
 private:
-    std::unique_ptr<query::expression> expression_;
+    std::unique_ptr<ast::query::expression> query_;
+    context_kind_type context_kind_;
 };
 
 /**
