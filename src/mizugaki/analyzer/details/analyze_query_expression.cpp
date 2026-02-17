@@ -916,7 +916,10 @@ public:
         }
         auto&& op = graph_.emplace<::yugawara::extension::relation::subquery>(
                 std::move(subgraph),
-                std::move(mappings));
+                std::move(mappings),
+                // NOTE: mark it cloned because we always take a copy of subgraph,
+                // it may include the same variable declarations
+                true);
         op.region() = context_.convert(relation.region());
         if (!context_.resolve(op)) {
             return {};

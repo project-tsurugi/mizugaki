@@ -99,6 +99,8 @@ TEST_F(analyze_query_expression_with_test, simple) {
     ASSERT_FALSE(subquery_output->opposite());
     ASSERT_TRUE(subgraph.contains(subquery_output->owner()));
 
+    EXPECT_TRUE(subquery.is_clone());
+
     // values -
     auto&& values = downcast<trelation::values>(subquery_output->owner());
     auto&& values_columns = values.columns();
