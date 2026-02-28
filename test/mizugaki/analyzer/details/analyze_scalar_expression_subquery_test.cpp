@@ -9,6 +9,7 @@
 #include <takatori/relation/values.h>
 
 #include <yugawara/extension/scalar/subquery.h>
+#include <yugawara/extension/scalar/exists.h>
 
 #include <yugawara/binding/extract.h>
 
@@ -17,6 +18,7 @@
 
 #include <mizugaki/ast/scalar/value_constructor.h>
 #include <mizugaki/ast/scalar/subquery.h>
+#include <mizugaki/ast/scalar/table_predicate.h>
 #include <mizugaki/ast/query/query.h>
 #include <mizugaki/ast/query/table_reference.h>
 #include <mizugaki/ast/query/table_value_constructor.h>
@@ -148,6 +150,47 @@ TEST_F(analyze_scalar_expression_subquery_test, row_subquery_unsupported) {
                     },
             },
             ast::scalar::expression_context_kind::row,
+    });
+}
+
+TEST_F(analyze_scalar_expression_subquery_test, table_predicate_exists) {
+    auto r = analyze_scalar_expression(
+            context(),
+            ast::scalar::table_predicate {
+                    ast::scalar::table_operator::exists,
+                    ast::query::table_value_constructor {
+                            ast::scalar::value_constructor {
+                                    literal(number("1")),
+                            },
+                    },
+            },
+            scope,
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+
+    auto&& exists = downcast<::yugawara::extension::scalar::exists>(*r);
+    auto&& subgraph = exists.query_graph();
+    ASSERT_EQ(subgraph.size(), 1);
+
+    auto&& subquery_output = exists.find_output_port();
+    ASSERT_TRUE(subquery_output);
+    ASSERT_FALSE(subquery_output->opposite());
+    ASSERT_TRUE(subgraph.contains(subquery_output->owner()));
+
+    // values -
+    auto&& values = downcast<trelation::values>(subquery_output->owner());
+    auto&& values_columns = values.columns();
+    ASSERT_EQ(values_columns.size(), 1);
+}
+
+TEST_F(analyze_scalar_expression_subquery_test, table_predicate_unique_unsupported) {
+    invalid(sql_analyzer_code::unsupported_feature, ast::scalar::table_predicate {
+            ast::scalar::table_operator::unique,
+            ast::query::table_value_constructor {
+                    ast::scalar::value_constructor {
+                            literal(number("1")),
+                    },
+            },
     });
 }
 

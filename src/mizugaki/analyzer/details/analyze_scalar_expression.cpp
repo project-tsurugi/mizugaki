@@ -31,6 +31,7 @@
 
 #include <yugawara/extension/scalar/aggregate_function_call.h>
 #include <yugawara/extension/scalar/subquery.h>
+#include <yugawara/extension/scalar/exists.h>
 
 #include <mizugaki/ast/scalar/dispatch.h>
 #include <mizugaki/ast/literal/boolean.h>
@@ -712,9 +713,6 @@ public:
         return result;
     }
 
-    // FIXME: impl pattern_match_predicate,
-    // FIXME: impl table_predicate,
-
     [[nodiscard]] std::unique_ptr<tscalar::expression> operator()(
             ast::scalar::pattern_match_predicate const& expr,
             value_context const& context) {
@@ -778,6 +776,43 @@ public:
         return {};
     }
 
+    [[nodiscard]] std::unique_ptr<tscalar::expression> operator()(
+            ast::scalar::table_predicate const& expr,
+            value_context const& context) {
+        using kind = ast::scalar::table_operator;
+        switch (*expr.operator_kind()) {
+            case kind::exists:
+                return process_exists(expr, context);
+            case kind::unique:
+                break;
+        }
+        context_.report(
+                sql_analyzer_code::unsupported_feature,
+                string_builder {}
+                        << "unsupported table predicate: " << expr.operator_kind()
+                        << string_builder::to_string,
+                expr.operator_kind().region());
+        return {};
+    }
+
+    [[nodiscard]] std::unique_ptr<tscalar::expression> process_exists(
+            ast::scalar::table_predicate const& expr,
+            value_context const&) {
+        ::takatori::relation::graph_type subgraph {};
+        auto query = analyze_query_expression(
+                context_,
+                subgraph,
+                *expr.operand(),
+                scope_,
+                {}); // NOTE: don't propagate value context into subqueries
+        if (!query) {
+            return {};
+        }
+        auto result = context_.create<::yugawara::extension::scalar::exists>(
+                expr.region(),
+                std::move(subgraph));
+        return result;
+    }
 
     // FIXME: impl <type predicate>
 
