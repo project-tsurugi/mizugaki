@@ -42,6 +42,7 @@
 #include <yugawara/binding/factory.h>
 
 #include <yugawara/extension/scalar/subquery.h>
+#include <yugawara/extension/scalar/exists.h>
 
 #include <yugawara/storage/sequence.h>
 
@@ -90,6 +91,7 @@ public:
     void operator()(tscalar::extension const& expr) noexcept {
         switch (expr.extension_id()) {
             case ::yugawara::extension::scalar::subquery::extension_tag:
+            case ::yugawara::extension::scalar::exists::extension_tag:
                 found_ = true;
                 break;
             default:
