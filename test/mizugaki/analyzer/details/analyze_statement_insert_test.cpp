@@ -14,11 +14,14 @@
 
 #include <yugawara/binding/extract.h>
 
+#include <yugawara/extension/scalar/subquery.h>
+
 #include <yugawara/storage/index.h>
 #include <yugawara/storage/column.h>
 
 #include <mizugaki/ast/literal/special.h>
 
+#include <mizugaki/ast/scalar/subquery.h>
 #include <mizugaki/ast/scalar/value_constructor.h>
 
 #include <mizugaki/ast/query/table_value_constructor.h>
@@ -123,10 +126,10 @@ TEST_F(analyze_statement_insert_test, columns) {
 
     auto r = analyze_statement(context(), ast::statement::insert_statement {
             id("testing"),
-                    {
-                            id("v"),
-                            id("k"),
-                    },
+            {
+                    id("v"),
+                    id("k"),
+            },
             ast::query::table_value_constructor {
                     ast::scalar::value_constructor {
                             literal(string("'a'")),
@@ -217,6 +220,81 @@ TEST_F(analyze_statement_insert_test, as_write_statement) {
         EXPECT_EQ(row.elements()[1], immediate("a"));
         EXPECT_EQ(row.elements()[2], immediate("b"));
         EXPECT_EQ(row.elements()[3], immediate("c"));
+    }
+}
+
+TEST_F(analyze_statement_insert_test, as_write_statement_subquery) {
+    options_.prefer_write_statement() = true;
+    auto table = install_table("testing");
+
+    auto r = analyze_statement(context(), ast::statement::insert_statement {
+            id("testing"),
+            {
+                    id("k"),
+                    id("v"),
+            },
+            ast::query::table_value_constructor {
+                    ast::scalar::value_constructor {
+                            literal(number("1")),
+                            ast::scalar::subquery {
+                                    ast::query::table_value_constructor {
+                                            ast::scalar::value_constructor {
+                                                    literal(string("'a'")),
+                                            },
+                                    },
+                            },
+                    }
+            },
+    });
+    auto alternative = std::get_if<execution_plan_result_type >(&r);
+    ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
+    auto&& graph = **alternative;
+    ASSERT_EQ(graph.size(), 2);
+
+    auto first = find_first<trelation::values>(graph);
+    ASSERT_TRUE(first);
+    ASSERT_EQ(first->columns().size(), 2);
+    ASSERT_EQ(first->rows().size(), 1);
+
+    auto&& row = first->rows()[0].elements();
+    ASSERT_EQ(row.size(), 2);
+    EXPECT_EQ(row[0], immediate(1));
+    ASSERT_EQ(row[1].kind(), ::yugawara::extension::scalar::subquery::tag);
+
+    auto&& subquery = downcast<::yugawara::extension::scalar::subquery>(row[1]);
+    ASSERT_EQ(subquery.query_graph().size(), 1);
+    auto&& sub_output = subquery.output_column();
+
+    auto sub_values = find_first<trelation::values>(subquery.query_graph());
+    ASSERT_TRUE(sub_values);
+    ASSERT_EQ(sub_values->columns().size(), 1);
+    EXPECT_EQ(sub_values->columns()[0], sub_output);
+
+    ASSERT_EQ(sub_values->rows().size(), 1);
+    ASSERT_EQ(sub_values->rows()[0].elements().size(), 1);
+    EXPECT_EQ(sub_values->rows()[0].elements()[0], immediate("a"));
+
+    auto last = find_last<trelation::write>(graph);
+    ASSERT_TRUE(last);
+    EXPECT_EQ(find_next(*first).get(), last.get());
+
+    EXPECT_EQ(last->operator_kind(), tstatement::write_kind::insert);
+    EXPECT_EQ(&extract<::yugawara::storage::index>(last->destination()).table(), table.get());
+
+    ASSERT_EQ(last->keys().size(), 1);
+    {
+        auto&& column = last->keys()[0];
+        EXPECT_EQ(column.source(), first->columns()[0]);
+        EXPECT_EQ(&extract<::yugawara::storage::column>(column.destination()), &table->columns()[0]);
+    }
+
+    ASSERT_EQ(last->columns().size(), 1);
+    {
+        auto&& column = last->columns()[0];
+        EXPECT_EQ(column.source(), first->columns()[1]);
+        EXPECT_EQ(&extract<::yugawara::storage::column>(column.destination()), &table->columns()[1]);
     }
 }
 

@@ -16,6 +16,8 @@
 #include <takatori/scalar/variable_reference.h>
 #include <takatori/scalar/cast.h>
 #include <takatori/scalar/function_call.h>
+#include <takatori/scalar/extension.h>
+#include <takatori/scalar/walk.h>
 
 #include <takatori/relation/emit.h>
 #include <takatori/relation/filter.h>
@@ -38,6 +40,8 @@
 
 #include <yugawara/binding/extract.h>
 #include <yugawara/binding/factory.h>
+
+#include <yugawara/extension/scalar/subquery.h>
 
 #include <yugawara/storage/sequence.h>
 
@@ -68,6 +72,34 @@ using diagnostic_code = diagnostic_type::code_type;
 using result_type = analyze_statement_result_type;
 
 namespace {
+
+class subquery_detector {
+public:
+    [[nodiscard]] bool find(tscalar::expression const& expr) {
+        found_ = false;
+        tscalar::walk(*this, expr);
+        return found_;
+    }
+
+    [[nodiscard]] bool operator()(tscalar::expression const& expr) const noexcept {
+        (void) expr;
+        // NOTE: dig only if subqueries not found yet
+        return !found_;
+    }
+
+    void operator()(tscalar::extension const& expr) noexcept {
+        switch (expr.extension_id()) {
+            case ::yugawara::extension::scalar::subquery::extension_tag:
+                found_ = true;
+                break;
+            default:
+                break;
+        }
+    }
+
+private:
+    bool found_ {};
+};
 
 class engine {
 public:
@@ -239,9 +271,7 @@ public:
             return {};
         }
 
-        if (context_.options()->prefer_write_statement() &&
-                source.output().owner().kind() == trelation::expression_kind::values) {
-            // FIXME: check no sub-queries in values
+        if (context_.options()->prefer_write_statement() && check_simple_values(source.output().owner())) {
             // prefer write statement instead of execute statement with values - write flow.
             auto write_columns = create_vector<tstatement::write::column>(destination_columns.size());
             for (auto column : destination_columns) {
@@ -302,6 +332,23 @@ public:
         op_write.input().connect_to(source.output());
 
         return graph;
+    }
+
+    [[nodiscard]] bool check_simple_values(trelation::expression const& expr) const {
+        if (expr.kind() != trelation::expression_kind::values) {
+            return false;
+        }
+        auto&& values = unsafe_downcast<trelation::values>(expr);
+        subquery_detector detector {};
+        for (auto&& row : values.rows()) {
+            for (auto&& element : row.elements()) {
+                if (detector.find(element)) {
+                    // if values contains subquery, we cannot convert INSERT statement into a simple write_statement...
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     [[nodiscard]] result_type process_insert_default_values(
