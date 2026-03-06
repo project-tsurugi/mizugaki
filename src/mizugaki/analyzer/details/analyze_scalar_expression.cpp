@@ -32,6 +32,7 @@
 #include <yugawara/extension/scalar/aggregate_function_call.h>
 #include <yugawara/extension/scalar/subquery.h>
 #include <yugawara/extension/scalar/exists.h>
+#include <yugawara/extension/scalar/quantified_compare.h>
 
 #include <mizugaki/ast/scalar/dispatch.h>
 #include <mizugaki/ast/literal/boolean.h>
@@ -534,7 +535,74 @@ public:
         return {};
     }
 
-    // FIXME: impl quantified_comparison_predicate,
+    [[nodiscard]] std::unique_ptr<tscalar::expression> operator()(
+            ast::scalar::quantified_comparison_predicate const& expr,
+            value_context const&) {
+        auto operator_ = convert(expr.operator_kind());
+        if (!operator_) {
+            return {};
+        }
+        auto quantifier = convert(expr.quantifier());
+        if (!quantifier) {
+            return {};
+        }
+        auto left = process(*expr.left(), {});
+        if (!left) {
+            return {};
+        }
+        ::takatori::relation::graph_type subgraph {};
+        auto query = analyze_query_expression(
+                context_,
+                subgraph,
+                *expr.right(),
+                scope_,
+                {}); // NOTE: don't propagate value context into subqueries
+        if (!query) {
+            return {};
+        }
+        auto&& relation = query.relation();
+        if (relation.columns().size() != 1) {
+            context_.report(
+                    sql_analyzer_code::inconsistent_columns,
+                    string_builder {}
+                            << "subquery must return exactly one column, but got "
+                            << relation.columns().size()
+                            << string_builder::to_string,
+                    expr.region());
+            return {};
+        }
+        auto&& column = relation.columns().front();
+        auto result = context_.create<::yugawara::extension::scalar::quantified_compare>(
+                expr.region(),
+                *operator_,
+                *quantifier,
+                left.release(),
+                std::move(subgraph),
+                column.variable());
+        return result;
+    }
+
+    [[nodiscard]] std::optional<tscalar::quantifier> convert(
+            ast::common::regioned<ast::scalar::quantifier> const& source) {
+        using from = ast::scalar::quantifier;
+        using to = tscalar::quantifier;
+        switch (*source) {
+            case from::all:
+                return to::all;
+            case from::any:
+            case from::some:
+                return to::any;
+            default:
+                break;
+        }
+        context_.report(
+                sql_analyzer_code::unsupported_feature,
+                string_builder {}
+                        << "unsupported comparison operator: " << source
+                        << string_builder::to_string,
+                source.region());
+        return {};
+    }
 
     [[nodiscard]] std::unique_ptr<tscalar::expression> operator()(
             ast::scalar::between_predicate const& expr,
@@ -633,21 +701,17 @@ public:
 
     [[nodiscard]] std::unique_ptr<tscalar::expression> operator()(
             ast::scalar::in_predicate const& expr,
-            value_context const&) {
+            value_context const& context) {
         if (expr.right()->node_kind() == ast::query::table_value_constructor::tag) {
             return process_in_values(
                     expr,
                     unsafe_downcast<ast::query::table_value_constructor>(*expr.right()),
-                    {});
+                    context);
         }
-        // FIXME: impl table subquery
-        context_.report(
-                sql_analyzer_code::unsupported_feature,
-                "IN predicate with generic queries is yet not supported",
-                expr.region());
-        return {};
+        return process_in_query(expr, context);
     }
 
+private:
     [[nodiscard]] std::unique_ptr<tscalar::expression> process_in_values(
             ast::scalar::in_predicate const& expr,
             ast::query::table_value_constructor const& values,
@@ -713,6 +777,55 @@ public:
         return result;
     }
 
+    [[nodiscard]] std::unique_ptr<tscalar::expression> process_in_query(
+            ast::scalar::in_predicate const& expr,
+            value_context const&) {
+        auto left = process(*expr.left(), {});
+        if (!left) {
+            return {};
+        }
+        ::takatori::relation::graph_type subgraph {};
+        auto query = analyze_query_expression(
+                context_,
+                subgraph,
+                *expr.right(),
+                scope_,
+                {}); // NOTE: don't propagate value context into subqueries
+        if (!query) {
+            return {};
+        }
+        auto&& relation = query.relation();
+        if (relation.columns().size() != 1) {
+            context_.report(
+                    sql_analyzer_code::inconsistent_columns,
+                    string_builder {}
+                            << "subquery must return exactly one column, but got "
+                            << relation.columns().size()
+                            << string_builder::to_string,
+                    expr.region());
+            return {};
+        }
+        auto&& column = relation.columns().front();
+        tscalar::comparison_operator operator_ {};
+        tscalar::quantifier quantifier {};
+        if (*expr.is_not()) {
+            operator_ = tscalar::comparison_operator::not_equal;
+            quantifier = tscalar::quantifier::all;
+        } else {
+            operator_ = tscalar::comparison_operator::equal;
+            quantifier = tscalar::quantifier::any;
+        }
+        auto result = context_.create<::yugawara::extension::scalar::quantified_compare>(
+                expr.region(),
+                operator_,
+                quantifier,
+                left.release(),
+                std::move(subgraph),
+                column.variable());
+        return result;
+    }
+
+public:
     [[nodiscard]] std::unique_ptr<tscalar::expression> operator()(
             ast::scalar::pattern_match_predicate const& expr,
             value_context const& context) {

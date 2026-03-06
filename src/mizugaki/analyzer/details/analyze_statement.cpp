@@ -43,6 +43,7 @@
 
 #include <yugawara/extension/scalar/subquery.h>
 #include <yugawara/extension/scalar/exists.h>
+#include <yugawara/extension/scalar/quantified_compare.h>
 
 #include <yugawara/storage/sequence.h>
 
@@ -92,6 +93,7 @@ public:
         switch (expr.extension_id()) {
             case ::yugawara::extension::scalar::subquery::extension_tag:
             case ::yugawara::extension::scalar::exists::extension_tag:
+            case ::yugawara::extension::scalar::quantified_compare::extension_tag:
                 found_ = true;
                 break;
             default:
