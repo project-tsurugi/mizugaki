@@ -12,13 +12,22 @@
 #include <takatori/relation/intermediate/aggregate.h>
 #include <takatori/relation/intermediate/limit.h>
 
+#include <yugawara/extension/scalar/subquery.h>
+#include <yugawara/extension/scalar/exists.h>
+#include <yugawara/extension/scalar/quantified_compare.h>
+
+#include <mizugaki/ast/scalar/host_parameter_reference.h>
 #include <mizugaki/ast/scalar/comparison_predicate.h>
 #include <mizugaki/ast/scalar/builtin_set_function_invocation.h>
+#include <mizugaki/ast/scalar/subquery.h>
+#include <mizugaki/ast/scalar/table_predicate.h>
+#include <mizugaki/ast/scalar/in_predicate.h>
+#include <mizugaki/ast/scalar/value_constructor.h>
 
 #include <mizugaki/ast/query/query.h>
+#include <mizugaki/ast/query/table_value_constructor.h>
 #include <mizugaki/ast/query/select_column.h>
 #include <mizugaki/ast/query/grouping_column.h>
-#include <mizugaki/ast/scalar/host_parameter_reference.h>
 
 #include <mizugaki/ast/table/table_reference.h>
 
@@ -206,6 +215,94 @@ TEST_F(analyze_query_expression_aggregate_test, whole_count_value) {
     auto&& aggargs_columns = aggregate_args.columns();
     ASSERT_EQ(aggargs_columns.size(), 1);
     EXPECT_EQ(aggargs_columns[0].value(), vref(scan_columns[1].destination()));
+
+    auto&& grouping_columns = aggregate.group_keys();
+    ASSERT_EQ(grouping_columns.size(), 0);
+
+    auto&& aggregation_columns = aggregate.columns();
+    ASSERT_EQ(aggregation_columns.size(), 1);
+    {
+        auto&& column = aggregation_columns[0];
+        EXPECT_EQ(column.function(), factory_(count_str));
+        ASSERT_EQ(column.arguments().size(), 1);
+        EXPECT_EQ(column.arguments()[0], aggargs_columns[0].variable());
+    }
+
+    auto&& project_columns = project.columns();
+    ASSERT_EQ(project_columns.size(), 1);
+    EXPECT_EQ(project_columns[0].value(), vref(aggregation_columns[0].destination()));
+
+    // output
+
+    auto relation_columns = relation.columns();
+    ASSERT_EQ(relation_columns.size(), 1);
+    EXPECT_EQ(relation_columns[0].variable(), project_columns[0].variable());
+}
+
+TEST_F(analyze_query_expression_aggregate_test, whole_count_subquery) {
+    auto table = install_table("testing");
+    auto s = install_table("s");
+    trelation::graph_type graph {};
+
+    auto r = analyze_query_expression(
+            context(),
+            graph,
+            // SELECT COUNT((SELECT v FROM s)) FROM testing
+            ast::query::query {
+                    {
+                            ast::query::select_column {
+                                    ast::scalar::builtin_set_function_invocation {
+                                            ast::scalar::builtin_set_function_kind::count,
+                                            {},
+                                            {
+                                                    ast::scalar::subquery {
+                                                            ast::query::query {
+                                                                    {
+                                                                            ast::query::select_column {
+                                                                                    vref(id("v")),
+                                                                            },
+                                                                    },
+                                                                    {
+                                                                            ast::table::table_reference {
+                                                                                    id("s"),
+                                                                            }
+                                                                    },
+                                                            },
+                                                    },
+                                            },
+                                    }
+                            },
+                    },
+                    {
+                            ast::table::table_reference {
+                                    id("testing"),
+                            }
+                    },
+            },
+            {},
+            {});
+    ASSERT_TRUE(r);
+    expect_no_error();
+
+    // scan - project - aggregate - project -
+
+    ASSERT_EQ(graph.size(), 4);
+    EXPECT_FALSE(r.output().opposite());
+
+    auto&& relation = r.relation();
+
+    auto&& project = downcast<trelation::project>(r.output().owner());
+    auto&& aggregate = *find_prev<trelation::intermediate::aggregate>(project);
+    auto&& aggregate_args = *find_prev<trelation::project>(aggregate);
+    auto&& scan = *find_prev<trelation::scan>(aggregate_args);
+
+    auto&& scan_columns = scan.columns();
+    ASSERT_EQ(scan_columns.size(), 4);
+
+    auto&& aggargs_columns = aggregate_args.columns();
+    ASSERT_EQ(aggargs_columns.size(), 1);
+    auto&& subquery = downcast<::yugawara::extension::scalar::subquery>(aggargs_columns[0].value());
+    ASSERT_EQ(subquery.query_graph().size(), 2);
 
     auto&& grouping_columns = aggregate.group_keys();
     ASSERT_EQ(grouping_columns.size(), 0);
@@ -656,6 +753,165 @@ TEST_F(analyze_query_expression_aggregate_test, group_by_having) {
     auto&& project_columns = project.columns();
     ASSERT_EQ(project_columns.size(), 1);
     EXPECT_EQ(project_columns[0].value(), vref(scan_columns[1].destination()));
+
+    // output
+
+    auto relation_columns = relation.columns();
+    ASSERT_EQ(relation_columns.size(), 1);
+    EXPECT_EQ(relation_columns[0].variable(), project_columns[0].variable());
+}
+
+TEST_F(analyze_query_expression_aggregate_test, group_by_having_exists) {
+    auto table = install_table("testing");
+    trelation::graph_type graph {};
+
+    auto r = analyze_query_expression(
+            context(),
+            graph,
+            // SELECT v FROM testing GROUP BY v HAVING EXISTS(VALUES(1))
+            ast::query::query {
+                    {
+                            ast::query::select_column {
+                                    vref(id("v")),
+                            },
+                    },
+                    {
+                            ast::table::table_reference {
+                                    id("testing"),
+                            }
+                    },
+                    {},
+                    ast::query::group_by_clause {
+                            ast::query::grouping_column { id("v") },
+                    },
+                    {
+                            ast::scalar::table_predicate {
+                                    ast::scalar::table_operator::exists,
+                                    ast::query::table_value_constructor {
+                                            ast::scalar::value_constructor {
+                                                    literal(number("1")),
+                                            },
+                                    },
+                            },
+                    },
+            },
+            {},
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
+    // scan - aggregate - filter - project -
+
+    ASSERT_EQ(graph.size(), 4);
+    EXPECT_FALSE(r.output().opposite());
+
+    auto&& relation = r.relation();
+
+    auto&& project = downcast<trelation::project>(r.output().owner());
+    auto&& filter = *find_prev<trelation::filter>(project);
+    auto&& aggregate = *find_prev<trelation::intermediate::aggregate>(filter);
+    auto&& scan = *find_prev<trelation::scan>(aggregate);
+
+    auto&& scan_columns = scan.columns();
+    ASSERT_EQ(scan_columns.size(), 4);
+
+    auto&& grouping_columns = aggregate.group_keys();
+    ASSERT_EQ(grouping_columns.size(), 1);
+    EXPECT_EQ(grouping_columns[0], scan_columns[1].destination());
+
+    auto&& aggregation_columns = aggregate.columns();
+    ASSERT_EQ(aggregation_columns.size(), 0);
+
+    auto&& exists = downcast<::yugawara::extension::scalar::exists>(filter.condition());
+    EXPECT_EQ(exists.query_graph().size(), 1);
+
+    auto&& project_columns = project.columns();
+    ASSERT_EQ(project_columns.size(), 1);
+    EXPECT_EQ(project_columns[0].value(), vref(scan_columns[1].destination()));
+
+    // output
+
+    auto relation_columns = relation.columns();
+    ASSERT_EQ(relation_columns.size(), 1);
+    EXPECT_EQ(relation_columns[0].variable(), project_columns[0].variable());
+}
+
+TEST_F(analyze_query_expression_aggregate_test, group_by_having_in) {
+    auto table = install_table("testing");
+    auto s = install_table("s");
+    trelation::graph_type graph {};
+
+    auto r = analyze_query_expression(
+            context(),
+            graph,
+            // SELECT k FROM testing GROUP BY k HAVING k IN (SELECT k FROM t)
+            ast::query::query {
+                    {
+                            ast::query::select_column {
+                                    vref(id("k")),
+                            },
+                    },
+                    {
+                            ast::table::table_reference {
+                                    id("testing"),
+                            }
+                    },
+                    {},
+                    ast::query::group_by_clause {
+                            ast::query::grouping_column { id("k") },
+                    },
+                    {
+                            ast::scalar::in_predicate {
+                                    vref(id("k")),
+                                    ast::query::query {
+                                            {
+                                                    ast::query::select_column { vref(id("k")) },
+                                            },
+                                            {
+                                                    ast::table::table_reference {
+                                                            id("s"),
+                                                    }
+                                            },
+                                    },
+                            },
+                    },
+            },
+            {},
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
+    // scan - aggregate - filter - project -
+
+    ASSERT_EQ(graph.size(), 4);
+    EXPECT_FALSE(r.output().opposite());
+
+    auto&& relation = r.relation();
+
+    auto&& project = downcast<trelation::project>(r.output().owner());
+    auto&& filter = *find_prev<trelation::filter>(project);
+    auto&& aggregate = *find_prev<trelation::intermediate::aggregate>(filter);
+    auto&& scan = *find_prev<trelation::scan>(aggregate);
+
+    auto&& scan_columns = scan.columns();
+    ASSERT_EQ(scan_columns.size(), 4);
+
+    auto&& grouping_columns = aggregate.group_keys();
+    ASSERT_EQ(grouping_columns.size(), 1);
+    EXPECT_EQ(grouping_columns[0], scan_columns[0].destination());
+
+    auto&& aggregation_columns = aggregate.columns();
+    ASSERT_EQ(aggregation_columns.size(), 0);
+
+    auto&& inq = downcast<::yugawara::extension::scalar::quantified_compare>(filter.condition());
+    EXPECT_EQ(inq.operator_kind(), tscalar::comparison_operator::equal);
+    EXPECT_EQ(inq.quantifier(), tscalar::quantifier::any);
+    EXPECT_EQ(inq.left(), vref(scan_columns[0].destination()));
+    EXPECT_EQ(inq.query_graph().size(), 2); //
+
+    auto&& project_columns = project.columns();
+    ASSERT_EQ(project_columns.size(), 1);
+    EXPECT_EQ(project_columns[0].value(), vref(scan_columns[0].destination()));
 
     // output
 

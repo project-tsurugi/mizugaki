@@ -12,6 +12,11 @@
 #include <yugawara/binding/factory.h>
 #include <yugawara/binding/variable_info.h>
 
+#include <yugawara/extension/scalar/aggregate_function_call.h>
+#include <yugawara/extension/scalar/subquery.h>
+#include <yugawara/extension/scalar/exists.h>
+#include <yugawara/extension/scalar/quantified_compare.h>
+
 namespace mizugaki::analyzer::details {
 
 namespace tdescriptor = ::takatori::descriptor;
@@ -64,7 +69,9 @@ public:
         return false;
     }
 
-    bool operator()(tscalar::immediate const&, std::size_t) noexcept {
+    bool operator()(tscalar::immediate const& expr, std::size_t depth) noexcept {
+        (void) expr;
+        (void) depth;
         return false;
     }
 
@@ -192,19 +199,27 @@ public:
     }
 
     bool operator()(tscalar::extension& expr, std::size_t depth) {
-        using ::yugawara::extension::scalar::extension_id;
-        if (expr.extension_id() == extension_id::aggregate_function_call_id) {
-            return operator()(unsafe_downcast<::yugawara::extension::scalar::aggregate_function_call>(expr), depth);
+        using namespace ::yugawara::extension::scalar;
+        switch (expr.extension_id()) {
+            case aggregate_function_call::extension_tag:
+                return operator()(unsafe_downcast<aggregate_function_call>(expr), depth);
+            case subquery::extension_tag:
+                return operator()(unsafe_downcast<subquery>(expr), depth);
+            case exists::extension_tag:
+                return operator()(unsafe_downcast<exists>(expr), depth);
+            case quantified_compare::extension_tag:
+                return operator()(unsafe_downcast<quantified_compare>(expr), depth);
+            default:
+                context_.report(
+                        sql_analyzer_code::unsupported_feature,
+                        string_builder {}
+                                << "unknown scalar expression extension: "
+                                << expr.extension_id()
+                                << string_builder::to_string,
+                        expr.region());
+                saw_error_ = true;
+            return false;
         }
-        context_.report(
-                sql_analyzer_code::unsupported_feature,
-                string_builder {}
-                        << "unknown scalar expression extension: "
-                        << expr.extension_id()
-                        << string_builder::to_string,
-                expr.region());
-        saw_error_ = true;
-        return false;
     }
 
     bool operator()(::yugawara::extension::scalar::aggregate_function_call& expr, std::size_t depth) {
@@ -225,6 +240,28 @@ public:
             }
         }
         return true;
+    }
+
+    bool operator()(::yugawara::extension::scalar::subquery const& expr, std::size_t depth) noexcept {
+        // NOTE: non-correlated subqueries are not aggregated
+        (void) expr;
+        (void) depth;
+        return false;
+    }
+
+    bool operator()(::yugawara::extension::scalar::exists const& expr, std::size_t depth) noexcept {
+        // NOTE: non-correlated subqueries are not aggregated
+        (void) expr;
+        (void) depth;
+        return false;
+    }
+
+    bool operator()(::yugawara::extension::scalar::quantified_compare& expr, std::size_t depth) {
+        if (process(expr.left(), depth)) {
+            processor_.consume(expr.ownership_left());
+        }
+        // NOTE: non-correlated subqueries are not aggregated
+        return false;
     }
 
 private:
