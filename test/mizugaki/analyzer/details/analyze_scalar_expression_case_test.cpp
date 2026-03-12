@@ -11,6 +11,8 @@
 #include <takatori/scalar/let.h>
 #include <takatori/scalar/unary.h>
 
+#include <yugawara/binding/extract.h>
+
 #include <mizugaki/ast/scalar/binary_expression.h>
 #include <mizugaki/ast/scalar/builtin_function_invocation.h>
 #include <mizugaki/ast/scalar/comparison_predicate.h>
@@ -222,6 +224,7 @@ TEST_F(analyze_scalar_expression_case_test, case_simple) {
 
     auto vars = collect_let_variables(*r);
     ASSERT_EQ(vars.size(), 1);
+    EXPECT_EQ(::yugawara::binding::kind_of(vars[0]), ::yugawara::binding::variable_info_kind::local_variable);
 
     EXPECT_EQ(*r, (tscalar::let {
             tscalar::let::variable { vars[0], immediate(0) },
@@ -364,6 +367,7 @@ TEST_F(analyze_scalar_expression_case_test, nullif) {
 
     auto vars = collect_let_variables(*r);
     ASSERT_EQ(vars.size(), 1);
+    EXPECT_EQ(::yugawara::binding::kind_of(vars[0]), ::yugawara::binding::variable_info_kind::local_variable);
 
     EXPECT_EQ(*r, (tscalar::let {
             tscalar::let::variable { vars[0], immediate(1) },

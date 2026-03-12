@@ -162,7 +162,7 @@ public:
             if (!r) {
                 return {};
             }
-            auto v = context_.stream_variable(*expr.operand());
+            auto v = context_.local_variable(*expr.operand());
             variable.emplace(std::move(v), r.release());
         }
 
@@ -622,9 +622,9 @@ public:
 
         std::unique_ptr<tscalar::expression> result {};
         if (expr.operator_kind() == ast::scalar::between_operator::symmetric) {
-            auto v_target = context_.stream_variable(*expr.target());
-            auto v_left = context_.stream_variable(*expr.left());
-            auto v_right = context_.stream_variable(*expr.right());
+            auto v_target = context_.local_variable(*expr.target());
+            auto v_left = context_.local_variable(*expr.left());
+            auto v_right = context_.local_variable(*expr.right());
 
             std::vector<tscalar::let::variable> variables {};
             variables.reserve(3);
@@ -668,7 +668,7 @@ public:
                     std::move(variables),
                     std::move(body));
         } else {
-            auto v_target = context_.stream_variable(*expr.target());
+            auto v_target = context_.local_variable(*expr.target());
             std::vector<tscalar::let::variable> variables {};
             variables.reserve(1);
             variables.emplace_back(v_target, target.release());
@@ -739,7 +739,7 @@ private:
             elements.emplace_back(resolved.release());
         }
 
-        auto v_target = context_.stream_variable(*expr.left());
+        auto v_target = context_.local_variable(*expr.left());
         std::vector<tscalar::let::variable> variables {};
         variables.reserve(1);
         variables.emplace_back(v_target, left.release());
@@ -1115,7 +1115,7 @@ public:
             return {};
         }
 
-        auto v_left = context_.stream_variable(*expr.arguments()[0]);
+        auto v_left = context_.local_variable(*expr.arguments()[0]);
         std::vector<tscalar::let::variable> variables {};
         variables.reserve(1);
         variables.emplace_back(v_left, left.release());

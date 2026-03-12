@@ -120,6 +120,8 @@ public:
 
     [[nodiscard]] ::takatori::descriptor::variable stream_variable(ast::scalar::expression const& expression) const;
 
+    [[nodiscard]] ::takatori::descriptor::variable local_variable(ast::scalar::expression const& expression) const;
+
 private:
     std::atomic<bool> initialized_ { false };
 

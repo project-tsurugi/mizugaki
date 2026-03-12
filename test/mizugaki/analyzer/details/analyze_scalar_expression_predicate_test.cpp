@@ -13,6 +13,8 @@
 #include <takatori/relation/scan.h>
 #include <takatori/relation/project.h>
 
+#include <yugawara/binding/extract.h>
+
 #include <yugawara/extension/scalar/quantified_compare.h>
 
 #include <mizugaki/ast/scalar/between_predicate.h>
@@ -267,6 +269,8 @@ TEST_F(analyze_scalar_expression_predicate_test, between_predicate) {
 
     auto vs = collect_let_variables(*r);
     ASSERT_EQ(vs.size(), 1);
+    EXPECT_EQ(::yugawara::binding::kind_of(vs[0]), ::yugawara::binding::variable_info_kind::local_variable);
+
     EXPECT_EQ(*r, (tscalar::let {
         tscalar::let::variable { vs[0], immediate(1) },
         tscalar::binary {
@@ -340,6 +344,10 @@ TEST_F(analyze_scalar_expression_predicate_test, between_predicate_symmetric) {
 
     auto vs = collect_let_variables(*r);
     ASSERT_EQ(vs.size(), 3);
+    EXPECT_EQ(::yugawara::binding::kind_of(vs[0]), ::yugawara::binding::variable_info_kind::local_variable);
+    EXPECT_EQ(::yugawara::binding::kind_of(vs[1]), ::yugawara::binding::variable_info_kind::local_variable);
+    EXPECT_EQ(::yugawara::binding::kind_of(vs[2]), ::yugawara::binding::variable_info_kind::local_variable);
+
     EXPECT_EQ(*r, (tscalar::let {
             {
                     tscalar::let::variable { vs[0], immediate(1) },
@@ -394,6 +402,8 @@ TEST_F(analyze_scalar_expression_predicate_test, in_predicate_values) {
 
     auto vs = collect_let_variables(*r);
     ASSERT_EQ(vs.size(), 1);
+    EXPECT_EQ(::yugawara::binding::kind_of(vs[0]), ::yugawara::binding::variable_info_kind::local_variable);
+
     EXPECT_EQ(*r, (tscalar::let {
             tscalar::let::variable { vs[0], immediate(1) },
             tscalar::compare {

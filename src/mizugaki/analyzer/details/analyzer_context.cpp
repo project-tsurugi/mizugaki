@@ -166,4 +166,8 @@ void analyzer_context::report(
     return bless(::yugawara::binding::factory {}.stream_variable(), expression.region());
 }
 
+takatori::descriptor::variable analyzer_context::local_variable(ast::scalar::expression const& expression) const {
+    return bless(::yugawara::binding::factory {}.local_variable(), expression.region());
+}
+
 } // namespace mizugaki::analyzer::details
