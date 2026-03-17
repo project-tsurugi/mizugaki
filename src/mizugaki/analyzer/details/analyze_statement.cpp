@@ -1728,7 +1728,7 @@ public:
             switch (user.user_kind()) {
                 case kind::identifier: {
                     auto&& id = user.authorization_identifier();
-                    if (saw_users.find(id->identifier()) != saw_users.end()) {
+                    if (saw_users.contains(id->identifier())) {
                         // skip duplicated users
                         continue;
                     }

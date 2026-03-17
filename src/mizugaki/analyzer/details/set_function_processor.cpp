@@ -295,11 +295,11 @@ void set_function_processor::add_aggregated(::takatori::descriptor::variable col
 }
 
 bool set_function_processor::is_grouping(tdescriptor::variable const& column) const {
-    return grouping_columns_.find(column) != grouping_columns_.end();
+    return grouping_columns_.contains(column);
 }
 
 bool set_function_processor::is_aggregated(tdescriptor::variable const& column) const {
-    return aggregated_columns_.find(column) != aggregated_columns_.end();
+    return aggregated_columns_.contains(column);
 }
 
 bool set_function_processor::active() const noexcept {
