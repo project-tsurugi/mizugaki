@@ -546,6 +546,14 @@ TEST_F(analyze_query_expression_select_test, without_tables) {
     EXPECT_EQ(relation_columns[0].variable(), project_columns[0].variable());
 }
 
+TEST_F(analyze_query_expression_select_test, without_tables_asterisk) {
+    invalid(sql_analyzer_code::unsupported_feature, ast::query::query {
+            {
+                    ast::query::select_asterisk {}
+            },
+    });
+}
+
 TEST_F(analyze_query_expression_select_test, where) {
     auto table = install_table("testing");
     trelation::graph_type graph {};

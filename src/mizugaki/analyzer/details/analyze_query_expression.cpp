@@ -1244,13 +1244,22 @@ public:
             }
             return { true };
         }
+        bool found = false;
         for (auto&& relation : scope.references()) {
             for (auto&& column : relation.columns()) {
                 if (!column.exported()) {
                     continue;
                 }
                 info.add(column);
+                found = true;
             }
+        }
+        if (!found) {
+            context_.report(
+                    sql_analyzer_code::unsupported_feature,
+                    "cannot use '*' for empty relations",
+                    elem.region());
+            return {};
         }
         return { true };
     }
