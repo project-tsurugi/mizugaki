@@ -1,20 +1,26 @@
 #include <mizugaki/analyzer/details/query_scope.h>
 
+#include <algorithm>
+
 #include <takatori/util/fail.h>
 #include <takatori/util/print_support.h>
 #include <takatori/util/optional_print_support.h>
 
+#include <yugawara/binding/factory.h>
+
 namespace mizugaki::analyzer::details {
+
+namespace descriptor = ::takatori::descriptor;
 
 using ::takatori::util::optional_ptr;
 using ::takatori::util::sequence_view;
 
 query_scope::query_scope(
-        optional_ptr<query_scope const> parent) :
+        optional_ptr<query_scope> parent) :
     parent_ { std::move(parent) }
 {}
 
-optional_ptr<query_scope const>& query_scope::parent() noexcept {
+optional_ptr<query_scope>& query_scope::parent() noexcept {
     return parent_;
 }
 
@@ -127,6 +133,38 @@ std::shared_ptr<query_info const> query_scope::find_query(std::string_view name)
         return it.value();
     }
     return {};
+}
+
+bool& query_scope::capture_parameters() noexcept {
+    return capture_parameters_;
+}
+
+bool query_scope::capture_parameters() const noexcept {
+    return capture_parameters_;
+}
+
+std::vector<std::tuple<descriptor::variable, descriptor::variable>>& query_scope::list_parameters() {
+    return parameters_;
+}
+
+std::vector<std::tuple<descriptor::variable, descriptor::variable>> const& query_scope::list_parameters() const {
+    return parameters_;
+}
+
+descriptor::variable& query_scope::add_parameter(descriptor::variable const& free_variable) {
+    auto iter = std::find_if(
+            parameters_.begin(),
+            parameters_.end(),
+            [&](auto const& pair) {
+                return free_variable == std::get<0>(pair);
+            });
+    if (iter != parameters_.end()) {
+        return std::get<1>(*iter);
+    }
+    ::yugawara::binding::factory factory {};
+    auto parameter = factory.stream_variable();
+    auto&& entry = parameters_.emplace_back(free_variable, std::move(parameter));
+    return std::get<1>(entry);
 }
 
 std::ostream& operator<<(std::ostream& out, query_scope const& value) {

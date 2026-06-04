@@ -53,7 +53,7 @@ protected:
     }
 };
 
-TEST_F(analyze_scalar_expression_subquery_test, simple) {
+TEST_F(analyze_scalar_expression_subquery_test, subquery) {
     auto r = analyze_scalar_expression(
             context(),
             ast::scalar::subquery {
@@ -71,6 +71,9 @@ TEST_F(analyze_scalar_expression_subquery_test, simple) {
     auto&& subgraph = subquery.query_graph();
     ASSERT_EQ(subgraph.size(), 1);
 
+    auto&& parameters = subquery.parameters();
+    ASSERT_EQ(parameters.size(), 0);
+
     auto&& column = subquery.output_column();
 
     auto&& subquery_output = subquery.find_output_port();
@@ -85,7 +88,7 @@ TEST_F(analyze_scalar_expression_subquery_test, simple) {
     EXPECT_EQ(values_columns[0], column);
 }
 
-TEST_F(analyze_scalar_expression_subquery_test, table) {
+TEST_F(analyze_scalar_expression_subquery_test, subquery_table) {
     auto table = install_table("t");
     ::yugawara::storage::column_feature_set system_flags {
             ::yugawara::storage::column_feature::synthesized,
@@ -123,7 +126,55 @@ TEST_F(analyze_scalar_expression_subquery_test, table) {
     EXPECT_EQ(scan_columns[0].destination(), column);
 }
 
-TEST_F(analyze_scalar_expression_subquery_test, columns_empty) {
+TEST_F(analyze_scalar_expression_subquery_test, subquery_correlation) {
+    auto&& ctxt = context();
+    auto&& relation = scope.add({});
+    auto v = vd("v", ttype::int8 {});
+    relation.add({ {}, v, "v", });
+
+    auto r = analyze_scalar_expression(
+            ctxt,
+            ast::scalar::subquery {
+                    ast::query::table_value_constructor {
+                            ast::scalar::value_constructor {
+                                    vref(id("v")),
+                            },
+                    },
+            },
+            scope,
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+
+    auto&& subquery = downcast<::yugawara::extension::scalar::subquery>(*r);
+    auto&& subgraph = subquery.query_graph();
+    ASSERT_EQ(subgraph.size(), 1);
+
+    auto&& parameters = subquery.parameters();
+    ASSERT_EQ(parameters.size(), 1);
+    EXPECT_EQ(parameters[0].source(), v);
+    auto&& pv = parameters[0].destination();
+
+    auto&& column = subquery.output_column();
+
+    auto&& subquery_output = subquery.find_output_port();
+    ASSERT_TRUE(subquery_output);
+    ASSERT_FALSE(subquery_output->opposite());
+    ASSERT_TRUE(subgraph.contains(subquery_output->owner()));
+
+    // values -
+    auto&& values = downcast<trelation::values>(subquery_output->owner());
+    auto&& values_columns = values.columns();
+    ASSERT_EQ(values_columns.size(), 1);
+    EXPECT_EQ(values_columns[0], column);
+
+    ASSERT_EQ(values.rows().size(), 1);
+    auto&& values_row = values.rows()[0];
+
+    ASSERT_EQ(values_row.elements().size(), 1);
+    EXPECT_EQ(values_row.elements()[0], vref(pv));
+}
+
+TEST_F(analyze_scalar_expression_subquery_test, subquery_columns_empty) {
     invalid(sql_analyzer_code::inconsistent_columns, ast::scalar::subquery {
             ast::query::table_value_constructor {
                     ast::scalar::value_constructor {},
@@ -131,7 +182,7 @@ TEST_F(analyze_scalar_expression_subquery_test, columns_empty) {
     });
 }
 
-TEST_F(analyze_scalar_expression_subquery_test, columns_over) {
+TEST_F(analyze_scalar_expression_subquery_test, subquery_columns_over) {
     invalid(sql_analyzer_code::inconsistent_columns, ast::scalar::subquery {
             ast::query::table_value_constructor {
                     ast::scalar::value_constructor {
@@ -172,6 +223,9 @@ TEST_F(analyze_scalar_expression_subquery_test, table_predicate_exists) {
     auto&& subgraph = exists.query_graph();
     ASSERT_EQ(subgraph.size(), 1);
 
+    auto&& parameters = exists.parameters();
+    ASSERT_EQ(parameters.size(), 0);
+
     auto&& subquery_output = exists.find_output_port();
     ASSERT_TRUE(subquery_output);
     ASSERT_FALSE(subquery_output->opposite());
@@ -181,6 +235,52 @@ TEST_F(analyze_scalar_expression_subquery_test, table_predicate_exists) {
     auto&& values = downcast<trelation::values>(subquery_output->owner());
     auto&& values_columns = values.columns();
     ASSERT_EQ(values_columns.size(), 1);
+}
+
+TEST_F(analyze_scalar_expression_subquery_test, table_predicate_exists_correlation) {
+    auto&& ctxt = context();
+    auto&& relation = scope.add({});
+    auto v = vd("v", ttype::int8 {});
+    relation.add({ {}, v, "v", });
+
+    auto r = analyze_scalar_expression(
+            ctxt,
+            ast::scalar::table_predicate {
+                    ast::scalar::table_operator::exists,
+                    ast::query::table_value_constructor {
+                            ast::scalar::value_constructor {
+                                    vref(id("v")),
+                            },
+                    },
+            },
+            scope,
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+
+    auto&& exists = downcast<::yugawara::extension::scalar::exists>(*r);
+    auto&& subgraph = exists.query_graph();
+    ASSERT_EQ(subgraph.size(), 1);
+
+    auto&& parameters = exists.parameters();
+    ASSERT_EQ(parameters.size(), 1);
+    EXPECT_EQ(parameters[0].source(), v);
+    auto&& pv = parameters[0].destination();
+
+    auto&& subquery_output = exists.find_output_port();
+    ASSERT_TRUE(subquery_output);
+    ASSERT_FALSE(subquery_output->opposite());
+    ASSERT_TRUE(subgraph.contains(subquery_output->owner()));
+
+    // values -
+    auto&& values = downcast<trelation::values>(subquery_output->owner());
+    auto&& values_columns = values.columns();
+    ASSERT_EQ(values_columns.size(), 1);
+
+    ASSERT_EQ(values.rows().size(), 1);
+    auto&& values_row = values.rows()[0];
+
+    ASSERT_EQ(values_row.elements().size(), 1);
+    EXPECT_EQ(values_row.elements()[0], vref(pv));
 }
 
 TEST_F(analyze_scalar_expression_subquery_test, table_predicate_unique_unsupported) {

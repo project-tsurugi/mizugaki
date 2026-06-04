@@ -10,6 +10,8 @@ namespace mizugaki::analyzer::details {
 
 using namespace ::mizugaki::analyzer::testing;
 
+using ::takatori::util::optional_ptr;
+
 class analyze_name_primary_test : public test_parent {
 protected:
     template<class T>
@@ -273,6 +275,55 @@ TEST_F(analyze_name_primary_test, column_variable_not_exported) {
     invalid(r, diagnostic_code::variable_not_found);
 }
 
+TEST_F(analyze_name_primary_test, column_variable_parameter) {
+    auto v = vdesc();
+
+    query_scope parent;
+    auto&& relation = parent.add({});
+    relation.add({ {}, v, "c0", });
+
+    query_scope scope { optional_ptr { parent } };
+    scope.capture_parameters() = true;
+
+    auto r = analyze_variable_name(
+            context(),
+            id("c0"),
+            scope);
+
+    ASSERT_EQ(parent.list_parameters().size(), 0);
+    ASSERT_EQ(scope.list_parameters().size(), 1);
+    EXPECT_EQ(std::get<0>(scope.list_parameters()[0]), v);
+    auto&& p = std::get<1>(scope.list_parameters()[0]);
+
+    validate(r, p);
+}
+
+TEST_F(analyze_name_primary_test, column_variable_parameter_nested) {
+    auto v = vdesc();
+
+    query_scope ancestor;
+    auto&& relation = ancestor.add({});
+    relation.add({ {}, v, "c0", });
+
+    query_scope parent { optional_ptr { ancestor } };
+
+    query_scope scope { optional_ptr { parent } };
+    scope.capture_parameters() = true;
+
+    auto r = analyze_variable_name(
+            context(),
+            id("c0"),
+            scope);
+
+    ASSERT_EQ(ancestor.list_parameters().size(), 0);
+    ASSERT_EQ(parent.list_parameters().size(), 0);
+    ASSERT_EQ(scope.list_parameters().size(), 1);
+    EXPECT_EQ(std::get<0>(scope.list_parameters()[0]), v);
+    auto&& p = std::get<1>(scope.list_parameters()[0]);
+
+    validate(r, p);
+}
+
 TEST_F(analyze_name_primary_test, schema_variable) {
     auto sv0 = std::make_shared<::yugawara::variable::configurable_provider>();
     ::yugawara::schema::declaration s0 { "s0", {}, {}, sv0, };
@@ -280,10 +331,11 @@ TEST_F(analyze_name_primary_test, schema_variable) {
 
     auto x0 = sv0->add({ "x0", ttype::int8 {} });
 
+    query_scope scope;
     auto r = analyze_variable_name(
             context(),
             id("x0"),
-            {});
+            scope);
     validate(r, x0);
 }
 
@@ -296,10 +348,11 @@ TEST_F(analyze_name_primary_test, schema_variable_multiple_variables) {
     auto x1 = sv0->add({ "x1", ttype::int8 {} });
     auto x2 = sv0->add({ "x2", ttype::int8 {} });
 
+    query_scope scope;
     auto r = analyze_variable_name(
             context(),
             id("x1"),
-            {});
+            scope);
     validate(r, x1);
 }
 
@@ -320,10 +373,11 @@ TEST_F(analyze_name_primary_test, schema_variable_multiple_schemas) {
     auto x1 = sv1->add({ "x1", ttype::int8 {} });
     auto x2 = sv2->add({ "x2", ttype::int8 {} });
 
+    query_scope scope;
     auto r = analyze_variable_name(
             context(),
             id("x1"),
-            {});
+            scope);
     validate(r, x1);
 }
 
@@ -344,10 +398,11 @@ TEST_F(analyze_name_primary_test, schema_variable_multiple_schemas_override) {
     auto x1 = sv1->add({ "x1", ttype::int8 {} });
     auto x2 = sv2->add({ "x1", ttype::int8 {} });
 
+    query_scope scope;
     auto r = analyze_variable_name(
             context(),
             id("x1"),
-            {});
+            scope);
     validate(r, x1);
 }
 
@@ -420,6 +475,21 @@ TEST_F(analyze_name_primary_test, relation_info_ambiguous) {
             id("r"),
             scope);
     invalid(r, diagnostic_code::relation_ambiguous);
+}
+
+TEST_F(analyze_name_primary_test, relation_info_parent) {
+    auto t = storages_->add_table({ "t", {} });
+
+    query_scope parent;
+    parent.add({ *t });
+
+    query_scope scope { optional_ptr { parent } };
+
+    auto r = analyze_relation_info_name(
+            context(),
+            id("t"),
+            scope);
+    invalid(r, diagnostic_code::table_not_found);
 }
 
 TEST_F(analyze_name_primary_test, relation_decl) {

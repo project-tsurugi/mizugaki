@@ -10,6 +10,8 @@ namespace mizugaki::analyzer::details {
 
 using namespace ::mizugaki::analyzer::testing;
 
+using ::takatori::util::optional_ptr;
+
 class analyze_name_qualified_test : public test_parent {
 protected:
     template<class T>
@@ -257,15 +259,39 @@ TEST_F(analyze_name_qualified_test, column_variable_in_relation_info_ambiguous_q
     invalid(r, diagnostic_code::relation_ambiguous);
 }
 
+TEST_F(analyze_name_qualified_test, column_variable_in_relation_info_parent) {
+    auto v = vdesc();
+
+    query_scope parent;
+    auto&& relation = parent.add({ {}, "t0", });
+    relation.add(column_info { {}, v, "c0", });
+
+    query_scope scope { optional_ptr { parent } };
+    scope.capture_parameters() = true;
+
+    auto r = analyze_variable_name(
+            context(),
+            id("t0", "c0"),
+            scope);
+
+    ASSERT_EQ(parent.list_parameters().size(), 0);
+    ASSERT_EQ(scope.list_parameters().size(), 1);
+    EXPECT_EQ(std::get<0>(scope.list_parameters()[0]), v);
+    auto&& p = std::get<1>(scope.list_parameters()[0]);
+
+    validate(r, p);
+}
+
 TEST_F(analyze_name_qualified_test, schema_variable_in_schema_decl) {
     auto sv0 = std::make_shared<::yugawara::variable::configurable_provider>();
     auto s0 = schemas_->add({ "s0", {}, {}, sv0, });
     auto x0 = sv0->add({ "x0", ttype::int8 {} });
 
+    query_scope scope;
     auto r = analyze_variable_name(
             context(),
             id("s0", "x0"),
-            {});
+            scope);
     validate(r, x0);
 }
 
@@ -276,10 +302,11 @@ TEST_F(analyze_name_qualified_test, schema_variable_in_schema_decl_multiple_vari
     auto x1 = sv0->add({ "x1", ttype::int8 {} });
     auto x2 = sv0->add({ "x2", ttype::int8 {} });
 
+    query_scope scope;
     auto r = analyze_variable_name(
             context(),
             id("s0", "x1"),
-            {});
+            scope);
     validate(r, x1);
 }
 
@@ -290,10 +317,11 @@ TEST_F(analyze_name_qualified_test, schema_variable_in_schema_decl_missing) {
     auto x1 = sv0->add({ "x1", ttype::int8 {} });
     auto x2 = sv0->add({ "x2", ttype::int8 {} });
 
+    query_scope scope;
     auto r = analyze_variable_name(
             context(),
             id("s0", "MISSING"),
-            {});
+            scope);
     invalid(r, sql_analyzer_code::variable_not_found);
 }
 

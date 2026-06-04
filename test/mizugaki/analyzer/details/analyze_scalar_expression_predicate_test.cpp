@@ -542,6 +542,9 @@ TEST_F(analyze_scalar_expression_predicate_test, in_predicate_query) {
     EXPECT_EQ(tscalar::comparison_operator::equal, expr.operator_kind());
     EXPECT_EQ(tscalar::quantifier::any, expr.quantifier());
 
+    auto&& parameters = expr.parameters();
+    ASSERT_EQ(parameters.size(), 0);
+
     EXPECT_EQ(expr.left(), immediate(1));
     auto&& right = expr.right_column();
 
@@ -613,6 +616,66 @@ TEST_F(analyze_scalar_expression_predicate_test, in_predicate_query_not) {
 
     ASSERT_EQ(project.columns().size(), 1);
     EXPECT_EQ(project.columns()[0].value(), vref(ck));
+    EXPECT_EQ(project.columns()[0].variable(), right);
+}
+
+TEST_F(analyze_scalar_expression_predicate_test, in_predicate_query_correlation) {
+    auto&& ctxt = context();
+    auto&& relation = scope.add({});
+    auto vo = vd("vo", ttype::int8 {});
+    relation.add({ {}, vo, "vo", });
+
+    auto table = install_table("t");
+    auto r = analyze_scalar_expression(
+            ctxt,
+            ast::scalar::in_predicate {
+                    literal(number("1")),
+                    ast::query::query {
+                            {
+                                    ast::query::select_column { vref(id("vo")) },
+                            },
+                            {
+                                    ast::table::table_reference {
+                                            id("t"),
+                                    }
+                            },
+                    },
+            },
+            scope,
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
+    ASSERT_TRUE(is_instance<::yugawara::extension::scalar::quantified_compare>(*r));
+    auto&& expr = downcast<::yugawara::extension::scalar::quantified_compare>(*r);
+
+    // IN -> = ANY
+    EXPECT_EQ(tscalar::comparison_operator::equal, expr.operator_kind());
+    EXPECT_EQ(tscalar::quantifier::any, expr.quantifier());
+
+    auto&& parameters = expr.parameters();
+    ASSERT_EQ(parameters.size(), 1);
+    EXPECT_EQ(parameters[0].source(), vo);
+    auto&& pv = parameters[0].destination();
+
+    EXPECT_EQ(expr.left(), immediate(1));
+    auto&& right = expr.right_column();
+
+    auto&& subgraph = expr.query_graph();
+    auto&& subquery_output = expr.find_output_port();
+    ASSERT_TRUE(subquery_output);
+    ASSERT_FALSE(subquery_output->opposite());
+    ASSERT_TRUE(subgraph.contains(subquery_output->owner()));
+
+    // scan -- project -*
+    auto&& project = downcast<trelation::project>(subquery_output->owner());
+    auto&& scan = *find_prev<trelation::scan>(project);
+
+    auto&& scan_columns = scan.columns();
+    ASSERT_EQ(scan_columns.size(), 4);
+
+    ASSERT_EQ(project.columns().size(), 1);
+    EXPECT_EQ(project.columns()[0].value(), vref(pv));
     EXPECT_EQ(project.columns()[0].variable(), right);
 }
 
@@ -716,6 +779,9 @@ TEST_F(analyze_scalar_expression_predicate_test, quantified_comparison_predicate
     EXPECT_EQ(tscalar::comparison_operator::greater_equal, expr.operator_kind());
     EXPECT_EQ(tscalar::quantifier::all, expr.quantifier());
 
+    auto&& parameters = expr.parameters();
+    ASSERT_EQ(parameters.size(), 0);
+
     EXPECT_EQ(expr.left(), immediate(1));
     auto&& right = expr.right_column();
 
@@ -735,6 +801,67 @@ TEST_F(analyze_scalar_expression_predicate_test, quantified_comparison_predicate
 
     ASSERT_EQ(project.columns().size(), 1);
     EXPECT_EQ(project.columns()[0].value(), vref(ck));
+    EXPECT_EQ(project.columns()[0].variable(), right);
+}
+
+TEST_F(analyze_scalar_expression_predicate_test, quantified_comparison_predicate_correlation) {
+    auto&& ctxt = context();
+    auto&& relation = scope.add({});
+    auto vo = vd("o", ttype::int8 {});
+    relation.add({ {}, vo, "vo", });
+
+    auto table = install_table("t");
+    auto r = analyze_scalar_expression(
+            ctxt,
+            ast::scalar::quantified_comparison_predicate {
+                    literal(number("1")),
+                    ast::scalar::comparison_operator::less_than,
+                    ast::scalar::quantifier::any,
+                    ast::query::query {
+                            {
+                                    ast::query::select_column { vref(id("vo")) },
+                            },
+                            {
+                                    ast::table::table_reference {
+                                            id("t"),
+                                    }
+                            },
+                    },
+            },
+            scope,
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
+    ASSERT_TRUE(is_instance<::yugawara::extension::scalar::quantified_compare>(*r));
+    auto&& expr = downcast<::yugawara::extension::scalar::quantified_compare>(*r);
+
+    EXPECT_EQ(tscalar::comparison_operator::less, expr.operator_kind());
+    EXPECT_EQ(tscalar::quantifier::any, expr.quantifier());
+
+    auto&& parameters = expr.parameters();
+    ASSERT_EQ(parameters.size(), 1);
+    EXPECT_EQ(parameters[0].source(), vo);
+    auto&& pv = parameters[0].destination();
+
+    EXPECT_EQ(expr.left(), immediate(1));
+    auto&& right = expr.right_column();
+
+    auto&& subgraph = expr.query_graph();
+    auto&& subquery_output = expr.find_output_port();
+    ASSERT_TRUE(subquery_output);
+    ASSERT_FALSE(subquery_output->opposite());
+    ASSERT_TRUE(subgraph.contains(subquery_output->owner()));
+
+    // scan -- project -*
+    auto&& project = downcast<trelation::project>(subquery_output->owner());
+    auto&& scan = *find_prev<trelation::scan>(project);
+
+    auto&& scan_columns = scan.columns();
+    ASSERT_EQ(scan_columns.size(), 4);
+
+    ASSERT_EQ(project.columns().size(), 1);
+    EXPECT_EQ(project.columns()[0].value(), vref(pv));
     EXPECT_EQ(project.columns()[0].variable(), right);
 }
 

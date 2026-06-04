@@ -414,7 +414,7 @@ public:
             return process_relation_reference(*expr.name(), *parent);
         }
         query_scope scope { parent };
-            return process_relation_reference(*expr.name(), scope);
+        return process_relation_reference(*expr.name(), scope);
     }
 
     [[nodiscard]] result_type operator()(
@@ -588,9 +588,7 @@ public:
         for (std::size_t index = 0, size = left_columns.size(); index < size; ++index) {
             auto&& left_column = *left_columns[index];
             auto&& right_column = *right_columns[index];
-            auto output_column = factory_.stream_variable(
-                    // FIXME: debug name
-            );
+            auto output_column = factory_.stream_variable(left_column.variable());
             mappings.emplace_back(left_column.variable(), right_column.variable(), output_column);
             output_info.add({
                     {},
@@ -732,7 +730,9 @@ public:
             query_scope& scope) {
         trelation::graph_type subgraph {};
         engine subengine { context_, subgraph };
-        auto result = subengine.dispatch(*element.expression(), scope, {}, false);
+        query_scope sub_scope { optional_ptr { scope } };
+        sub_scope.independent_scope() = true; // common table has an independent scope
+        auto result = subengine.dispatch(*element.expression(), sub_scope, {}, false);
         if (!result) {
             return {};
         }
@@ -906,7 +906,7 @@ public:
                 name = query->output_column_names()[index];
             }
             auto&& source = query->output_columns()[index];
-            auto destination = factory_.stream_variable(name.value_or(std::string {}));
+            auto destination = factory_.stream_variable(source);
             mappings.emplace_back(source, destination);
             info.add({
                     {},
@@ -1706,7 +1706,7 @@ private:
                     mappings.emplace_back(
                             column.variable(),
                             std::nullopt,
-                            factory_.stream_variable());
+                            factory_.stream_variable(column.variable()));
                 }
             }
         }
@@ -1716,7 +1716,7 @@ private:
                     mappings.emplace_back(
                             std::nullopt,
                             column.variable(),
-                            factory_.stream_variable());
+                            factory_.stream_variable(column.variable()));
                 }
             }
         }

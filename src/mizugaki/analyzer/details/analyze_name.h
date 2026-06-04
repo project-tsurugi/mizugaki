@@ -41,7 +41,7 @@ using schema_element = std::pair<
 [[nodiscard]] std::unique_ptr<::takatori::scalar::expression> analyze_variable_name(
         analyzer_context& context,
         ast::name::name const& name,
-        query_scope const& scope); // FIXME: search for parent scope
+        query_scope& scope);
 
 [[nodiscard]] ::takatori::util::optional_ptr<relation_info const> analyze_relation_info_name(
         analyzer_context& context,

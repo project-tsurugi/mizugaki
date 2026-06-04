@@ -109,10 +109,24 @@ void analyzer_context::clear_expression_resolution(::takatori::scalar::expressio
     expression_analyzer_.expressions().unbind(expression);
 }
 
+bool analyzer_context::is_resolved(takatori::descriptor::variable const& variable) const {
+    auto&& resolution = expression_analyzer_.variables().find(variable);
+    return resolution.is_resolved();
+}
+
 void analyzer_context::resolve_as(
         ::takatori::descriptor::variable const& variable,
         ::yugawara::analyzer::variable_resolution resolution) {
     expression_analyzer_.variables().bind(variable, std::move(resolution), true);
+}
+
+void analyzer_context::resolve_as_alias(
+        ::takatori::descriptor::variable const& variable,
+        ::takatori::descriptor::variable const& source) {
+    auto resolution = expression_analyzer_.variables().find(source);
+    if (resolution.is_resolved()) {
+        expression_analyzer_.variables().bind(variable, std::move(resolution));
+    }
 }
 
 ::yugawara::compiled_info analyzer_context::test_info() {

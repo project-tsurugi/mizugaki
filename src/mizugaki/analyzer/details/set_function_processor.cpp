@@ -77,31 +77,38 @@ public:
 
     bool operator()(tscalar::variable_reference const& expr, std::size_t depth) {
         // check only if it is stream variable
-        auto&& variable = ::yugawara::binding::unwrap(expr.variable());
-        if (variable.kind() != ::yugawara::binding::variable_info_kind::stream_variable) {
+        auto&& variable_info = ::yugawara::binding::unwrap(expr.variable());
+        if (variable_info.kind() != ::yugawara::binding::variable_info_kind::stream_variable) {
             return false;
         }
 
+        check_variable(expr.region(), expr.variable(), depth);
+        return false;
+    }
+
+    void check_variable(
+            ::takatori::document::region const& region,
+            tdescriptor::variable const& variable,
+            std::size_t depth) {
         if (depth == 0) {
             // NOTE: in aggregation depth = 0, you can use grouping keys or aggregated values
-            if (!processor_.is_grouping(expr.variable()) && !processor_.is_aggregated(expr.variable())) {
+            if (!processor_.is_grouping(variable) && !processor_.is_aggregated(variable)) {
                 context_.report(
                         sql_analyzer_code::invalid_aggregation_column,
                         "column must be aggregated",
-                        expr.region());
+                        region);
                 saw_error_ = true;
             }
         } else {
             // NOTE: in aggregation depth > 0, using aggregated values may occur multi-level aggregations
-            if (processor_.is_aggregated(expr.variable())) {
+            if (processor_.is_aggregated(variable)) {
                 context_.report(
                         sql_analyzer_code::invalid_aggregation_column,
                         "the aggregated result is not visible here",
-                        expr.region());
+                        region);
                 saw_error_ = true;
             }
         }
-        return false;
     }
 
     bool operator()(tscalar::cast& expr, std::size_t depth) {
@@ -243,24 +250,26 @@ public:
     }
 
     bool operator()(::yugawara::extension::scalar::subquery const& expr, std::size_t depth) noexcept {
-        // NOTE: non-correlated subqueries are not aggregated
-        (void) expr;
-        (void) depth;
+        for (auto&& parameter : expr.parameters()) {
+            check_variable(expr.region(), parameter.source(), depth);
+        }
         return false;
     }
 
     bool operator()(::yugawara::extension::scalar::exists const& expr, std::size_t depth) noexcept {
-        // NOTE: non-correlated subqueries are not aggregated
-        (void) expr;
-        (void) depth;
+        for (auto&& parameter : expr.parameters()) {
+            check_variable(expr.region(), parameter.source(), depth);
+        }
         return false;
     }
 
     bool operator()(::yugawara::extension::scalar::quantified_compare& expr, std::size_t depth) {
+        for (auto&& parameter : expr.parameters()) {
+            check_variable(expr.region(), parameter.source(), depth);
+        }
         if (process(expr.left(), depth)) {
             processor_.consume(expr.ownership_left());
         }
-        // NOTE: non-correlated subqueries are not aggregated
         return false;
     }
 

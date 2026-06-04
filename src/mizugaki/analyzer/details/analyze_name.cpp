@@ -40,6 +40,58 @@ using ::takatori::util::unsafe_downcast;
 
 namespace {
 
+class scoped_relation_info {
+public:
+    explicit scoped_relation_info(relation_info const& found, optional_ptr<query_scope const> scope = {}) noexcept:
+        found_ { found },
+        scope_ { scope.get() }
+    {}
+
+    [[nodiscard]] relation_info const& found() const noexcept {
+        return found_;
+    }
+
+    [[nodiscard]] bool has_scope() const noexcept {
+        return scope_ != nullptr;
+    }
+
+    [[nodiscard]] optional_ptr<query_scope const> scope() const noexcept {
+        return optional_ptr { scope_ };
+    }
+
+private:
+    relation_info const& found_;
+    query_scope const* scope_;
+};
+
+struct scoped_variable_info {
+
+    explicit scoped_variable_info(descriptor::variable found, optional_ptr<query_scope const> scope = {}) noexcept :
+        found_ { std::move(found) },
+        scope_ { scope.get() }
+    {}
+
+    [[nodiscard]] descriptor::variable& found() noexcept {
+        return found_;
+    }
+
+    [[nodiscard]] descriptor::variable const& found() const noexcept {
+        return found_;
+    }
+
+    [[nodiscard]] bool has_scope() const noexcept {
+        return scope_ != nullptr;
+    }
+
+    [[nodiscard]] optional_ptr<query_scope const> scope() const noexcept {
+        return optional_ptr { scope_ };
+    }
+
+private:
+    descriptor::variable found_;
+    query_scope const* scope_;
+};
+
 struct saw_error_t {
     template<class... Alternatives>
     [[nodiscard]] bool operator()(std::variant<Alternatives...> const& alternatives) const noexcept {
@@ -60,8 +112,8 @@ constexpr not_found_t const not_found {};
 using symbol_info = std::variant<
         saw_error_t,
         not_found_t,
-        descriptor::variable,
-        std::reference_wrapper<relation_info const>,
+        scoped_variable_info,
+        scoped_relation_info,
         std::reference_wrapper<relation_decl const>,
         std::shared_ptr<query_info const>,
         std::shared_ptr<schema_decl const>,
@@ -76,8 +128,10 @@ public:
         scope_ { scope }
     {}
 
-    [[nodiscard]] std::unique_ptr<tscalar::expression> find_variable(ast::name::name const& name) {
-        auto alternatives = find_symbol(scope_, name, {
+    [[nodiscard]] std::unique_ptr<tscalar::expression> find_variable(
+            query_scope& scope,
+            ast::name::name const& name) {
+        auto alternatives = find_symbol(scope, name, {
                 symbol_kind::column_variable,
                 symbol_kind::field_variable,
                 symbol_kind::schema_variable,
@@ -85,10 +139,43 @@ public:
         if (saw_error(alternatives)) {
             return {};
         }
-        if (auto v = optional_ptr { std::get_if<descriptor::variable>(&alternatives) }) {
-            return context_.create<tscalar::variable_reference>(
-                    name.region(),
-                    std::move(*v));
+        if (auto v = optional_ptr { std::get_if<scoped_variable_info>(&alternatives) }) {
+            if (!v->has_scope() || v->scope().get() == std::addressof(scope)) {
+                // just found variable in the current scope, so we can use it directly.
+                return context_.create<tscalar::variable_reference>(
+                        name.region(),
+                        std::move(v->found()));
+            }
+
+            std::vector<query_scope*> scopes {};
+            for (optional_ptr current = scope;
+                    current && current.get() != v->scope().get();
+                    current = current->parent()) {
+                // if found independent scope, we cannot access its variable..
+                if (current->independent_scope()) {
+                    scopes.clear();
+                    break;
+                }
+                // or, declare a new query parameter
+                if (current->capture_parameters()) {
+                    scopes.push_back(current.get());
+                }
+            }
+
+            descriptor::variable* current_variable = std::addressof(v->found());
+            for (auto iter = scopes.rbegin(); iter != scopes.rend(); ++iter) {
+                auto& current_scope = **iter;
+                auto& parameter = current_scope.add_parameter(*current_variable);
+                if (!context_.is_resolved(parameter)) {
+                    context_.resolve_as_alias(parameter, v->found());
+                }
+                current_variable = std::addressof(parameter);
+            }
+            if (current_variable != std::addressof(v->found())) {
+                return context_.create<tscalar::variable_reference>(
+                        name.region(),
+                        *current_variable);
+            }
         }
         context_.report(sql_analyzer_code::variable_not_found,
                 string_builder {}
@@ -103,10 +190,11 @@ public:
         if (saw_error(alternatives)) {
             return {}; // not found due to error
         }
-        if (auto v = unwrap(std::get_if<std::reference_wrapper<relation_info const>>(&alternatives))) {
-            return v;
+        if (auto v = optional_ptr { std::get_if<scoped_relation_info>(&alternatives) };
+                v && (!v->has_scope() || v->scope().get() == std::addressof(scope_))) {
+            return v->found();
         }
-        context_.report(sql_analyzer_code::symbol_not_found,
+        context_.report(sql_analyzer_code::table_not_found,
                 string_builder {}
                         << "'" << print_support { name } << "' is not found"
                         << string_builder::to_string,
@@ -387,8 +475,6 @@ private:
                 return saw_error; // propagate error
             }
         }
-
-        // FIXME: 2. find column also from main query
         // FIXME: 3. find parameter variables
         // FIXME: 4. find session variables
 
@@ -496,7 +582,7 @@ private:
         }
 
         // qualifier is variable
-        if (auto q = optional_ptr { std::get_if<descriptor::variable>(&qualifier) }) {
+        if (auto q = optional_ptr { std::get_if<scoped_variable_info>(&qualifier) }) {
             targets &= { symbol_kind::field_variable };
             if (targets.contains(symbol_kind::field_variable)) {
                 // FIXME: impl field reference
@@ -509,12 +595,12 @@ private:
         }
 
         // qualifier is relation info
-        if (auto q = unwrap(std::get_if<std::reference_wrapper<relation_info const>>(&qualifier))) {
+        if (auto q = optional_ptr { std::get_if<scoped_relation_info>(&qualifier) }) {
             targets &= { symbol_kind::column_variable };
             if (targets.contains(symbol_kind::column_variable)) {
-                auto r = find_column_in_relation(*q, qualified_name.last_name());
+                auto r = find_column_in_relation(q->found(), qualified_name.last_name());
                 if (auto&& v = r.found()) {
-                    return { *v };
+                    return scoped_variable_info { *v, q->scope() };
                 }
                 if (r.is_error()) {
                     return saw_error;
@@ -540,7 +626,7 @@ private:
             if (targets.contains(symbol_kind::relation_info)) {
                 auto r = find_relation_info_in_schema(scope, **q, qualified_name.last_name());
                 if (auto&& v = r.found()) {
-                    return { *v };
+                    return scoped_relation_info { *v };
                 }
                 if (r.is_error()) {
                     return saw_error;
@@ -699,22 +785,22 @@ private:
         }
     }
 
-    [[nodiscard]] find_symbol_result<relation_info const&> find_relation_info_in_schema(
+    [[nodiscard]] find_symbol_result<scoped_relation_info> find_relation_info_in_schema(
             query_scope const& scope,
             schema_decl const& schema,
             ast::name::simple const& name) {
         if (auto decl = find_relation_decl_in_schema(schema, name); decl.found()) {
             auto r = scope.find(*decl.found());
             if (r.is_found()) {
-                return { *r };
+                return { scoped_relation_info { *r } };
             }
             if (r.is_ambiguous()) {
                 report_relation_ambiguous(name);
-                return find_symbol_result<relation_info const&>::error;
+                return find_symbol_result<scoped_relation_info>::error;
             }
             // not found
         } else if (decl.is_error()) {
-            return find_symbol_result<relation_info const&>::error;
+            return find_symbol_result<scoped_relation_info>::error;
         }
 
         return {};
@@ -732,7 +818,7 @@ private:
         return {};
     }
 
-    [[nodiscard]] find_symbol_result<descriptor::variable> find_variable_in_query(
+    [[nodiscard]] find_symbol_result<scoped_variable_info> find_variable_in_query(
             query_scope const& scope,
             ast::name::simple const& name) {
         ast::common::chars buffer;
@@ -741,19 +827,25 @@ private:
             for (auto v = r.find(to_identifier(name, buffer, name_kind::variable)); !v.is_absent(); v = r.next(*v)) {
                 if (v.is_ambiguous()) {
                     report_column_ambiguous(name);
-                    return find_symbol_result<descriptor::variable>::error;
+                    return find_symbol_result<scoped_variable_info>::error;
                 }
                 if (!v->exported()) {
                     continue;
                 }
                 if (found) {
                     report_column_ambiguous(name);
-                    return find_symbol_result<descriptor::variable>::error;
+                    return find_symbol_result<scoped_variable_info>::error;
                 }
                 found = context_.bless(v->variable(), name.region());
             }
         }
-        return { std::move(found) };
+        if (found) {
+            return { scoped_variable_info { std::move(*found), scope } };
+        }
+        if (auto parent = scope.parent()) {
+            return find_variable_in_query(*parent, name);
+        }
+        return {};
     }
 
     void report_column_ambiguous(ast::name::name const& name) {
@@ -804,12 +896,12 @@ private:
         ast::common::chars buffer;
         auto id = to_identifier(name.last_name(), buffer, name_kind::variable);
         if (auto v = schema.variable_provider().find(id)) {
-            return { context_.bless(to_descriptor(std::move(v)), name.region()) };
+            return { scoped_variable_info { context_.bless(to_descriptor(std::move(v)), name.region()) } };
         }
         return not_found;
     }
 
-    [[nodiscard]] find_symbol_result<relation_info const&> find_relation_info_in_query(
+    [[nodiscard]] find_symbol_result<scoped_relation_info> find_relation_info_in_query(
             query_scope const& query,
             ast::name::simple const& name) {
         ast::common::chars buffer;
@@ -817,10 +909,13 @@ private:
         auto r = query.find(id);
         if (r.is_ambiguous()) {
             report_relation_ambiguous(name);
-            return find_symbol_result<relation_info const&>::error;
+            return find_symbol_result<scoped_relation_info>::error;
         }
         if (r) {
-            return { *r };
+            return { scoped_relation_info { *r, query } };
+        }
+        if (auto parent = query.parent()) {
+            return find_relation_info_in_query(*parent, name);
         }
         return {};
     }
@@ -912,9 +1007,9 @@ private:
 std::unique_ptr<tscalar::expression> analyze_variable_name(
         analyzer_context& context,
         ast::name::name const& name,
-        query_scope const& scope) {
+        query_scope& scope) {
     engine e { context, scope };
-    return e.find_variable(name);
+    return e.find_variable(scope, name);
 }
 
 std::vector<std::shared_ptr<function_decl const>> analyze_function_name(

@@ -78,9 +78,15 @@ public:
 
     [[nodiscard]] bool resolve(::takatori::relation::expression const& expression, bool validate = false);
 
+    [[nodiscard]] bool is_resolved(::takatori::descriptor::variable const& variable) const;
+
     void resolve_as(
             ::takatori::descriptor::variable const& variable,
             ::yugawara::analyzer::variable_resolution resolution);
+
+    void resolve_as_alias(
+            ::takatori::descriptor::variable const& variable,
+            ::takatori::descriptor::variable const& source);
 
     [[nodiscard]] ::yugawara::compiled_info test_info();
 

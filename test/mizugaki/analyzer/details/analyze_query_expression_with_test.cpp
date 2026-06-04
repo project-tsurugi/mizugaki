@@ -13,14 +13,16 @@
 #include <yugawara/extension/relation/subquery.h>
 
 #include <mizugaki/ast/scalar/value_constructor.h>
+#include <mizugaki/ast/scalar/subquery.h>
+
+#include <mizugaki/ast/table/table_reference.h>
 
 #include <mizugaki/ast/query/binary_expression.h>
 #include <mizugaki/ast/query/query.h>
+#include <mizugaki/ast/query/select_column.h>
 #include <mizugaki/ast/query/table_reference.h>
 #include <mizugaki/ast/query/table_value_constructor.h>
 #include <mizugaki/ast/query/with_expression.h>
-
-#include <mizugaki/ast/table/table_reference.h>
 
 #include "test_parent.h"
 
@@ -668,6 +670,40 @@ TEST_F(analyze_query_expression_with_test, error_in_common_table_expression) {
             },
             ast::query::table_reference {
                     id("q0"),
+            },
+    });
+}
+
+TEST_F(analyze_query_expression_with_test, error_correlation_column_in_cte) {
+    auto table = install_table("t");
+    trelation::graph_type graph {};
+    invalid(sql_analyzer_code::variable_not_found, ast::query::query {
+            {
+                    ast::query::select_column {
+                            ast::scalar::subquery {
+                                    // WITH q AS (VALUES(t.v)) TABLE q
+                                    ast::query::with_expression {
+                                            {
+                                                    ast::query::with_element {
+                                                            id("q"),
+                                                            ast::query::table_value_constructor {
+                                                                    ast::scalar::value_constructor {
+                                                                            vref(id("t", "v")),
+                                                                    },
+                                                            },
+                                                    },
+                                            },
+                                            ast::query::table_reference {
+                                                    id("q"),
+                                            },
+                                    },
+                            }
+                    },
+            },
+            {
+                    ast::table::table_reference {
+                            id("t"),
+                    }
             },
     });
 }

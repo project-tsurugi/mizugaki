@@ -50,8 +50,9 @@ namespace mizugaki::analyzer::details {
 namespace tscalar = ::takatori::scalar;
 namespace ttype = ::takatori::type;
 
-using ::takatori::util::unsafe_downcast;
+using ::takatori::util::optional_ptr;
 using ::takatori::util::string_builder;
+using ::takatori::util::unsafe_downcast;
 
 using result_type = analyze_scalar_expression_result;
 
@@ -454,11 +455,13 @@ public:
         }
 
         ::takatori::relation::graph_type subgraph {};
+        query_scope parameter_scope { optional_ptr { scope_ } };
+        parameter_scope.capture_parameters() = true;
         auto query = analyze_query_expression(
                 context_,
                 subgraph,
                 *expr.query(),
-                scope_,
+                parameter_scope,
                 {}); // NOTE: don't propagate value context into subqueries
         if (!query) {
             return {};
@@ -474,10 +477,16 @@ public:
                     expr.region());
             return {};
         }
+        std::vector<::yugawara::extension::scalar::subquery::parameter_type> parameters {};
+        parameters.reserve(parameter_scope.list_parameters().size());
+        for (auto&& [source, destination] : parameter_scope.list_parameters()) {
+            parameters.emplace_back(std::move(source), std::move(destination));
+        }
         auto&& column = relation.columns().front();
         auto result = context_.create<::yugawara::extension::scalar::subquery>(
                 expr.region(),
                 std::move(subgraph),
+                std::move(parameters),
                 column.variable());
         return result;
     }
@@ -551,11 +560,13 @@ public:
             return {};
         }
         ::takatori::relation::graph_type subgraph {};
+        query_scope parameter_scope { optional_ptr { scope_ } };
+        parameter_scope.capture_parameters() = true;
         auto query = analyze_query_expression(
                 context_,
                 subgraph,
                 *expr.right(),
-                scope_,
+                parameter_scope,
                 {}); // NOTE: don't propagate value context into subqueries
         if (!query) {
             return {};
@@ -571,6 +582,11 @@ public:
                     expr.region());
             return {};
         }
+        std::vector<::yugawara::extension::scalar::quantified_compare::parameter_type> parameters {};
+        parameters.reserve(parameter_scope.list_parameters().size());
+        for (auto&& [source, destination] : parameter_scope.list_parameters()) {
+            parameters.emplace_back(std::move(source), std::move(destination));
+        }
         auto&& column = relation.columns().front();
         auto result = context_.create<::yugawara::extension::scalar::quantified_compare>(
                 expr.region(),
@@ -578,6 +594,7 @@ public:
                 *quantifier,
                 left.release(),
                 std::move(subgraph),
+                std::move(parameters),
                 column.variable());
         return result;
     }
@@ -785,11 +802,13 @@ private:
             return {};
         }
         ::takatori::relation::graph_type subgraph {};
+        query_scope parameter_scope { optional_ptr { scope_ } };
+        parameter_scope.capture_parameters() = true;
         auto query = analyze_query_expression(
                 context_,
                 subgraph,
                 *expr.right(),
-                scope_,
+                parameter_scope,
                 {}); // NOTE: don't propagate value context into subqueries
         if (!query) {
             return {};
@@ -804,6 +823,11 @@ private:
                             << string_builder::to_string,
                     expr.region());
             return {};
+        }
+        std::vector<::yugawara::extension::scalar::quantified_compare::parameter_type> parameters {};
+        parameters.reserve(parameter_scope.list_parameters().size());
+        for (auto&& [source, destination] : parameter_scope.list_parameters()) {
+            parameters.emplace_back(std::move(source), std::move(destination));
         }
         auto&& column = relation.columns().front();
         tscalar::comparison_operator operator_ {};
@@ -821,6 +845,7 @@ private:
                 quantifier,
                 left.release(),
                 std::move(subgraph),
+                std::move(parameters),
                 column.variable());
         return result;
     }
@@ -912,18 +937,26 @@ public:
             ast::scalar::table_predicate const& expr,
             value_context const&) {
         ::takatori::relation::graph_type subgraph {};
+        query_scope parameter_scope { optional_ptr { scope_ } };
+        parameter_scope.capture_parameters() = true;
         auto query = analyze_query_expression(
                 context_,
                 subgraph,
                 *expr.operand(),
-                scope_,
+                parameter_scope,
                 {}); // NOTE: don't propagate value context into subqueries
         if (!query) {
             return {};
         }
+        std::vector<::yugawara::extension::scalar::exists::parameter_type> parameters {};
+        parameters.reserve(parameter_scope.list_parameters().size());
+        for (auto&& [source, destination] : parameter_scope.list_parameters()) {
+            parameters.emplace_back(std::move(source), std::move(destination));
+        }
         auto result = context_.create<::yugawara::extension::scalar::exists>(
                 expr.region(),
-                std::move(subgraph));
+                std::move(subgraph),
+                std::move(parameters));
         return result;
     }
 
