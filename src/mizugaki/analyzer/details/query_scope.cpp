@@ -162,7 +162,7 @@ descriptor::variable& query_scope::add_parameter(descriptor::variable const& fre
         return std::get<1>(*iter);
     }
     ::yugawara::binding::factory factory {};
-    auto parameter = factory.stream_variable();
+    auto parameter = factory.frame_variable(free_variable);
     auto&& entry = parameters_.emplace_back(free_variable, std::move(parameter));
     return std::get<1>(entry);
 }

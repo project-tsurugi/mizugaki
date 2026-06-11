@@ -2,7 +2,6 @@
 
 #include <vector>
 
-#include <takatori/type/boolean.h>
 #include <takatori/type/character.h>
 
 #include <takatori/value/unknown.h>
