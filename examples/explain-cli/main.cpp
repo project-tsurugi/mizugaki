@@ -119,15 +119,7 @@ DEFINE_string(file, "", "input file path"); // NOLINT
 DEFINE_string(text, "", "input text"); // NOLINT
 DEFINE_string(placeholders, "", "placeholder definitions (name:type, separated by ,)"); // NOLINT
 
-int do_main(int argc, char* argv[]) { // NOLINT
-    gflags::SetUsageMessage("mizugaki SQL parser CLI");
-    gflags::ParseCommandLineFlags(&argc, &argv, true);
-
-    if ((FLAGS_text.empty() && FLAGS_file.empty()) || (!FLAGS_text.empty() && !FLAGS_file.empty())) {
-        gflags::ShowUsageWithFlags(argv[0]); // NOLINT
-        return 1;
-    }
-
+static int do_main() {
     std::string path;
     std::string source;
     if (!FLAGS_text.empty()) {
@@ -223,8 +215,14 @@ int do_main(int argc, char* argv[]) { // NOLINT
 }
 
 int main(int argc, char* argv[]) noexcept(false) {
+    gflags::SetUsageMessage("mizugaki SQL parser CLI");
+    gflags::ParseCommandLineFlags(&argc, &argv, true);
+    if ((FLAGS_text.empty() && FLAGS_file.empty()) || (!FLAGS_text.empty() && !FLAGS_file.empty())) {
+        gflags::ShowUsageWithFlags(argv[0]); // NOLINT
+        return 1;
+    }
     try {
-        return do_main(argc, argv);
+        return do_main();
     } catch (std::exception& e) {
         std::cerr << "what: " << e.what() << "\n";
         ::takatori::util::print_trace(std::cerr, e);
