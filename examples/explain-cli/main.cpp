@@ -119,7 +119,7 @@ DEFINE_string(file, "", "input file path"); // NOLINT
 DEFINE_string(text, "", "input text"); // NOLINT
 DEFINE_string(placeholders, "", "placeholder definitions (name:type, separated by ,)"); // NOLINT
 
-int do_main(int argc, char* argv[]) {
+int do_main(int argc, char* argv[]) { // NOLINT
     gflags::SetUsageMessage("mizugaki SQL parser CLI");
     gflags::ParseCommandLineFlags(&argc, &argv, true);
 
