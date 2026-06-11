@@ -12,6 +12,7 @@
 #include <takatori/serializer/json_printer.h>
 #include <takatori/serializer/object_acceptor.h>
 
+#include <takatori/util/exception.h>
 #include <takatori/util/optional_ptr.h>
 
 #include <yugawara/compiler.h>
@@ -118,7 +119,7 @@ DEFINE_string(file, "", "input file path"); // NOLINT
 DEFINE_string(text, "", "input text"); // NOLINT
 DEFINE_string(placeholders, "", "placeholder definitions (name:type, separated by ,)"); // NOLINT
 
-int main(int argc, char* argv[]) noexcept(false) {
+int do_main(int argc, char* argv[]) {
     gflags::SetUsageMessage("mizugaki SQL parser CLI");
     gflags::ParseCommandLineFlags(&argc, &argv, true);
 
@@ -219,4 +220,14 @@ int main(int argc, char* argv[]) noexcept(false) {
         interpret(compiler_result.statement());
     }
     return 0;
+}
+
+int main(int argc, char* argv[]) noexcept(false) {
+    try {
+        return do_main(argc, argv);
+    } catch (std::exception& e) {
+        std::cerr << "what: " << e.what() << "\n";
+        ::takatori::util::print_trace(std::cerr, e);
+        return 1;
+    }
 }
