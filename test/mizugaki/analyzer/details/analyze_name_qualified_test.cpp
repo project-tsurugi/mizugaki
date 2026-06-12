@@ -262,12 +262,11 @@ TEST_F(analyze_name_qualified_test, column_variable_in_relation_info_ambiguous_q
 TEST_F(analyze_name_qualified_test, column_variable_in_relation_info_parent) {
     auto v = vdesc();
 
-    query_scope parent;
+    query_scope parent { { query_scope_feature::expose } };
     auto&& relation = parent.add({ {}, "t0", });
     relation.add(column_info { {}, v, "c0", });
 
-    query_scope scope { optional_ptr { parent } };
-    scope.capture_parameters() = true;
+    query_scope scope { parent, { query_scope_feature::correlation } };
 
     auto r = analyze_variable_name(
             context(),
@@ -278,6 +277,40 @@ TEST_F(analyze_name_qualified_test, column_variable_in_relation_info_parent) {
     ASSERT_EQ(scope.list_parameters().size(), 1);
     EXPECT_EQ(std::get<0>(scope.list_parameters()[0]), v);
     auto&& p = std::get<1>(scope.list_parameters()[0]);
+
+    validate(r, p);
+}
+
+TEST_F(analyze_name_qualified_test, column_variable_in_nested_subqueries) {
+    /*
+     * SELECT (
+     *    SELECT *
+     *    FROM (
+     *        VALUES(t0.c) -- here
+     *    ) AS t1(c)
+     * )
+     * FROM .. AS t0(c)
+     */
+    auto v = vdesc();
+
+    query_scope main { { query_scope_feature::expose } };
+    auto&& relation = main.add({ {}, "t0", });
+    relation.add(column_info { {}, v, "c", });
+
+    query_scope scalar_subquery { main, { query_scope_feature::correlation } };
+
+    query_scope relation_subquery { scalar_subquery, {} };
+
+    auto r = analyze_variable_name(
+            context(),
+            id("t0", "c"),
+            relation_subquery);
+
+    ASSERT_EQ(main.list_parameters().size(), 0);
+    ASSERT_EQ(scalar_subquery.list_parameters().size(), 1);
+    ASSERT_EQ(relation_subquery.list_parameters().size(), 0);
+    EXPECT_EQ(std::get<0>(scalar_subquery.list_parameters()[0]), v);
+    auto&& p = std::get<1>(scalar_subquery.list_parameters()[0]);
 
     validate(r, p);
 }

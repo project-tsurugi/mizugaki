@@ -21,9 +21,10 @@
 
 #include <takatori/relation/graph.h>
 
-#include <takatori/util/string_builder.h>
 #include <takatori/util/downcast.h>
 #include <takatori/util/exception.h>
+#include <takatori/util/finalizer.h>
+#include <takatori/util/string_builder.h>
 
 #include <yugawara/binding/factory.h>
 #include <yugawara/type/conversion.h>
@@ -49,7 +50,6 @@ namespace mizugaki::analyzer::details {
 namespace tscalar = ::takatori::scalar;
 namespace ttype = ::takatori::type;
 
-using ::takatori::util::optional_ptr;
 using ::takatori::util::string_builder;
 using ::takatori::util::unsafe_downcast;
 
@@ -454,8 +454,15 @@ public:
         }
 
         ::takatori::relation::graph_type subgraph {};
-        query_scope parameter_scope { optional_ptr { scope_ } };
-        parameter_scope.capture_parameters() = true;
+
+        auto original_features = scope_.features();
+        scope_.features().insert(query_scope_feature::expose);
+        ::takatori::util::finalizer restore_features {
+                [&] {
+                    scope_.features() = original_features;
+                }
+        };
+        query_scope parameter_scope { scope_, { query_scope_feature::correlation } };
         auto query = analyze_query_expression(
                 context_,
                 subgraph,
@@ -559,8 +566,15 @@ public:
             return {};
         }
         ::takatori::relation::graph_type subgraph {};
-        query_scope parameter_scope { optional_ptr { scope_ } };
-        parameter_scope.capture_parameters() = true;
+
+        auto original_features = scope_.features();
+        scope_.features().insert(query_scope_feature::expose);
+        ::takatori::util::finalizer restore_features {
+            [&] {
+                scope_.features() = original_features;
+            }
+        };
+        query_scope parameter_scope { scope_, { query_scope_feature::correlation } };
         auto query = analyze_query_expression(
                 context_,
                 subgraph,
@@ -801,8 +815,14 @@ private:
             return {};
         }
         ::takatori::relation::graph_type subgraph {};
-        query_scope parameter_scope { optional_ptr { scope_ } };
-        parameter_scope.capture_parameters() = true;
+        auto original_features = scope_.features();
+        scope_.features().insert(query_scope_feature::expose);
+        ::takatori::util::finalizer restore_features {
+            [&] {
+                scope_.features() = original_features;
+            }
+        };
+        query_scope parameter_scope { scope_, { query_scope_feature::correlation } };
         auto query = analyze_query_expression(
                 context_,
                 subgraph,
@@ -936,8 +956,15 @@ public:
             ast::scalar::table_predicate const& expr,
             value_context const&) {
         ::takatori::relation::graph_type subgraph {};
-        query_scope parameter_scope { optional_ptr { scope_ } };
-        parameter_scope.capture_parameters() = true;
+
+        auto original_features = scope_.features();
+        scope_.features().insert(query_scope_feature::expose);
+        ::takatori::util::finalizer restore_features {
+            [&] {
+                scope_.features() = original_features;
+            }
+        };
+        query_scope parameter_scope { scope_, { query_scope_feature::correlation } };
         auto query = analyze_query_expression(
                 context_,
                 subgraph,

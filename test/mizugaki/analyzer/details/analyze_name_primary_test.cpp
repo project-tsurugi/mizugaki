@@ -278,12 +278,11 @@ TEST_F(analyze_name_primary_test, column_variable_not_exported) {
 TEST_F(analyze_name_primary_test, column_variable_parameter) {
     auto v = vdesc();
 
-    query_scope parent;
+    query_scope parent { { query_scope_feature::expose } };
     auto&& relation = parent.add({});
     relation.add({ {}, v, "c0", });
 
-    query_scope scope { optional_ptr { parent } };
-    scope.capture_parameters() = true;
+    query_scope scope { parent, { query_scope_feature::correlation } };
 
     auto r = analyze_variable_name(
             context(),
@@ -301,14 +300,13 @@ TEST_F(analyze_name_primary_test, column_variable_parameter) {
 TEST_F(analyze_name_primary_test, column_variable_parameter_nested) {
     auto v = vdesc();
 
-    query_scope ancestor;
+    query_scope ancestor { { query_scope_feature::expose } };
     auto&& relation = ancestor.add({});
     relation.add({ {}, v, "c0", });
 
-    query_scope parent { optional_ptr { ancestor } };
+    query_scope parent { ancestor, {} };
 
-    query_scope scope { optional_ptr { parent } };
-    scope.capture_parameters() = true;
+    query_scope scope { parent, { query_scope_feature::correlation } };
 
     auto r = analyze_variable_name(
             context(),
@@ -322,6 +320,25 @@ TEST_F(analyze_name_primary_test, column_variable_parameter_nested) {
     auto&& p = std::get<1>(scope.list_parameters()[0]);
 
     validate(r, p);
+}
+
+TEST_F(analyze_name_primary_test, column_variable_parameter_nested_not_exposed) {
+    auto v = vdesc();
+
+    query_scope ancestor {};
+    auto&& relation = ancestor.add({});
+    relation.add({ {}, v, "c0", });
+
+    query_scope parent { ancestor, { query_scope_feature::expose } };
+
+    query_scope scope { parent, { query_scope_feature::correlation } };
+
+    auto r = analyze_variable_name(
+            context(),
+            id("c0"),
+            scope);
+
+    invalid(r, diagnostic_code::variable_not_found);
 }
 
 TEST_F(analyze_name_primary_test, schema_variable) {
@@ -483,7 +500,7 @@ TEST_F(analyze_name_primary_test, relation_info_parent) {
     query_scope parent;
     parent.add({ *t });
 
-    query_scope scope { optional_ptr { parent } };
+    query_scope scope { parent, {} };
 
     auto r = analyze_relation_info_name(
             context(),

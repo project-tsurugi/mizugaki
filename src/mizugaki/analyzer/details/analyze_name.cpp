@@ -128,7 +128,7 @@ public:
         scope_ { scope }
     {}
 
-    [[nodiscard]] std::unique_ptr<tscalar::expression> find_variable(
+    [[nodiscard]] std::unique_ptr<tscalar::expression> find_variable( // NOLINT(readability-function-cognitive-complexity)
             query_scope& scope,
             ast::name::name const& name) {
         auto alternatives = find_symbol(scope, name, {
@@ -140,41 +140,42 @@ public:
             return {};
         }
         if (auto v = optional_ptr { std::get_if<scoped_variable_info>(&alternatives) }) {
+            // variable in current scope is always available
             if (!v->has_scope() || v->scope().get() == std::addressof(scope)) {
-                // just found variable in the current scope, so we can use it directly.
                 return context_.create<tscalar::variable_reference>(
                         name.region(),
                         std::move(v->found()));
             }
+            // or, variables declared in ancestor scope must be exposed
+            if (v->scope()->features().contains(query_scope_feature::expose)) {
+                std::vector<query_scope*> scopes {};
+                for (optional_ptr current = scope;
+                        current && current.get() != v->scope().get();
+                        current = current->parent()) {
+                    auto features = current->features();
+                    if (features.contains(query_scope_feature::independent)) {
+                        scopes.clear();
+                        break;
+                    }
+                    if (features.contains(query_scope_feature::correlation)) {
+                        scopes.push_back(current.get());
+                    }
+                }
 
-            std::vector<query_scope*> scopes {};
-            for (optional_ptr current = scope;
-                    current && current.get() != v->scope().get();
-                    current = current->parent()) {
-                // if found independent scope, we cannot access its variable..
-                if (current->independent_scope()) {
-                    scopes.clear();
-                    break;
+                descriptor::variable* current_variable = std::addressof(v->found());
+                for (auto iter = scopes.rbegin(); iter != scopes.rend(); ++iter) {
+                    auto& current_scope = **iter;
+                    auto& parameter = current_scope.add_parameter(*current_variable);
+                    if (!context_.is_resolved(parameter)) {
+                        context_.resolve_as_alias(parameter, v->found());
+                    }
+                    current_variable = std::addressof(parameter);
                 }
-                // or, declare a new query parameter
-                if (current->capture_parameters()) {
-                    scopes.push_back(current.get());
+                if (current_variable != std::addressof(v->found())) {
+                    return context_.create<tscalar::variable_reference>(
+                            name.region(),
+                            *current_variable);
                 }
-            }
-
-            descriptor::variable* current_variable = std::addressof(v->found());
-            for (auto iter = scopes.rbegin(); iter != scopes.rend(); ++iter) {
-                auto& current_scope = **iter;
-                auto& parameter = current_scope.add_parameter(*current_variable);
-                if (!context_.is_resolved(parameter)) {
-                    context_.resolve_as_alias(parameter, v->found());
-                }
-                current_variable = std::addressof(parameter);
-            }
-            if (current_variable != std::addressof(v->found())) {
-                return context_.create<tscalar::variable_reference>(
-                        name.region(),
-                        *current_variable);
             }
         }
         context_.report(sql_analyzer_code::variable_not_found,

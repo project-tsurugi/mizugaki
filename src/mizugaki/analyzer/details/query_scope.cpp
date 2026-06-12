@@ -15,8 +15,16 @@ namespace descriptor = ::takatori::descriptor;
 using ::takatori::util::optional_ptr;
 using ::takatori::util::sequence_view;
 
-query_scope::query_scope(
-        optional_ptr<query_scope> parent) :
+query_scope::query_scope(query_scope_feature_set features):
+    features_ { features }
+{}
+
+query_scope::query_scope(query_scope& parent, query_scope_feature_set features):
+    parent_ { parent },
+    features_ { features }
+{}
+
+query_scope::query_scope(optional_ptr<query_scope> parent):
     parent_ { std::move(parent) }
 {}
 
@@ -135,12 +143,12 @@ std::shared_ptr<query_info const> query_scope::find_query(std::string_view name)
     return {};
 }
 
-bool& query_scope::capture_parameters() noexcept {
-    return capture_parameters_;
+query_scope_feature_set& query_scope::features() noexcept {
+    return features_;
 }
 
-bool query_scope::capture_parameters() const noexcept {
-    return capture_parameters_;
+query_scope_feature_set query_scope::features() const noexcept {
+    return features_;
 }
 
 std::vector<std::tuple<descriptor::variable, descriptor::variable>>& query_scope::list_parameters() {

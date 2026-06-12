@@ -730,9 +730,8 @@ public:
             query_scope& scope) {
         trelation::graph_type subgraph {};
         engine subengine { context_, subgraph };
-        query_scope sub_scope { optional_ptr { scope } };
-        sub_scope.independent_scope() = true; // common table has an independent scope
-        auto result = subengine.dispatch(*element.expression(), sub_scope, {}, false);
+        query_scope common_table_scope { scope, { query_scope_feature::independent } };
+        auto result = subengine.dispatch(*element.expression(), common_table_scope, {}, false);
         if (!result) {
             return {};
         }
@@ -988,7 +987,7 @@ public:
                     expr.region());
             return {};
         }
-        query_scope next {};
+        query_scope next { scope, {} };
         auto result = dispatch(*expr.expression(), next, {});
         if (!result) {
             return {};

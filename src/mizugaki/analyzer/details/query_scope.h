@@ -7,6 +7,7 @@
 
 #include <takatori/descriptor/variable.h>
 
+#include <takatori/util/enum_set.h>
 #include <takatori/util/optional_ptr.h>
 #include <takatori/util/sequence_view.h>
 
@@ -19,6 +20,17 @@
 
 namespace mizugaki::analyzer::details {
 
+enum class query_scope_feature : std::size_t {
+    expose,
+    independent,
+    correlation,
+};
+
+using query_scope_feature_set = ::takatori::util::enum_set<
+        query_scope_feature,
+        query_scope_feature::expose,
+        query_scope_feature::correlation>;
+
 class query_scope {
 public:
     using result_type = find_element_result<relation_info>;
@@ -26,6 +38,8 @@ public:
     using position_type = std::size_t;
 
     query_scope() = default;
+    explicit query_scope(query_scope_feature_set features);
+    explicit query_scope(query_scope& parent, query_scope_feature_set features);
     explicit query_scope(::takatori::util::optional_ptr<query_scope> parent);
 
     [[nodiscard]] ::takatori::util::optional_ptr<query_scope>& parent() noexcept;
@@ -62,29 +76,13 @@ public:
     [[nodiscard]] std::shared_ptr<query_info const> find_query(std::string_view name) const;
 
     /**
-     * @brief whether this scope is independent query scope.
-     * @details independent query scope cannot refer variables declared in the parent scopes.
-     * @return true if this scope is independent
-     * @return false otherwise
+     * @brief returns the features of this query scope.
+     * @return the feature set
      */
-    [[nodiscard]] bool& independent_scope() noexcept {
-        return independent_scope_;
-    }
+    [[nodiscard]] query_scope_feature_set& features() noexcept;
 
-    /// @copydoc independent_scope()
-    [[nodiscard]] bool independent_scope() const noexcept {
-        return independent_scope_;
-    }
-
-    /**
-     * @brief whether to capture parameters in this query scope.
-     * @return true if this scope captures variables in parent scope as parameters
-     * @return false otherwise
-     */
-    [[nodiscard]] bool& capture_parameters() noexcept;
-
-    /// @copydoc capture_parameters()
-    [[nodiscard]] bool capture_parameters() const noexcept;
+    /// @copydoc features()
+    [[nodiscard]] query_scope_feature_set features() const noexcept;
 
     /**
      * @brief list pairs of free variable, and its parameter variable in this scope.
@@ -120,8 +118,7 @@ private:
             std::hash<std::string_view>,
             std::equal_to<>> query_map_ {};
 
-    bool independent_scope_ { false };
-    bool capture_parameters_ { false };
+    query_scope_feature_set features_ {};
     std::vector<std::tuple<::takatori::descriptor::variable, ::takatori::descriptor::variable>> parameters_ {};
 
     [[nodiscard]] std::optional<position_type> find_internal(std::string_view identifier) const;
