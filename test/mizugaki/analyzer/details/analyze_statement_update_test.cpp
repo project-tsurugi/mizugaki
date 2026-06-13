@@ -313,6 +313,174 @@ TEST_F(analyze_statement_update_test, multiple_set) {
     }
 }
 
+TEST_F(analyze_statement_update_test, qualified_name) {
+    auto table = install_table("testing");
+
+    auto r = analyze_statement(context(), ast::statement::update_statement {
+            id("testing"),
+            {
+                    { id("v"), vref(id("testing", "w")), },
+            },
+    });
+    auto alternative = std::get_if<execution_plan_result_type >(&r);
+    ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
+    auto&& graph = **alternative;
+    ASSERT_EQ(graph.size(), 3);
+
+    auto first = find_first<trelation::scan>(graph);
+    ASSERT_TRUE(first);
+
+    EXPECT_EQ(&extract<::yugawara::storage::index>(first->source()).table(), table.get());
+    auto&& scan_columns = first->columns();
+    ASSERT_EQ(scan_columns.size(), 4);
+    std::vector<::takatori::descriptor::variable> variables {};
+    {
+        auto&& column = scan_columns[0];
+        EXPECT_EQ(&extract<::yugawara::storage::column>(column.source()), &table->columns()[0]);
+        variables.emplace_back(column.destination());
+    }
+    {
+        auto&& column = scan_columns[1];
+        EXPECT_EQ(&extract<::yugawara::storage::column>(column.source()), &table->columns()[1]);
+        variables.emplace_back(column.destination());
+    }
+    {
+        auto&& column = scan_columns[2];
+        EXPECT_EQ(&extract<::yugawara::storage::column>(column.source()), &table->columns()[2]);
+        variables.emplace_back(column.destination());
+    }
+    {
+        auto&& column = scan_columns[3];
+        EXPECT_EQ(&extract<::yugawara::storage::column>(column.source()), &table->columns()[3]);
+        variables.emplace_back(column.destination());
+    }
+    EXPECT_EQ(first->lower(), trelation::scan::endpoint());
+    EXPECT_EQ(first->upper(), trelation::scan::endpoint());
+    EXPECT_EQ(first->limit(), std::nullopt);
+
+    auto project = find_next<trelation::project>(*first);
+    ASSERT_TRUE(project);
+    ASSERT_EQ(project->columns().size(), 1);
+    {
+        auto&& column = project->columns()[0];
+        EXPECT_EQ(column.value(), vref(variables[2]));
+        variables.emplace_back(column.variable());
+    }
+
+    auto last = find_last<trelation::write>(graph);
+    ASSERT_TRUE(last);
+    EXPECT_EQ(find_next(*project).get(), last.get());
+
+    EXPECT_EQ(last->operator_kind(), tstatement::write_kind::update);
+    EXPECT_EQ(&extract<::yugawara::storage::index>(last->destination()).table(), table.get());
+
+    ASSERT_EQ(last->keys().size(), 1);
+    {
+        auto&& column = last->keys()[0];
+        EXPECT_EQ(column.source(), variables[0]);
+        EXPECT_EQ(&extract<::yugawara::storage::column>(column.destination()), &table->columns()[0]);
+    }
+
+    ASSERT_EQ(last->columns().size(), 1);
+    {
+        auto&& column = last->columns()[0];
+        EXPECT_EQ(column.source(), variables[4]);
+        EXPECT_EQ(&extract<::yugawara::storage::column>(column.destination()), &table->columns()[1]);
+    }
+}
+
+TEST_F(analyze_statement_update_test, table_alias_name) {
+    auto table = install_table("testing");
+
+    auto r = analyze_statement(context(), ast::statement::update_statement {
+            id("testing"),
+            id("t"),
+            {
+                    { id("v"), vref(id("t", "w")), },
+            },
+    });
+    auto alternative = std::get_if<execution_plan_result_type >(&r);
+    ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
+    auto&& graph = **alternative;
+    ASSERT_EQ(graph.size(), 3);
+
+    auto first = find_first<trelation::scan>(graph);
+    ASSERT_TRUE(first);
+
+    EXPECT_EQ(&extract<::yugawara::storage::index>(first->source()).table(), table.get());
+    auto&& scan_columns = first->columns();
+    ASSERT_EQ(scan_columns.size(), 4);
+    std::vector<::takatori::descriptor::variable> variables {};
+    {
+        auto&& column = scan_columns[0];
+        EXPECT_EQ(&extract<::yugawara::storage::column>(column.source()), &table->columns()[0]);
+        variables.emplace_back(column.destination());
+    }
+    {
+        auto&& column = scan_columns[1];
+        EXPECT_EQ(&extract<::yugawara::storage::column>(column.source()), &table->columns()[1]);
+        variables.emplace_back(column.destination());
+    }
+    {
+        auto&& column = scan_columns[2];
+        EXPECT_EQ(&extract<::yugawara::storage::column>(column.source()), &table->columns()[2]);
+        variables.emplace_back(column.destination());
+    }
+    {
+        auto&& column = scan_columns[3];
+        EXPECT_EQ(&extract<::yugawara::storage::column>(column.source()), &table->columns()[3]);
+        variables.emplace_back(column.destination());
+    }
+    EXPECT_EQ(first->lower(), trelation::scan::endpoint());
+    EXPECT_EQ(first->upper(), trelation::scan::endpoint());
+    EXPECT_EQ(first->limit(), std::nullopt);
+
+    auto project = find_next<trelation::project>(*first);
+    ASSERT_TRUE(project);
+    ASSERT_EQ(project->columns().size(), 1);
+    {
+        auto&& column = project->columns()[0];
+        EXPECT_EQ(column.value(), vref(variables[2]));
+        variables.emplace_back(column.variable());
+    }
+
+    auto last = find_last<trelation::write>(graph);
+    ASSERT_TRUE(last);
+    EXPECT_EQ(find_next(*project).get(), last.get());
+
+    EXPECT_EQ(last->operator_kind(), tstatement::write_kind::update);
+    EXPECT_EQ(&extract<::yugawara::storage::index>(last->destination()).table(), table.get());
+
+    ASSERT_EQ(last->keys().size(), 1);
+    {
+        auto&& column = last->keys()[0];
+        EXPECT_EQ(column.source(), variables[0]);
+        EXPECT_EQ(&extract<::yugawara::storage::column>(column.destination()), &table->columns()[0]);
+    }
+
+    ASSERT_EQ(last->columns().size(), 1);
+    {
+        auto&& column = last->columns()[0];
+        EXPECT_EQ(column.source(), variables[4]);
+        EXPECT_EQ(&extract<::yugawara::storage::column>(column.destination()), &table->columns()[1]);
+    }
+}
+
+TEST_F(analyze_statement_update_test, invalid_qualified_name_instead_of_alias) {
+    auto table = install_table("testing");
+    invalid(sql_analyzer_code::symbol_not_found, ast::statement::update_statement {
+            id("testing"),
+            id("t"),
+            {
+                    { id("v"), vref(id("testing", "w")), },
+            },
+    });
+}
+
 TEST_F(analyze_statement_update_test, where) {
     auto table = install_table("testing");
 

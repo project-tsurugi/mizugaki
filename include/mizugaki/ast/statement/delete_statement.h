@@ -6,6 +6,7 @@
 #include <takatori/util/rvalue_ptr.h>
 
 #include <mizugaki/ast/name/name.h>
+#include <mizugaki/ast/name/simple.h>
 #include <mizugaki/ast/scalar/expression.h>
 
 #include "statement.h"
@@ -28,11 +29,13 @@ public:
     /**
      * @brief creates a new instance.
      * @param table_name the target table name
+     * @param alias_name the alias name of the target table, may be empty
      * @param where expression the where clause, may be `CURRENT OF cursor_name`
      * @param region the node region
      */
     explicit delete_statement(
             std::unique_ptr<name::name> table_name,
+            std::unique_ptr<name::simple> alias_name,
             std::unique_ptr<scalar::expression> where,
             region_type region = {}) noexcept;
 
@@ -45,6 +48,20 @@ public:
      */
     explicit delete_statement(
             name::name&& table_name,
+            ::takatori::util::rvalue_ptr<scalar::expression> where = {},
+            region_type region = {});
+
+    /**
+     * @brief creates a new instance.
+     * @param table_name the target table name
+     * @param alias_name the alias name of the target table
+     * @param where expression the where clause, may be `CURRENT OF cursor_name`
+     * @param region the node region
+     * @attention this will take copy of arguments
+     */
+    explicit delete_statement(
+            name::name&& table_name,
+            name::simple&& alias_name,
             ::takatori::util::rvalue_ptr<scalar::expression> where = {},
             region_type region = {});
 
@@ -73,6 +90,16 @@ public:
 
     /// @brief table_name()
     [[nodiscard]] std::unique_ptr<name::name> const& table_name() const noexcept;
+
+    /**
+     * @brief returns the alias name of the target table.
+     * @return the alias name of the target table
+     * @return empty if the alias name is not defined
+     */
+    [[nodiscard]] std::unique_ptr<name::simple>& alias_name() noexcept;
+
+    /// @brief alias_name()
+    [[nodiscard]] std::unique_ptr<name::simple> const& alias_name() const noexcept;
 
     /**
      * @brief returns the search condition expression.
@@ -110,6 +137,7 @@ protected:
 
 private:
     std::unique_ptr<name::name> table_name_;
+    std::unique_ptr<name::simple> alias_name_;
     std::unique_ptr<scalar::expression> where_;
 };
 

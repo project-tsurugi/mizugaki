@@ -1,12 +1,10 @@
 #pragma once
 
-#include <optional>
-
 #include <takatori/util/clone_tag.h>
 #include <takatori/util/rvalue_ptr.h>
 
-#include <mizugaki/ast/common/vector.h>
 #include <mizugaki/ast/name/name.h>
+#include <mizugaki/ast/name/simple.h>
 #include <mizugaki/ast/scalar/expression.h>
 
 #include "statement.h"
@@ -30,12 +28,14 @@ public:
     /**
      * @brief creates a new instance.
      * @param table_name the target table name
+     * @param alias_name the alias name of the target table, may be empty
      * @param elements individual update elements
      * @param where expression the where clause, may be `CURRENT OF cursor_name`
      * @param region the node region
      */
     explicit update_statement(
             std::unique_ptr<name::name> table_name,
+            std::unique_ptr<name::simple> alias_name,
             std::vector<set_element> elements,
             std::unique_ptr<scalar::expression> where,
             region_type region = {}) noexcept;
@@ -50,6 +50,22 @@ public:
      */
     explicit update_statement(
             name::name&& table_name,
+            std::initializer_list<set_element> elements,
+            ::takatori::util::rvalue_ptr<scalar::expression> where = {},
+            region_type region = {});
+
+    /**
+     * @brief creates a new instance.
+     * @param table_name the target table name
+     * @param alias_name the alias name of the target table, may be empty
+     * @param elements individual update elements
+     * @param where expression the where clause, may be `CURRENT OF cursor_name`
+     * @param region the node region
+     * @attention this will take copy of arguments
+     */
+    explicit update_statement(
+            name::name&& table_name,
+            name::simple&& alias_name,
             std::initializer_list<set_element> elements,
             ::takatori::util::rvalue_ptr<scalar::expression> where = {},
             region_type region = {});
@@ -79,6 +95,16 @@ public:
 
     /// @brief table_name()
     [[nodiscard]] std::unique_ptr<name::name> const& table_name() const noexcept;
+
+    /**
+     * @brief returns the alias name of the target table.
+     * @return the alias name of the target table
+     * @return empty if the alias name is not defined
+     */
+    [[nodiscard]] std::unique_ptr<name::simple>& alias_name() noexcept;
+
+    /// @brief alias_name()
+    [[nodiscard]] std::unique_ptr<name::simple> const& alias_name() const noexcept;
 
     /**
      * @brief returns the individual update elements.
@@ -129,6 +155,7 @@ protected:
 
 private:
     std::unique_ptr<name::name> table_name_;
+    std::unique_ptr<name::simple> alias_name_;
     std::vector<set_element> elements_;
     std::unique_ptr<scalar::expression> where_;
 };

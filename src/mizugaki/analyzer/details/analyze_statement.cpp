@@ -445,7 +445,7 @@ public:
             return {};
         }
 
-        auto info_opt = extract_table(*stmt.table_name());
+        auto info_opt = extract_table(*stmt.table_name(), stmt.alias_name());
         if (!info_opt) {
             return {}; // error
         }
@@ -548,7 +548,7 @@ public:
     [[nodiscard]] result_type operator()(ast::statement::delete_statement const& stmt) {
         // scan (-> filter) -> write[delete]
 
-        auto info_opt = extract_table(*stmt.table_name());
+        auto info_opt = extract_table(*stmt.table_name(), stmt.alias_name());
         if (!info_opt) {
             return {}; // error
         }
@@ -584,7 +584,9 @@ public:
         return graph;
     }
 
-    [[nodiscard]] std::optional<relation_info> extract_table(ast::name::name const& table_name) {
+    [[nodiscard]] std::optional<relation_info> extract_table(
+            ast::name::name const& table_name,
+            std::unique_ptr<ast::name::simple> const& alias_name_opt = {}) {
         auto result = analyze_table_name(context_, table_name, true);
         if (!result) {
             return {}; // relation not found
@@ -599,6 +601,10 @@ public:
                             << string_builder::to_string,
                     table_name.region());
             return {};
+        }
+        if (alias_name_opt) {
+            auto alias_name = normalize_identifier(context_, *alias_name_opt, name_kind::relation);
+            info.identifier() = alias_name;
         }
         return info;
     }

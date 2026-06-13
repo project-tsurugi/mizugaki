@@ -857,6 +857,8 @@
 
 %nterm <node_ptr<ast::name::name>> target_table
 
+%nterm <node_ptr<ast::name::simple>> table_alias_clause_opt
+
 %nterm <element_vector<ast::statement::set_element>> set_clause_list
 %nterm <ast::statement::set_element> set_clause
 
@@ -1104,18 +1106,20 @@ statement
                     std::move(options),
                     @$);
         }
-    | UPDATE target_table[t] SET set_clause_list[s] manipulate_where_clause_opt[w]
+    | UPDATE target_table[t] table_alias_clause_opt[a] SET set_clause_list[s] manipulate_where_clause_opt[w]
         {
             $$ = driver.node<ast::statement::update_statement>(
                     $t,
+                    $a,
                     $s,
                     $w,
                     @$);
         }
-    | DELETE FROM target_table[t] manipulate_where_clause_opt[w]
+    | DELETE FROM target_table[t] table_alias_clause_opt[a] manipulate_where_clause_opt[w]
         {
             $$ = driver.node<ast::statement::delete_statement>(
                     $t,
+                    $a,
                     $w,
                     @$);
         }
@@ -1972,6 +1976,21 @@ target_table
     : table_name[n]
         {
             $$ = $n;
+        }
+    ;
+
+table_alias_clause_opt
+    : AS correlation_name[a]
+        {
+            $$ = $a;
+        }
+    | correlation_name[a]
+        {
+            $$ = $a;
+        }
+    | %empty
+        {
+            $$ = {};
         }
     ;
 

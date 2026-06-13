@@ -319,6 +319,46 @@ TEST_F(sql_parser_statement_test, update) {
     }));
 }
 
+TEST_F(sql_parser_statement_test, update_alias) {
+    auto result = parse("UPDATE T0 AS t SET C0=1, C1 = 2;");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::update_statement {
+            name::simple { "T0" },
+            name::simple { "t" },
+            {
+                    {
+                            name::simple { "C0" },
+                            int_literal("1"),
+                    },
+                    {
+                            name::simple { "C1" },
+                            int_literal("2"),
+                    },
+            },
+    }));
+}
+
+TEST_F(sql_parser_statement_test, update_alias_without_as) {
+    auto result = parse("UPDATE T0 t SET C0=1, C1 = 2;");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::update_statement {
+            name::simple { "T0" },
+            name::simple { "t" },
+            {
+                    {
+                            name::simple { "C0" },
+                            int_literal("1"),
+                    },
+                    {
+                            name::simple { "C1" },
+                            int_literal("2"),
+                    },
+            },
+    }));
+}
+
 TEST_F(sql_parser_statement_test, update_where) {
     auto result = parse("UPDATE T0 SET C0=1, C1 = 2 WHERE C2 = 0;");
     ASSERT_TRUE(result) << diagnostics(result);
@@ -382,6 +422,40 @@ TEST_F(sql_parser_statement_test, delete_where) {
 
     EXPECT_EQ(extract(result), (statement::delete_statement {
             name::simple { "T0" },
+            scalar::comparison_predicate {
+                    scalar::variable_reference {
+                            name::simple { "C0" },
+                    },
+                    scalar::comparison_operator::equals,
+                    int_literal("0"),
+            },
+    }));
+}
+
+TEST_F(sql_parser_statement_test, delete_alias) {
+    auto result = parse("DELETE FROM T0 AS t WHERE C0 = 0;");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::delete_statement {
+            name::simple { "T0" },
+            name::simple { "t" },
+            scalar::comparison_predicate {
+                    scalar::variable_reference {
+                            name::simple { "C0" },
+                    },
+                    scalar::comparison_operator::equals,
+                    int_literal("0"),
+            },
+    }));
+}
+
+TEST_F(sql_parser_statement_test, delete_alias_without_as) {
+    auto result = parse("DELETE FROM T0 t WHERE C0 = 0;");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::delete_statement {
+            name::simple { "T0" },
+            name::simple { "t" },
             scalar::comparison_predicate {
                     scalar::variable_reference {
                             name::simple { "C0" },

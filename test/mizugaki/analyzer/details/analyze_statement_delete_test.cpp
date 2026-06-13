@@ -145,6 +145,83 @@ TEST_F(analyze_statement_delete_test, where) {
     EXPECT_EQ(find_next(*filter).get(), last.get());
 }
 
+TEST_F(analyze_statement_delete_test, qualified_name) {
+    auto table = install_table("testing");
+
+    // DELETE FROM testing AS t WHERE testing.k > 0
+    auto r = analyze_statement(context(), ast::statement::delete_statement {
+            id("testing"),
+            ast::scalar::comparison_predicate {
+                    vref(id("testing", "k")),
+                    ast::scalar::comparison_operator::greater_than,
+                    literal(number("0")),
+            },
+    });
+    auto alternative = std::get_if<execution_plan_result_type >(&r);
+    ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
+    auto&& graph = **alternative;
+    ASSERT_EQ(graph.size(), 3);
+
+    auto first = find_first<trelation::scan>(graph);
+    ASSERT_TRUE(first);
+
+    auto&& scan_columns = first->columns();
+    ASSERT_EQ(scan_columns.size(), 4);
+
+    auto filter = find_next<trelation::filter>(*first);
+    ASSERT_TRUE(filter);
+    ASSERT_EQ(filter->condition(), (tscalar::compare {
+            tscalar::comparison_operator::greater,
+            vref(scan_columns[0].destination()), // k
+            immediate(0),
+    }));
+
+    auto last = find_last<trelation::write>(graph);
+    ASSERT_TRUE(last);
+    EXPECT_EQ(find_next(*filter).get(), last.get());
+}
+
+TEST_F(analyze_statement_delete_test, table_alias_name) {
+    auto table = install_table("testing");
+
+    // DELETE FROM testing AS t WHERE t.k > 0
+    auto r = analyze_statement(context(), ast::statement::delete_statement {
+            id("testing"),
+            id("t"),
+            ast::scalar::comparison_predicate {
+                    vref(id("t", "k")),
+                    ast::scalar::comparison_operator::greater_than,
+                    literal(number("0")),
+            },
+    });
+    auto alternative = std::get_if<execution_plan_result_type >(&r);
+    ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
+    auto&& graph = **alternative;
+    ASSERT_EQ(graph.size(), 3);
+
+    auto first = find_first<trelation::scan>(graph);
+    ASSERT_TRUE(first);
+
+    auto&& scan_columns = first->columns();
+    ASSERT_EQ(scan_columns.size(), 4);
+
+    auto filter = find_next<trelation::filter>(*first);
+    ASSERT_TRUE(filter);
+    ASSERT_EQ(filter->condition(), (tscalar::compare {
+            tscalar::comparison_operator::greater,
+            vref(scan_columns[0].destination()), // k
+            immediate(0),
+    }));
+
+    auto last = find_last<trelation::write>(graph);
+    ASSERT_TRUE(last);
+    EXPECT_EQ(find_next(*filter).get(), last.get());
+}
+
 TEST_F(analyze_statement_delete_test, invalid_relation) {
     invalid(ast::statement::delete_statement {
             id("MISSING"),
@@ -181,6 +258,19 @@ TEST_F(analyze_statement_delete_test, invalid_where_aggregated) {
                             {},
                             {},
                     },
+                    ast::scalar::comparison_operator::greater_than,
+                    literal(number("0")),
+            },
+    });
+}
+
+TEST_F(analyze_statement_delete_test, invalid_qualified_name_instead_of_alias) {
+    auto table = install_table("testing");
+    invalid(sql_analyzer_code::symbol_not_found, ast::statement::delete_statement {
+            id("testing"),
+            id("t"),
+            ast::scalar::comparison_predicate {
+                    vref(id("testing", "k")),
                     ast::scalar::comparison_operator::greater_than,
                     literal(number("0")),
             },

@@ -13,10 +13,12 @@ using ::takatori::util::rvalue_ptr;
 
 delete_statement::delete_statement(
         std::unique_ptr<name::name> table_name,
+        std::unique_ptr<name::simple> alias_name,
         std::unique_ptr<scalar::expression> where,
         region_type region) noexcept :
     super { region },
     table_name_ { std::move(table_name) },
+    alias_name_ { std::move(alias_name) },
     where_ { std::move(where) }
 {}
 
@@ -26,6 +28,20 @@ delete_statement::delete_statement(
         region_type region) :
     delete_statement {
             clone_unique(std::move(table_name)),
+            {},
+            clone_unique(where),
+            region,
+    }
+{}
+
+delete_statement::delete_statement(
+        name::name&& table_name,
+        name::simple&& alias_name,
+        ::takatori::util::rvalue_ptr<scalar::expression> where,
+        region_type region) :
+    delete_statement {
+            clone_unique(std::move(table_name)),
+            clone_unique(std::move(alias_name)),
             clone_unique(where),
             region,
     }
@@ -34,6 +50,7 @@ delete_statement::delete_statement(
 delete_statement::delete_statement(::takatori::util::clone_tag_t, delete_statement const& other) :
     delete_statement {
             clone_unique(other.table_name_),
+            clone_unique(other.alias_name_),
             clone_unique(other.where_),
             other.region(),
     }
@@ -42,6 +59,7 @@ delete_statement::delete_statement(::takatori::util::clone_tag_t, delete_stateme
 delete_statement::delete_statement(::takatori::util::clone_tag_t, delete_statement&& other) :
     delete_statement {
             clone_unique(std::move(other.table_name_)),
+            clone_unique(std::move(other.alias_name_)),
             clone_unique(std::move(other.where_)),
             other.region(),
     }
@@ -67,6 +85,14 @@ std::unique_ptr<name::name> const& delete_statement::table_name() const noexcept
     return table_name_;
 }
 
+std::unique_ptr<name::simple>& delete_statement::alias_name() noexcept {
+    return alias_name_;
+}
+
+std::unique_ptr<name::simple> const& delete_statement::alias_name() const noexcept {
+    return alias_name_;
+}
+
 std::unique_ptr<scalar::expression>& delete_statement::where() noexcept {
     return where_;
 }
@@ -80,6 +106,7 @@ bool operator==(delete_statement const& a, delete_statement const& b) noexcept {
         return true;
     }
     return eq(a.table_name_, b.table_name_)
+        && eq(a.alias_name_, b.alias_name_)
         && eq(a.where_, b.where_);
 }
 
@@ -97,6 +124,7 @@ void delete_statement::serialize(takatori::serializer::object_acceptor& acceptor
     using namespace std::string_view_literals;
     auto obj = struct_block(acceptor, *this);
     property(acceptor, "table_name"sv, table_name_);
+    property(acceptor, "alias_name"sv, alias_name_);
     property(acceptor, "where"sv, where_);
     region_property(acceptor, *this);
 }
