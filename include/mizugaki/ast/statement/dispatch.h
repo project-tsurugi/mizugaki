@@ -14,6 +14,8 @@
 #include <mizugaki/ast/statement/view_definition.h>
 #include <mizugaki/ast/statement/sequence_definition.h>
 #include <mizugaki/ast/statement/schema_definition.h>
+#include <mizugaki/ast/statement/alter_table_statement.h>
+#include <mizugaki/ast/statement/alter_index_statement.h>
 #include <mizugaki/ast/statement/drop_statement.h>
 #include <mizugaki/ast/statement/truncate_table_statement.h>
 #include <mizugaki/ast/statement/grant_privilege_statement.h>
@@ -30,6 +32,13 @@
 #include <mizugaki/ast/statement/key_constraint.h>
 #include <mizugaki/ast/statement/referential_constraint.h>
 #include <mizugaki/ast/statement/identity_constraint.h>
+
+#include <mizugaki/ast/statement/alter_table_action.h>
+#include <mizugaki/ast/statement/rename_table_action.h>
+#include <mizugaki/ast/statement/rename_column_action.h>
+
+#include <mizugaki/ast/statement/alter_index_action.h>
+#include <mizugaki/ast/statement/rename_index_action.h>
 
 namespace mizugaki::ast::statement {
 
@@ -59,6 +68,24 @@ namespace impl {
     using ::takatori::util::throw_exception;
     throw_exception(std::invalid_argument(string_builder {}
             << "unsupported constraint kind: "
+            << object.node_kind()
+            << string_builder::to_string));
+}
+
+[[noreturn]] inline void unsupported(alter_table_action const& object) {
+    using ::takatori::util::string_builder;
+    using ::takatori::util::throw_exception;
+    throw_exception(std::invalid_argument(string_builder {}
+            << "unsupported alter table action kind: "
+            << object.node_kind()
+            << string_builder::to_string));
+}
+
+[[noreturn]] inline void unsupported(alter_index_action const& object) {
+    using ::takatori::util::string_builder;
+    using ::takatori::util::throw_exception;
+    throw_exception(std::invalid_argument(string_builder {}
+            << "unsupported alter index action kind: "
             << object.node_kind()
             << string_builder::to_string));
 }
@@ -114,6 +141,13 @@ inline auto dispatch(Callback&& callback, E&& object, Args&&... args) {
                         std::forward<Callback>(callback), std::forward<E>(object), std::forward<Args>(args)...);
             case schema_definition::tag:
                 return polymorphic_callback<schema_definition>(
+                        std::forward<Callback>(callback), std::forward<E>(object), std::forward<Args>(args)...);
+
+            case alter_table_statement::tag:
+                return polymorphic_callback<alter_table_statement>(
+                        std::forward<Callback>(callback), std::forward<E>(object), std::forward<Args>(args)...);
+            case alter_index_statement::tag:
+                return polymorphic_callback<alter_index_statement>(
                         std::forward<Callback>(callback), std::forward<E>(object), std::forward<Args>(args)...);
 
             case kind::drop_table_statement:
@@ -178,6 +212,23 @@ inline auto dispatch(Callback&& callback, E&& object, Args&&... args) {
                         std::forward<Callback>(callback), std::forward<E>(object), std::forward<Args>(args)...);
             case identity_constraint::tag:
                 return polymorphic_callback<identity_constraint>(
+                        std::forward<Callback>(callback), std::forward<E>(object), std::forward<Args>(args)...);
+        }
+        impl::unsupported(object);
+    } else if constexpr (std::is_base_of_v<alter_table_action, std::remove_const_t<std::remove_reference_t<E>>>) { // NOLINT
+        switch (object.node_kind()) {
+            case rename_table_action::tag:
+                return polymorphic_callback<rename_table_action>(
+                        std::forward<Callback>(callback), std::forward<E>(object), std::forward<Args>(args)...);
+            case rename_column_action::tag:
+                return polymorphic_callback<rename_column_action>(
+                        std::forward<Callback>(callback), std::forward<E>(object), std::forward<Args>(args)...);
+        }
+        impl::unsupported(object);
+    } else if constexpr (std::is_base_of_v<alter_index_action, std::remove_const_t<std::remove_reference_t<E>>>) { // NOLINT
+        switch (object.node_kind()) {
+            case rename_index_action::tag:
+                return polymorphic_callback<rename_index_action>(
                         std::forward<Callback>(callback), std::forward<E>(object), std::forward<Args>(args)...);
         }
         impl::unsupported(object);

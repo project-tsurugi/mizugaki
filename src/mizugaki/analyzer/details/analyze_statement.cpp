@@ -29,6 +29,9 @@
 #include <takatori/statement/empty.h>
 #include <takatori/statement/create_table.h>
 #include <takatori/statement/create_index.h>
+#include <takatori/statement/rename_table.h>
+#include <takatori/statement/rename_index.h>
+#include <takatori/statement/rename_column.h>
 #include <takatori/statement/drop_table.h>
 #include <takatori/statement/drop_index.h>
 #include <takatori/statement/truncate_table.h>
@@ -1453,6 +1456,183 @@ public:
 //        (void) stmt;
 //        return {};
 //    }
+
+    [[nodiscard]] result_type operator()(ast::statement::alter_table_statement const& stmt) {
+        auto optional = *stmt.if_exists();
+        auto result = analyze_table_name(context_, *stmt.name(), !optional);
+        if (!result) {
+            if (optional) {
+                // NOTE: replace as no-op instead, to achieve "IF EXISTS"
+                return context_.create<tstatement::empty>(stmt.region());
+            }
+            // NOTE: error already reported
+            return {};
+        }
+        return ast::statement::dispatch(
+                *this,
+                *stmt.action(),
+                stmt,
+                std::move(result->first),
+                std::move(result->second));
+    }
+
+    [[nodiscard]] result_type operator()(
+            ast::statement::rename_table_action const& action,
+            ast::statement::alter_table_statement const& stmt,
+            ::takatori::util::maybe_shared_ptr<::yugawara::schema::declaration const> schema,
+            std::shared_ptr<::yugawara::storage::table const> table) {
+        auto&& replacement = normalize_identifier(context_, *action.replacement(), name_kind::relation);
+        if (replacement == table->simple_name()) {
+            context_.report(
+                    sql_analyzer_code::table_already_exists,
+                    string_builder {}
+                            << "cannot rename table to the same name: \""
+                            << print_support { *action.replacement() }
+                            << "\""
+                            << string_builder::to_string,
+                    action.replacement()->region());
+            return {};
+        }
+        if (schema->shared_storage_provider()->find_table(replacement)) {
+            context_.report(
+                    sql_analyzer_code::table_already_exists,
+                    string_builder {}
+                            << "table is already defined: \""
+                            << print_support { *action.replacement() }
+                            << "\""
+                            << string_builder::to_string,
+                    action.replacement()->region());
+            return {};
+        }
+        return context_.create<tstatement::rename_table>(
+                stmt.region(),
+                factory_.schema(std::move(schema)),
+                factory_.storage(std::move(table)),
+                std::move(replacement));
+    }
+
+    [[nodiscard]] result_type operator()(
+            ast::statement::rename_column_action const& action,
+            ast::statement::alter_table_statement const& stmt,
+            ::takatori::util::maybe_shared_ptr<::yugawara::schema::declaration const> const& schema,
+            std::shared_ptr<::yugawara::storage::table const> table) {
+        (void) schema;
+        auto&& column_opt = find_column(*table, *action.column_name());
+        auto optional = *action.if_exists();
+        if (!column_opt) {
+            if (optional) {
+                // NOTE: replace as no-op instead, to achieve "IF EXISTS"
+                return context_.create<tstatement::empty>(stmt.region());
+            }
+            context_.report(
+                    sql_analyzer_code::column_not_found,
+                    string_builder {}
+                            << "column is not found: \""
+                            << print_support { *action.column_name() }
+                            << "\", in table \""
+                            << table->simple_name()
+                            << "\""
+                            << string_builder::to_string,
+                    action.replacement()->region());
+            return {};
+        }
+        if (find_column(*table, *action.replacement())) {
+            context_.report(
+                    sql_analyzer_code::column_already_exists,
+                    string_builder {}
+                            << "column is already defined: \""
+                            << print_support { *action.replacement() }
+                            << "\", in table \""
+                            << table->simple_name()
+                            << "\""
+                            << string_builder::to_string,
+                    action.replacement()->region());
+            return {};
+        }
+        return context_.create<tstatement::rename_column>(
+                stmt.region(),
+                factory_.storage(std::move(table)),
+                factory_.table_column(*column_opt),
+                normalize_identifier(context_, *action.replacement(), name_kind::variable));
+    }
+
+    [[nodiscard]] optional_ptr<::yugawara::storage::column const> find_column(
+            ::yugawara::storage::table const& table,
+            ast::name::simple const& name) {
+        auto&& column_name = normalize_identifier(context_, name, name_kind::variable);
+        auto iter_columns = std::find_if(
+                table.columns().begin(),
+                table.columns().end(),
+                [&](auto&& column) {
+                    return column.simple_name() == column_name;
+                });
+        if (iter_columns == table.columns().end()) {
+            return {};
+        }
+        return *iter_columns;
+    }
+
+    [[nodiscard]] result_type operator()(ast::statement::alter_index_statement const& stmt) {
+        auto optional = *stmt.if_exists();
+        auto result = analyze_index_name(context_, *stmt.name(), !optional);
+        if (!result) {
+            if (optional) {
+                // NOTE: replace as no-op instead, to achieve "IF EXISTS"
+                return context_.create<tstatement::empty>(stmt.region());
+            }
+            // NOTE: error already reported
+            return {};
+        }
+        return ast::statement::dispatch(
+                *this,
+                *stmt.action(),
+                stmt,
+                std::move(result->first),
+                std::move(result->second));
+    }
+
+    [[nodiscard]] result_type operator()(
+            ast::statement::rename_index_action const& action,
+            ast::statement::alter_index_statement const& stmt,
+            ::takatori::util::maybe_shared_ptr<::yugawara::schema::declaration const> schema,
+            std::shared_ptr<::yugawara::storage::index const> index) {
+        if (index->features().contains(::yugawara::storage::index_feature::primary)) {
+            context_.report(
+                    sql_analyzer_code::unsupported_feature,
+                    "renaming primary index is not supported",
+                    action.replacement()->region());
+            return {};
+        }
+        auto&& replacement = normalize_identifier(context_, *action.replacement(), name_kind::relation);
+        if (replacement == index->simple_name()) {
+            context_.report(
+                    sql_analyzer_code::index_already_exists,
+                    string_builder {}
+                            << "cannot rename index to the same name: \""
+                            << print_support { *action.replacement() }
+                            << "\""
+                            << string_builder::to_string,
+                    action.replacement()->region());
+            return {};
+        }
+        auto&& conflict = schema->shared_storage_provider()->find_index(replacement);
+        if (conflict) {
+            context_.report(
+                    sql_analyzer_code::index_already_exists,
+                    string_builder {}
+                            << "index is already defined: \""
+                            << print_support { *action.replacement() }
+                            << "\""
+                            << string_builder::to_string,
+                    action.replacement()->region());
+            return {};
+        }
+        return context_.create<tstatement::rename_index>(
+                stmt.region(),
+                factory_.schema(std::move(schema)),
+                factory_.index(std::move(index)),
+                std::move(replacement));
+    }
 
     [[nodiscard]] result_type operator()(ast::statement::drop_statement const& stmt) {
         auto cascade = find(stmt.options(), ast::statement::drop_statement_option::cascade);

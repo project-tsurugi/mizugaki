@@ -121,6 +121,26 @@ public:
         return ast::statement::dispatch(*this, *element, depth + 1);
     }
 
+    [[nodiscard]] bool accept(std::unique_ptr<ast::statement::alter_table_action> const& element, std::size_t depth) {
+        if (!element) {
+            return true;
+        }
+        if (!check(*element, depth + 1)) {
+            return false;
+        }
+        return ast::statement::dispatch(*this, *element, depth + 1);
+    }
+
+    [[nodiscard]] bool accept(std::unique_ptr<ast::statement::alter_index_action> const& element, std::size_t depth) {
+        if (!element) {
+            return true;
+        }
+        if (!check(*element, depth + 1)) {
+            return false;
+        }
+        return ast::statement::dispatch(*this, *element, depth + 1);
+    }
+
     [[nodiscard]] bool accept(std::unique_ptr<ast::query::expression> const& element, std::size_t depth) {
         if (!element) {
             return true;
@@ -322,6 +342,18 @@ public:
         return true;
     }
 
+    [[nodiscard]] bool operator()(ast::statement::alter_table_statement const& element, std::size_t depth) {
+        ACCEPT(element.name());
+        ACCEPT(element.action());
+        return true;
+    }
+
+    [[nodiscard]] bool operator()(ast::statement::alter_index_statement const& element, std::size_t depth) {
+        ACCEPT(element.name());
+        ACCEPT(element.action());
+        return true;
+    }
+
     [[nodiscard]] bool operator()(ast::statement::drop_statement const& element, std::size_t depth) {
         ACCEPT(element.name()); // NOLINT(*-simplify-boolean-expr)
         return true;
@@ -404,6 +436,22 @@ public:
         ACCEPT(element.increment_value());
         ACCEPT(element.min_value());
         ACCEPT(element.max_value());
+        return true;
+    }
+
+    [[nodiscard]] bool operator()(ast::statement::rename_table_action const& element, std::size_t depth) {
+        ACCEPT(element.replacement()); // NOLINT(*-simplify-boolean-expr)
+        return true;
+    }
+
+    [[nodiscard]] bool operator()(ast::statement::rename_column_action const& element, std::size_t depth) {
+        ACCEPT(element.column_name());
+        ACCEPT(element.replacement());
+        return true;
+    }
+
+    [[nodiscard]] bool operator()(ast::statement::rename_index_action const& element, std::size_t depth) {
+        ACCEPT(element.replacement()); // NOLINT(*-simplify-boolean-expr)
         return true;
     }
 

@@ -139,6 +139,8 @@ add_library(mizugaki
     mizugaki/ast/statement/view_definition.cpp
     mizugaki/ast/statement/sequence_definition.cpp
     mizugaki/ast/statement/schema_definition.cpp
+    mizugaki/ast/statement/alter_table_statement.cpp
+    mizugaki/ast/statement/alter_index_statement.cpp
     mizugaki/ast/statement/drop_statement.cpp
     mizugaki/ast/statement/truncate_table_statement.cpp
     mizugaki/ast/statement/grant_privilege_statement.cpp
@@ -157,6 +159,11 @@ add_library(mizugaki
     mizugaki/ast/statement/referential_constraint.cpp
     mizugaki/ast/statement/identity_constraint.cpp
     mizugaki/ast/statement/identity_column_restart_option.cpp
+    mizugaki/ast/statement/alter_table_action.cpp
+    mizugaki/ast/statement/rename_table_action.cpp
+    mizugaki/ast/statement/rename_column_action.cpp
+    mizugaki/ast/statement/alter_index_action.cpp
+    mizugaki/ast/statement/rename_index_action.cpp
     mizugaki/ast/statement/privilege_action.cpp
     mizugaki/ast/statement/privilege_object.cpp
     mizugaki/ast/statement/privilege_user.cpp

@@ -19,6 +19,8 @@ class index_definition;
 class view_definition;
 class sequence_definition;
 class schema_definition;
+class alter_table_statement;
+class alter_index_statement;
 class drop_statement;
 class truncate_table_statement;
 class grant_privilege_statement;
@@ -82,6 +84,18 @@ enum class kind {
      * @see schema_definition
      */
     schema_definition,
+
+    /**
+     * @brief alter_table_statement.
+     * @see alter_table_statement
+     */
+    alter_table_statement,
+
+    /**
+     * @brief alter_index_statement.
+     * @see alter_index_statement
+     */
+    alter_index_statement,
 
     /**
      * @brief drop_statement for tables.
@@ -184,6 +198,12 @@ template<> struct type_of<kind, kind::sequence_definition> : ::takatori::util::m
 /// @brief provides implementation type of kind::schema_definition.
 template<> struct type_of<kind, kind::schema_definition> : ::takatori::util::meta_type<schema_definition> {};
 
+/// @brief provides implementation type of kind::alter_table_statement.
+template<> struct type_of<kind, kind::alter_table_statement> : ::takatori::util::meta_type<alter_table_statement> {};
+
+/// @brief provides implementation type of kind::alter_index_statement.
+template<> struct type_of<kind, kind::alter_index_statement> : ::takatori::util::meta_type<alter_index_statement> {};
+
 /// @brief provides implementation type of kind::drop_table_statement.
 template<> struct type_of<kind, kind::drop_table_statement> : ::takatori::util::meta_type<drop_statement> {};
 
@@ -228,6 +248,8 @@ constexpr std::string_view to_string_view(kind value) noexcept {
         case kind::view_definition: return "view_definition"sv;
         case kind::sequence_definition: return "sequence_definition"sv;
         case kind::schema_definition: return "schema_definition"sv;
+        case kind::alter_table_statement: return "alter_table_statement"sv;
+        case kind::alter_index_statement: return "alter_index_statement"sv;
         case kind::drop_table_statement: return "drop_table_statement"sv;
         case kind::drop_index_statement: return "drop_index_statement"sv;
         case kind::drop_view_statement: return "drop_view_statement"sv;

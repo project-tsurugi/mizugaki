@@ -369,6 +369,7 @@ UTF8_CHAR {ASCII}|{UTF8_2}{U}|{UTF8_3}{U}{U}|{UTF8_4}{U}{U}{U}
 "REFERENCES" { TRACE_RETURN parser_type::make_REFERENCES(location()); }
 "REFERENCING" { TRACE_RETURN parser_type::make_REFERENCING(location()); }
 "RESTRICT" { TRACE_RETURN parser_type::make_RESTRICT(get_image(driver), location()); }
+"RENAME" { TRACE_RETURN parser_type::make_RENAME(get_image(driver), location()); }
 "RESULT" { TRACE_RETURN parser_type::make_RESULT(location()); }
 "RETURN" { TRACE_RETURN parser_type::make_RETURN(location()); }
 "RETURNS" { TRACE_RETURN parser_type::make_RETURNS(location()); }

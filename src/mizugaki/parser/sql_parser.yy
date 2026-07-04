@@ -34,6 +34,8 @@
     #include <mizugaki/ast/statement/view_definition.h>
     #include <mizugaki/ast/statement/sequence_definition.h>
     #include <mizugaki/ast/statement/schema_definition.h>
+    #include <mizugaki/ast/statement/alter_table_statement.h>
+    #include <mizugaki/ast/statement/alter_index_statement.h>
     #include <mizugaki/ast/statement/drop_statement.h>
     #include <mizugaki/ast/statement/truncate_table_statement.h>
     #include <mizugaki/ast/statement/grant_privilege_statement.h>
@@ -48,6 +50,11 @@
     #include <mizugaki/ast/statement/key_constraint.h>
     #include <mizugaki/ast/statement/referential_constraint.h>
     #include <mizugaki/ast/statement/identity_constraint.h>
+    #include <mizugaki/ast/statement/alter_table_action.h>
+    #include <mizugaki/ast/statement/rename_table_action.h>
+    #include <mizugaki/ast/statement/rename_column_action.h>
+    #include <mizugaki/ast/statement/alter_index_action.h>
+    #include <mizugaki/ast/statement/rename_index_action.h>
 
     #include <mizugaki/ast/query/query.h>
     #include <mizugaki/ast/query/table_reference.h>
@@ -674,6 +681,7 @@
 %token REFERENCING "REFERENCING"
 // %token <ast::common::chars> RELATIVE "RELATIVE"
 %token <ast::common::chars> RESTRICT "RESTRICT"
+%token <ast::common::chars> RENAME "RENAME"
 %token RESULT "RESULT"
 %token RETURN "RETURN"
 %token RETURNS "RETURNS"
@@ -868,6 +876,9 @@
 %nterm <ast::common::regioned<bool>> unique_opt
 %nterm <ast::common::regioned<bool>> if_exists_opt
 %nterm <ast::common::regioned<bool>> if_not_exists_opt
+
+%nterm <node_ptr<ast::statement::alter_table_action>> alter_table_action
+%nterm <node_ptr<ast::statement::alter_index_action>> alter_index_action
 %nterm <std::optional<ast::common::regioned<ast::statement::drop_statement_option>>> drop_behavior_opt
 
 %nterm <std::optional<ast::common::regioned<ast::statement::identity_column_restart_option>>> identity_column_restart_option_opt
@@ -1142,6 +1153,22 @@ statement
     | schema_element[d]
         {
             $$ = $d;
+        }
+    | ALTER TABLE if_exists_opt[e] table_name[n] alter_table_action[a]
+        {
+            $$ = driver.node<ast::statement::alter_table_statement>(
+                    $e,
+                    $n,
+                    $a,
+                    @$);
+        }
+    | ALTER INDEX if_exists_opt[e] table_name[n] alter_index_action[a]
+        {
+            $$ = driver.node<ast::statement::alter_index_statement>(
+                    $e,
+                    $n,
+                    $a,
+                    @$);
         }
     | DROP TABLE[k] if_exists_opt[e] table_name[n] drop_behavior_opt[b]
         {
@@ -2078,6 +2105,28 @@ if_not_exists_opt
     | IF NOT EXISTS
         {
             $$ = { true, @$ };
+        }
+    ;
+
+alter_table_action
+    : RENAME TO identifier[r]
+        {
+            $$ = driver.node<ast::statement::rename_table_action>(std::move($r), @$);
+        }
+    | RENAME COLUMN if_exists_opt[e] column_name[n] TO identifier[r]
+        {
+            $$ = driver.node<ast::statement::rename_column_action>(
+                    $e,
+                    $n,
+                    $r,
+                    @$);
+        }
+    ;
+
+alter_index_action
+    : RENAME TO identifier[r]
+        {
+            $$ = driver.node<ast::statement::rename_index_action>(std::move($r), @$);
         }
     ;
 
@@ -4856,6 +4905,7 @@ contextual_identifier
     | SEQUENCE[t] { $$ = driver.to_regular_identifier($t, @$); }
     | RESTART[t] { $$ = driver.to_regular_identifier($t, @$); }
     | RESTRICT[t] { $$ = driver.to_regular_identifier($t, @$); }
+    | RENAME[t] { $$ = driver.to_regular_identifier($t, @$); }
     | FIRST[t] { $$ = driver.to_regular_identifier($t, @$); }
     | LAST[t] { $$ = driver.to_regular_identifier($t, @$); }
     | ORDINALITY[t] { $$ = driver.to_regular_identifier($t, @$); }

@@ -106,6 +106,9 @@ column_definition::region_type const& column_definition::description() const noe
 }
 
 bool operator==(column_definition const& a, column_definition const& b) noexcept {
+    if (std::addressof(a) == std::addressof(b)) {
+        return true;
+    }
     return eq(a.name_, b.name_)
         && eq(a.type_, b.type_)
         && eq(a.constraints_, b.constraints_);
