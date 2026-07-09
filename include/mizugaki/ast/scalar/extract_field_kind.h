@@ -30,13 +30,26 @@ enum class extract_field_kind {
     timezone_hour,
     /// @brief `TIMEZONE_MINUTE`
     timezone_minute,
+
+    /// @brief `DATE` (same as `YEAR TO DAY`).
+    date,
+    /// @brief `YEAR TO MONTH`
+    year_to_month,
+    /// @brief `YEAR TO DAY`
+    year_to_day,
+    /// @brief `YEAR TO HOUR`
+    year_to_hour,
+    /// @brief `YEAR TO MINUTE`
+    year_to_minute,
+    /// @brief `YEAR TO SECOND`
+    year_to_second,
 };
 
 /// @brief set of extract_field_kind kind.
 using extract_field_kind_set = ::takatori::util::enum_set<
         extract_field_kind,
         extract_field_kind::year,
-        extract_field_kind::timezone_minute>;
+        extract_field_kind::year_to_second>;
 
 /**
  * @brief returns string representation of the value.
@@ -55,6 +68,12 @@ inline constexpr std::string_view to_string_view(extract_field_kind value) noexc
         case kind::second: return "second"sv;
         case kind::timezone_hour: return "timezone_hour"sv;
         case kind::timezone_minute: return "timezone_minute"sv;
+        case kind::date: return "date"sv;
+        case kind::year_to_month: return "year to month"sv;
+        case kind::year_to_day: return "year to day"sv;
+        case kind::year_to_hour: return "year to hour"sv;
+        case kind::year_to_minute: return "year to minute"sv;
+        case kind::year_to_second: return "year to second"sv;
     }
     std::abort();
 }

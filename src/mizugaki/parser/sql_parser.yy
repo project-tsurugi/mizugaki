@@ -3769,6 +3769,22 @@ system_function_invocation
                     $e,
                     @$);
         }
+    | EXTRACT[f] "(" SECOND[k] "(" size_maybe_flexible[s] ")" FROM scalar_value_expression[e] ")"
+        {
+            $$ = driver.node<ast::scalar::extract_expression>(
+                    regioned { ast::scalar::extract_field_kind::second, @k },
+                    $s,
+                    $e,
+                    @$);
+        }
+    | EXTRACT[f] "(" YEAR[kb] TO SECOND[ke] "(" size_maybe_flexible[s] ")" FROM scalar_value_expression[e] ")"
+        {
+            $$ = driver.node<ast::scalar::extract_expression>(
+                    regioned { ast::scalar::extract_field_kind::year_to_second, @kb | @ke },
+                    $s,
+                    $e,
+                    @$);
+        }
     // 6.18 <string value function>
     | SUBSTRING[f] "(" scalar_value_expression[l]
             FROM scalar_value_expression[r] ")"
@@ -3993,6 +4009,30 @@ extract_field
     | TIMEZONE_MINUTE
         {
             $$ = { ast::scalar::extract_field_kind::timezone_minute, @$ };
+        }
+    | DATE
+        {
+            $$ = { ast::scalar::extract_field_kind::date, @$ };
+        }
+    | YEAR[b] TO MONTH[e]
+        {
+            $$ = regioned { ast::scalar::extract_field_kind::year_to_month, @b | @e };
+        }
+    | YEAR[b] TO DAY[e]
+        {
+            $$ = regioned { ast::scalar::extract_field_kind::year_to_day, @b | @e };
+        }
+    | YEAR[b] TO HOUR[e]
+        {
+            $$ = regioned { ast::scalar::extract_field_kind::year_to_hour, @b | @e };
+        }
+    | YEAR[b] TO MINUTE[e]
+        {
+            $$ = regioned { ast::scalar::extract_field_kind::year_to_minute, @b | @e };
+        }
+    | YEAR[b] TO SECOND[e]
+        {
+            $$ = regioned { ast::scalar::extract_field_kind::year_to_second, @b | @e };
         }
     ;
 

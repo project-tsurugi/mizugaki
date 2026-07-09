@@ -179,6 +179,39 @@ TEST_F(sql_parser_function_test, extract_second) {
     }));
 }
 
+TEST_F(sql_parser_function_test, extract_second_subsecond_digits) {
+    auto result = parse("EXTRACT(SECOND(3) FROM a)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (scalar::extract_expression {
+            scalar::extract_field_kind::second,
+            3,
+            v("a"),
+    }));
+}
+
+TEST_F(sql_parser_function_test, extract_second_subsecond_digits_zero) {
+    auto result = parse("EXTRACT(SECOND(0) FROM a)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (scalar::extract_expression {
+            scalar::extract_field_kind::second,
+            0,
+            v("a"),
+    }));
+}
+
+TEST_F(sql_parser_function_test, extract_second_subsecond_digits_asterisk) {
+    auto result = parse("EXTRACT(SECOND(*) FROM a)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (scalar::extract_expression {
+            scalar::extract_field_kind::second,
+            scalar::extract_expression::max_size,
+            v("a"),
+    }));
+}
+
 TEST_F(sql_parser_function_test, extract_timezone_hour) {
     auto result = parse("EXTRACT(TIMEZONE_HOUR FROM a)");
     ASSERT_TRUE(result) << diagnostics(result);
@@ -195,6 +228,99 @@ TEST_F(sql_parser_function_test, extract_timezone_minute) {
 
     EXPECT_EQ(extract(result), (scalar::extract_expression {
             scalar::extract_field_kind::timezone_minute,
+            v("a"),
+    }));
+}
+
+TEST_F(sql_parser_function_test, extract_date) {
+    auto result = parse("EXTRACT(DATE FROM a)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (scalar::extract_expression {
+            scalar::extract_field_kind::date,
+            v("a"),
+    }));
+}
+
+TEST_F(sql_parser_function_test, extract_year_to_month) {
+    auto result = parse("EXTRACT(YEAR TO MONTH FROM a)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (scalar::extract_expression {
+            scalar::extract_field_kind::year_to_month,
+            v("a"),
+    }));
+}
+
+TEST_F(sql_parser_function_test, extract_year_to_day) {
+    auto result = parse("EXTRACT(YEAR TO DAY FROM a)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (scalar::extract_expression {
+            scalar::extract_field_kind::year_to_day,
+            v("a"),
+    }));
+}
+
+TEST_F(sql_parser_function_test, extract_year_to_hour) {
+    auto result = parse("EXTRACT(YEAR TO HOUR FROM a)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (scalar::extract_expression {
+            scalar::extract_field_kind::year_to_hour,
+            v("a"),
+    }));
+}
+
+TEST_F(sql_parser_function_test, extract_year_to_minute) {
+    auto result = parse("EXTRACT(YEAR TO MINUTE FROM a)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (scalar::extract_expression {
+            scalar::extract_field_kind::year_to_minute,
+            v("a"),
+    }));
+}
+
+TEST_F(sql_parser_function_test, extract_year_to_second) {
+    auto result = parse("EXTRACT(YEAR TO SECOND FROM a)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (scalar::extract_expression {
+            scalar::extract_field_kind::year_to_second,
+            v("a"),
+    }));
+}
+
+TEST_F(sql_parser_function_test, extract_year_to_second_subsecond_digits) {
+    auto result = parse("EXTRACT(YEAR TO SECOND(6) FROM a)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (scalar::extract_expression {
+            scalar::extract_field_kind::year_to_second,
+            6,
+            v("a"),
+    }));
+}
+
+TEST_F(sql_parser_function_test, extract_year_to_second_subsecond_digits_zero) {
+    auto result = parse("EXTRACT(YEAR TO SECOND(0) FROM a)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (scalar::extract_expression {
+            scalar::extract_field_kind::year_to_second,
+            0,
+            v("a"),
+    }));
+}
+
+TEST_F(sql_parser_function_test, extract_year_to_second_subsecond_digits_asterisk) {
+    auto result = parse("EXTRACT(YEAR TO SECOND(*) FROM a)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (scalar::extract_expression {
+            scalar::extract_field_kind::year_to_second,
+            scalar::extract_expression::max_size,
             v("a"),
     }));
 }

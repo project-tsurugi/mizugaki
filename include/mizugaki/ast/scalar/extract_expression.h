@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include <takatori/util/clone_tag.h>
 
 #include <mizugaki/ast/common/regioned.h>
@@ -22,8 +24,27 @@ public:
     /// @brief the operator kind type.
     using field_type = common::regioned<extract_field_kind>;
 
+    /// @brief the size type.
+    using size_type = common::regioned<std::size_t>;
+
+    /// @brief the maximum size.
+    static constexpr std::size_t max_size = static_cast<std::size_t>(-1);
+
     /// @brief the node kind of this.
     static constexpr node_kind_type tag = node_kind_type::extract_expression;
+
+    /**
+     * @brief creates a new instance.
+     * @param field the target field
+     * @param subsecond_digits the number of subsecond digits for `second` field, can be max_size
+     * @param operand the operand expression
+     * @param region the node region
+     */
+    explicit extract_expression(
+            field_type field,
+            std::optional<size_type> subsecond_digits,
+            operand_type operand,
+            region_type region = {}) noexcept;
 
     /**
      * @brief creates a new instance.
@@ -45,6 +66,20 @@ public:
      */
     explicit extract_expression(
             field_type field,
+            expression&& operand,
+            region_type region = {});
+
+    /**
+     * @brief creates a new instance.
+     * @param field the target field
+     * @param subsecond_digits the number of subsecond digits for `second` field, can be max_size
+     * @param operand the operand expression
+     * @param region the node region
+     * @attention this will take a copy of argument
+     */
+    explicit extract_expression(
+            field_type field,
+            size_type subsecond_digits,
             expression&& operand,
             region_type region = {});
 
@@ -73,6 +108,18 @@ public:
 
     /// @copydoc field()
     [[nodiscard]] field_type const& field() const noexcept;
+
+    /**
+     * @brief returns the number of subsecond digits.
+     * @details This is only valid for `second` and `*_to_second` field.
+     * @return the number of subsecond digits
+     * @return max_size if `*` is specified (means maximum number of digits)
+     * @return empty if it is not specified
+     */
+    [[nodiscard]] std::optional<size_type>& subsecond_digits() noexcept;
+
+    /// @copydoc subsecond_digits()
+    [[nodiscard]] std::optional<size_type> const& subsecond_digits() const noexcept;
 
     /**
      * @brief returns the operand.
@@ -107,6 +154,7 @@ protected:
 
 private:
     field_type field_;
+    std::optional<size_type> subsecond_digits_;
     operand_type operand_;
 };
 

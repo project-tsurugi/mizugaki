@@ -12,11 +12,25 @@ using ::takatori::util::clone_unique;
 
 extract_expression::extract_expression(
         field_type field,
+        std::optional<size_type> subsecond_digits,
         operand_type operand,
         region_type region) noexcept :
     super { region },
     field_ { field },
+    subsecond_digits_ { subsecond_digits },
     operand_ { std::move(operand) }
+{}
+
+extract_expression::extract_expression(
+        field_type field,
+        operand_type operand,
+        region_type region) noexcept :
+    extract_expression {
+            field,
+            std::nullopt,
+            std::move(operand),
+            region,
+    }
 {}
 
 extract_expression::extract_expression(
@@ -25,6 +39,20 @@ extract_expression::extract_expression(
         region_type region) :
     extract_expression {
             field,
+            std::nullopt,
+            clone_unique(std::move(operand)),
+            region,
+    }
+{}
+
+extract_expression::extract_expression(
+        field_type field,
+        size_type subsecond_digits,
+        expression&& operand,
+        region_type region) :
+    extract_expression {
+            field,
+            subsecond_digits,
             clone_unique(std::move(operand)),
             region,
     }
@@ -33,6 +61,7 @@ extract_expression::extract_expression(
 extract_expression::extract_expression(::takatori::util::clone_tag_t, extract_expression const& other) :
     extract_expression {
             other.field_,
+            other.subsecond_digits_,
             clone_unique(other.operand_),
             other.region(),
     }
@@ -41,6 +70,7 @@ extract_expression::extract_expression(::takatori::util::clone_tag_t, extract_ex
 extract_expression::extract_expression(::takatori::util::clone_tag_t, extract_expression&& other) :
     extract_expression {
             other.field_,
+            other.subsecond_digits_,
             clone_unique(std::move(other.operand_)),
             other.region(),
     }
@@ -66,6 +96,14 @@ extract_expression::field_type const& extract_expression::field() const noexcept
     return field_;
 }
 
+std::optional<extract_expression::size_type>& extract_expression::subsecond_digits() noexcept {
+    return subsecond_digits_;
+}
+
+std::optional<extract_expression::size_type> const& extract_expression::subsecond_digits() const noexcept {
+    return subsecond_digits_;
+}
+
 expression::operand_type& extract_expression::operand() noexcept {
     return operand_;
 }
@@ -79,7 +117,8 @@ bool operator==(extract_expression const& a, extract_expression const& b) noexce
         return false;
     }
     return eq(a.field_, b.field_)
-            && eq(a.operand_, b.operand_);
+        && eq(a.subsecond_digits_, b.subsecond_digits_)
+        && eq(a.operand_, b.operand_);
 }
 
 bool operator!=(extract_expression const& a, extract_expression const& b) noexcept {
@@ -96,6 +135,7 @@ void extract_expression::serialize(takatori::serializer::object_acceptor& accept
     using namespace std::string_view_literals;
     auto obj = struct_block(acceptor, *this);
     property(acceptor, "field"sv, field_);
+    property(acceptor, "subsecond_digits"sv, subsecond_digits_);
     property(acceptor, "operand"sv, operand_);
     region_property(acceptor, *this);
 }

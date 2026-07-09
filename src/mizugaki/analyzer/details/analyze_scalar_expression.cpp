@@ -2,9 +2,13 @@
 
 #include <vector>
 
+#include <takatori/type/primitive.h>
 #include <takatori/type/character.h>
+#include <takatori/type/date.h>
+#include <takatori/type/time_of_day.h>
+#include <takatori/type/time_point.h>
 
-#include <takatori/value/unknown.h>
+#include <takatori/value/primitive.h>
 #include <takatori/value/character.h>
 
 #include <takatori/scalar/immediate.h>
@@ -438,7 +442,222 @@ public:
     // FIXME: impl @>
     // FIXME: impl &&
 
-    // FIXME: impl extract_expression
+    static constexpr ast::scalar::extract_field_kind_set extract_includes_second {
+            ast::scalar::extract_field_kind::second,
+            ast::scalar::extract_field_kind::year_to_second,
+    };
+
+    [[nodiscard]] std::unique_ptr<tscalar::expression> operator()(
+            ast::scalar::extract_expression const& expr,
+            value_context const& context) {
+        (void) context;
+        // resolve operand
+        auto operand = process(*expr.operand(), {});
+        if (!operand) {
+            return {};
+        }
+        auto operand_type = context_.resolve(*operand);
+        if (!operand_type) {
+            return {};
+        }
+        if (!validate_extract_field(expr, *operand_type)) {
+            return {};
+        }
+
+        ::takatori::util::reference_vector<tscalar::expression> arguments {};
+        std::vector<std::shared_ptr<ttype::data const>> argument_types {};
+        if (extract_includes_second.contains(*expr.field())) {
+            arguments.reserve(2);
+            arguments.push_back(operand.release());
+            arguments.push_back(extract_second_precision(expr));
+            argument_types.reserve(2);
+            argument_types.emplace_back(std::move(operand_type));
+            argument_types.emplace_back(context_.types().get(ttype::int4 {}));
+        } else {
+            arguments.reserve(1);
+            arguments.push_back(operand.release());
+            argument_types.reserve(1);
+            argument_types.emplace_back(std::move(operand_type));
+        }
+
+        ast::name::simple function_name { extract_function_name(expr.field()) };
+        auto function_list = analyze_function_name(context_, function_name, arguments.size());
+        std::vector<std::shared_ptr<::yugawara::function::declaration const>> function_candidates {};
+        function_candidates.reserve(function_list.size());
+        for (auto&& function: function_list) {
+            if (!function->features().contains(::yugawara::function::function_feature::scalar_function)) {
+                continue;
+            }
+            if (is_applicable(argument_types, function->shared_parameter_types())) {
+                function_candidates.emplace_back(function);
+            }
+        }
+        if (!function_candidates.empty()) {
+            auto target = resolve_overload(function_name, function_candidates);
+            if (!target) {
+                return {};
+            }
+            auto result = context_.create<tscalar::function_call>(
+                    expr.region(),
+                    factory_(std::move(target)),
+                    std::move(arguments));
+            return result;
+        }
+        context_.report(
+                sql_analyzer_code::function_not_found,
+                string_builder {}
+                    << "function not found: "
+                    << "EXTRACT("
+                    << *expr.field()
+                    << " FROM ...)"
+                    << ", delegated to \""
+                    << print_support { function_name }
+                    << "\""
+                    << string_builder::to_string,
+                expr.region());
+        return {};
+    }
+
+    static constexpr ast::scalar::extract_field_kind_set extract_from_date {
+            ast::scalar::extract_field_kind::year,
+            ast::scalar::extract_field_kind::month,
+            ast::scalar::extract_field_kind::day,
+            ast::scalar::extract_field_kind::date,
+            ast::scalar::extract_field_kind::year_to_month,
+            ast::scalar::extract_field_kind::year_to_day,
+    };
+
+    static constexpr ast::scalar::extract_field_kind_set extract_from_time_of_day {
+            ast::scalar::extract_field_kind::hour,
+            ast::scalar::extract_field_kind::minute,
+            ast::scalar::extract_field_kind::second,
+    };
+
+    static constexpr ast::scalar::extract_field_kind_set extract_from_time_point {
+            ast::scalar::extract_field_kind::year,
+            ast::scalar::extract_field_kind::month,
+            ast::scalar::extract_field_kind::day,
+            ast::scalar::extract_field_kind::hour,
+            ast::scalar::extract_field_kind::minute,
+            ast::scalar::extract_field_kind::second,
+            ast::scalar::extract_field_kind::date,
+            ast::scalar::extract_field_kind::year_to_month,
+            ast::scalar::extract_field_kind::year_to_day,
+            ast::scalar::extract_field_kind::year_to_hour,
+            ast::scalar::extract_field_kind::year_to_minute,
+            ast::scalar::extract_field_kind::year_to_second,
+    };
+
+    static constexpr ast::scalar::extract_field_kind_set extract_from_with_time_zone {
+            ast::scalar::extract_field_kind::timezone_hour,
+            ast::scalar::extract_field_kind::timezone_minute,
+    };
+
+    [[nodiscard]] bool validate_extract_field(
+            ast::scalar::extract_expression const& expr,
+            ttype::data const& operand_type) {
+        switch (operand_type.kind()) {
+            case ttype::date::tag:
+                if (extract_from_date.contains(*expr.field())) {
+                    return true;
+                }
+                break;
+            case ttype::time_of_day::tag:
+                if (unsafe_downcast<ttype::time_of_day>(operand_type).with_time_zone()
+                        && extract_from_with_time_zone.contains(*expr.field())) {
+                    return true;
+                }
+                if (extract_from_time_of_day.contains(*expr.field())) {
+                    return true;
+                }
+                break;
+            case ttype::time_point::tag:
+                if (unsafe_downcast<ttype::time_point>(operand_type).with_time_zone()
+                        && extract_from_with_time_zone.contains(*expr.field())) {
+                    return true;
+                }
+                if (extract_from_time_point.contains(*expr.field())) {
+                    return true;
+                }
+                break;
+            default:
+                break;
+        }
+        context_.report(
+                sql_analyzer_code::function_not_found,
+                string_builder {}
+                    << "EXTRACT("
+                    << *expr.field()
+                    << " FROM ...) is not support for the operand type"
+                    << string_builder::to_string,
+                expr.region());
+        return false;
+    }
+
+    static constexpr std::size_t extract_max_second_precision { 9 };
+
+    [[nodiscard]] std::unique_ptr<tscalar::expression> extract_second_precision(
+            ast::scalar::extract_expression const& expr) {
+        std::size_t resolved_precision { extract_max_second_precision };
+        if (auto precision = expr.subsecond_digits()) {
+            resolved_precision = std::min(**precision, extract_max_second_precision);
+        }
+        auto result = context_.create<tscalar::immediate>(
+                expr.region(),
+                context_.values().get(::takatori::value::int4 {
+                    static_cast<::takatori::value::int4::entity_type>(resolved_precision)
+                }),
+                context_.types().get(ttype::int4 {}));
+        if (auto precision = expr.subsecond_digits(); precision && precision->region()) {
+            result->region() = context_.convert(precision->region());
+        }
+        return result;
+    }
+
+    static constexpr std::string_view extract_function_name_year { "extract_year" };
+    static constexpr std::string_view extract_function_name_month { "extract_month" };
+    static constexpr std::string_view extract_function_name_day { "extract_day" };
+    static constexpr std::string_view extract_function_name_hour { "extract_hour" };
+    static constexpr std::string_view extract_function_name_minute { "extract_minute" };
+    static constexpr std::string_view extract_function_name_second { "extract_second" };
+    static constexpr std::string_view extract_function_name_timezone_hour { "extract_timezone_hour" };
+    static constexpr std::string_view extract_function_name_timezone_minute { "extract_timezone_minute" };
+
+    static constexpr std::string_view extract_function_name_date { "date" };
+    static constexpr std::string_view extract_function_name_year_to_month { "extract_year_to_month" };
+    static constexpr std::string_view extract_function_name_year_to_day { "extract_year_to_day" };
+    static constexpr std::string_view extract_function_name_year_to_hour { "extract_year_to_hour" };
+    static constexpr std::string_view extract_function_name_year_to_minute { "extract_year_to_minute" };
+    static constexpr std::string_view extract_function_name_year_to_second { "extract_year_to_second" };
+
+    [[nodiscard]] std::string_view extract_function_name(
+            ast::common::regioned<ast::scalar::extract_field_kind> field) {
+        using kind = ast::scalar::extract_field_kind;
+        switch (*field) {
+            case kind::year: return extract_function_name_year;
+            case kind::month: return extract_function_name_month;
+            case kind::day: return extract_function_name_day;
+            case kind::hour: return extract_function_name_hour;
+            case kind::minute: return extract_function_name_minute;
+            case kind::second: return extract_function_name_second;
+            case kind::timezone_hour: return extract_function_name_timezone_hour;
+            case kind::timezone_minute: return extract_function_name_timezone_minute;
+            case kind::date: return extract_function_name_date;
+            case kind::year_to_month: return extract_function_name_year_to_month;
+            case kind::year_to_day: return extract_function_name_year_to_day;
+            case kind::year_to_hour: return extract_function_name_year_to_hour;
+            case kind::year_to_minute: return extract_function_name_year_to_minute;
+            case kind::year_to_second: return extract_function_name_year_to_second;
+        }
+        context_.report(
+                sql_analyzer_code::unsupported_feature,
+                string_builder {}
+                        << "unsupported comparison operator: " << *field
+                        << string_builder::to_string,
+                field.region());
+        return {};
+    }
+
     // FIXME: impl trim_expression
     // FIXME: impl value_constructor
 
