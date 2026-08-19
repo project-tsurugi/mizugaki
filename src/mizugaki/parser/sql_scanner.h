@@ -11,6 +11,8 @@
 
 #endif // !defined(FLEX_SCANNER)
 
+#include <vector>
+
 #include <mizugaki/ast/common/chars.h>
 
 #include <mizugaki/parser/sql_driver.h>
@@ -26,6 +28,7 @@ public:
     using parser_type = sql_parser_generated;
     using value_type = parser_type::symbol_type;
     using location_type = sql_driver::location_type;
+    using symbol_kind_type = parser_type::symbol_kind::symbol_kind_type;
 
     explicit sql_scanner(std::istream& input);
 
@@ -50,5 +53,10 @@ private:
 
     ast::common::chars get_image(sql_driver const& driver);
 };
+
+[[nodiscard]] bool is_contextual_keyword(sql_scanner::symbol_kind_type kind) noexcept;
+
+[[nodiscard]] std::vector<sql_scanner::symbol_kind_type> collapse_identifier_like_tokens(
+        std::vector<sql_scanner::symbol_kind_type> candidates);
 
 } // namespace sandbox

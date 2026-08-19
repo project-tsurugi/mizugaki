@@ -225,7 +225,7 @@
         std::string candidates {};
         if (max_candidates > 0) {
             std::vector<kind> buffer {};
-            buffer.resize(max_candidates + 1);
+            buffer.resize(symbol_kind::YYNTOKENS);
             auto r = ctxt.expected_tokens(buffer.data(), static_cast<int>(buffer.size()));
             if (r == 0) {
                 if (buffer[0] == kind::S_YYEMPTY) {
@@ -234,9 +234,11 @@
             } else {
                 buffer.resize(r);
             }
+            buffer = collapse_identifier_like_tokens(std::move(buffer));
             if (!buffer.empty()) {
                 candidates.reserve(256);
-                for (std::size_t i = 0; i < buffer.size() - 1; ++i) {
+                auto candidate_size = std::min(buffer.size(), max_candidates);
+                for (std::size_t i = 0; i < candidate_size; ++i) {
                     if (i > 0) {
                         candidates.append(", ");
                     }
@@ -799,19 +801,19 @@
 %token UNION_JOIN "UNION JOIN"
 %token OUTER_APPLY "OUTER APPLY"
 
-%token <ast::common::chars> REGULAR_IDENTIFIER
-%token <ast::common::chars> DELIMITED_IDENTIFIER
+%token <ast::common::chars> REGULAR_IDENTIFIER "<identifier>"
+%token <ast::common::chars> DELIMITED_IDENTIFIER "<delimited-identifier>"
 
 %token REGULAR_IDENTIFIER_RESTRICTED
 %token DELIMITED_IDENTIFIER_RESTRICTED
 
-%token <ast::common::chars> UNSIGNED_INTEGER
-%token <ast::common::chars> EXACT_NUMERIC_LITERAL
-%token <ast::common::chars> APPROXIMATE_NUMERIC_LITERAL
-%token <ast::common::chars> CHARACTER_STRING_LITERAL
-%token <ast::common::chars> HEX_STRING_LITERAL
+%token <ast::common::chars> UNSIGNED_INTEGER "<unsigned-integer>"
+%token <ast::common::chars> EXACT_NUMERIC_LITERAL "<exact-numeric-literal>"
+%token <ast::common::chars> APPROXIMATE_NUMERIC_LITERAL "<approximate-numeric-literal>"
+%token <ast::common::chars> CHARACTER_STRING_LITERAL "<character-string-literal>"
+%token <ast::common::chars> HEX_STRING_LITERAL "<hex-string-literal>"
 
-%token <ast::common::chars> HOST_PARAMETER_NAME
+%token <ast::common::chars> HOST_PARAMETER_NAME "<host-parameter-name>"
 
 %token ERROR "<ERROR>"
 %token UNCLOSED_BLOCK_COMMENT "<UNCLOSED_BLOCK_COMMENT>"
@@ -4889,13 +4891,15 @@ identifier_chain
 identifier
     : REGULAR_IDENTIFIER[t] { $$ = driver.to_regular_identifier($t, @$); }
     | DELIMITED_IDENTIFIER[t] { $$ = driver.to_delimited_identifier($t, @$); }
-    // FIXME: move to individual name
     | contextual_identifier[n]
         {
             $$ = $n;
         }
     ;
 
+/* NOTE:
+ * If added/removed tokens here, keep in sync with sql_scanner::is_contextual_keyword().
+ */
 contextual_identifier
     : ASC[t] { $$ = driver.to_regular_identifier($t, @$); }
     | CONTINUE[t] { $$ = driver.to_regular_identifier($t, @$); }

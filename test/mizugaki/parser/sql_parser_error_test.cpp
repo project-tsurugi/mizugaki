@@ -154,4 +154,16 @@ TEST_F(sql_parser_error_test, unexpected_token_less_candidates) {
     print_result(r);
 }
 
+TEST_F(sql_parser_error_test, unexpected_token_identifier_context) {
+    std::string content { R"(SELECT 1 AS *)" };
+    auto r = parse_erroneous(content);
+    ASSERT_TRUE(r);
+
+    EXPECT_EQ(r.code(), sql_parser_code::unexpected_token);
+    EXPECT_EQ(r.contents(), "*");
+    EXPECT_NE(r.message().find("identifier"), std::string::npos) << r.message(); // must suggest identifier
+    EXPECT_EQ(r.message().find("ASC"), std::string::npos) << r.message(); // no contextual keyword suggestion
+    print_result(r);
+}
+
 } // namespace mizugaki::parser
