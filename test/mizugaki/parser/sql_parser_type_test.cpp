@@ -116,45 +116,6 @@ TEST_F(sql_parser_type_test, varchar_flexible) {
     }));
 }
 
-TEST_F(sql_parser_type_test, bit) {
-    auto result = parse("BIT");
-    ASSERT_TRUE(result) << diagnostics(result);
-
-    EXPECT_EQ(extract(result), (type::bit_string {
-            type::kind::bit,
-    }));
-}
-
-TEST_F(sql_parser_type_test, bit_length) {
-    auto result = parse("BIT(16)");
-    ASSERT_TRUE(result) << diagnostics(result);
-
-    EXPECT_EQ(extract(result), (type::bit_string {
-            type::kind::bit,
-            16,
-    }));
-}
-
-TEST_F(sql_parser_type_test, bit_varying) {
-    auto result = parse("BIT VARYING(256)");
-    ASSERT_TRUE(result) << diagnostics(result);
-
-    EXPECT_EQ(extract(result), (type::bit_string {
-            type::kind::bit_varying,
-            256,
-    }));
-}
-
-TEST_F(sql_parser_type_test, bit_varying_flexible) {
-    auto result = parse("BIT VARYING(*)");
-    ASSERT_TRUE(result) << diagnostics(result);
-
-    EXPECT_EQ(extract(result), (type::bit_string {
-            type::kind::bit_varying,
-            type::bit_string::flexible_length,
-    }));
-}
-
 TEST_F(sql_parser_type_test, octet) {
     auto result = parse("BINARY");
     ASSERT_TRUE(result) << diagnostics(result);

@@ -95,18 +95,6 @@ TEST_F(sql_parser_function_test, octet_length) {
     }));
 }
 
-TEST_F(sql_parser_function_test, bit_length) {
-    auto result = parse("BIT_LENGTH(a)");
-    ASSERT_TRUE(result) << diagnostics(result);
-
-    EXPECT_EQ(extract(result), (scalar::builtin_function_invocation {
-            scalar::builtin_function_kind::bit_length,
-            {
-                    v("a"),
-            },
-    }));
-}
-
 TEST_F(sql_parser_function_test, extention_length) {
     auto result = parse("LENGTH(a)");
     ASSERT_TRUE(result) << diagnostics(result);

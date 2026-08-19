@@ -44,9 +44,6 @@ character_representation ({nonquote_character}|{quote_symbol})
 nonquote_character [^']
 quote_symbol {quote}{quote}
 
-/* <bit string literal> */
-bit_string_literal "B"{character_string_literal}
-
 /* <hex string literal> */
 hex_string_literal "X"{character_string_literal}
 
@@ -170,8 +167,6 @@ UTF8_CHAR {ASCII}|{UTF8_2}{U}|{UTF8_3}{U}{U}|{UTF8_4}{U}{U}{U}
 "ASYMMETRIC" { TRACE_RETURN parser_type::make_ASYMMETRIC(location()); }
 "AVG" { TRACE_RETURN parser_type::make_AVG(location()); }
 "BETWEEN" { TRACE_RETURN parser_type::make_BETWEEN(location()); }
-"BIT_LENGTH" { TRACE_RETURN parser_type::make_BIT_LENGTH(location()); }
-"BITVAR" { TRACE_RETURN parser_type::make_BITVAR(location()); }
 "CARDINALITY" { TRACE_RETURN parser_type::make_CARDINALITY(location()); }
 "CEIL" { TRACE_RETURN parser_type::make_CEIL(location()); }
 "CHAR_LENGTH" { TRACE_RETURN parser_type::make_CHAR_LENGTH(location()); }
@@ -225,7 +220,6 @@ UTF8_CHAR {ASCII}|{UTF8_2}{U}|{UTF8_3}{U}{U}|{UTF8_4}{U}{U}{U}
 "BEFORE" { TRACE_RETURN parser_type::make_BEFORE(get_image(driver), location()); }
 "BEGIN" { TRACE_RETURN parser_type::make_BEGIN_(location()); }
 "BINARY" { TRACE_RETURN parser_type::make_BINARY(location()); }
-"BIT" { TRACE_RETURN parser_type::make_BIT(location()); }
 "BLOB" { TRACE_RETURN parser_type::make_BLOB(location()); }
 "BOOLEAN" { TRACE_RETURN parser_type::make_BOOLEAN(location()); }
 "BOTH" { TRACE_RETURN parser_type::make_BOTH(location()); }
@@ -454,7 +448,6 @@ UTF8_CHAR {ASCII}|{UTF8_2}{U}|{UTF8_3}{U}{U}|{UTF8_4}{U}{U}{U}
 "IF" { TRACE_RETURN parser_type::make_IF(location()); }
 "INDEX" { TRACE_RETURN parser_type::make_INDEX(location()); }
 
-"VARBIT" { TRACE_RETURN parser_type::make_VARBIT(location()); }
 "VARBINARY" { TRACE_RETURN parser_type::make_VARBINARY(location()); }
 
 "PLACING" { TRACE_RETURN parser_type::make_PLACING(location()); }
@@ -501,10 +494,6 @@ UTF8_CHAR {ASCII}|{UTF8_2}{U}|{UTF8_3}{U}{U}|{UTF8_4}{U}{U}{U}
 
 {character_string_literal} {
     TRACE_RETURN parser_type::make_CHARACTER_STRING_LITERAL(get_image(driver), location());
-}
-
-{bit_string_literal} {
-    TRACE_RETURN parser_type::make_BIT_STRING_LITERAL(get_image(driver), location());
 }
 
 {hex_string_literal} {

@@ -62,16 +62,6 @@ TEST_F(sql_parser_literal_test, character_string_concatenations) {
     }));
 }
 
-TEST_F(sql_parser_literal_test, bit_string) {
-    auto result = parse("B'0100'");
-    ASSERT_TRUE(result) << diagnostics(result);
-
-    EXPECT_EQ(extract(result), (literal::string {
-            literal::kind::bit_string,
-            "'0100'",
-    }));
-}
-
 TEST_F(sql_parser_literal_test, hex_string) {
     auto result = parse("X'DEADbeef'");
     ASSERT_TRUE(result) << diagnostics(result);

@@ -114,7 +114,6 @@
     #include <mizugaki/ast/type/type.h>
     #include <mizugaki/ast/type/simple.h>
     #include <mizugaki/ast/type/character_string.h>
-    #include <mizugaki/ast/type/bit_string.h>
     #include <mizugaki/ast/type/octet_string.h>
     #include <mizugaki/ast/type/decimal.h>
     #include <mizugaki/ast/type/binary_numeric.h>
@@ -325,8 +324,6 @@
 // %token <ast::common::chars> ATOMIC "ATOMIC"
 %token AVG "AVG"
 %token BETWEEN "BETWEEN"
-%token BIT_LENGTH "BIT_LENGTH"
-%token BITVAR "BITVAR"
 // %token <ast::common::chars> C "C"
 // %token <ast::common::chars> CALLED "CALLED"
 %token CARDINALITY "CARDINALITY"
@@ -484,7 +481,6 @@
 %token <ast::common::chars> BEFORE "BEFORE"
 %token BEGIN_ "BEGIN"
 %token BINARY "BINARY"
-%token BIT "BIT"
 %token BLOB "BLOB"
 %token BOOLEAN "BOOLEAN"
 %token BOTH "BOTH"
@@ -787,7 +783,6 @@
 %token OWNED "OWNED"
 %token PLACING "PLACING"
 
-%token VARBIT "VARBIT"
 %token VARBINARY "VARBINARY"
 
 %token TINYINT "TINYINT"
@@ -814,7 +809,6 @@
 %token <ast::common::chars> EXACT_NUMERIC_LITERAL
 %token <ast::common::chars> APPROXIMATE_NUMERIC_LITERAL
 %token <ast::common::chars> CHARACTER_STRING_LITERAL
-%token <ast::common::chars> BIT_STRING_LITERAL
 %token <ast::common::chars> HEX_STRING_LITERAL
 
 %token <ast::common::chars> HOST_PARAMETER_NAME
@@ -1007,7 +1001,6 @@
 %nterm <ast::common::regioned<ast::type::kind>> decimal_type_name
 %nterm integer_type_name
 
-%nterm bit_varying_type_name
 %nterm octet_varying_type_name
 
 %nterm <std::optional<ast::common::regioned<std::size_t>>> parenthesized_size_maybe_flexible_opt
@@ -3918,10 +3911,6 @@ simple_system_function_name
         {
             $$ = { ast::scalar::builtin_function_kind::octet_length, @$ };
         }
-    | BIT_LENGTH
-        {
-            $$ = { ast::scalar::builtin_function_kind::bit_length, @$ };
-        }
     | CARDINALITY
         {
             $$ = { ast::scalar::builtin_function_kind::cardinality, @$ };
@@ -4278,14 +4267,6 @@ literal
                     $c,
                     @$);
         }
-    | BIT_STRING_LITERAL[t] concatenations_list_opt[c]
-        {
-            $$ = driver.node<ast::literal::string>(
-                    regioned { ast::literal::kind::bit_string, @t(0, 1) },
-                    regioned { $t.substr(1), @t(1) },
-                    $c,
-                    @$);
-        }
     | HEX_STRING_LITERAL[t] concatenations_list_opt[c]
         {
             $$ = driver.node<ast::literal::string>(
@@ -4439,20 +4420,6 @@ data_type_system
         {
             $$ = driver.node<ast::type::character_string>(
                     regioned { ast::type::kind::character_varying, @k },
-                    $s,
-                    @$);
-        }
-    | BIT[k] parenthesized_size_opt[s]
-        {
-            $$ = driver.node<ast::type::bit_string>(
-                    regioned { ast::type::kind::bit, @k },
-                    $s,
-                    @$);
-        }
-    | bit_varying_type_name[k] parenthesized_size_maybe_flexible_opt[s]
-        {
-            $$ = driver.node<ast::type::bit_string>(
-                    regioned { ast::type::kind::bit_varying, @k },
                     $s,
                     @$);
         }
@@ -4625,12 +4592,6 @@ character_varying_type_name
     : CHARACTER VARYING
     | CHAR VARYING
     | VARCHAR
-    ;
-
-bit_varying_type_name
-    : BIT VARYING
-    | BITVAR
-    | VARBIT
     ;
 
 octet_varying_type_name
