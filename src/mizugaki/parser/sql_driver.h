@@ -1,5 +1,8 @@
 #pragma once
 
+#include <limits>
+#include <optional>
+
 #include <cstddef>
 
 #include <mizugaki/ast/common/vector.h>
@@ -25,6 +28,8 @@ public:
     using location_type = ast::node_region;
 
     using element_kind = sql_parser_element_kind;
+
+    static constexpr std::size_t max_size { std::numeric_limits<std::size_t>::max() - 1U };
 
     template<class T>
     using node_ptr = std::unique_ptr<T>;
@@ -94,7 +99,7 @@ public:
         return result;
     }
 
-    [[nodiscard]] std::size_t to_size(ast::common::chars const& str);
+    [[nodiscard]] std::optional<std::size_t> to_size(ast::common::chars const& str, location_type location);
 
     [[nodiscard]] bool check_regular_identifier(ast::common::chars const& str);
 

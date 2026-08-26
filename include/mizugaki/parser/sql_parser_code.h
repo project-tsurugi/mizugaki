@@ -22,6 +22,9 @@ enum class sql_parser_code {
     /// @brief the target feature is not supported.
     unsupported_feature,
 
+    /// @brief the document includes out of range values.
+    out_of_range,
+
     /// @brief the document includes unrecognized characters.
     invalid_character,
 
@@ -51,6 +54,7 @@ inline constexpr std::string_view to_string_view(sql_parser_code value) noexcept
         case kind::system: return "system"sv;
         case kind::syntax_error: return "syntax_error"sv;
         case kind::unsupported_feature: return "unsupported_feature"sv;
+        case kind::out_of_range: return "out_of_range"sv;
         case kind::invalid_character: return "invalid_character"sv;
         case kind::invalid_token: return "invalid_token"sv;
         case kind::unexpected_token: return "unexpected_token"sv;

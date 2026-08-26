@@ -4668,7 +4668,12 @@ size_maybe_flexible
 size
     : UNSIGNED_INTEGER[t]
         {
-            $$ = { driver.to_size($t), @t };
+            auto size = driver.to_size($t, @t);
+            if (!size) {
+                // error was already reported
+                YYABORT;
+            }
+            $$ = { *size, @t };
         }
     ;
 

@@ -131,7 +131,7 @@ public:
                 context_.report(
                         sql_analyzer_code::flexible_length_is_not_supported,
                         string_builder {}
-                                << "flexible length is not supported in char type"
+                                << "flexible length is not supported in bit type"
                                 << string_builder::to_string,
                         type.length().value().region()); // NOLINT(bugprone-unchecked-optional-access) - checked in is_flexible_length()
                 return {};
@@ -164,7 +164,7 @@ public:
                 context_.report(
                         sql_analyzer_code::flexible_length_is_not_supported,
                         string_builder {}
-                                << "flexible length is not supported in char type"
+                                << "flexible length is not supported in binary type"
                                 << string_builder::to_string,
                         type.length().value().region()); // NOLINT(bugprone-unchecked-optional-access) - checked in is_flexible_length()
                 return {};

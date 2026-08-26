@@ -200,6 +200,18 @@ TEST_F(sql_parser_function_test, extract_second_subsecond_digits_asterisk) {
     }));
 }
 
+TEST_F(sql_parser_function_test, extract_second_subsecond_digits_out_of_range_asterisk) {
+    auto result = parse("EXTRACT(SECOND(18446744073709551615) FROM a)");
+    ASSERT_FALSE(result) << diagnostics(result);
+    EXPECT_EQ(result.diagnostic().code(), sql_parser_code::out_of_range);
+}
+
+TEST_F(sql_parser_function_test, extract_second_subsecond_digits_out_of_range_overflow) {
+    auto result = parse("EXTRACT(SECOND(18446744073709551616) FROM a)");
+    ASSERT_FALSE(result) << diagnostics(result);
+    EXPECT_EQ(result.diagnostic().code(), sql_parser_code::out_of_range);
+}
+
 TEST_F(sql_parser_function_test, extract_timezone_hour) {
     auto result = parse("EXTRACT(TIMEZONE_HOUR FROM a)");
     ASSERT_TRUE(result) << diagnostics(result);
@@ -311,6 +323,18 @@ TEST_F(sql_parser_function_test, extract_year_to_second_subsecond_digits_asteris
             scalar::extract_expression::max_size,
             v("a"),
     }));
+}
+
+TEST_F(sql_parser_function_test, extract_year_to_second_subsecond_digits_out_of_range_asterisk) {
+    auto result = parse("EXTRACT(YEAR TO SECOND(18446744073709551615) FROM a)");
+    ASSERT_FALSE(result) << diagnostics(result);
+    EXPECT_EQ(result.diagnostic().code(), sql_parser_code::out_of_range);
+}
+
+TEST_F(sql_parser_function_test, extract_year_to_second_subsecond_digits_out_of_range_overflow) {
+    auto result = parse("EXTRACT(YEAR TO SECOND(18446744073709551616) FROM a)");
+    ASSERT_FALSE(result) << diagnostics(result);
+    EXPECT_EQ(result.diagnostic().code(), sql_parser_code::out_of_range);
 }
 
 TEST_F(sql_parser_function_test, cardinality) {

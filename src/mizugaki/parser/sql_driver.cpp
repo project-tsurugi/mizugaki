@@ -294,12 +294,17 @@ sql_driver::node_ptr<ast::type::type> sql_driver::try_build_type(node_ptr<ast::s
     return {};
 }
 
-std::size_t sql_driver::to_size(ast::common::chars const& str) { // NOLINT: non-static for calling conv
+std::optional<std::size_t> sql_driver::to_size(ast::common::chars const& str, location_type location) { // NOLINT: non-static for calling conv
     errno = 0;
     auto result = std::strtoull(str.data(), nullptr, 10);
-    if (errno == ERANGE) {
-        // FIXME: error
-        return 0;
+    if (errno == ERANGE || result > max_size) {
+        using ::takatori::util::string_builder;
+        error(sql_parser_code::out_of_range, location,
+                string_builder {}
+                    << "size is out of range: " << str
+                    << " must be less than or equal to " << max_size
+                    << string_builder::to_string);
+        return {};
     }
     return result;
 }

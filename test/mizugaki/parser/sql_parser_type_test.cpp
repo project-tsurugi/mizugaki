@@ -76,6 +76,18 @@ TEST_F(sql_parser_type_test, char_length) {
     }));
 }
 
+TEST_F(sql_parser_type_test, char_out_of_range_flexible) {
+    auto result = parse("CHAR(18446744073709551615)");
+    ASSERT_FALSE(result) << diagnostics(result);
+    EXPECT_EQ(result.diagnostic().code(), sql_parser_code::out_of_range);
+}
+
+TEST_F(sql_parser_type_test, char_out_of_range_overflow) {
+    auto result = parse("CHAR(18446744073709551616)");
+    ASSERT_FALSE(result) << diagnostics(result);
+    EXPECT_EQ(result.diagnostic().code(), sql_parser_code::out_of_range);
+}
+
 TEST_F(sql_parser_type_test, character_varying) {
     auto result = parse("CHARACTER VARYING(10)");
     ASSERT_TRUE(result) << diagnostics(result);
@@ -116,6 +128,18 @@ TEST_F(sql_parser_type_test, varchar_flexible) {
     }));
 }
 
+TEST_F(sql_parser_type_test, varchar_out_of_range_flexible) {
+    auto result = parse("VARCHAR(18446744073709551615)");
+    ASSERT_FALSE(result) << diagnostics(result);
+    EXPECT_EQ(result.diagnostic().code(), sql_parser_code::out_of_range);
+}
+
+TEST_F(sql_parser_type_test, varchar_out_of_range_overflow) {
+    auto result = parse("VARCHAR(18446744073709551616)");
+    ASSERT_FALSE(result) << diagnostics(result);
+    EXPECT_EQ(result.diagnostic().code(), sql_parser_code::out_of_range);
+}
+
 TEST_F(sql_parser_type_test, octet) {
     auto result = parse("BINARY");
     ASSERT_TRUE(result) << diagnostics(result);
@@ -133,6 +157,18 @@ TEST_F(sql_parser_type_test, octet_length) {
             type::kind::octet,
             16,
     }));
+}
+
+TEST_F(sql_parser_type_test, octet_out_of_range_flexible) {
+    auto result = parse("BINARY(18446744073709551615)");
+    ASSERT_FALSE(result) << diagnostics(result);
+    EXPECT_EQ(result.diagnostic().code(), sql_parser_code::out_of_range);
+}
+
+TEST_F(sql_parser_type_test, octet_out_of_range_overflow) {
+    auto result = parse("BINARY(18446744073709551616)");
+    ASSERT_FALSE(result) << diagnostics(result);
+    EXPECT_EQ(result.diagnostic().code(), sql_parser_code::out_of_range);
 }
 
 TEST_F(sql_parser_type_test, octet_varying) {
@@ -153,6 +189,18 @@ TEST_F(sql_parser_type_test, octet_varying_flexible) {
             type::kind::octet_varying,
             type::octet_string::flexible_length,
     }));
+}
+
+TEST_F(sql_parser_type_test, octet_varying_out_of_range_flexible) {
+    auto result = parse("BINARY VARYING(18446744073709551615)");
+    ASSERT_FALSE(result) << diagnostics(result);
+    EXPECT_EQ(result.diagnostic().code(), sql_parser_code::out_of_range);
+}
+
+TEST_F(sql_parser_type_test, octet_varying_out_of_range_overflow) {
+    auto result = parse("BINARY VARYING(18446744073709551616)");
+    ASSERT_FALSE(result) << diagnostics(result);
+    EXPECT_EQ(result.diagnostic().code(), sql_parser_code::out_of_range);
 }
 
 TEST_F(sql_parser_type_test, numeric) {
@@ -257,6 +305,30 @@ TEST_F(sql_parser_type_test, decimal_flexible_precision_scale) {
     }));
 }
 
+TEST_F(sql_parser_type_test, decimal_precision_out_of_range_flexible) {
+    auto result = parse("DECIMAL(18446744073709551615)");
+    ASSERT_FALSE(result) << diagnostics(result);
+    EXPECT_EQ(result.diagnostic().code(), sql_parser_code::out_of_range);
+}
+
+TEST_F(sql_parser_type_test, decimal_precision_out_of_range_overflow) {
+    auto result = parse("DECIMAL(18446744073709551616)");
+    ASSERT_FALSE(result) << diagnostics(result);
+    EXPECT_EQ(result.diagnostic().code(), sql_parser_code::out_of_range);
+}
+
+TEST_F(sql_parser_type_test, decimal_scale_out_of_range_flexible) {
+    auto result = parse("DECIMAL(*, 18446744073709551615)");
+    ASSERT_FALSE(result) << diagnostics(result);
+    EXPECT_EQ(result.diagnostic().code(), sql_parser_code::out_of_range);
+}
+
+TEST_F(sql_parser_type_test, decimal_scale_out_of_range_overflow) {
+    auto result = parse("DECIMAL(*, 18446744073709551616)");
+    ASSERT_FALSE(result) << diagnostics(result);
+    EXPECT_EQ(result.diagnostic().code(), sql_parser_code::out_of_range);
+}
+
 TEST_F(sql_parser_type_test, integer) {
     auto result = parse("INTEGER");
     ASSERT_TRUE(result) << diagnostics(result);
@@ -312,6 +384,18 @@ TEST_F(sql_parser_type_test, int_length) {
     }));
 }
 
+TEST_F(sql_parser_type_test, int_length_out_of_range_flexible) {
+    auto result = parse("INT(18446744073709551615)");
+    ASSERT_FALSE(result) << diagnostics(result);
+    EXPECT_EQ(result.diagnostic().code(), sql_parser_code::out_of_range);
+}
+
+TEST_F(sql_parser_type_test, int_length_out_of_range_overflow) {
+    auto result = parse("INT(18446744073709551616)");
+    ASSERT_FALSE(result) << diagnostics(result);
+    EXPECT_EQ(result.diagnostic().code(), sql_parser_code::out_of_range);
+}
+
 TEST_F(sql_parser_type_test, float) {
     auto result = parse("FLOAT");
     ASSERT_TRUE(result) << diagnostics(result);
@@ -356,6 +440,18 @@ TEST_F(sql_parser_type_test, float_length) {
             type::kind::binary_float,
             53,
     }));
+}
+
+TEST_F(sql_parser_type_test, float_length_out_of_range_flexible) {
+    auto result = parse("FLOAT(18446744073709551615)");
+    ASSERT_FALSE(result) << diagnostics(result);
+    EXPECT_EQ(result.diagnostic().code(), sql_parser_code::out_of_range);
+}
+
+TEST_F(sql_parser_type_test, float_length_out_of_range_overflow) {
+    auto result = parse("FLOAT(18446744073709551616)");
+    ASSERT_FALSE(result) << diagnostics(result);
+    EXPECT_EQ(result.diagnostic().code(), sql_parser_code::out_of_range);
 }
 
 TEST_F(sql_parser_type_test, boolean) {
@@ -585,6 +681,18 @@ TEST_F(sql_parser_type_test, collection_flexible_length) {
     }));
 }
 
+TEST_F(sql_parser_type_test, collection_length_out_of_range_flexible) {
+    auto result = parse("INT array[18446744073709551615]");
+    ASSERT_FALSE(result) << diagnostics(result);
+    EXPECT_EQ(result.diagnostic().code(), sql_parser_code::out_of_range);
+}
+
+TEST_F(sql_parser_type_test, collection_length_out_of_range_overflow) {
+    auto result = parse("INT array[18446744073709551616]");
+    ASSERT_FALSE(result) << diagnostics(result);
+    EXPECT_EQ(result.diagnostic().code(), sql_parser_code::out_of_range);
+}
+
 TEST_F(sql_parser_type_test, collection_simple) {
     auto result = parse("INT[]");
     ASSERT_TRUE(result) << diagnostics(result);
@@ -619,6 +727,18 @@ TEST_F(sql_parser_type_test, collection_simple_flexible_length) {
             },
             type::collection::flexible_length,
     }));
+}
+
+TEST_F(sql_parser_type_test, collection_simple_length_out_of_range_flexible) {
+    auto result = parse("INT[18446744073709551615]");
+    ASSERT_FALSE(result) << diagnostics(result);
+    EXPECT_EQ(result.diagnostic().code(), sql_parser_code::out_of_range);
+}
+
+TEST_F(sql_parser_type_test, collection_simple_length_out_of_range_overflow) {
+    auto result = parse("INT[18446744073709551616]");
+    ASSERT_FALSE(result) << diagnostics(result);
+    EXPECT_EQ(result.diagnostic().code(), sql_parser_code::out_of_range);
 }
 
 TEST_F(sql_parser_type_test, collection_multiple) {
