@@ -41,6 +41,7 @@ finalizer analyzer_context::initialize(
     expression_analyzer_.variables().clear();
     expression_analyzer_.expressions().clear();
     expression_analyzer_.allow_unresolved(false);
+    dropped_expressions_.clear();
 
     return f;
 }
@@ -58,6 +59,7 @@ void analyzer_context::finalize() {
     expression_analyzer_.clear_diagnostics();
     expression_analyzer_.variables().clear();
     expression_analyzer_.expressions().clear();
+    dropped_expressions_.clear();
 
     initialized_.store(false, std::memory_order_release);
 }
@@ -103,10 +105,13 @@ bool analyzer_context::resolve(::takatori::relation::expression const& expressio
 
 void analyzer_context::clear_expression_resolution() {
     expression_analyzer_.expressions().clear();
+    dropped_expressions_.clear();
 }
 
-void analyzer_context::clear_expression_resolution(::takatori::scalar::expression const& expression) {
-    expression_analyzer_.expressions().unbind(expression);
+::takatori::scalar::expression const& analyzer_context::clear_expression_resolution(
+        std::unique_ptr<::takatori::scalar::expression> expression) {
+    auto&& r = dropped_expressions_.emplace_back(std::move(expression));
+    return *r;
 }
 
 bool analyzer_context::is_resolved(takatori::descriptor::variable const& variable) const {

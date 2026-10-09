@@ -92,7 +92,8 @@ public:
 
     void clear_expression_resolution();
 
-    void clear_expression_resolution(::takatori::scalar::expression const& expression);
+    ::takatori::scalar::expression const& clear_expression_resolution(
+            std::unique_ptr<::takatori::scalar::expression> expression);
 
     [[nodiscard]] ::takatori::document::region convert(ast::node_region region) const;
 
@@ -141,6 +142,8 @@ private:
     ::yugawara::util::object_repository<::takatori::type::data> types_ {};
     ::yugawara::util::object_repository<::takatori::value::data> values_ {};
     ::yugawara::analyzer::expression_analyzer expression_analyzer_ {};
+
+    std::vector<std::unique_ptr<::takatori::scalar::expression>> dropped_expressions_;
 
     void finalize();
 

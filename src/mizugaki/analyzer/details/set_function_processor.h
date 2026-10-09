@@ -1,11 +1,14 @@
 #pragma once
 
+#include <memory>
 #include <optional>
 #include <vector>
 
 #include <tsl/hopscotch_set.h>
 
 #include <takatori/descriptor/variable.h>
+
+#include <takatori/scalar/expression.h>
 
 #include <takatori/relation/graph.h>
 #include <takatori/relation/project.h>
@@ -33,6 +36,11 @@ public:
 
     void add_group_key(::takatori::descriptor::variable column);
 
+    void add_group_key(std::unique_ptr<::takatori::scalar::expression> expression);
+
+    [[nodiscard]] std::optional<::takatori::descriptor::variable> find_extracted_group_key(
+            ::takatori::scalar::expression const& expression) const;
+
     void add_aggregated(::takatori::descriptor::variable column);
 
     [[nodiscard]] bool is_grouping(::takatori::descriptor::variable const& column) const;
@@ -54,15 +62,18 @@ private:
     ::tsl::hopscotch_set<::takatori::descriptor::variable> grouping_columns_ {};
     ::tsl::hopscotch_set<::takatori::descriptor::variable> aggregated_columns_ {};
 
-    ::takatori::util::optional_ptr<::takatori::relation::project> arguments_ {};
+    ::takatori::util::optional_ptr<::takatori::relation::project> extracted_expressions_ {};
     ::takatori::util::optional_ptr<::takatori::relation::intermediate::aggregate> aggregations_ {};
 
-    [[nodiscard]] ::takatori::relation::project& arguments_store();
+    [[nodiscard]] ::takatori::relation::project& extracted_expressions_store();
 
     [[nodiscard]] ::takatori::relation::intermediate::aggregate& aggregations_store();
 
     [[nodiscard]] ::takatori::descriptor::variable replace_argument(
             ::takatori::util::ownership_reference<::takatori::scalar::expression> expression);
+
+    [[nodiscard]] std::optional<::takatori::descriptor::variable> find_extracted_expression(
+            ::takatori::scalar::expression const& expression) const;
 
     [[nodiscard]] std::optional<::takatori::descriptor::variable> find_aggregation(
             ::takatori::descriptor::aggregate_function const& function,

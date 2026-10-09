@@ -44,6 +44,7 @@
 #include <mizugaki/analyzer/details/analyze_name.h>
 #include <mizugaki/analyzer/details/analyze_scalar_expression.h>
 #include <yugawara/binding/extract.h>
+#include <yugawara/binding/variable_info.h>
 
 #include "set_function_processor.h"
 #include "name_print_support.h"
@@ -273,7 +274,7 @@ public:
                 variable.region() = result.value().region();
                 auto direction = convert(spec.direction());
                 if (!direction) {
-                    context_.clear_expression_resolution(result.value());
+                    context_.clear_expression_resolution(result.release());
                     return {};
                 }
                 project.columns().emplace_back(variable, result.release());
@@ -364,14 +365,6 @@ public:
             }
         }
         return { *output, std::move(info) };
-    }
-
-    [[nodiscard]] std::optional<tdescriptor::variable> extract_variable(std::unique_ptr<tscalar::expression> expr) {
-        context_.clear_expression_resolution(*expr);
-        if (expr->kind() == tscalar::variable_reference::tag) {
-            return std::move(unsafe_downcast<tscalar::variable_reference>(*expr).variable());
-        }
-        return {};
     }
 
     [[nodiscard]] std::optional<trelation::sort_direction> convert(
@@ -1283,6 +1276,13 @@ public:
             ast::query::grouping_column const& elem,
             set_function_processor& processor,
             query_scope& scope) {
+        if (elem.collation()) {
+            context_.report(
+                    sql_analyzer_code::unsupported_feature,
+                    "collation in GROUP BY is not yet supported",
+                    elem.collation()->region());
+            return {};
+        }
         auto r = analyze_scalar_expression(context_, *elem.column(), scope);
         if (!r) {
             return {};
@@ -1294,15 +1294,28 @@ public:
                     elem.region());
             return false;
         }
-        auto variable = extract_variable(r.release());
-        if (!variable) {
+        auto expr = r.release();
+
+        // check a group key expression
+        if (expr->kind() == tscalar::immediate::tag) {
             context_.report(
                     sql_analyzer_code::unsupported_feature,
-                    "plain variable is required in GROUP BY clause",
+                    "immediate value is not allowed in GROUP BY clause",
                     elem.region());
             return false;
         }
-        processor.add_group_key(*variable);
+        if (expr->kind() == tscalar::variable_reference::tag) {
+            auto&& var_ref = unsafe_downcast<tscalar::variable_reference>(*expr);
+            auto var_kind = ::yugawara::binding::kind_of(var_ref.variable());
+            if (var_kind == ::yugawara::binding::variable_info_kind::external_variable) {
+                context_.report(
+                        sql_analyzer_code::unsupported_feature,
+                        "placeholder is not allowed in GROUP BY clause",
+                        elem.region());
+                return false;
+            }
+        }
+        processor.add_group_key(std::move(expr));
         return true;
     }
 
@@ -1523,9 +1536,9 @@ private:
     }
 
     [[nodiscard]] std::optional<std::size_t> extract_size(std::unique_ptr<tscalar::expression> expr) {
-        context_.clear_expression_resolution(*expr);
-        if (expr->kind() == tscalar::immediate::tag) {
-            auto&& immediate = unsafe_downcast<tscalar::immediate>(*expr);
+        auto&& expr_ref = context_.clear_expression_resolution(std::move(expr));
+        if (expr_ref.kind() == tscalar::immediate::tag) {
+            auto&& immediate = unsafe_downcast<tscalar::immediate>(expr_ref);
             auto value = extract_int_value(immediate.value());
             if (!value || value < 0) {
                 context_.report(
@@ -1533,7 +1546,7 @@ private:
                         string_builder {}
                                 << "not a valid unsigned integer: " << immediate.value()
                                 << string_builder::to_string,
-                        expr->region());
+                        expr_ref.region());
                 return {};
             }
             return static_cast<std::size_t>(*value);
@@ -1542,9 +1555,9 @@ private:
                 sql_analyzer_code::invalid_unsigned_integer,
                 string_builder {}
                         << "must be a unsigned integer: "
-                        << expr->kind()
+                        << expr_ref.kind()
                         << string_builder::to_string,
-                expr->region());
+                expr_ref.region());
         return {};
     }
 

@@ -4,6 +4,7 @@
 
 #include <takatori/type/primitive.h>
 
+#include <takatori/scalar/binary.h>
 #include <takatori/scalar/compare.h>
 
 #include <takatori/relation/scan.h>
@@ -17,6 +18,7 @@
 #include <yugawara/extension/scalar/quantified_compare.h>
 
 #include <mizugaki/ast/scalar/host_parameter_reference.h>
+#include <mizugaki/ast/scalar/binary_expression.h>
 #include <mizugaki/ast/scalar/comparison_predicate.h>
 #include <mizugaki/ast/scalar/builtin_set_function_invocation.h>
 #include <mizugaki/ast/scalar/subquery.h>
@@ -677,6 +679,477 @@ TEST_F(analyze_query_expression_aggregate_test, group_by_columns_duplicate) {
     EXPECT_EQ(relation_columns[1].variable(), project_columns[1].variable());
 }
 
+TEST_F(analyze_query_expression_aggregate_test, group_by_expression) {
+    auto table = install_table("testing");
+    trelation::graph_type graph {};
+
+    auto r = analyze_query_expression(
+            context(),
+            graph,
+            ast::query::query {
+                    {
+                            ast::query::select_column {
+                                    ast::scalar::builtin_set_function_invocation {
+                                            ast::scalar::builtin_set_function_kind::count,
+                                            {},
+                                            {},
+                                    }
+                            },
+                    },
+                    {
+                            ast::table::table_reference {
+                                    id("testing"),
+                            }
+                    },
+                    {},
+                    ast::query::group_by_clause {
+                            ast::query::grouping_column {
+                                    ast::scalar::binary_expression {
+                                            vref(id("k")),
+                                            ast::scalar::binary_operator::plus,
+                                            literal(number("1")),
+                                    }
+                            },
+                    },
+            },
+            {},
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
+    // scan - project - aggregate - project -
+
+    ASSERT_EQ(graph.size(), 4);
+    EXPECT_FALSE(r.output().opposite());
+
+    auto&& relation = r.relation();
+
+    auto&& project = downcast<trelation::project>(r.output().owner());
+    auto&& aggregate = *find_prev<trelation::intermediate::aggregate>(project);
+    auto&& prepare = *find_prev<trelation::project>(aggregate);
+    auto&& scan = *find_prev<trelation::scan>(prepare);
+
+    auto&& scan_columns = scan.columns();
+    ASSERT_EQ(scan_columns.size(), 4);
+
+    auto&& prepare_columns = prepare.columns();
+    ASSERT_EQ(prepare_columns.size(), 1);
+    EXPECT_EQ(prepare_columns[0].value(), (tscalar::binary {
+            tscalar::binary_operator::add,
+            vref(scan_columns[0].destination()),
+            immediate(1),
+    }));
+
+    auto&& grouping_columns = aggregate.group_keys();
+    ASSERT_EQ(grouping_columns.size(), 1);
+    EXPECT_EQ(grouping_columns[0], prepare_columns[0].variable());
+
+    auto&& aggregation_columns = aggregate.columns();
+    ASSERT_EQ(aggregation_columns.size(), 1);
+    {
+        auto&& column = aggregation_columns[0];
+        EXPECT_EQ(column.function(), factory_(count_asterisk));
+        ASSERT_EQ(column.arguments().size(), 0);
+    }
+
+    auto&& project_columns = project.columns();
+    ASSERT_EQ(project_columns.size(), 1);
+    EXPECT_EQ(project_columns[0].value(), vref(aggregation_columns[0].destination()));
+
+    // output
+
+    auto relation_columns = relation.columns();
+    ASSERT_EQ(relation_columns.size(), 1);
+    EXPECT_EQ(relation_columns[0].variable(), project_columns[0].variable());
+}
+
+TEST_F(analyze_query_expression_aggregate_test, group_by_expression_duplicate) {
+    auto table = install_table("testing");
+    trelation::graph_type graph {};
+
+    auto r = analyze_query_expression(
+            context(),
+            graph,
+            // SELECT COUNT(*) FROM testing GROUP BY k + 1, k + 1, k + 1
+            ast::query::query {
+                    {
+                            ast::query::select_column {
+                                    ast::scalar::builtin_set_function_invocation {
+                                            ast::scalar::builtin_set_function_kind::count,
+                                            {},
+                                            {},
+                                    }
+                            },
+                    },
+                    {
+                            ast::table::table_reference {
+                                    id("testing"),
+                            }
+                    },
+                    {},
+                    ast::query::group_by_clause {
+                            ast::query::grouping_column {
+                                    ast::scalar::binary_expression {
+                                            vref(id("k")),
+                                            ast::scalar::binary_operator::plus,
+                                            literal(number("1")),
+                                    }
+                            },
+                            ast::query::grouping_column {
+                                    ast::scalar::binary_expression {
+                                            vref(id("k")),
+                                            ast::scalar::binary_operator::plus,
+                                            literal(number("1")),
+                                    }
+                            },
+                            ast::query::grouping_column {
+                                    ast::scalar::binary_expression {
+                                            vref(id("k")),
+                                            ast::scalar::binary_operator::plus,
+                                            literal(number("1")),
+                                    }
+                            },
+                    },
+            },
+            {},
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
+    // scan - project - aggregate - project -
+
+    ASSERT_EQ(graph.size(), 4);
+    EXPECT_FALSE(r.output().opposite());
+
+    auto&& relation = r.relation();
+
+    auto&& project = downcast<trelation::project>(r.output().owner());
+    auto&& aggregate = *find_prev<trelation::intermediate::aggregate>(project);
+    auto&& prepare = *find_prev<trelation::project>(aggregate);
+    auto&& scan = *find_prev<trelation::scan>(prepare);
+
+    auto&& scan_columns = scan.columns();
+    ASSERT_EQ(scan_columns.size(), 4);
+
+    auto&& prepare_columns = prepare.columns();
+    ASSERT_EQ(prepare_columns.size(), 1);
+    EXPECT_EQ(prepare_columns[0].value(), (tscalar::binary {
+            tscalar::binary_operator::add,
+            vref(scan_columns[0].destination()),
+            immediate(1),
+    }));
+
+    auto&& grouping_columns = aggregate.group_keys();
+    ASSERT_EQ(grouping_columns.size(), 1);
+    EXPECT_EQ(grouping_columns[0], prepare_columns[0].variable());
+
+    auto&& aggregation_columns = aggregate.columns();
+    ASSERT_EQ(aggregation_columns.size(), 1);
+    {
+        auto&& column = aggregation_columns[0];
+        EXPECT_EQ(column.function(), factory_(count_asterisk));
+        ASSERT_EQ(column.arguments().size(), 0);
+    }
+
+    auto&& project_columns = project.columns();
+    ASSERT_EQ(project_columns.size(), 1);
+    EXPECT_EQ(project_columns[0].value(), vref(aggregation_columns[0].destination()));
+
+    // output
+
+    auto relation_columns = relation.columns();
+    ASSERT_EQ(relation_columns.size(), 1);
+    EXPECT_EQ(relation_columns[0].variable(), project_columns[0].variable());
+}
+
+TEST_F(analyze_query_expression_aggregate_test, group_by_expression_refer_top) {
+    auto table = install_table("testing");
+    trelation::graph_type graph {};
+
+    auto r = analyze_query_expression(
+            context(),
+            graph,
+            // SELECT k + 1, COUNT(*) FROM testing GROUP BY k + 1
+            ast::query::query {
+                    {
+                            ast::query::select_column {
+                                    ast::scalar::binary_expression {
+                                            vref(id("k")),
+                                            ast::scalar::binary_operator::plus,
+                                            literal(number("1")),
+                                    }
+                            },
+                            ast::query::select_column {
+                                    ast::scalar::builtin_set_function_invocation {
+                                            ast::scalar::builtin_set_function_kind::count,
+                                            {},
+                                            {},
+                                    }
+                            },
+                    },
+                    {
+                            ast::table::table_reference {
+                                    id("testing"),
+                            }
+                    },
+                    {},
+                    ast::query::group_by_clause {
+                            ast::query::grouping_column {
+                                    ast::scalar::binary_expression {
+                                            vref(id("k")),
+                                            ast::scalar::binary_operator::plus,
+                                            literal(number("1")),
+                                    }
+                            },
+                    },
+            },
+            {},
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
+    // scan - project - aggregate - project -
+
+    ASSERT_EQ(graph.size(), 4);
+    EXPECT_FALSE(r.output().opposite());
+
+    auto&& relation = r.relation();
+
+    auto&& project = downcast<trelation::project>(r.output().owner());
+    auto&& aggregate = *find_prev<trelation::intermediate::aggregate>(project);
+    auto&& prepare = *find_prev<trelation::project>(aggregate);
+    auto&& scan = *find_prev<trelation::scan>(prepare);
+
+    auto&& scan_columns = scan.columns();
+    ASSERT_EQ(scan_columns.size(), 4);
+
+    auto&& prepare_columns = prepare.columns();
+    ASSERT_EQ(prepare_columns.size(), 1);
+    EXPECT_EQ(prepare_columns[0].value(), (tscalar::binary {
+            tscalar::binary_operator::add,
+            vref(scan_columns[0].destination()),
+            immediate(1),
+    }));
+
+    auto&& grouping_columns = aggregate.group_keys();
+    ASSERT_EQ(grouping_columns.size(), 1);
+    EXPECT_EQ(grouping_columns[0], prepare_columns[0].variable());
+
+    auto&& aggregation_columns = aggregate.columns();
+    ASSERT_EQ(aggregation_columns.size(), 1);
+    {
+        auto&& column = aggregation_columns[0];
+        EXPECT_EQ(column.function(), factory_(count_asterisk));
+        ASSERT_EQ(column.arguments().size(), 0);
+    }
+
+    auto&& project_columns = project.columns();
+    ASSERT_EQ(project_columns.size(), 2);
+    EXPECT_EQ(project_columns[0].value(), vref(grouping_columns[0]));
+    EXPECT_EQ(project_columns[1].value(), vref(aggregation_columns[0].destination()));
+
+    // output
+
+    auto relation_columns = relation.columns();
+    ASSERT_EQ(relation_columns.size(), 2);
+    EXPECT_EQ(relation_columns[0].variable(), project_columns[0].variable());
+    EXPECT_EQ(relation_columns[1].variable(), project_columns[1].variable());
+}
+
+TEST_F(analyze_query_expression_aggregate_test, group_by_expression_refer_subexpression) {
+    auto table = install_table("testing");
+    trelation::graph_type graph {};
+
+    auto r = analyze_query_expression(
+            context(),
+            graph,
+            // SELECT (k + 1) * 2, COUNT(*) FROM testing GROUP BY k + 1
+            ast::query::query {
+                    {
+                            ast::query::select_column {
+                                    ast::scalar::binary_expression {
+                                            ast::scalar::binary_expression {
+                                                    vref(id("k")),
+                                                    ast::scalar::binary_operator::plus,
+                                                    literal(number("1")),
+                                            },
+                                            ast::scalar::binary_operator::asterisk,
+                                            literal(number("2")),
+                                    }
+                            },
+                            ast::query::select_column {
+                                    ast::scalar::builtin_set_function_invocation {
+                                            ast::scalar::builtin_set_function_kind::count,
+                                            {},
+                                            {},
+                                    }
+                            },
+                    },
+                    {
+                            ast::table::table_reference {
+                                    id("testing"),
+                            }
+                    },
+                    {},
+                    ast::query::group_by_clause {
+                            ast::query::grouping_column {
+                                    ast::scalar::binary_expression {
+                                            vref(id("k")),
+                                            ast::scalar::binary_operator::plus,
+                                            literal(number("1")),
+                                    }
+                            },
+                    },
+            },
+            {},
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
+    // scan - project - aggregate - project -
+
+    ASSERT_EQ(graph.size(), 4);
+    EXPECT_FALSE(r.output().opposite());
+
+    auto&& relation = r.relation();
+
+    auto&& project = downcast<trelation::project>(r.output().owner());
+    auto&& aggregate = *find_prev<trelation::intermediate::aggregate>(project);
+    auto&& prepare = *find_prev<trelation::project>(aggregate);
+    auto&& scan = *find_prev<trelation::scan>(prepare);
+
+    auto&& scan_columns = scan.columns();
+    ASSERT_EQ(scan_columns.size(), 4);
+
+    auto&& prepare_columns = prepare.columns();
+    ASSERT_EQ(prepare_columns.size(), 1);
+    EXPECT_EQ(prepare_columns[0].value(), (tscalar::binary {
+            tscalar::binary_operator::add,
+            vref(scan_columns[0].destination()),
+            immediate(1),
+    }));
+
+    auto&& grouping_columns = aggregate.group_keys();
+    ASSERT_EQ(grouping_columns.size(), 1);
+    EXPECT_EQ(grouping_columns[0], prepare_columns[0].variable());
+
+    auto&& aggregation_columns = aggregate.columns();
+    ASSERT_EQ(aggregation_columns.size(), 1);
+    {
+        auto&& column = aggregation_columns[0];
+        EXPECT_EQ(column.function(), factory_(count_asterisk));
+        ASSERT_EQ(column.arguments().size(), 0);
+    }
+
+    auto&& project_columns = project.columns();
+    ASSERT_EQ(project_columns.size(), 2);
+    EXPECT_EQ(project_columns[0].value(), (tscalar::binary {
+            tscalar::binary_operator::multiply,
+            vref(grouping_columns[0]),
+            immediate(2),
+    }));
+    EXPECT_EQ(project_columns[1].value(), vref(aggregation_columns[0].destination()));
+
+    // output
+
+    auto relation_columns = relation.columns();
+    ASSERT_EQ(relation_columns.size(), 2);
+    EXPECT_EQ(relation_columns[0].variable(), project_columns[0].variable());
+    EXPECT_EQ(relation_columns[1].variable(), project_columns[1].variable());
+}
+
+TEST_F(analyze_query_expression_aggregate_test, group_by_expression_refer_in_argument) {
+    auto table = install_table("testing");
+    trelation::graph_type graph {};
+
+    auto r = analyze_query_expression(
+            context(),
+            graph,
+            // SELECT COUNT(k + 1) FROM testing GROUP BY k + 1
+            ast::query::query {
+                    {
+                        ast::query::select_column {
+                                    ast::scalar::builtin_set_function_invocation {
+                                            ast::scalar::builtin_set_function_kind::count,
+                                            {},
+                                            {
+                                                    ast::scalar::binary_expression {
+                                                            vref(id("k")),
+                                                            ast::scalar::binary_operator::plus,
+                                                            literal(number("1")),
+                                                    }
+                                            },
+                                    }
+                            },
+                    },
+                    {
+                            ast::table::table_reference {
+                                    id("testing"),
+                            }
+                    },
+                    {},
+                    ast::query::group_by_clause {
+                            ast::query::grouping_column {
+                                    ast::scalar::binary_expression {
+                                            vref(id("k")),
+                                            ast::scalar::binary_operator::plus,
+                                            literal(number("1")),
+                                    }
+                            },
+                    },
+            },
+            {},
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
+    // scan - project - aggregate - project -
+
+    ASSERT_EQ(graph.size(), 4);
+    EXPECT_FALSE(r.output().opposite());
+
+    auto&& relation = r.relation();
+
+    auto&& project = downcast<trelation::project>(r.output().owner());
+    auto&& aggregate = *find_prev<trelation::intermediate::aggregate>(project);
+    auto&& prepare = *find_prev<trelation::project>(aggregate);
+    auto&& scan = *find_prev<trelation::scan>(prepare);
+
+    auto&& scan_columns = scan.columns();
+    ASSERT_EQ(scan_columns.size(), 4);
+
+    auto&& prepare_columns = prepare.columns();
+    ASSERT_EQ(prepare_columns.size(), 1);
+    EXPECT_EQ(prepare_columns[0].value(), (tscalar::binary {
+            tscalar::binary_operator::add,
+            vref(scan_columns[0].destination()),
+            immediate(1),
+    }));
+
+    auto&& grouping_columns = aggregate.group_keys();
+    ASSERT_EQ(grouping_columns.size(), 1);
+    EXPECT_EQ(grouping_columns[0], prepare_columns[0].variable());
+
+    auto&& aggregation_columns = aggregate.columns();
+    ASSERT_EQ(aggregation_columns.size(), 1);
+    {
+        auto&& column = aggregation_columns[0];
+        EXPECT_EQ(column.function(), factory_(count_int));
+        ASSERT_EQ(column.arguments().size(), 1);
+        EXPECT_EQ(column.arguments()[0], prepare_columns[0].variable());
+    }
+
+    auto&& project_columns = project.columns();
+    ASSERT_EQ(project_columns.size(), 1);
+    EXPECT_EQ(project_columns[0].value(), vref(aggregation_columns[0].destination()));
+
+    // output
+
+    auto relation_columns = relation.columns();
+    ASSERT_EQ(relation_columns.size(), 1);
+    EXPECT_EQ(relation_columns[0].variable(), project_columns[0].variable());
+}
+
 TEST_F(analyze_query_expression_aggregate_test, group_by_having) {
     auto table = install_table("testing");
     trelation::graph_type graph {};
@@ -920,6 +1393,113 @@ TEST_F(analyze_query_expression_aggregate_test, group_by_having_in) {
     EXPECT_EQ(relation_columns[0].variable(), project_columns[0].variable());
 }
 
+TEST_F(analyze_query_expression_aggregate_test, group_by_expression_having) {
+    auto table = install_table("testing");
+    trelation::graph_type graph {};
+
+    auto r = analyze_query_expression(
+            context(),
+            graph,
+            // SELECT k + 1 FROM testing GROUP BY k + 1 HAVING COUNT(*) > k + 1
+            ast::query::query {
+                    {
+                            ast::query::select_column {
+                                    ast::scalar::binary_expression {
+                                            vref(id("k")),
+                                            ast::scalar::binary_operator::plus,
+                                            literal(number("1")),
+                                    }
+                            },
+                    },
+                    {
+                            ast::table::table_reference {
+                                    id("testing"),
+                            }
+                    },
+                    {},
+                    ast::query::group_by_clause {
+                            ast::query::grouping_column {
+                                    ast::scalar::binary_expression {
+                                            vref(id("k")),
+                                            ast::scalar::binary_operator::plus,
+                                            literal(number("1")),
+                                    }
+                            },
+                    },
+                    {
+                            ast::scalar::comparison_predicate {
+                                    ast::scalar::builtin_set_function_invocation {
+                                            ast::scalar::builtin_set_function_kind::count,
+                                            {},
+                                            {},
+                                    },
+                                    ast::scalar::comparison_operator::greater_than,
+                                    ast::scalar::binary_expression {
+                                            vref(id("k")),
+                                            ast::scalar::binary_operator::plus,
+                                            literal(number("1")),
+                                    },
+                            },
+                    },
+            },
+            {},
+            {});
+    ASSERT_TRUE(r);
+    expect_no_error();
+
+    // scan - prepare - aggregate - filter - project -
+
+    ASSERT_EQ(graph.size(), 5);
+    EXPECT_FALSE(r.output().opposite());
+
+    auto&& relation = r.relation();
+
+    auto&& project = downcast<trelation::project>(r.output().owner());
+    auto&& filter = *find_prev<trelation::filter>(project);
+    auto&& aggregate = *find_prev<trelation::intermediate::aggregate>(filter);
+    auto&& prepare = *find_prev<trelation::project>(aggregate);
+    auto&& scan = *find_prev<trelation::scan>(prepare);
+
+    auto&& scan_columns = scan.columns();
+    ASSERT_EQ(scan_columns.size(), 4);
+
+    auto&& prepare_columns = prepare.columns();
+    ASSERT_EQ(prepare_columns.size(), 1);
+    EXPECT_EQ(prepare_columns[0].value(), (tscalar::binary {
+            tscalar::binary_operator::add,
+            vref(scan_columns[0].destination()),
+            immediate(1),
+    }));
+
+    auto&& grouping_columns = aggregate.group_keys();
+    ASSERT_EQ(grouping_columns.size(), 1);
+    EXPECT_EQ(grouping_columns[0], prepare_columns[0].variable());
+
+    auto&& aggregation_columns = aggregate.columns();
+    ASSERT_EQ(aggregation_columns.size(), 1);
+    {
+        auto&& column = aggregation_columns[0];
+        EXPECT_EQ(column.function(), factory_(count_asterisk));
+        ASSERT_EQ(column.arguments().size(), 0);
+    }
+
+    EXPECT_EQ(filter.condition(), (tscalar::compare {
+            tscalar::comparison_operator::greater,
+            vref(aggregation_columns[0].destination()),
+            vref(grouping_columns[0]),
+    }));
+
+    auto&& project_columns = project.columns();
+    ASSERT_EQ(project_columns.size(), 1);
+    EXPECT_EQ(project_columns[0].value(), vref(grouping_columns[0]));
+
+    // output
+
+    auto relation_columns = relation.columns();
+    ASSERT_EQ(relation_columns.size(), 1);
+    EXPECT_EQ(relation_columns[0].variable(), project_columns[0].variable());
+}
+
 TEST_F(analyze_query_expression_aggregate_test, group_by_order_by) {
     auto table = install_table("testing");
     trelation::graph_type graph {};
@@ -1114,6 +1694,36 @@ TEST_F(analyze_query_expression_aggregate_test, select_invalid_column) {
     });
 }
 
+TEST_F(analyze_query_expression_aggregate_test, group_by_collate) {
+    auto table = install_table("testing");
+    invalid(sql_analyzer_code::unsupported_feature, ast::query::query {
+            {
+                    ast::query::select_column {
+                            vref(id("v")),
+                    },
+                    ast::query::select_column {
+                            ast::scalar::builtin_set_function_invocation {
+                                    ast::scalar::builtin_set_function_kind::count,
+                                    {},
+                                    {},
+                            }
+                    },
+            },
+            {
+                    ast::table::table_reference {
+                            id("testing"),
+                    }
+            },
+            {},
+            ast::query::group_by_clause {
+                    ast::query::grouping_column {
+                            id("v"),
+                            id("col"),
+                    },
+            },
+    });
+}
+
 TEST_F(analyze_query_expression_aggregate_test, group_by_invalid_column_expression) {
     auto table = install_table("testing");
     invalid(ast::query::query {
@@ -1174,7 +1784,7 @@ TEST_F(analyze_query_expression_aggregate_test, group_by_invalid_column_aggregat
     });
 }
 
-TEST_F(analyze_query_expression_aggregate_test, group_by_invalid_column_not_variable) {
+TEST_F(analyze_query_expression_aggregate_test, group_by_invalid_column_literal) {
     auto table = install_table("testing");
     invalid(sql_analyzer_code::unsupported_feature, ast::query::query {
             {
@@ -1197,6 +1807,68 @@ TEST_F(analyze_query_expression_aggregate_test, group_by_invalid_column_not_vari
             {},
             ast::query::group_by_clause {
                     ast::query::grouping_column { literal(number("1")) },
+            },
+    });
+}
+
+TEST_F(analyze_query_expression_aggregate_test, group_by_invalid_column_host_variable) {
+    host_parameters_.add({
+            "hv",
+            ttype::int8 {},
+    });
+    auto table = install_table("testing");
+    invalid(sql_analyzer_code::unsupported_feature, ast::query::query {
+            {
+                    ast::query::select_column {
+                            vref(id("v")),
+                    },
+                    ast::query::select_column {
+                            ast::scalar::builtin_set_function_invocation {
+                                    ast::scalar::builtin_set_function_kind::count,
+                                    {},
+                                    {},
+                            }
+                    },
+            },
+            {
+                    ast::table::table_reference {
+                            id("testing"),
+                    },
+            },
+            {},
+            ast::query::group_by_clause {
+                    ast::query::grouping_column {
+                            ast::scalar::host_parameter_reference {
+                                    id("hv"),
+                            }
+                    },
+            },
+    });
+}
+
+TEST_F(analyze_query_expression_aggregate_test, group_by_expression_invalid_column_expression) {
+    auto table = install_table("testing");
+    // SELECT k FROM testing GROUP BY k + 1
+    invalid(sql_analyzer_code::invalid_aggregation_column, ast::query::query {
+            {
+                    ast::query::select_column {
+                            vref(id("k")),
+                    },
+            },
+            {
+                    ast::table::table_reference {
+                            id("testing"),
+                    },
+            },
+            {},
+            ast::query::group_by_clause {
+                    ast::query::grouping_column {
+                            ast::scalar::binary_expression {
+                                    vref(id("k")),
+                                    ast::scalar::binary_operator::plus,
+                                    literal(number("1")),
+                            }
+                    },
             },
     });
 }

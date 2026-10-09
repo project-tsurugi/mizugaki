@@ -34,6 +34,52 @@ using ::takatori::util::unsafe_downcast;
 
 namespace {
 
+enum class inspect_result_kind {
+    none,
+    group_key,
+    aggregate,
+};
+
+class inspect_result {
+public:
+    using kind_type = inspect_result_kind;
+
+    constexpr inspect_result() = default;
+
+    static inspect_result aggregate() noexcept {
+        return inspect_result { kind_type::aggregate, std::nullopt };
+    }
+
+    static inspect_result group_key(tdescriptor::variable column) noexcept {
+        return inspect_result { kind_type::group_key, std::move(column) };
+    }
+
+    [[nodiscard]] kind_type kind() const noexcept {
+        return kind_;
+    }
+
+    [[nodiscard]] std::optional<tdescriptor::variable>& group_key() noexcept {
+        return group_key_;
+    }
+
+    [[nodiscard]] std::optional<tdescriptor::variable> const& group_key() const noexcept {
+        return group_key_;
+    }
+
+    explicit operator bool() const noexcept {
+        return kind_ != kind_type::none;
+    }
+
+private:
+    explicit inspect_result(kind_type kind, std::optional<tdescriptor::variable> group_key) noexcept :
+        kind_ { kind },
+        group_key_ { std::move(group_key) }
+    {}
+
+    kind_type kind_ { kind_type::none };
+    std::optional<tdescriptor::variable> group_key_ {};
+};
+
 class engine {
 public:
     explicit engine(
@@ -44,17 +90,46 @@ public:
     {}
 
     [[nodiscard]] bool process(ownership_reference<tscalar::expression> ownership) {
-        if (process(ownership.get(), 0)) {
-            processor_.consume(std::move(ownership));
+        if (auto result = inspect(ownership.get(), 0)) {
+            replace(std::move(ownership), std::move(result));
         }
         return !saw_error_;
     }
 
-    [[nodiscard]] bool process(tscalar::expression& expr, std::size_t depth) {
+    [[nodiscard]] inspect_result inspect(tscalar::expression& expr, std::size_t depth) {
         if (saw_error_) {
-            return false;
+            return {};
         }
-        return tscalar::dispatch(*this, expr, depth);
+        // NOTE: check extracted group keys before inspecting the operands, so that the largest matching
+        //       sub-expression is replaced with a group key rather than its operands
+        //       (e.g., `a + 1 + b` matches `GROUP BY a + 1, a + 1 + b` as a whole, not `a + 1` and `b`).
+        if (depth == 0) {
+            if (auto existing = processor_.find_extracted_group_key(expr)) {
+                return inspect_result::group_key(std::move(*existing));
+            }
+        }
+        if (tscalar::dispatch(*this, expr, depth)) {
+            return inspect_result::aggregate();
+        }
+        return {};
+    }
+
+    void replace(ownership_reference<tscalar::expression> expression, inspect_result result) {
+        switch (result.kind()) {
+            case inspect_result::kind_type::none:
+                return;
+            case inspect_result::kind_type::group_key: {
+                auto&& replacement = context_.create<tscalar::variable_reference>(
+                        expression->region(),
+                        std::move(*result.group_key())); // NOLINT
+                auto&& origin = expression.exchange(std::move(replacement));
+                context_.clear_expression_resolution(std::move(origin));
+                return;
+            }
+            case inspect_result::kind_type::aggregate:
+                processor_.consume(std::move(expression));
+                return;
+        }
     }
 
     bool operator()(tscalar::expression const& expr, std::size_t) {
@@ -112,63 +187,65 @@ public:
     }
 
     bool operator()(tscalar::cast& expr, std::size_t depth) {
-        if (process(expr.operand(), depth)) {
-            processor_.consume(expr.ownership_operand());
+        if (auto result = inspect(expr.operand(), depth)) {
+            replace(expr.ownership_operand(), std::move(result));
         }
         return false;
     }
 
     bool operator()(tscalar::unary& expr, std::size_t depth) {
-        if (process(expr.operand(), depth)) {
-            processor_.consume(expr.ownership_operand());
+        if (auto result = inspect(expr.operand(), depth)) {
+            replace(expr.ownership_operand(), std::move(result));
         }
         return false;
     }
 
     bool operator()(tscalar::binary& expr, std::size_t depth) {
-        if (process(expr.left(), depth)) {
-            processor_.consume(expr.ownership_left());
+        if (auto result = inspect(expr.left(), depth)) {
+            replace(expr.ownership_left(), std::move(result));
         }
-        if (process(expr.right(), depth)) {
-            processor_.consume(expr.ownership_right());
+        if (auto result = inspect(expr.right(), depth)) {
+            replace(expr.ownership_right(), std::move(result));
         }
         return false;
     }
 
     bool operator()(tscalar::compare& expr, std::size_t depth) {
-        if (process(expr.left(), depth)) {
-            processor_.consume(expr.ownership_left());
+        if (auto result = inspect(expr.left(), depth)) {
+            replace(expr.ownership_left(), std::move(result));
         }
-        if (process(expr.right(), depth)) {
-            processor_.consume(expr.ownership_right());
+        if (auto result = inspect(expr.right(), depth)) {
+            replace(expr.ownership_right(), std::move(result));
         }
         return false;
     }
 
     bool operator()(tscalar::match& expr, std::size_t depth) {
-        if (process(expr.input(), depth)) {
-            processor_.consume(expr.ownership_input());
+        if (auto result = inspect(expr.input(), depth)) {
+            replace(expr.ownership_input(), std::move(result));
         }
-        if (process(expr.pattern(), depth)) {
-            processor_.consume(expr.ownership_pattern());
+        if (auto result = inspect(expr.pattern(), depth)) {
+            replace(expr.ownership_pattern(), std::move(result));
         }
-        if (process(expr.escape(), depth)) {
-            processor_.consume(expr.ownership_escape());
+        if (auto result = inspect(expr.escape(), depth)) {
+            replace(expr.ownership_escape(), std::move(result));
         }
         return false;
     }
 
     bool operator()(tscalar::conditional& expr, std::size_t depth) {
         for (auto&& element : expr.alternatives()) {
-            if (process(element.condition(), depth)) {
-                processor_.consume(element.ownership_condition());
+            if (auto result = inspect(element.condition(), depth)) {
+                replace(element.ownership_condition(), std::move(result));
             }
-            if (process(element.body(), depth)) {
-                processor_.consume(element.ownership_body());
+            if (auto result = inspect(element.body(), depth)) {
+                replace(element.ownership_body(), std::move(result));
             }
         }
-        if (expr.default_expression() && process(*expr.default_expression(), depth)) {
-            processor_.consume(expr.ownership_default_expression());
+        if (expr.default_expression()) {
+            if (auto result = inspect(*expr.default_expression(), depth)) {
+                replace(expr.ownership_default_expression(), std::move(result));
+            }
         }
         return false;
     }
@@ -176,8 +253,8 @@ public:
     bool operator()(tscalar::coalesce& expr, std::size_t depth) {
         auto&& elements = expr.alternatives();
         for (auto it = elements.begin(); it != elements.end(); ++it) {
-            if (process(*it, depth)) {
-                processor_.consume(elements.ownership(it));
+            if (auto result = inspect(*it, depth)) {
+                replace(elements.ownership(it), std::move(result));
             }
         }
         return false;
@@ -185,12 +262,12 @@ public:
 
     bool operator()(tscalar::let& expr, std::size_t depth) {
         for (auto&& element : expr.variables()) {
-            if (process(element.value(), depth)) {
-                processor_.consume(element.ownership_value());
+            if (auto result = inspect(element.value(), depth)) {
+                replace(element.ownership_value(), std::move(result));
             }
         }
-        if (process(expr.body(), depth)) {
-            processor_.consume(expr.ownership_body());
+        if (auto result = inspect(expr.body(), depth)) {
+            replace(expr.ownership_body(), std::move(result));
         }
         return false;
     }
@@ -198,8 +275,8 @@ public:
     bool operator()(tscalar::function_call& expr, std::size_t depth) {
         auto&& args = expr.arguments();
         for (auto it = args.begin(); it != args.end(); ++it) {
-            if (process(*it, depth)) {
-                processor_.consume(args.ownership(it));
+            if (auto result = inspect(*it, depth)) {
+                replace(args.ownership(it), std::move(result));
             }
         }
         return false;
@@ -241,9 +318,9 @@ public:
         auto&& args = expr.arguments();
         for (auto it = args.begin(); it != args.end(); ++it) {
             // we try to check individual variables are visible
-            if (process(*it, depth + 1)) {
+            if (auto result = inspect(*it, depth + 1)) {
                 // NOTE: may not come here cause of nested aggregation is not supported
-                processor_.consume(args.ownership(it));
+                replace(args.ownership(it), std::move(result));
             }
         }
         return true;
@@ -267,8 +344,8 @@ public:
         for (auto&& parameter : expr.parameters()) {
             check_variable(expr.region(), parameter.source(), depth);
         }
-        if (process(expr.left(), depth)) {
-            processor_.consume(expr.ownership_left());
+        if (auto result = inspect(expr.left(), depth)) {
+            replace(expr.ownership_left(), std::move(result));
         }
         return false;
     }
@@ -297,6 +374,43 @@ void set_function_processor::add_group_key(tdescriptor::variable column) {
     activate();
     grouping_columns_.insert(column);
     aggregations_store().group_keys().emplace_back(std::move(column));
+}
+
+void set_function_processor::add_group_key(std::unique_ptr<takatori::scalar::expression> expression) {
+    if (expression->kind() == tscalar::variable_reference::tag) {
+        auto&& var_ref = unsafe_downcast<tscalar::variable_reference>(*expression);
+        add_group_key(var_ref.variable());
+        context_.clear_expression_resolution(std::move(expression));
+        return;
+    }
+    if (auto existing = find_extracted_expression(*expression)) {
+        add_group_key(std::move(*existing));
+        context_.clear_expression_resolution(std::move(expression));
+        return;
+    }
+    auto replacement = ::yugawara::binding::factory {}.stream_variable();
+    replacement.region() = expression->region();
+    extracted_expressions_store().columns().emplace_back(std::move(expression), replacement);
+    add_group_key(std::move(replacement));
+}
+
+std::optional<tdescriptor::variable> set_function_processor::find_extracted_group_key(
+        tscalar::expression const& expression) const {
+    // NOTE: short-circuit - following expression kinds are never extracted:
+    //   - immediate values - they do not depend on any input columns, so they can be used as is
+    //   - variable references - add_group_key() registers them as group keys directly,
+    //                           instead of placing them into extracted_expressions_store()
+    static constexpr tscalar::expression_kind_set never_extracted_kinds {
+            tscalar::immediate::tag,
+            tscalar::variable_reference::tag,
+    };
+    if (never_extracted_kinds.contains(expression.kind())) {
+        return std::nullopt;
+    }
+    if (auto existing = find_extracted_expression(expression); existing && is_grouping(*existing)) {
+        return existing;
+    }
+    return std::nullopt;
 }
 
 void set_function_processor::add_aggregated(::takatori::descriptor::variable column) {
@@ -330,13 +444,13 @@ optional_ptr<output_port_type> set_function_processor::install(output_port_type&
         next->disconnect_from(port);
     }
     optional_ptr<output_port_type> current { port };
-    if (arguments_) {
-        if (!context_.resolve(*arguments_)) {
+    if (extracted_expressions_) {
+        if (!context_.resolve(*extracted_expressions_)) {
             return {};
         }
-        arguments_->input().connect_to(*current);
-        current = arguments_->output();
-        arguments_.reset();
+        extracted_expressions_->input().connect_to(*current);
+        current = extracted_expressions_->output();
+        extracted_expressions_.reset();
     }
     if (aggregations_) {
         if (!context_.resolve(*aggregations_)) {
@@ -358,7 +472,6 @@ optional_ptr<output_port_type> set_function_processor::install(output_port_type&
 void set_function_processor::consume(ownership_reference<tscalar::expression> expression) {
     activate();
     auto&& invocation = downcast<::yugawara::extension::scalar::aggregate_function_call>(expression.get());
-    context_.clear_expression_resolution(invocation);
 
     std::vector<tdescriptor::variable> arguments {};
     arguments.reserve(invocation.arguments().size());
@@ -370,7 +483,8 @@ void set_function_processor::consume(ownership_reference<tscalar::expression> ex
 
     auto existing = find_aggregation(invocation.function(), arguments);
     if (existing) {
-        expression.set(std::make_unique<tscalar::variable_reference>(*existing));
+        auto&& origin = expression.exchange(std::make_unique<tscalar::variable_reference>(*existing));
+        context_.clear_expression_resolution(std::move(origin));
     } else {
         // FIXME: add debug string
         auto replacement = ::yugawara::binding::factory {}.stream_variable();
@@ -378,17 +492,18 @@ void set_function_processor::consume(ownership_reference<tscalar::expression> ex
                 std::move(invocation.function()),
                 std::move(arguments),
                 replacement);
-        expression.set(std::make_unique<tscalar::variable_reference>(replacement));
+        auto&& origin = expression.exchange(std::make_unique<tscalar::variable_reference>(replacement));
+        context_.clear_expression_resolution(std::move(origin));
         aggregated_columns_.insert(std::move(replacement));
     }
 }
 
-::takatori::relation::project& set_function_processor::arguments_store() {
-    if (!arguments_) {
+::takatori::relation::project& set_function_processor::extracted_expressions_store() {
+    if (!extracted_expressions_) {
         using ::takatori::relation::project;
-        arguments_ = graph_.emplace<project>(std::vector<project::column> {});
+        extracted_expressions_ = graph_.emplace<project>(std::vector<project::column> {});
     }
-    return *arguments_;
+    return *extracted_expressions_;
 }
 
 ::takatori::relation::intermediate::aggregate &set_function_processor::aggregations_store() {
@@ -402,14 +517,37 @@ void set_function_processor::consume(ownership_reference<tscalar::expression> ex
 }
 
 tdescriptor::variable set_function_processor::replace_argument(ownership_reference<tscalar::expression> expression) {
-    // FIXME: remove duplication
+    if (auto existing = find_extracted_expression(*expression)) {
+        existing->region() = expression->region();
+        auto replacement_expr = context_.create<tscalar::variable_reference>(
+                expression->region(),
+                *existing);
+        auto origin = expression.exchange(std::move(replacement_expr));
+        context_.clear_expression_resolution(std::move(origin));
+        return std::move(*existing);
+    }
+
     // FIXME: add debug string
-    auto replacement = ::yugawara::binding::factory {}.stream_variable();
-    auto&& origin = expression.exchange(
-            std::make_unique<tscalar::variable_reference>(replacement));
-    replacement.region() = origin->region();
-    arguments_store().columns().emplace_back(std::move(origin), replacement);
-    return replacement;
+    auto replacement_var = ::yugawara::binding::factory {}.stream_variable();
+    replacement_var.region() = expression->region();
+    auto replacement_expr = context_.create<tscalar::variable_reference>(
+            expression->region(),
+            replacement_var);
+    auto&& origin = expression.exchange(std::move(replacement_expr));
+    extracted_expressions_store().columns().emplace_back(std::move(origin), replacement_var);
+    return replacement_var;
+}
+
+std::optional<tdescriptor::variable> set_function_processor::find_extracted_expression(tscalar::expression const& expression) const {
+    if (!extracted_expressions_) {
+        return {};
+    }
+    for (auto&& column : extracted_expressions_->columns()) {
+        if (column.value() == expression) {
+            return column.variable();
+        }
+    }
+    return {};
 }
 
 std::optional<tdescriptor::variable>

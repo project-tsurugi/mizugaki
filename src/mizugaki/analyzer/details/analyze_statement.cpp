@@ -1001,17 +1001,18 @@ public:
     [[nodiscard]] std::optional<::yugawara::storage::column_value> extract_column_value(
             ast::statement::expression_constraint const& constraint,
             std::unique_ptr<tscalar::expression> expr) {
-        context_.clear_expression_resolution(*expr);
         using kind = tscalar::expression_kind;
         switch (expr->kind()) {
             case kind::immediate:
             {
-                auto&& value = unsafe_downcast<tscalar::immediate>(*expr);
+                auto&& expr_ref = context_.clear_expression_resolution(std::move(expr));
+                auto&& value = unsafe_downcast<tscalar::immediate>(expr_ref);
                 return ::yugawara::storage::column_value { context_.values().get(value.value()) };
             }
             case kind::function_call:
             {
-                auto&& value = unsafe_downcast<tscalar::function_call>(*expr);
+                auto&& expr_ref = context_.clear_expression_resolution(std::move(expr));
+                auto&& value = unsafe_downcast<tscalar::function_call>(expr_ref);
                 if (!value.arguments().empty()) {
                     context_.report(
                             sql_analyzer_code::unsupported_feature,
@@ -1031,11 +1032,14 @@ public:
             }
             case kind::cast:
             {
-                auto&& e = unsafe_downcast<tscalar::cast>(*expr);
+                auto&& cast = unsafe_downcast<tscalar::cast>(*expr);
+                auto&& operand = cast.release_operand();
+                context_.clear_expression_resolution(std::move(expr));
                 // FIXME: impl casting
-                return extract_column_value(constraint, e.release_operand());
+                return extract_column_value(constraint, std::move(operand));
             }
             default:
+                context_.clear_expression_resolution(std::move(expr));
                 context_.report(
                         sql_analyzer_code::unsupported_feature,
                         "default value must be a literal",
@@ -1280,16 +1284,15 @@ public:
             if (!result) {
                 return {};
             }
-            auto expr = result.release();
-            context_.clear_expression_resolution(*expr);
-            if (expr->kind() != tscalar::expression_kind::variable_reference) {
+            auto&& expr = context_.clear_expression_resolution(result.release());
+            if (expr.kind() != tscalar::expression_kind::variable_reference) {
                 context_.report(
                         sql_analyzer_code::unsupported_feature,
                         "index key element must be a table column",
                         key.key()->region());
                 return {};
             }
-            auto&& variable = unsafe_downcast<tscalar::variable_reference>(*expr).variable();
+            auto&& variable = unsafe_downcast<tscalar::variable_reference>(expr).variable();
             auto binding = ::yugawara::binding::extract_if<::yugawara::storage::column>(variable);
             if (!binding) {
                 context_.report(

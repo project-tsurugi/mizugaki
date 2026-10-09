@@ -17,6 +17,7 @@
 
 #include <mizugaki/ast/scalar/literal_expression.h>
 #include <mizugaki/ast/scalar/variable_reference.h>
+#include <mizugaki/ast/scalar/binary_expression.h>
 #include <mizugaki/ast/scalar/comparison_predicate.h>
 #include <mizugaki/ast/scalar/value_constructor.h>
 #include <mizugaki/ast/scalar/subquery.h>
@@ -247,6 +248,45 @@ TEST_F(sql_parser_query_test, query_group_by_columns) {
                             query::grouping_column {
                                     scalar::variable_reference {
                                             name::simple { "C1" },
+                                    },
+                            },
+                    },
+            },
+    }));
+}
+
+TEST_F(sql_parser_query_test, query_group_by_expression) {
+    auto result = parse("SELECT C0 + 1 FROM T0 GROUP BY C0 + 1;");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (query::query {
+            { // SELECT
+                    query::select_column {
+                            scalar::binary_expression {
+                                    scalar::variable_reference {
+                                            name::simple { "C0" },
+                                    },
+                                    scalar::binary_operator::plus,
+                                    int_literal("1"),
+                            },
+                    },
+            },
+            { // FROM
+                    table::table_reference {
+                            name::simple { "T0" },
+                    },
+            },
+            { // WHERE
+            },
+            { // GROUP BY
+                    {
+                            query::grouping_column {
+                                    scalar::binary_expression {
+                                            scalar::variable_reference {
+                                                    name::simple { "C0" },
+                                            },
+                                            scalar::binary_operator::plus,
+                                            int_literal("1"),
                                     },
                             },
                     },
