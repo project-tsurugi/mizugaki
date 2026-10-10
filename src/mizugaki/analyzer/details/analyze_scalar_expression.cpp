@@ -249,7 +249,7 @@ public:
             return {};
         }
         auto result = context_.create<tscalar::cast>(
-                expr.operand()->region(),
+                expr.region(),
                 std::move(type),
                 tscalar::cast::loss_policy_type::ignore,
                 operand.release());

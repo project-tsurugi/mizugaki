@@ -177,6 +177,30 @@ TEST_F(analyze_scalar_expression_test, cast_expression) {
     }));
 }
 
+TEST_F(analyze_scalar_expression_test, cast_expression_region) {
+    auto region = add_comment("CAST(1 AS TINYINT)");
+    auto r = analyze_scalar_expression(
+            context(),
+            ast::scalar::cast_expression {
+                    ast::scalar::cast_operator::cast,
+                    ast::scalar::literal_expression { number("1"), region(5, 1) },
+                    ast::type::simple { ast::type::kind::tiny_integer, region(10, 7) },
+                    region,
+            },
+            scope,
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
+    // the cast node covers the whole CAST expression, not only its operand
+    auto&& expr = r.release();
+    auto&& r_region = expr->region();
+    ASSERT_TRUE(r_region.first());
+    ASSERT_TRUE(r_region.last());
+    EXPECT_EQ(*r_region.first(), region.begin);
+    EXPECT_EQ(*r_region.last(), region.end);
+}
+
 TEST_F(analyze_scalar_expression_test, cast_expression_invalid_operand) {
     invalid(ast::scalar::cast_expression {
             ast::scalar::cast_operator::cast,
