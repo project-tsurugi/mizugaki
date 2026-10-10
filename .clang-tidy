@@ -35,6 +35,7 @@ llvm-*,\
 -llvm-include-order,\
 -llvm-header-guard,\
 -llvm-namespace-comment,\
+-llvm-prefer-static-over-anonymous-namespace,\
 -llvm-qualified-auto,\
 misc-*,\
 -misc-const-correctness,\
@@ -56,6 +57,7 @@ readability-*,\
 -readability-qualified-auto,\
 -readability-redundant-inline-specifier,\
 -readability-redundant-member-init,\
+-readability-use-concise-preprocessor-directives,\
 "
 CheckOptions:
   - key: readability-implicit-bool-conversion.AllowPointerConditions
