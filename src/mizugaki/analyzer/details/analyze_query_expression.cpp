@@ -285,7 +285,6 @@ public:
             }
             auto&& limit = graph_.insert(context_.create<trelation::intermediate::limit>(
                     specs.front().region() | specs.back().region(),
-                    std::nullopt,
                     std::vector<tdescriptor::variable> {},
                     std::move(sort_keys)));
             if (!context_.resolve(limit)) {
@@ -312,14 +311,14 @@ public:
             // NOTE: we never check aggregated view, because the operand must be a constant
             if (sort_limit) {
                 // NOTE: combine previous ORDER BY operation to represent a "top-k" operator
-                sort_limit->count(nrows);
+                sort_limit->row_slice().count() = *nrows;
                 // FIXME: update region
             } else {
                 auto&& limit = graph_.insert(context_.create<trelation::intermediate::limit>(
                         expr.limit()->region(),
-                        nrows,
                         create_vector<tdescriptor::variable>(),
-                        create_vector<trelation::intermediate::limit::sort_key>()));
+                        create_vector<trelation::intermediate::limit::sort_key>(),
+                        trelation::intermediate::limit::row_slice_type { {}, *nrows }));
                 if (!context_.resolve(limit)) {
                     return {};
                 }
@@ -867,8 +866,7 @@ public:
                 factory_(*index),
                 std::move(columns),
                 trelation::scan::endpoint {},
-                trelation::scan::endpoint {},
-                std::nullopt);
+                trelation::scan::endpoint {});
         op.region() = context_.convert(relation.region());
         if (!context_.resolve(op)) {
             return {};

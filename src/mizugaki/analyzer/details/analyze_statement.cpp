@@ -627,8 +627,7 @@ public:
                 factory_(*info.primary_index()),
                 std::move(scan_columns),
                 trelation::scan::endpoint {},
-                trelation::scan::endpoint {},
-                std::nullopt);
+                trelation::scan::endpoint {});
         return result;
     }
 
