@@ -171,15 +171,14 @@ std::shared_ptr<::yugawara::storage::provider> storage_provider() {
     // primary key of ksv
     auto ksv_p = provider->add_index({
             ksv,
-            ".ksv",
+            "ksv",
             { ksv->columns()[0] },
-            {},
+            { ksv->columns()[1], ksv->columns()[2] },
             {
                     ::yugawara::storage::index_feature::primary,
                     ::yugawara::storage::index_feature::find,
                     ::yugawara::storage::index_feature::scan,
                     ::yugawara::storage::index_feature::unique,
-                    ::yugawara::storage::index_feature::unique_constraint,
             },
     });
     // CREATE INDEX ON ksv (s)
@@ -189,7 +188,6 @@ std::shared_ptr<::yugawara::storage::provider> storage_provider() {
             { ksv->columns()[1] },
             {},
             {
-                    ::yugawara::storage::index_feature::primary,
                     ::yugawara::storage::index_feature::find,
                     ::yugawara::storage::index_feature::scan,
             },

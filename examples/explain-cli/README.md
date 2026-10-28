@@ -50,7 +50,11 @@ Available options:
     * `s` (DECIAL(18, 2), DEFAULT is `0.00`)
     * `v` (VARCHAR(*), DEFAULT is `''`)
 * indexes
-  * `ksv_s` (index of `k.s`)
+  * `ksv_s` (index of `ksv.s`)
+
+The index definitions, including the ones created by `CREATE TABLE` or `CREATE INDEX`, follow the ones in jogasaki:
+the primary index has all non-key columns as its values, and the secondary index has no values.
+On the other hand, this never generates a hidden primary key column for the table without primary key.
 * scalar functions
   * `OCTET_LENGTH(T)`
     * `VARCHAR(*)`
