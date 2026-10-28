@@ -26,6 +26,15 @@ Available options:
     * `bigint`
     * `decimal`
     * `varchar`
+* `-features=<runtime feature specification>`
+  * configure the runtime features of the compiler
+  * format: `[all|none,]<+|-><feature name>,<+|-><feature name>,...`
+    * `all` starts from the recommended features (`yugawara::runtime_feature_all`), and it is the default
+    * `none` starts from no features
+    * `+<feature name>` enables the feature, and `-<feature name>` disables it
+  * available feature names are the names of `yugawara::runtime_feature` (e.g. `index_join`), and an unknown name shows the list of them
+  * please use the `-features=...` form, because the value may start with `-`
+  * note that, the runtime features may differ from the ones of the actual database
 * `-echo`
   * print the processing SQL snippet
 * `-quiet`
@@ -77,6 +86,12 @@ Please build this project with `-DINSTALL_EXAMPLES=ON` option, then `cmake --bui
 
 # compile a statement and pretty print by https://stedolan.github.io/jq/
 ./mizugaki-explain-cli -text "TABLE ksv;" | jq .
+
+# compile a statement without index join
+./mizugaki-explain-cli -features=-index_join -text "SELECT * FROM ksv JOIN ksv AS other ON ksv.k = other.k;"
+
+# compile a statement only with aggregate exchange
+./mizugaki-explain-cli -features=none,+aggregate_exchange -text "SELECT k, COUNT(*) FROM ksv GROUP BY k;"
 
 # compile a wrong statement
 ./mizugaki-explain-cli -text "INSERT INTO ksv VALUES 1;"

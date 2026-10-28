@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <string_view>
 
 #include <mizugaki/parser/sql_parser_options.h>
 
@@ -20,6 +21,6 @@ namespace mizugaki::examples::explain_cli {
 [[nodiscard]] analyzer::sql_analyzer_options analyzer_options(
         std::shared_ptr<::yugawara::schema::declaration> default_schema);
 
-[[nodiscard]] ::yugawara::compiler_options compiler_options();
+[[nodiscard]] ::yugawara::compiler_options compiler_options(std::string_view runtime_features);
 
 } // namespace mizugaki::examples::explain_cli

@@ -118,6 +118,7 @@ DEFINE_bool(quiet, false, "only show diagnostic erroneous"); // NOLINT
 DEFINE_string(file, "", "input file path"); // NOLINT
 DEFINE_string(text, "", "input text"); // NOLINT
 DEFINE_string(placeholders, "", "placeholder definitions (name:type, separated by ,)"); // NOLINT
+DEFINE_string(features, "", "runtime features (optional all or none, and then +name or -name, separated by ,)"); // NOLINT
 
 static int do_main() {
     std::string path;
@@ -139,6 +140,7 @@ static int do_main() {
     }
 
     auto variables = parse_variables(FLAGS_placeholders);
+    auto compiler_opts = compiler_options(FLAGS_features);
 
     // parse
     auto parser_opts = parser_options();
@@ -154,7 +156,6 @@ static int do_main() {
 
     auto schema = create_default_schema("public");
 
-    auto compiler_opts = compiler_options();
     for (auto&& statement : compilation_unit->statements()) {
         if (FLAGS_echo) {
             auto&& region = statement->region();

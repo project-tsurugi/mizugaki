@@ -44,3 +44,17 @@ add_test(
     NAME explain-cli
     COMMAND ${output_name} "-text" "SELECT * FROM ksv;"
 )
+
+add_test(
+    NAME explain-cli-features
+    COMMAND ${output_name} "-features=none,+aggregate_exchange,-aggregate_exchange" "-text" "SELECT * FROM ksv;"
+)
+
+add_test(
+    NAME explain-cli-features-unknown
+    COMMAND ${output_name} "-features=+unknown_feature" "-text" "SELECT * FROM ksv;"
+)
+set_tests_properties(explain-cli-features-unknown
+    PROPERTIES
+        WILL_FAIL TRUE
+)

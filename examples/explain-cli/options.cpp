@@ -2,6 +2,9 @@
 
 #include <memory>
 #include <optional>
+#include <stdexcept>
+#include <string>
+#include <string_view>
 
 #include <takatori/type/primitive.h>
 #include <takatori/type/character.h>
@@ -77,15 +80,61 @@ analyzer::sql_analyzer_options analyzer_options(std::shared_ptr<::yugawara::sche
     return options;
 }
 
-::yugawara::compiler_options compiler_options() {
-    ::yugawara::runtime_feature_set features {};
-    features.insert(::yugawara::runtime_feature::broadcast_exchange);
-    features.insert(::yugawara::runtime_feature::aggregate_exchange);
-    features.insert(::yugawara::runtime_feature::index_join);
-    features.insert(::yugawara::runtime_feature::index_join_scan);
-    features.insert(::yugawara::runtime_feature::broadcast_join_scan);
-    features.insert(::yugawara::runtime_feature::always_inline_scalar_local_variables);
-    ::yugawara::compiler_options options { features };
+static std::string available_runtime_features() {
+    std::string result {};
+    // NOTE: runtime_feature_set covers all runtime_feature values, which start from 0
+    for (std::size_t i = 0; i < ::yugawara::runtime_feature_set::iterator::number_of_universe; ++i) {
+        if (!result.empty()) {
+            result += ", ";
+        }
+        result += ::yugawara::to_string_view(static_cast<::yugawara::runtime_feature>(i));
+    }
+    return result;
+}
+
+static ::yugawara::runtime_feature find_runtime_feature(std::string_view name) {
+    for (std::size_t i = 0; i < ::yugawara::runtime_feature_set::iterator::number_of_universe; ++i) {
+        auto feature = static_cast<::yugawara::runtime_feature>(i);
+        if (::yugawara::to_string_view(feature) == name) {
+            return feature;
+        }
+    }
+    throw std::runtime_error(
+            "unknown runtime feature: " + std::string { name }
+            + " (available: " + available_runtime_features() + ")");
+}
+
+static ::yugawara::runtime_feature_set parse_runtime_features(std::string_view sequence) {
+    ::yugawara::runtime_feature_set result { ::yugawara::runtime_feature_all };
+
+    // parse "all", "none", "+name", or "-name" separated by ','
+    std::size_t start = 0;
+    bool first = true;
+    while (start < sequence.size()) {
+        auto end = sequence.find(',', start);
+        if (end == std::string_view::npos) {
+            end = sequence.size();
+        }
+        auto element = sequence.substr(start, end - start);
+        if (first && element == "all") {
+            result = ::yugawara::runtime_feature_all;
+        } else if (first && element == "none") {
+            result = {};
+        } else if (element.size() >= 2 && element[0] == '+') {
+            result.insert(find_runtime_feature(element.substr(1)));
+        } else if (element.size() >= 2 && element[0] == '-') {
+            result.erase(find_runtime_feature(element.substr(1)));
+        } else {
+            throw std::runtime_error("invalid runtime feature specification: " + std::string { element });
+        }
+        first = false;
+        start = end + 1;
+    }
+    return result;
+}
+
+::yugawara::compiler_options compiler_options(std::string_view runtime_features) {
+    ::yugawara::compiler_options options { parse_runtime_features(runtime_features) };
     options.storage_processor(std::make_shared<example_prototype_processor>());
     return options;
 }
