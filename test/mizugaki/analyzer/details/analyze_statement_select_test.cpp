@@ -11,7 +11,11 @@
 #include <yugawara/storage/index.h>
 #include <yugawara/storage/column.h>
 
+#include <mizugaki/ast/query/query.h>
+#include <mizugaki/ast/query/select_column.h>
 #include <mizugaki/ast/query/table_reference.h>
+
+#include <mizugaki/ast/table/table_reference.h>
 
 #include <mizugaki/ast/statement/select_statement.h>
 
@@ -88,6 +92,41 @@ TEST_F(analyze_statement_select_test, simple) {
         EXPECT_EQ(column.source(), variables[0]);
         EXPECT_EQ(column.name(), table->columns()[0].simple_name());
     }
+    EXPECT_EQ(last->ordering(), trelation::emit::ordering_type {});
+}
+
+TEST_F(analyze_statement_select_test, order_by) {
+    install_table("testing");
+    auto r = analyze_statement(context(), ast::statement::select_statement {
+            ast::query::query {
+                    {
+                            ast::query::select_column { vref(id("v")) },
+                    },
+                    {
+                            ast::table::table_reference {
+                                    id("testing"),
+                            }
+                    },
+                    {},
+                    {},
+                    {},
+                    {
+                            {
+                                    vref(id("w")),
+                            },
+                    },
+            },
+    });
+    auto alternative = std::get_if<execution_plan_result_type >(&r);
+    ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
+    auto&& graph = **alternative;
+    auto last = find_last<trelation::emit>(graph);
+    ASSERT_TRUE(last);
+    EXPECT_EQ(last->ordering(), (trelation::emit::ordering_type {
+            trelation::emit_ordering::preserve_input,
+    }));
 }
 
 TEST_F(analyze_statement_select_test, invalid_query) {

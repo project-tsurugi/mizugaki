@@ -141,6 +141,51 @@ TEST_F(analyze_query_expression_with_test, simple) {
     }
 }
 
+TEST_F(analyze_query_expression_with_test, order_by) {
+    auto table = install_table("testing");
+    trelation::graph_type graph {};
+    auto r = analyze_query_expression(
+            context(),
+            graph,
+            ast::query::with_expression {
+                {
+                    ast::query::with_element {
+                        id("q"),
+                        ast::query::table_value_constructor {
+                            ast::scalar::value_constructor {
+                                literal(number("1")),
+                            },
+                        },
+                    },
+                },
+                ast::query::query {
+                        {
+                                ast::query::select_column { vref(id("v")) },
+                        },
+                        {
+                                ast::table::table_reference {
+                                        id("testing"),
+                                }
+                        },
+                        {},
+                        {},
+                        {},
+                        {
+                                {
+                                        vref(id("w")),
+                                },
+                        },
+                },
+            },
+            {},
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
+    // the ORDER BY of the body is the one of the whole query expression
+    EXPECT_TRUE(r.explicitly_ordered());
+}
+
 TEST_F(analyze_query_expression_with_test, column_names) {
     trelation::graph_type graph {};
     auto r = analyze_query_expression(

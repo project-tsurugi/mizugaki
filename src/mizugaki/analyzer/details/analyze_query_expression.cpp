@@ -363,7 +363,8 @@ public:
                 output = aggregate_output;
             }
         }
-        return { *output, std::move(info) };
+        // NOTE: the result is explicitly ordered only if ORDER BY is explicitly specified in this query
+        return { *output, std::move(info), static_cast<bool>(sort_limit) };
     }
 
     [[nodiscard]] std::optional<trelation::sort_direction> convert(
@@ -1749,9 +1750,11 @@ private:
 
 analyze_query_expression_result::analyze_query_expression_result(
         output_port& output,
-        relation_info relation) noexcept :
+        relation_info relation,
+        bool explicitly_ordered) noexcept :
     output_ { output },
-    relation_ { std::move(relation) }
+    relation_ { std::move(relation) },
+    explicitly_ordered_ { explicitly_ordered }
 {}
 
 bool analyze_query_expression_result::has_value() const noexcept {
@@ -1768,6 +1771,10 @@ output_port& analyze_query_expression_result::output() {
 
 relation_info& analyze_query_expression_result::relation() noexcept {
     return relation_;
+}
+
+bool analyze_query_expression_result::explicitly_ordered() const noexcept {
+    return explicitly_ordered_;
 }
 
 analyze_query_expression_result analyze_query_expression(

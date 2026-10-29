@@ -169,9 +169,14 @@ public:
                 }
             }
         }
+        trelation::emit::ordering_type ordering {};
+        if (result.explicitly_ordered()) {
+            ordering.insert(trelation::emit_ordering::preserve_input);
+        }
         auto&& op = graph->insert(context_.create<trelation::emit>(
                 stmt.expression()->region(),
-                std::move(columns)));
+                std::move(columns),
+                ordering));
         op.input().connect_to(result.output());
 
         return graph;

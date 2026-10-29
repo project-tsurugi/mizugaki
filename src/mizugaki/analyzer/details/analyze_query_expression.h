@@ -18,16 +18,29 @@ public:
 
     analyze_query_expression_result(
             ::takatori::relation::expression::output_port_type& output,
-            relation_info relation) noexcept;
+            relation_info relation,
+            bool explicitly_ordered = false) noexcept;
 
     [[nodiscard]] bool has_value() const noexcept;
     [[nodiscard]] explicit operator bool() const noexcept;
     ::takatori::relation::expression::output_port_type& output();
     relation_info& relation() noexcept;
 
+    /**
+     * @brief returns whether or not the query expression explicitly requires the order of its result rows.
+     * @details This is true only if the query expression itself has an ORDER BY clause
+     *      (including the body of WITH clause), and does not consider whether or not the output
+     *      relation is an ordered relation in the execution plan.
+     *      That is, the ORDER BY clauses in the derived tables or subqueries never affect this.
+     * @return true if the query expression explicitly requires the order of its result rows
+     * @return false otherwise
+     */
+    [[nodiscard]] bool explicitly_ordered() const noexcept;
+
 private:
     ::takatori::util::optional_ptr<::takatori::relation::expression::output_port_type> output_ {};
     relation_info relation_ {};
+    bool explicitly_ordered_ { false };
 };
 
 [[nodiscard]] analyze_query_expression_result analyze_query_expression(

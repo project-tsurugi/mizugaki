@@ -79,6 +79,7 @@ TEST_F(analyze_query_expression_select_test, simple) {
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
+    EXPECT_FALSE(r.explicitly_ordered());
 
     EXPECT_EQ(graph.size(), 2);
     EXPECT_FALSE(r.output().opposite());
@@ -764,6 +765,7 @@ TEST_F(analyze_query_expression_select_test, order_by) {
             {});
     ASSERT_TRUE(r) << diagnostics();
     expect_no_error();
+    EXPECT_TRUE(r.explicitly_ordered());
 
     EXPECT_EQ(graph.size(), 4);
     EXPECT_FALSE(r.output().opposite());
