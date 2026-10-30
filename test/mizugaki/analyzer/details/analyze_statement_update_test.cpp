@@ -94,7 +94,7 @@ TEST_F(analyze_statement_update_test, simple) {
     }
     EXPECT_EQ(first->lower(), trelation::scan::endpoint());
     EXPECT_EQ(first->upper(), trelation::scan::endpoint());
-    EXPECT_EQ(first->limit(), std::nullopt);
+    EXPECT_FALSE(first->row_slice());
 
     auto project = find_next<trelation::project>(*first);
     ASSERT_TRUE(project);
@@ -178,7 +178,7 @@ TEST_F(analyze_statement_update_test, modify_key) {
     }
     EXPECT_EQ(first->lower(), trelation::scan::endpoint());
     EXPECT_EQ(first->upper(), trelation::scan::endpoint());
-    EXPECT_EQ(first->limit(), std::nullopt);
+    EXPECT_FALSE(first->row_slice());
 
     // k'=2
     auto project = find_next<trelation::project>(*first);
@@ -260,7 +260,7 @@ TEST_F(analyze_statement_update_test, multiple_set) {
     }
     EXPECT_EQ(first->lower(), trelation::scan::endpoint());
     EXPECT_EQ(first->upper(), trelation::scan::endpoint());
-    EXPECT_EQ(first->limit(), std::nullopt);
+    EXPECT_FALSE(first->row_slice());
 
     auto project = find_next<trelation::project>(*first);
     ASSERT_TRUE(project);
@@ -358,7 +358,7 @@ TEST_F(analyze_statement_update_test, qualified_name) {
     }
     EXPECT_EQ(first->lower(), trelation::scan::endpoint());
     EXPECT_EQ(first->upper(), trelation::scan::endpoint());
-    EXPECT_EQ(first->limit(), std::nullopt);
+    EXPECT_FALSE(first->row_slice());
 
     auto project = find_next<trelation::project>(*first);
     ASSERT_TRUE(project);
@@ -437,7 +437,7 @@ TEST_F(analyze_statement_update_test, table_alias_name) {
     }
     EXPECT_EQ(first->lower(), trelation::scan::endpoint());
     EXPECT_EQ(first->upper(), trelation::scan::endpoint());
-    EXPECT_EQ(first->limit(), std::nullopt);
+    EXPECT_FALSE(first->row_slice());
 
     auto project = find_next<trelation::project>(*first);
     ASSERT_TRUE(project);

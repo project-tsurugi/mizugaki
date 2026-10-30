@@ -107,7 +107,7 @@ TEST_F(analyze_query_expression_test, table_reference) {
 
     EXPECT_EQ(scan.lower(), (trelation::scan::endpoint {}));
     EXPECT_EQ(scan.upper(), (trelation::scan::endpoint {}));
-    EXPECT_EQ(scan.limit(), std::nullopt);
+    EXPECT_FALSE(scan.row_slice());
 }
 
 TEST_F(analyze_query_expression_test, table_reference_query_info) {

@@ -797,7 +797,7 @@ TEST_F(analyze_query_expression_select_test, order_by) {
     ASSERT_EQ(prepare_columns.size(), 1);
     EXPECT_EQ(prepare_columns[0].value(), vref(scan_columns[2].destination())); // w
 
-    EXPECT_EQ(limit.count(), std::nullopt);
+    EXPECT_FALSE(limit.row_slice());
     EXPECT_EQ(limit.group_keys().size(), 0);
 
     auto&& limit_columns = limit.sort_keys();
@@ -881,7 +881,7 @@ TEST_F(analyze_query_expression_select_test, order_by_multiple_columns) {
     EXPECT_EQ(prepare_columns[1].value(), vref(scan_columns[3].destination())); // x
     EXPECT_EQ(prepare_columns[2].value(), vref(scan_columns[0].destination())); // k
 
-    EXPECT_EQ(limit.count(), std::nullopt);
+    EXPECT_FALSE(limit.row_slice());
     EXPECT_EQ(limit.group_keys().size(), 0);
 
     auto&& limit_columns = limit.sort_keys();
@@ -971,7 +971,7 @@ TEST_F(analyze_query_expression_select_test, order_by_expression) {
             vref(scan_columns[3].destination()),
     }));
 
-    EXPECT_EQ(limit.count(), std::nullopt);
+    EXPECT_FALSE(limit.row_slice());
     EXPECT_EQ(limit.group_keys().size(), 0);
 
     auto&& limit_columns = limit.sort_keys();
@@ -1062,7 +1062,7 @@ TEST_F(analyze_query_expression_select_test, limit) {
     }
     EXPECT_EQ(relation_columns[0].variable(), project_columns[0].variable());
 
-    EXPECT_EQ(limit.count(), 10);
+    EXPECT_EQ(limit.row_slice(), (trelation::intermediate::limit::row_slice_type { {}, 10 }));
     EXPECT_EQ(limit.group_keys().size(), 0);
     EXPECT_EQ(limit.sort_keys().size(), 0);
 }
@@ -1130,7 +1130,7 @@ TEST_F(analyze_query_expression_select_test, order_by_limit) {
     ASSERT_EQ(prepare_columns.size(), 1);
     EXPECT_EQ(prepare_columns[0].value(), vref(scan_columns[2].destination())); // w
 
-    EXPECT_EQ(limit.count(), 5);
+    EXPECT_EQ(limit.row_slice(), (trelation::intermediate::limit::row_slice_type { {}, 5 }));
     EXPECT_EQ(limit.group_keys().size(), 0);
 
     auto&& limit_columns = limit.sort_keys();

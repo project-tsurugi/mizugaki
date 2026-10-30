@@ -88,7 +88,7 @@ TEST_F(analyze_statement_delete_test, simple) {
     }
     EXPECT_EQ(first->lower(), trelation::scan::endpoint());
     EXPECT_EQ(first->upper(), trelation::scan::endpoint());
-    EXPECT_EQ(first->limit(), std::nullopt);
+    EXPECT_FALSE(first->row_slice());
 
     auto last = find_last<trelation::write>(graph);
     ASSERT_TRUE(last);

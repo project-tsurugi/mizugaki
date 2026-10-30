@@ -1573,7 +1573,7 @@ TEST_F(analyze_query_expression_aggregate_test, group_by_order_by) {
     ASSERT_EQ(limit_columns.size(), 1);
     EXPECT_EQ(limit_columns[0].value(), vref(aggregation_columns[0].destination()));
 
-    EXPECT_EQ(limit.count(), std::nullopt);
+    EXPECT_FALSE(limit.row_slice());
     ASSERT_EQ(limit.group_keys().size(), 0);
     ASSERT_EQ(limit.sort_keys().size(), 1);
     EXPECT_EQ(limit.sort_keys()[0], limit_columns[0].variable());
