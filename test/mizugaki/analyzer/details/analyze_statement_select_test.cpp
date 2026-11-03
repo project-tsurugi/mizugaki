@@ -125,7 +125,7 @@ TEST_F(analyze_statement_select_test, order_by) {
     auto last = find_last<trelation::emit>(graph);
     ASSERT_TRUE(last);
     EXPECT_EQ(last->ordering(), (trelation::emit::ordering_type {
-            trelation::emit_ordering::preserve_input,
+            trelation::emit_ordering::preserve_output,
     }));
 }
 

@@ -171,7 +171,7 @@ public:
         }
         trelation::emit::ordering_type ordering {};
         if (result.explicitly_ordered()) {
-            ordering.insert(trelation::emit_ordering::preserve_input);
+            ordering.insert(trelation::emit_ordering::preserve_output);
         }
         auto&& op = graph->insert(context_.create<trelation::emit>(
                 stmt.expression()->region(),
