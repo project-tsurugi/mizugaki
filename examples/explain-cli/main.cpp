@@ -8,6 +8,9 @@
 #include <takatori/type/int.h>
 #include <takatori/type/decimal.h>
 #include <takatori/type/character.h>
+#include <takatori/type/date.h>
+#include <takatori/type/time_of_day.h>
+#include <takatori/type/time_point.h>
 
 #include <takatori/serializer/json_printer.h>
 #include <takatori/serializer/object_acceptor.h>
@@ -42,6 +45,29 @@ static parser::sql_parser_result parse(std::string path, std::string source, par
     return result;
 }
 
+static void add_variable(
+        ::yugawara::variable::configurable_provider& provider,
+        std::string const& key,
+        std::string const& value) {
+    if (value == "int4" || value == "int" || value == "integer") {
+        provider.add({ key, ::takatori::type::int4 {} });
+    } else if (value == "int8" || value == "bigint" || value == "bigingeger") {
+        provider.add({ key, ::takatori::type::int8 {} });
+    } else if (value == "decimal") {
+        provider.add({ key, ::takatori::type::decimal {} });
+    } else if (value == "varchar") {
+        provider.add({ key, ::takatori::type::character { ::takatori::type::varying, {} } });
+    } else if (value == "date") {
+        provider.add({ key, ::takatori::type::date {} });
+    } else if (value == "time") {
+        provider.add({ key, ::takatori::type::time_of_day {} });
+    } else if (value == "timestamp") {
+        provider.add({ key, ::takatori::type::time_point {} });
+    } else {
+        throw std::runtime_error("unsupported placeholder type: " + value);
+    }
+}
+
 static std::shared_ptr<::yugawara::variable::configurable_provider> parse_variables(std::string const& sequence) {
     auto result = std::make_shared<::yugawara::variable::configurable_provider>();
 
@@ -63,17 +89,7 @@ static std::shared_ptr<::yugawara::variable::configurable_provider> parse_variab
                     c = static_cast<char>(c - 'A' + 'a');
                 }
             }
-            if (value == "int4" || value == "int" || value == "integer") {
-                result->add({ key, ::takatori::type::int4 {} });
-            } else if (value == "int8" || value == "bigint" || value == "bigingeger") {
-                result->add({ key, ::takatori::type::int8 {} });
-            } else if (value == "decimal") {
-                result->add({ key, ::takatori::type::decimal {} });
-            } else if (value == "varchar") {
-                result->add({ key, ::takatori::type::character { ::takatori::type::varying, {} } });
-            } else {
-                throw std::runtime_error("unsupported placeholder type: " + value);
-            }
+            add_variable(*result, key, value);
         } else {
             throw std::runtime_error("invalid placeholder definition: " + pair);
         }

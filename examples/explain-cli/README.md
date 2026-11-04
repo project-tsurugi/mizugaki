@@ -26,6 +26,9 @@ Available options:
     * `bigint`
     * `decimal`
     * `varchar`
+    * `date`
+    * `time`
+    * `timestamp`
 * `-features=<runtime feature specification>`
   * configure the runtime features of the compiler
   * format: `[all|none,]<+|-><feature name>,<+|-><feature name>,...`
