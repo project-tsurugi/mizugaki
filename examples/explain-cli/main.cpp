@@ -6,6 +6,7 @@
 #include <string_view>
 
 #include <takatori/type/int.h>
+#include <takatori/type/float.h>
 #include <takatori/type/decimal.h>
 #include <takatori/type/character.h>
 #include <takatori/type/date.h>
@@ -53,6 +54,10 @@ static void add_variable(
         provider.add({ key, ::takatori::type::int4 {} });
     } else if (value == "int8" || value == "bigint" || value == "bigingeger") {
         provider.add({ key, ::takatori::type::int8 {} });
+    } else if (value == "float4" || value == "real") {
+        provider.add({ key, ::takatori::type::float4 {} });
+    } else if (value == "float8" || value == "double") {
+        provider.add({ key, ::takatori::type::float8 {} });
     } else if (value == "decimal") {
         provider.add({ key, ::takatori::type::decimal {} });
     } else if (value == "varchar") {

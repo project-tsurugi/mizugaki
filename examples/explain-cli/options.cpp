@@ -276,17 +276,23 @@ std::shared_ptr<::yugawara::aggregate::provider> set_function_provider() {
             std::make_shared<tt::time_of_day>(),
             std::make_shared<tt::time_point>(),
     };
-    auto add = [&](std::string_view name, declaration::type_pointer const& return_type, declaration::type_pointer const& parameter_type) {
+    auto add = [&](
+            declaration::name_type name,
+            declaration::type_pointer const& return_type,
+            declaration::type_pointer const& parameter_type,
+            bool incremental = true) {
         provider->add(std::make_shared<declaration>(
                 ++definition_id,
-                declaration::name_type { name },
+                std::move(name),
                 return_type,
                 std::vector { parameter_type },
-                true));
+                incremental));
     };
     auto count_type = std::make_shared<tt::int8>();
+    auto count_distinct_name = std::string { "count" }.append(declaration::name_suffix_distinct);
     auto add_comparable = [&](declaration::type_pointer const& type) {
         add("count", count_type, type); // COUNT(T)
+        add(count_distinct_name, count_type, type, false); // COUNT(DISTINCT T)
         add("min", type, type); // MIN(T)
         add("max", type, type); // MAX(T)
     };
