@@ -66,6 +66,10 @@ On the other hand, this never generates a hidden primary key column for the tabl
     * `CLOB`
 * aggregate functions
   * `COUNT(*)`
+  * `COUNT(T)`, `MIN(T)`, `MAX(T)`
+    * `INT`, `BIGINT`, `REAL`, `DOUBLE`, `DECIMAL(*, *)`, `VARCHAR(*)`, `DATE`, `TIME`, `TIMESTAMP`
+  * `SUM(T)`
+    * `INT`, `BIGINT`, `REAL`, `DOUBLE`, `DECIMAL(*, *)`
 * table-valued functions
   * `tvf`
     * parameters:

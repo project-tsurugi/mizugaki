@@ -5,10 +5,14 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include <takatori/type/primitive.h>
 #include <takatori/type/character.h>
 #include <takatori/type/decimal.h>
+#include <takatori/type/date.h>
+#include <takatori/type/time_of_day.h>
+#include <takatori/type/time_point.h>
 #include <takatori/type/octet.h>
 #include <takatori/type/lob.h>
 #include <takatori/type/table.h>
@@ -246,7 +250,8 @@ std::shared_ptr<::yugawara::function::provider> function_provider() {
 }
 
 std::shared_ptr<::yugawara::aggregate::provider> set_function_provider() {
-    auto definition_id = ::yugawara::aggregate::declaration::minimum_user_function_id;
+    using ::yugawara::aggregate::declaration;
+    auto definition_id = declaration::minimum_user_function_id;
     namespace tt = ::takatori::type;
     auto provider = std::make_shared<::yugawara::aggregate::configurable_provider>();
     provider->add({ // COUNT(*)
@@ -256,6 +261,42 @@ std::shared_ptr<::yugawara::aggregate::provider> set_function_provider() {
             {},
             true,
     });
+
+    // NOTE: a subset of the built-in set functions in jogasaki
+    std::vector<declaration::type_pointer> const numeric_types {
+            std::make_shared<tt::int4>(),
+            std::make_shared<tt::int8>(),
+            std::make_shared<tt::float4>(),
+            std::make_shared<tt::float8>(),
+            std::make_shared<tt::decimal>(),
+    };
+    std::vector<declaration::type_pointer> const other_types {
+            std::make_shared<tt::character>(tt::varying),
+            std::make_shared<tt::date>(),
+            std::make_shared<tt::time_of_day>(),
+            std::make_shared<tt::time_point>(),
+    };
+    auto add = [&](std::string_view name, declaration::type_pointer const& return_type, declaration::type_pointer const& parameter_type) {
+        provider->add(std::make_shared<declaration>(
+                ++definition_id,
+                declaration::name_type { name },
+                return_type,
+                std::vector { parameter_type },
+                true));
+    };
+    auto count_type = std::make_shared<tt::int8>();
+    auto add_comparable = [&](declaration::type_pointer const& type) {
+        add("count", count_type, type); // COUNT(T)
+        add("min", type, type); // MIN(T)
+        add("max", type, type); // MAX(T)
+    };
+    for (auto&& type : numeric_types) {
+        add_comparable(type);
+        add("sum", type, type); // SUM(T)
+    }
+    for (auto&& type : other_types) {
+        add_comparable(type);
+    }
     return provider;
 }
 
