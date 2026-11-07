@@ -1005,6 +1005,31 @@ TEST_F(analyze_query_expression_select_test, order_by_literal) {
     });
 }
 
+TEST_F(analyze_query_expression_select_test, order_by_null_location) {
+    auto table = install_table("testing");
+    invalid(sql_analyzer_code::unsupported_feature, ast::query::query {
+            {
+                    ast::query::select_column { vref(id("v")) },
+            },
+            {
+                    ast::table::table_reference {
+                            id("testing"),
+                    }
+            },
+            {},
+            {},
+            {},
+            {
+                    {
+                            vref(id("v")),
+                            {},
+                            {},
+                            ast::common::null_ordering_specification::last,
+                    },
+            },
+    });
+}
+
 TEST_F(analyze_query_expression_select_test, limit) {
     auto table = install_table("testing");
     trelation::graph_type graph {};

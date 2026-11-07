@@ -254,6 +254,7 @@ public:
                             sql_analyzer_code::unsupported_feature,
                             "NULLS FIRST/LAST in ORDER BY is not yet supported",
                             spec.region());
+                    return {};
                 }
                 auto result = analyze_scalar_expression(context_, *spec.key(), scope);
                 if (!result) {
