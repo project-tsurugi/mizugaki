@@ -140,6 +140,7 @@ DEFINE_string(file, "", "input file path"); // NOLINT
 DEFINE_string(text, "", "input text"); // NOLINT
 DEFINE_string(placeholders, "", "placeholder definitions (name:type, separated by ,)"); // NOLINT
 DEFINE_string(features, "", "runtime features (optional all or none, and then +name or -name, separated by ,)"); // NOLINT
+DEFINE_string(index_features, "", "additional features of the secondary indices declared by CREATE INDEX (+name, separated by ,)"); // NOLINT
 
 static int do_main() {
     std::string path;
@@ -161,7 +162,7 @@ static int do_main() {
     }
 
     auto variables = parse_variables(FLAGS_placeholders);
-    auto compiler_opts = compiler_options(FLAGS_features);
+    auto compiler_opts = compiler_options(FLAGS_features, FLAGS_index_features);
 
     // parse
     auto parser_opts = parser_options();

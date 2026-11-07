@@ -11,6 +11,11 @@ namespace mizugaki::examples::explain_cli {
 using feature_type = ::yugawara::storage::index_feature;
 
 // NOTE: the index definitions follow the ones in jogasaki, except it never generates the primary key column
+example_prototype_processor::example_prototype_processor(
+        ::yugawara::storage::index_feature_set secondary_index_features) noexcept :
+    secondary_index_features_ { secondary_index_features }
+{}
+
 bool example_prototype_processor::ensure(
         ::yugawara::schema::declaration const& location,
         ::yugawara::storage::table& table_prototype,
@@ -45,10 +50,9 @@ bool example_prototype_processor::ensure(
         diagnostic_consumer_type const& diagnostic_consumer) {
     (void) location;
     (void) diagnostic_consumer;
-    secondary_index_prototype.features() = {
-        feature_type::find,
-        feature_type::scan,
-    };
+    secondary_index_prototype.features() = secondary_index_features_;
+    secondary_index_prototype.features().insert(feature_type::find);
+    secondary_index_prototype.features().insert(feature_type::scan);
     return true;
 }
 

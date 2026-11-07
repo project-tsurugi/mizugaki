@@ -137,9 +137,40 @@ static ::yugawara::runtime_feature_set parse_runtime_features(std::string_view s
     return result;
 }
 
-::yugawara::compiler_options compiler_options(std::string_view runtime_features) {
+static ::yugawara::storage::index_feature find_index_feature(std::string_view name) {
+    // NOTE: index_feature_set covers all index_feature values, which start from 0
+    for (std::size_t i = 0; i < ::yugawara::storage::index_feature_set::iterator::number_of_universe; ++i) {
+        auto feature = static_cast<::yugawara::storage::index_feature>(i);
+        if (::yugawara::storage::to_string_view(feature) == name) {
+            return feature;
+        }
+    }
+    throw std::runtime_error("unknown index feature: " + std::string { name });
+}
+
+static ::yugawara::storage::index_feature_set parse_index_features(std::string_view sequence) {
+    ::yugawara::storage::index_feature_set result {};
+
+    // parse "+name" separated by ','
+    std::size_t start = 0;
+    while (start < sequence.size()) {
+        auto end = sequence.find(',', start);
+        if (end == std::string_view::npos) {
+            end = sequence.size();
+        }
+        auto element = sequence.substr(start, end - start);
+        if (element.size() < 2 || element[0] != '+') {
+            throw std::runtime_error("invalid index feature specification: " + std::string { element });
+        }
+        result.insert(find_index_feature(element.substr(1)));
+        start = end + 1;
+    }
+    return result;
+}
+
+::yugawara::compiler_options compiler_options(std::string_view runtime_features, std::string_view index_features) {
     ::yugawara::compiler_options options { parse_runtime_features(runtime_features) };
-    options.storage_processor(std::make_shared<example_prototype_processor>());
+    options.storage_processor(std::make_shared<example_prototype_processor>(parse_index_features(index_features)));
     return options;
 }
 

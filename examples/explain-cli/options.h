@@ -21,6 +21,8 @@ namespace mizugaki::examples::explain_cli {
 [[nodiscard]] analyzer::sql_analyzer_options analyzer_options(
         std::shared_ptr<::yugawara::schema::declaration> default_schema);
 
-[[nodiscard]] ::yugawara::compiler_options compiler_options(std::string_view runtime_features);
+[[nodiscard]] ::yugawara::compiler_options compiler_options(
+        std::string_view runtime_features,
+        std::string_view index_features);
 
 } // namespace mizugaki::examples::explain_cli

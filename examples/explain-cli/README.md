@@ -40,6 +40,10 @@ Available options:
   * available feature names are the names of `yugawara::runtime_feature` (e.g. `index_join`), and an unknown name shows the list of them
   * please use the `-features=...` form, because the value may start with `-`
   * note that, the runtime features may differ from the ones of the actual database
+* `-index_features=<index feature specification>`
+  * add features to the secondary indices declared by `CREATE INDEX`
+  * format: `+<feature name>,+<feature name>,...`
+  * available feature names are the names of `yugawara::storage::index_feature` (e.g. `ties_ordered_by_primary_key`)
 * `-echo`
   * print the processing SQL snippet
 * `-quiet`
