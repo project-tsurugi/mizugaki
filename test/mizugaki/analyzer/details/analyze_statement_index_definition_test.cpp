@@ -261,6 +261,25 @@ TEST_F(analyze_statement_index_definition_test, invalid_unique_option) {
     });
 }
 
+TEST_F(analyze_statement_index_definition_test, invalid_parameter) {
+    auto table = install_table("testing_table");
+    invalid(sql_analyzer_code::unsupported_feature, ast::statement::index_definition {
+            id("testing"),
+            id("testing_table"),
+            {
+                    {
+                            id("v"),
+                    }
+            },
+            {},
+            {},
+            {},
+            {
+                    { id("testing_parameter"), literal(number("1")) },
+            },
+    });
+}
+
 TEST_F(analyze_statement_index_definition_test, target_not_found) {
     invalid(sql_analyzer_code::table_not_found, ast::statement::index_definition {
             id("testing"),
