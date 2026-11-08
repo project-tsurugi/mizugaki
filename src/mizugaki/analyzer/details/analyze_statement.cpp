@@ -1271,6 +1271,14 @@ public:
         ::tsl::hopscotch_set<::yugawara::storage::column const*> saw_columns { source_keys.size() };
         auto index_keys = create_vector<::yugawara::storage::index::key>(source_keys.size());
         for (auto&& key : source_keys) {
+            if (auto&& c = key.collation()) {
+                // FIXME: impl COLLATE for indices
+                context_.report(
+                        sql_analyzer_code::unsupported_feature,
+                        "index key element with COLLATE is not supported",
+                        c->region());
+                return {};
+            }
             if (auto&& p = key.null_location()) {
                 // FIXME: impl NULLS FIRST/LAST for indices
                 context_.report(

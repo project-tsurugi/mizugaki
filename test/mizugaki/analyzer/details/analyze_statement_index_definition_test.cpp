@@ -352,6 +352,20 @@ TEST_F(analyze_statement_index_definition_test, column_invalid_expression) {
     });
 }
 
+TEST_F(analyze_statement_index_definition_test, column_collate) {
+    auto table = install_table("testing_table");
+    invalid(sql_analyzer_code::unsupported_feature, ast::statement::index_definition {
+            id("testing"),
+            id("testing_table"),
+            {
+                    {
+                            vref(id("v")),
+                            id("testing_collation"),
+                    }
+            },
+    });
+}
+
 TEST_F(analyze_statement_index_definition_test, column_not_variable) {
     auto table = install_table("testing_table");
     invalid(ast::statement::index_definition {
