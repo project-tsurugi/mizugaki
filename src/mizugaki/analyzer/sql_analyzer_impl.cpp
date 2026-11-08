@@ -19,7 +19,8 @@ impl::result_type impl::process(
     using namespace details;
     auto finalizer = context_.initialize(options, source, comments, placeholders, host_parameters);
     auto result = analyze_statement(context_, statement);
-    if (std::holds_alternative<erroneous_result_type>(result)) {
+    // NOTE: reporting a diagnostic means the analysis has failed, even if the result is available
+    if (std::holds_alternative<erroneous_result_type>(result) || !context_.diagnostics().empty()) {
         return std::move(context_.diagnostics());
     }
     if (std::holds_alternative<execution_plan_result_type>(result)) {
