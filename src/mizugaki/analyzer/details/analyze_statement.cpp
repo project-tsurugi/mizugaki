@@ -1259,6 +1259,7 @@ public:
                     sql_analyzer_code::malformed_syntax,
                     "index parameters are not supported yet",
                     constraint.parameters().at(0).name()->region());
+            return {};
         }
 
         query_scope scope {};
@@ -1382,6 +1383,7 @@ public:
                     sql_analyzer_code::unsupported_feature,
                     "index parameters are not supported yet",
                     stmt.parameters().at(0).name()->region());
+            return {};
         }
 
         // check existing
