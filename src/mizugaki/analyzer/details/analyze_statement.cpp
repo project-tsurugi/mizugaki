@@ -690,6 +690,27 @@ public:
         return write_keys;
     }
 
+    template<class TName>
+    [[nodiscard]] bool check_constraint_name(::tsl::hopscotch_set<std::string>& saw, TName const& name) {
+        if (!name) {
+            return true;
+        }
+        auto normalized = normalize_identifier(context_, name->last_name(), name_kind::relation);
+        auto [iter, success] = saw.insert(normalized);
+        (void) iter;
+        if (!success) {
+            context_.report(
+                    sql_analyzer_code::constraint_already_exists,
+                    string_builder {}
+                            << "constraint is already defined: "
+                            << normalized
+                            << string_builder::to_string,
+                    name->region());
+            return false;
+        }
+        return true;
+    }
+
     [[nodiscard]] result_type operator()(ast::statement::table_definition const& stmt) { // NOLINT(*-function-cognitive-complexity)
         // NOTE: TEMPORARY is ignored for now, and this creates a regular table.
         // We do not reject it, because users may write it in advance to work well when temporary tables become available.
@@ -734,6 +755,7 @@ public:
         table_columns.reserve(stmt.elements().size());
         saw_columns.reserve(stmt.elements().size());
         optional_ptr<::yugawara::storage::column const> primary_key_column {};
+        ::tsl::hopscotch_set<std::string> saw_constraints {};
         for (auto&& element : stmt.elements()) {
             if (element->node_kind() != ast::statement::table_element_kind::column_definition) {
                 continue;
@@ -769,6 +791,9 @@ public:
             saw_columns.insert(prototype->simple_name());
             bool saw_nullity = false;
             for (auto&& constraint_def : column.constraints()) {
+                if (!check_constraint_name(saw_constraints, constraint_def.name())) {
+                    return {};
+                }
                 // NOTE: restricted combinations of column constraints
                 // - PRIMARY KEY + PRIMARY KEY
                 // - PRIMARY KEY + NULL
@@ -932,6 +957,9 @@ public:
                 continue;
             }
             auto&& constraint_def = unsafe_downcast<ast::statement::table_constraint_definition>(*element);
+            if (!check_constraint_name(saw_constraints, constraint_def.name())) {
+                return {};
+            }
             auto&& constraint = *constraint_def.body();
             using kind = ast::statement::constraint_kind;
             switch (constraint.node_kind()) {

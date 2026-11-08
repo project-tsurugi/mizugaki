@@ -87,6 +87,9 @@ enum class sql_analyzer_code {
     /// @brief the primary index is already present.
     primary_index_already_exists,
 
+    /// @brief the constraint with the same name is already present.
+    constraint_already_exists,
+
     /// @brief the target constraint is invalid.
     invalid_constraint,
 
@@ -173,6 +176,7 @@ inline constexpr std::string_view to_string_view(sql_analyzer_code value) noexce
         case kind::primary_index_not_found: return "primary_index_not_found"sv;
         case kind::primary_index_already_exists: return "primary_index_already_exists"sv;
 
+        case kind::constraint_already_exists: return "constraint_already_exists"sv;
         case kind::invalid_constraint: return "invalid_constraint"sv;
 
         case kind::invalid_sequence_value: return "invalid_sequence_value"sv;

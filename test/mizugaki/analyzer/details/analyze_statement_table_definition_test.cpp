@@ -1337,6 +1337,103 @@ TEST_F(analyze_statement_table_definition_test, table_primary_key_parameter) {
     });
 }
 
+TEST_F(analyze_statement_table_definition_test, constraint_name_distinct) {
+    auto r = analyze_statement(context(), ast::statement::table_definition {
+            id("testing"),
+            {
+                    ast::statement::column_definition {
+                            id("c1"),
+                            ast::type::simple { ast::type::kind::integer },
+                            {
+                                    ast::statement::column_constraint_definition {
+                                            ast::statement::key_constraint {
+                                                    ast::statement::constraint_kind::primary_key,
+                                            },
+                                            id("n1"),
+                                    },
+                            },
+                    },
+                    ast::statement::column_definition {
+                            id("c2"),
+                            ast::type::simple { ast::type::kind::integer },
+                            {
+                                    ast::statement::column_constraint_definition {
+                                            ast::statement::simple_constraint {
+                                                    ast::statement::constraint_kind::not_null,
+                                            },
+                                            id("n2"),
+                                    },
+                            },
+                    },
+            },
+    });
+    ASSERT_TRUE(std::get_if<statement_result_type>(&r)) << diagnostics();
+    expect_no_error();
+}
+
+TEST_F(analyze_statement_table_definition_test, constraint_name_duplicate_column) {
+    invalid(sql_analyzer_code::constraint_already_exists, ast::statement::table_definition {
+            id("testing"),
+            {
+                    ast::statement::column_definition {
+                            id("c1"),
+                            ast::type::simple { ast::type::kind::integer },
+                            {
+                                    ast::statement::column_constraint_definition {
+                                            ast::statement::key_constraint {
+                                                    ast::statement::constraint_kind::primary_key,
+                                            },
+                                            id("n"),
+                                    },
+                            },
+                    },
+                    ast::statement::column_definition {
+                            id("c2"),
+                            ast::type::simple { ast::type::kind::integer },
+                            {
+                                    ast::statement::column_constraint_definition {
+                                            ast::statement::simple_constraint {
+                                                    ast::statement::constraint_kind::not_null,
+                                            },
+                                            id("n"),
+                                    },
+                            },
+                    },
+            },
+    });
+}
+
+TEST_F(analyze_statement_table_definition_test, constraint_name_duplicate_column_and_table) {
+    invalid(sql_analyzer_code::constraint_already_exists, ast::statement::table_definition {
+            id("testing"),
+            {
+                    ast::statement::column_definition {
+                            id("c1"),
+                            ast::type::simple { ast::type::kind::integer },
+                            {
+                                    ast::statement::column_constraint_definition {
+                                            ast::statement::simple_constraint {
+                                                    ast::statement::constraint_kind::not_null,
+                                            },
+                                            id("n"),
+                                    },
+                            },
+                    },
+                    ast::statement::table_constraint_definition {
+                            ast::statement::key_constraint {
+                                    ast::statement::constraint_kind::primary_key,
+                                    {
+                                            {
+                                                    vref(id("c1")),
+                                            }
+                                    },
+                            },
+                            id("n"),
+                    },
+            },
+    });
+}
+
 TEST_F(analyze_statement_table_definition_test, table_primary_key_column_not_variable) {
     invalid(ast::statement::table_definition {
             id("testing"),
