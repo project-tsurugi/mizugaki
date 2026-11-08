@@ -217,6 +217,22 @@ TEST_F(analyze_scalar_expression_test, cast_expression_invalid_type) {
     });
 }
 
+TEST_F(analyze_scalar_expression_test, cast_expression_treat) {
+    invalid(sql_analyzer_code::unsupported_feature, ast::scalar::cast_expression {
+            ast::scalar::cast_operator::treat,
+            literal(string("'x'")),
+            ast::type::character_string { ast::type::kind::character_varying },
+    });
+}
+
+TEST_F(analyze_scalar_expression_test, cast_expression_generalize) {
+    invalid(sql_analyzer_code::unsupported_feature, ast::scalar::cast_expression {
+            ast::scalar::cast_operator::generalize,
+            literal(string("'x'")),
+            ast::type::character_string { ast::type::kind::character_varying },
+    });
+}
+
 TEST_F(analyze_scalar_expression_test, unary_expression_plus) {
     auto from = ast::scalar::unary_operator::plus;
     auto to = tscalar::unary_operator::plus;

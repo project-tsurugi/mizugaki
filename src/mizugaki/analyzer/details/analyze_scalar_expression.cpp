@@ -239,6 +239,7 @@ public:
                             << expr.operator_kind()
                             << string_builder::to_string,
                     expr.operator_kind().region());
+            return {};
         }
         auto operand = process(*expr.operand(), {});
         if (!operand) {
