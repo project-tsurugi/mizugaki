@@ -777,6 +777,22 @@ public:
                 using kind = ast::statement::constraint_kind;
                 switch (constraint.node_kind()) {
                     case kind::primary_key:
+                        if (auto&& values = unsafe_downcast<ast::statement::key_constraint>(constraint).values();
+                                !values.empty()) {
+                            context_.report(
+                                    sql_analyzer_code::unsupported_feature,
+                                    "index values are not supported yet",
+                                    values.at(0)->region());
+                            return {};
+                        }
+                        if (auto&& parameters = unsafe_downcast<ast::statement::key_constraint>(constraint).parameters();
+                                !parameters.empty()) {
+                            context_.report(
+                                    sql_analyzer_code::unsupported_feature,
+                                    "index parameters are not supported yet",
+                                    parameters.at(0).name()->region());
+                            return {};
+                        }
                         // capture primary indices
                         if (primary_key_column) {
                             context_.report(

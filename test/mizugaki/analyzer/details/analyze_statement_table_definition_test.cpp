@@ -717,6 +717,53 @@ TEST_F(analyze_statement_table_definition_test, column_primary_key_multiple) {
     });
 }
 
+TEST_F(analyze_statement_table_definition_test, column_constraint_primary_key_include) {
+    invalid(sql_analyzer_code::unsupported_feature, ast::statement::table_definition {
+            id("testing"),
+            {
+                    ast::statement::column_definition {
+                            id("c1"),
+                            ast::type::simple { ast::type::kind::integer },
+                            {
+                                    ast::statement::key_constraint {
+                                            ast::statement::constraint_kind::primary_key,
+                                            {},
+                                            {
+                                                    vref(id("c2")),
+                                            },
+                                    },
+                            },
+                    },
+                    ast::statement::column_definition {
+                            id("c2"),
+                            ast::type::simple { ast::type::kind::integer },
+                    },
+            },
+    });
+}
+
+TEST_F(analyze_statement_table_definition_test, column_constraint_primary_key_parameter) {
+    invalid(sql_analyzer_code::unsupported_feature, ast::statement::table_definition {
+            id("testing"),
+            {
+                    ast::statement::column_definition {
+                            id("c1"),
+                            ast::type::simple { ast::type::kind::integer },
+                            {
+                                    ast::statement::key_constraint {
+                                            ast::statement::constraint_kind::primary_key,
+                                            {},
+                                            {},
+                                            {
+                                                    { id("testing_parameter"), literal(number("1")) },
+                                            },
+                                    },
+                            },
+                    },
+            },
+    });
+}
+
 TEST_F(analyze_statement_table_definition_test, column_constraint_primary_key_vs_primary_key) {
     invalid(sql_analyzer_code::primary_index_already_exists, ast::statement::table_definition {
             id("testing"),
