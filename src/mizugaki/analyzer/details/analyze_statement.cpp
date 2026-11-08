@@ -691,6 +691,9 @@ public:
     }
 
     [[nodiscard]] result_type operator()(ast::statement::table_definition const& stmt) { // NOLINT(*-function-cognitive-complexity)
+        // NOTE: TEMPORARY is ignored for now, and this creates a regular table.
+        // We do not reject it, because users may write it in advance to work well when temporary tables become available.
+
         // check features
         if (!stmt.parameters().empty()) {
             context_.report(
