@@ -11,6 +11,8 @@ using symbol_kind_type = sql_scanner::symbol_kind_type;
 TEST_F(sql_scanner_test, is_contextual_keyword) {
     EXPECT_TRUE(is_contextual_keyword(symbol_kind_type::S_ASC));
     EXPECT_TRUE(is_contextual_keyword(symbol_kind_type::S_DESC));
+    EXPECT_TRUE(is_contextual_keyword(symbol_kind_type::S_CATALOG));
+    EXPECT_TRUE(is_contextual_keyword(symbol_kind_type::S_SERVER));
 
     EXPECT_FALSE(is_contextual_keyword(symbol_kind_type::S_REGULAR_IDENTIFIER));
     EXPECT_FALSE(is_contextual_keyword(symbol_kind_type::S_DELIMITED_IDENTIFIER));

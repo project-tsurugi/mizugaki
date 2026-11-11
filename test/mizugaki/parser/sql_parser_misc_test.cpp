@@ -14,6 +14,8 @@
 #include <mizugaki/ast/query/table_reference.h>
 #include <mizugaki/ast/query/table_value_constructor.h>
 
+#include <mizugaki/ast/name/qualified.h>
+
 #include "utils.h"
 
 namespace mizugaki::parser {
@@ -168,6 +170,40 @@ TEST_F(sql_parser_misc_test, keyword_value) {
 
     EXPECT_EQ(extract(result), (query::table_reference {
             name::simple { "VALUE" },
+    }));
+}
+
+TEST_F(sql_parser_misc_test, keyword_catalog) {
+    sql_parser parser;
+    auto result = parser("-", R"(TABLE CATALOG;)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (query::table_reference {
+            name::simple { "CATALOG" },
+    }));
+}
+
+TEST_F(sql_parser_misc_test, keyword_server) {
+    sql_parser parser;
+    auto result = parser("-", R"(TABLE SERVER;)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (query::table_reference {
+            name::simple { "SERVER" },
+    }));
+}
+
+TEST_F(sql_parser_misc_test, keyword_catalog_qualifier) {
+    sql_parser parser;
+    auto result = parser("-", R"(TABLE catalog.server.t;)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (query::table_reference {
+            name::qualified {
+                    name::simple { "catalog" },
+                    name::simple { "server" },
+                    name::simple { "t" },
+            },
     }));
 }
 

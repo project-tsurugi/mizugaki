@@ -229,6 +229,7 @@ UTF8_CHAR {ASCII}|{UTF8_2}{U}|{UTF8_3}{U}{U}|{UTF8_4}{U}{U}{U}
 "CASCADED" { TRACE_RETURN parser_type::make_CASCADED(location()); }
 "CASE" { TRACE_RETURN parser_type::make_CASE(location()); }
 "CAST" { TRACE_RETURN parser_type::make_CAST(location()); }
+"CATALOG" { TRACE_RETURN parser_type::make_CATALOG(get_image(driver), location()); }
 "CHAR" { TRACE_RETURN parser_type::make_CHAR(location()); }
 "CHARACTER" { TRACE_RETURN parser_type::make_CHARACTER(location()); }
 "CHECK" { TRACE_RETURN parser_type::make_CHECK(location()); }
@@ -381,6 +382,7 @@ UTF8_CHAR {ASCII}|{UTF8_2}{U}|{UTF8_3}{U}{U}|{UTF8_4}{U}{U}{U}
 "SECOND" { TRACE_RETURN parser_type::make_SECOND(location()); }
 "SELECT" { TRACE_RETURN parser_type::make_SELECT(location()); }
 "SEQUENCE" { TRACE_RETURN parser_type::make_SEQUENCE(get_image(driver), location()); }
+"SERVER" { TRACE_RETURN parser_type::make_SERVER(get_image(driver), location()); }
 "SESSION_USER" { TRACE_RETURN parser_type::make_SESSION_USER(location()); }
 "SET" { TRACE_RETURN parser_type::make_SET(location()); }
 "SMALLINT" { TRACE_RETURN parser_type::make_SMALLINT(location()); }

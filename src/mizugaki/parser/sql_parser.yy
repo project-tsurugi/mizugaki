@@ -493,7 +493,7 @@
 %token CASCADED "CASCADED"
 %token CASE "CASE"
 %token CAST "CAST"
-// %token <ast::common::chars> CATALOG "CATALOG"
+%token <ast::common::chars> CATALOG "CATALOG"
 %token CHAR "CHAR"
 %token CHARACTER "CHARACTER"
 %token CHECK "CHECK"
@@ -700,6 +700,7 @@
 // %token <ast::common::chars> SECTION "SECTION"
 %token SELECT "SELECT"
 %token <ast::common::chars> SEQUENCE "SEQUENCE"
+%token <ast::common::chars> SERVER "SERVER"
 // %token <ast::common::chars> SESSION "SESSION"
 %token SESSION_USER "SESSION_USER"
 %token SET "SET"
@@ -4920,4 +4921,6 @@ contextual_identifier
     | LAST[t] { $$ = driver.to_regular_identifier($t, @$); }
     | ORDINALITY[t] { $$ = driver.to_regular_identifier($t, @$); }
     | VALUE[t] { $$ = driver.to_regular_identifier($t, @$); }
+    | CATALOG[t] { $$ = driver.to_regular_identifier($t, @$); }
+    | SERVER[t] { $$ = driver.to_regular_identifier($t, @$); }
     ;
