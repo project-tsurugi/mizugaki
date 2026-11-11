@@ -8,6 +8,8 @@
 #include <takatori/statement/truncate_table.h>
 #include <takatori/statement/grant_table.h>
 #include <takatori/statement/revoke_table.h>
+#include <takatori/statement/create_foreign_catalog.h>
+#include <takatori/statement/drop_foreign_catalog.h>
 
 #include <yugawara/binding/extract.h>
 
@@ -15,6 +17,7 @@
 #include <yugawara/storage/index.h>
 
 #include <mizugaki/ast/statement/drop_statement.h>
+#include <mizugaki/ast/statement/foreign_catalog_definition.h>
 #include <mizugaki/ast/statement/grant_privilege_statement.h>
 #include <mizugaki/ast/statement/revoke_privilege_statement.h>
 
@@ -890,6 +893,137 @@ TEST_F(analyze_statement_ddl_test, revoke_table_all_users) {
             EXPECT_EQ(aps[0].action_kind(), tstatement::table_action_kind::control);
         }
     }
+}
+
+TEST_F(analyze_statement_ddl_test, create_foreign_catalog_simple) {
+    auto r = analyze_statement(context(), ast::statement::foreign_catalog_definition {
+            id("remote_catalog"),
+            id("remote_server"),
+    });
+    auto alternative = std::get_if<statement_result_type>(&r);
+    ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
+    ASSERT_EQ((*alternative)->kind(), tstatement::statement_kind::create_foreign_catalog);
+
+    auto&& stmt = downcast<tstatement::create_foreign_catalog>(**alternative);
+    EXPECT_EQ(stmt.catalog_name(), "remote_catalog");
+    EXPECT_EQ(stmt.server_name(), "remote_server");
+    EXPECT_EQ(stmt.options(), tstatement::create_foreign_catalog::option_set_type {});
+}
+
+TEST_F(analyze_statement_ddl_test, create_foreign_catalog_options) {
+    auto r = analyze_statement(context(), ast::statement::foreign_catalog_definition {
+            id("remote_catalog"),
+            id("remote_server"),
+            {
+                    ast::statement::foreign_catalog_definition_option::if_not_exists,
+                    ast::statement::foreign_catalog_definition_option::if_server_exists,
+            },
+    });
+    auto alternative = std::get_if<statement_result_type>(&r);
+    ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
+    auto&& stmt = downcast<tstatement::create_foreign_catalog>(**alternative);
+    EXPECT_EQ(stmt.options(), (tstatement::create_foreign_catalog::option_set_type {
+            tstatement::create_foreign_catalog_option_kind::if_catalog_not_exists,
+            tstatement::create_foreign_catalog_option_kind::if_server_exists,
+    }));
+}
+
+TEST_F(analyze_statement_ddl_test, create_foreign_catalog_regular_identifiers) {
+    auto r = analyze_statement(context(), ast::statement::foreign_catalog_definition {
+            id("REMOTE_CATALOG"),
+            id("REMOTE_SERVER"),
+    });
+    auto alternative = std::get_if<statement_result_type>(&r);
+    ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
+    auto&& stmt = downcast<tstatement::create_foreign_catalog>(**alternative);
+    EXPECT_EQ(stmt.catalog_name(), "remote_catalog");
+    EXPECT_EQ(stmt.server_name(), "remote_server");
+}
+
+TEST_F(analyze_statement_ddl_test, create_foreign_catalog_delimited_identifiers) {
+    auto r = analyze_statement(context(), ast::statement::foreign_catalog_definition {
+            ast::name::simple { "Remote_Catalog" }.delimited(),
+            ast::name::simple { "Remote_Server" }.delimited(),
+    });
+    auto alternative = std::get_if<statement_result_type>(&r);
+    ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
+    auto&& stmt = downcast<tstatement::create_foreign_catalog>(**alternative);
+    EXPECT_EQ(stmt.catalog_name(), "Remote_Catalog");
+    EXPECT_EQ(stmt.server_name(), "Remote_Server");
+}
+
+TEST_F(analyze_statement_ddl_test, create_foreign_catalog_qualified_catalog) {
+    invalid(sql_analyzer_code::unsupported_feature, ast::statement::foreign_catalog_definition {
+            id("a", "remote_catalog"),
+            id("remote_server"),
+    });
+}
+
+TEST_F(analyze_statement_ddl_test, create_foreign_catalog_qualified_server) {
+    invalid(sql_analyzer_code::unsupported_feature, ast::statement::foreign_catalog_definition {
+            id("remote_catalog"),
+            id("a", "remote_server"),
+    });
+}
+
+TEST_F(analyze_statement_ddl_test, drop_foreign_catalog_simple) {
+    auto r = analyze_statement(context(), ast::statement::drop_statement {
+            ast::statement::kind::drop_foreign_catalog_statement,
+            id("remote_catalog"),
+    });
+    auto alternative = std::get_if<statement_result_type>(&r);
+    ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
+    ASSERT_EQ((*alternative)->kind(), tstatement::statement_kind::drop_foreign_catalog);
+
+    auto&& stmt = downcast<tstatement::drop_foreign_catalog>(**alternative);
+    EXPECT_EQ(stmt.catalog_name(), "remote_catalog");
+    EXPECT_EQ(stmt.options(), tstatement::drop_foreign_catalog::option_set_type {});
+}
+
+TEST_F(analyze_statement_ddl_test, drop_foreign_catalog_if_exists) {
+    auto r = analyze_statement(context(), ast::statement::drop_statement {
+            ast::statement::kind::drop_foreign_catalog_statement,
+            id("remote_catalog"),
+            {
+                    ast::statement::drop_statement_option::if_exists,
+            },
+    });
+    auto alternative = std::get_if<statement_result_type>(&r);
+    ASSERT_TRUE(alternative) << diagnostics();
+    expect_no_error();
+
+    // NOTE: unlike DROP TABLE, "IF EXISTS" is passed to the SQL engine instead of being replaced with "empty"
+    auto&& stmt = downcast<tstatement::drop_foreign_catalog>(**alternative);
+    EXPECT_EQ(stmt.options(), (tstatement::drop_foreign_catalog::option_set_type {
+            tstatement::drop_foreign_catalog_option_kind::if_catalog_exists,
+    }));
+}
+
+TEST_F(analyze_statement_ddl_test, drop_foreign_catalog_cascade) {
+    invalid(sql_analyzer_code::unsupported_feature, ast::statement::drop_statement {
+            ast::statement::kind::drop_foreign_catalog_statement,
+            id("remote_catalog"),
+            {
+                    ast::statement::drop_statement_option::cascade,
+            },
+    });
+}
+
+TEST_F(analyze_statement_ddl_test, drop_foreign_catalog_qualified) {
+    invalid(sql_analyzer_code::unsupported_feature, ast::statement::drop_statement {
+            ast::statement::kind::drop_foreign_catalog_statement,
+            id("a", "remote_catalog"),
+    });
 }
 
 } // namespace mizugaki::analyzer::details

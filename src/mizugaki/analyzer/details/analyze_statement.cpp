@@ -37,6 +37,8 @@
 #include <takatori/statement/truncate_table.h>
 #include <takatori/statement/grant_table.h>
 #include <takatori/statement/revoke_table.h>
+#include <takatori/statement/create_foreign_catalog.h>
+#include <takatori/statement/drop_foreign_catalog.h>
 #include <takatori/statement/write.h>
 
 #include <takatori/util/string_builder.h>
@@ -1521,6 +1523,84 @@ public:
 //        return {};
 //    }
 
+    [[nodiscard]] result_type operator()(ast::statement::foreign_catalog_definition const& stmt) {
+        // NOTE: the catalog name and the server name are not resolved here; the SQL engine resolves them.
+        auto catalog_name = foreign_catalog_name(*stmt.name());
+        if (!catalog_name) {
+            return {};
+        }
+        // NOTE: server names are treated as name_kind::not_specified until their own handling is decided.
+        auto server_name = simple_name(*stmt.server_name(), name_kind::not_specified, "server name");
+        if (!server_name) {
+            return {};
+        }
+        tstatement::create_foreign_catalog::option_set_type options {};
+        if (find(stmt.options(), ast::statement::foreign_catalog_definition_option::if_not_exists)) {
+            options.insert(tstatement::create_foreign_catalog_option_kind::if_catalog_not_exists);
+        }
+        if (find(stmt.options(), ast::statement::foreign_catalog_definition_option::if_server_exists)) {
+            options.insert(tstatement::create_foreign_catalog_option_kind::if_server_exists);
+        }
+        return context_.create<tstatement::create_foreign_catalog>(
+                stmt.region(),
+                std::move(*catalog_name),
+                std::move(*server_name),
+                options);
+    }
+
+    [[nodiscard]] result_type process_drop_foreign_catalog(ast::statement::drop_statement const& stmt) {
+        for (auto option : {
+                ast::statement::drop_statement_option::cascade,
+                ast::statement::drop_statement_option::restrict }) {
+            if (auto opt = find(stmt.options(), option)) {
+                context_.report(
+                        sql_analyzer_code::unsupported_feature,
+                        string_builder {}
+                                << "DROP FOREIGN CATALOG statement does not support "
+                                << option
+                                << string_builder::to_string,
+                        opt->region());
+                return {};
+            }
+        }
+        // NOTE: the catalog name is not resolved here; the SQL engine resolves it, and "IF EXISTS" is passed through.
+        auto catalog_name = foreign_catalog_name(*stmt.name());
+        if (!catalog_name) {
+            return {};
+        }
+        tstatement::drop_foreign_catalog::option_set_type options {};
+        if (find(stmt.options(), ast::statement::drop_statement_option::if_exists)) {
+            options.insert(tstatement::drop_foreign_catalog_option_kind::if_catalog_exists);
+        }
+        return context_.create<tstatement::drop_foreign_catalog>(
+                stmt.region(),
+                std::move(*catalog_name),
+                options);
+    }
+
+    [[nodiscard]] std::optional<std::string> foreign_catalog_name(ast::name::name const& name) {
+        return simple_name(name, name_kind::catalog, "foreign catalog name");
+    }
+
+    [[nodiscard]] std::optional<std::string> simple_name(
+            ast::name::name const& name,
+            name_kind kind,
+            std::string_view what) {
+        if (name.node_kind() != ast::name::kind::simple) {
+            context_.report(
+                    sql_analyzer_code::unsupported_feature,
+                    string_builder {}
+                            << "qualified "
+                            << what
+                            << " is not supported: "
+                            << print_support { name }
+                            << string_builder::to_string,
+                    name.region());
+            return {};
+        }
+        return normalize_identifier(context_, name.last_name(), kind);
+    }
+
     [[nodiscard]] result_type operator()(ast::statement::alter_table_statement const& stmt) {
         auto optional = *stmt.if_exists();
         auto result = analyze_table_name(context_, *stmt.name(), !optional);
@@ -1715,6 +1795,8 @@ public:
                 return process_drop_table(stmt);
             case tag_t::drop_index_statement:
                 return process_drop_index(stmt);
+            case tag_t::drop_foreign_catalog_statement:
+                return process_drop_foreign_catalog(stmt);
             default:
                 break;
         }
