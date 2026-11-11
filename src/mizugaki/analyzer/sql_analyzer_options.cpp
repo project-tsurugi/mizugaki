@@ -47,4 +47,12 @@ maybe_shared_ptr<::yugawara::schema::declaration const> sql_analyzer_options::de
     return maybe_shared_ptr { std::addressof(default_schema()) };
 }
 
+std::vector<maybe_shared_ptr<::yugawara::schema::catalog const>>& sql_analyzer_options::external_catalogs() noexcept {
+    return external_catalogs_;
+}
+
+std::vector<maybe_shared_ptr<::yugawara::schema::catalog const>> const& sql_analyzer_options::external_catalogs() const noexcept {
+    return external_catalogs_;
+}
+
 } // namespace mizugaki::analyzer

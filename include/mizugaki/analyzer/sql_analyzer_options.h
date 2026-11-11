@@ -6,6 +6,7 @@
 #include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 #include <takatori/util/maybe_shared_ptr.h>
 
@@ -186,6 +187,21 @@ public:
 
     /// @copydoc default_schema()
     [[nodiscard]] ::takatori::util::maybe_shared_ptr<::yugawara::schema::declaration const>  default_schema_shared() const noexcept;
+
+    /**
+     * @brief returns the external catalogs.
+     * @details The external catalogs are used to resolve the symbols whose names are qualified by catalog names
+     *      that are not the current catalog, like "<catalog-name>.<schema-name>.<table-name>".
+     *      The names without catalog names are resolved only in the current catalog (see catalog()).
+     *      The resolved symbols are the declarations in the external catalogs themselves, not their copies.
+     *      The behavior is unspecified if two or more catalogs have the same name,
+     *      or any external catalog has an empty name.
+     * @return the external catalogs
+     */
+    [[nodiscard]] std::vector<::takatori::util::maybe_shared_ptr<::yugawara::schema::catalog const>>& external_catalogs() noexcept;
+
+    /// @copydoc external_catalogs()
+    [[nodiscard]] std::vector<::takatori::util::maybe_shared_ptr<::yugawara::schema::catalog const>> const& external_catalogs() const noexcept;
 
     /**
      * @brief returns whether regular identifiers are treated as lowercase characters.
@@ -557,6 +573,7 @@ private:
     ::takatori::util::maybe_shared_ptr<::yugawara::schema::catalog const> catalog_;
     ::takatori::util::maybe_shared_ptr<::yugawara::schema::search_path const> schema_search_path_;
     ::takatori::util::maybe_shared_ptr<::yugawara::schema::declaration const> default_schema_;
+    std::vector<::takatori::util::maybe_shared_ptr<::yugawara::schema::catalog const>> external_catalogs_ {};
 
     bool lowercase_regular_identifiers_ { default_lowercase_regular_identifiers };
     bool lowercase_variable_regular_identifiers_ { false };
