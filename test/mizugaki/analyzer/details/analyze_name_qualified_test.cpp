@@ -754,4 +754,109 @@ TEST_F(analyze_name_qualified_test, schema_in_catalog_missing_catalog) {
     invalid(r, sql_analyzer_code::catalog_not_found);
 }
 
+TEST_F(analyze_name_qualified_test, schema_in_external_catalog) {
+    auto rs = std::make_shared<::yugawara::schema::configurable_provider>();
+    auto rs0 = rs->add({ "s0" });
+    options_.external_catalogs().emplace_back(std::make_shared<::yugawara::schema::catalog>("remote", std::nullopt, rs));
+
+    auto r = analyze_schema_name(
+            context(),
+            id("remote", "s0"));
+    validate(r, rs0);
+}
+
+TEST_F(analyze_name_qualified_test, schema_in_external_catalog_multiple) {
+    auto rs0 = std::make_shared<::yugawara::schema::configurable_provider>();
+    auto rs1 = std::make_shared<::yugawara::schema::configurable_provider>();
+    auto rs2 = std::make_shared<::yugawara::schema::configurable_provider>();
+    rs0->add({ "s0" });
+    auto s1 = rs1->add({ "s0" });
+    rs2->add({ "s0" });
+    options_.external_catalogs().emplace_back(std::make_shared<::yugawara::schema::catalog>("r0", std::nullopt, rs0));
+    options_.external_catalogs().emplace_back(std::make_shared<::yugawara::schema::catalog>("r1", std::nullopt, rs1));
+    options_.external_catalogs().emplace_back(std::make_shared<::yugawara::schema::catalog>("r2", std::nullopt, rs2));
+
+    auto r = analyze_schema_name(
+            context(),
+            id("r1", "s0"));
+    ASSERT_TRUE(r) << diagnostics();
+    EXPECT_EQ(r.get(), s1.get());
+    expect_no_error();
+}
+
+TEST_F(analyze_name_qualified_test, schema_in_external_catalog_missing_catalog) {
+    auto rs = std::make_shared<::yugawara::schema::configurable_provider>();
+    rs->add({ "s0" });
+    options_.external_catalogs().emplace_back(std::make_shared<::yugawara::schema::catalog>("remote", std::nullopt, rs));
+
+    auto r = analyze_schema_name(
+            context(),
+            id("MISSING", "s0"));
+    invalid(r, sql_analyzer_code::catalog_not_found);
+}
+
+TEST_F(analyze_name_qualified_test, table_decl_in_external_catalog) {
+    auto rss = std::make_shared<::yugawara::storage::configurable_provider>();
+    auto rs = std::make_shared<::yugawara::schema::configurable_provider>();
+    auto rs0 = rs->add({ "public", {}, rss, });
+    auto rt0 = rss->add_table({ "t0", {} });
+    options_.external_catalogs().emplace_back(std::make_shared<::yugawara::schema::catalog>("remote", std::nullopt, rs));
+
+    auto r = analyze_table_name(
+            context(),
+            id("remote", "public", "t0"));
+    ASSERT_TRUE(r) << diagnostics();
+    // the declarations in the external catalog must be used as is
+    EXPECT_EQ(r->first.get(), rs0.get());
+    EXPECT_EQ(r->second.get(), rt0.get());
+    expect_no_error();
+}
+
+TEST_F(analyze_name_qualified_test, table_decl_in_external_catalog_not_qualified) {
+    auto rss = std::make_shared<::yugawara::storage::configurable_provider>();
+    auto rs = std::make_shared<::yugawara::schema::configurable_provider>();
+    rs->add({ "public", {}, rss, });
+    rss->add_table({ "t0", {} });
+    options_.external_catalogs().emplace_back(std::make_shared<::yugawara::schema::catalog>("remote", std::nullopt, rs));
+
+    // names without catalog names are not resolved in external catalogs
+    auto r = analyze_table_name(
+            context(),
+            id("t0"));
+    invalid(r, sql_analyzer_code::table_not_found);
+}
+
+TEST_F(analyze_name_qualified_test, table_decl_in_external_catalog_schema_qualified) {
+    auto rss = std::make_shared<::yugawara::storage::configurable_provider>();
+    auto rs = std::make_shared<::yugawara::schema::configurable_provider>();
+    rs->add({ "public", {}, rss, });
+    rss->add_table({ "t0", {} });
+    options_.external_catalogs().emplace_back(std::make_shared<::yugawara::schema::catalog>("remote", std::nullopt, rs));
+
+    // names without catalog names are not resolved in external catalogs
+    auto r = analyze_table_name(
+            context(),
+            id("public", "t0"));
+    invalid(r, sql_analyzer_code::table_not_found);
+}
+
+TEST_F(analyze_name_qualified_test, column_variable_in_external_catalog) {
+    auto rss = std::make_shared<::yugawara::storage::configurable_provider>();
+    auto rs = std::make_shared<::yugawara::schema::configurable_provider>();
+    rs->add({ "public", {}, rss, });
+    auto rt0 = rss->add_table({ "t0", {} });
+    options_.external_catalogs().emplace_back(std::make_shared<::yugawara::schema::catalog>("remote", std::nullopt, rs));
+
+    auto v = vdesc();
+    query_scope scope;
+    auto&& relation = scope.add({ *rt0 });
+    relation.add(column_info { {}, v, "c0", });
+
+    auto r = analyze_variable_name(
+            context(),
+            id("remote", "public", "t0", "c0"),
+            scope);
+    validate(r, v);
+}
+
 } // namespace mizugaki::analyzer::details

@@ -999,6 +999,11 @@ private:
         if (!c.name().empty() && id == c.name()) {
             return { c };
         }
+        for (auto&& e : context_.options()->external_catalogs()) {
+            if (e && !e->name().empty() && id == e->name()) {
+                return { *e };
+            }
+        }
         return {};
     }
 };

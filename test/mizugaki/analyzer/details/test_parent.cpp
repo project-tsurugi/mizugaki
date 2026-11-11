@@ -81,8 +81,11 @@ void test_parent::clear_error() {
     context_.diagnostics().clear();
 }
 
-std::shared_ptr<::yugawara::storage::table> test_parent::install_table(std::string_view name) {
-    auto table = storages_->add_table(::yugawara::storage::table {
+std::shared_ptr<::yugawara::storage::table> test_parent::install_table(
+        std::string_view name,
+        std::shared_ptr<::yugawara::storage::configurable_provider> const& storages) {
+    auto&& target = storages ? *storages : *storages_;
+    auto table = target.add_table(::yugawara::storage::table {
             name,
             {
                     {
@@ -109,7 +112,7 @@ std::shared_ptr<::yugawara::storage::table> test_parent::install_table(std::stri
                     },
             },
     });
-    storages_->add_index(::yugawara::storage::index {
+    target.add_index(::yugawara::storage::index {
             table,
             name,
             {

@@ -6,6 +6,9 @@
 #include <takatori/type/table.h>
 
 #include <takatori/relation/emit.h>
+#include <takatori/relation/scan.h>
+
+#include <yugawara/binding/extract.h>
 
 #include <mizugaki/ast/scalar/value_constructor.h>
 
@@ -16,6 +19,7 @@
 #include <mizugaki/ast/query/query.h>
 #include <mizugaki/ast/query/table_value_constructor.h>
 #include <mizugaki/ast/query/select_asterisk.h>
+#include <mizugaki/ast/query/select_column.h>
 
 #include <mizugaki/ast/statement/insert_statement.h>
 #include <mizugaki/ast/statement/select_statement.h>
@@ -236,6 +240,41 @@ TEST_F(sql_analyzer_test, apply_walkthrough) {
 
     auto&& emit = *find_last<trelation::emit>(*graph);
     ASSERT_EQ(emit.columns().size(), 6); // t.k, t.v, t.w, t.x, x.c0, x.c1
+}
+
+TEST_F(sql_analyzer_test, select_external_catalog) {
+    auto rss = std::make_shared<::yugawara::storage::configurable_provider>();
+    auto rs = std::make_shared<::yugawara::schema::configurable_provider>();
+    rs->add({ "public", {}, rss, });
+    auto table = install_table("t", rss);
+    options_.external_catalogs().emplace_back(std::make_shared<::yugawara::schema::catalog>("remote", std::nullopt, rs));
+
+    sql_analyzer analyzer;
+    auto result = analyzer(
+            options_,
+            // SELECT remote.public.t.k FROM remote.public.t;
+            ast::statement::select_statement {
+                    ast::query::query {
+                            {
+                                    ast::query::select_column { vref(id("remote", "public", "t", "k")) },
+                            },
+                            {
+                                    ast::table::table_reference { id("remote", "public", "t") },
+                            },
+                    }
+            }
+    );
+    ASSERT_TRUE(result) << diagnostics();
+    auto graph = result.release<sql_analyzer_result_kind::execution_plan>();
+
+    auto&& scan = *find_first<trelation::scan>(*graph);
+    // the declarations in the external catalog must be used as is
+    EXPECT_EQ(
+            std::addressof(::yugawara::binding::extract<::yugawara::storage::index>(scan.source()).table()),
+            table.get());
+
+    auto&& emit = *find_last<trelation::emit>(*graph);
+    ASSERT_EQ(emit.columns().size(), 1);
 }
 
 } // namespace mizugaki::analyzer
