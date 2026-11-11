@@ -14,6 +14,7 @@
 #include <mizugaki/ast/statement/view_definition.h>
 #include <mizugaki/ast/statement/sequence_definition.h>
 #include <mizugaki/ast/statement/schema_definition.h>
+#include <mizugaki/ast/statement/foreign_catalog_definition.h>
 #include <mizugaki/ast/statement/drop_statement.h>
 #include <mizugaki/ast/statement/truncate_table_statement.h>
 #include <mizugaki/ast/statement/grant_privilege_statement.h>
@@ -1944,6 +1945,92 @@ TEST_F(sql_parser_statement_test, schema_definition_elements_multiple_descriptio
     EXPECT_EQ(source(result, *schema.elements()[0]).find("CREATE TABLE", 0), 0);
     EXPECT_EQ(source(result, *schema.elements()[1]).find("CREATE INDEX", 0), 0);
     EXPECT_EQ(source(result, *schema.elements()[2]).find("CREATE VIEW", 0), 0);
+}
+
+TEST_F(sql_parser_statement_test, foreign_catalog_definition) {
+    auto result = parse("CREATE FOREIGN CATALOG c SERVER s");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::foreign_catalog_definition {
+            name::simple { "c" },
+            name::simple { "s" },
+    }));
+}
+
+TEST_F(sql_parser_statement_test, foreign_catalog_definition_if_not_exists) {
+    auto result = parse("CREATE FOREIGN CATALOG IF NOT EXISTS c SERVER s");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::foreign_catalog_definition {
+            name::simple { "c" },
+            name::simple { "s" },
+            {
+                    statement::foreign_catalog_definition_option::if_not_exists,
+            },
+    }));
+}
+
+TEST_F(sql_parser_statement_test, foreign_catalog_definition_if_server_exists) {
+    auto result = parse("CREATE FOREIGN CATALOG c SERVER IF EXISTS s");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::foreign_catalog_definition {
+            name::simple { "c" },
+            name::simple { "s" },
+            {
+                    statement::foreign_catalog_definition_option::if_server_exists,
+            },
+    }));
+}
+
+TEST_F(sql_parser_statement_test, foreign_catalog_definition_both_options) {
+    auto result = parse("CREATE FOREIGN CATALOG IF NOT EXISTS c SERVER IF EXISTS s");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::foreign_catalog_definition {
+            name::simple { "c" },
+            name::simple { "s" },
+            {
+                    statement::foreign_catalog_definition_option::if_not_exists,
+                    statement::foreign_catalog_definition_option::if_server_exists,
+            },
+    }));
+}
+
+TEST_F(sql_parser_statement_test, foreign_catalog_definition_keyword_names) {
+    auto result = parse("CREATE FOREIGN CATALOG catalog SERVER server");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::foreign_catalog_definition {
+            name::simple { "catalog" },
+            name::simple { "server" },
+    }));
+}
+
+TEST_F(sql_parser_statement_test, drop_foreign_catalog) {
+    auto result = parse("DROP FOREIGN CATALOG c");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::drop_statement {
+            statement::kind::drop_foreign_catalog_statement,
+            name::simple { "c" },
+    }));
+}
+
+TEST_F(sql_parser_statement_test, drop_foreign_catalog_if_exists) {
+    auto result = parse("DROP FOREIGN CATALOG IF EXISTS c");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::drop_statement {
+            statement::kind::drop_foreign_catalog_statement,
+            name::simple { "c" },
+            { statement::drop_statement_option::if_exists },
+    }));
+}
+
+TEST_F(sql_parser_statement_test, drop_foreign_catalog_behavior) {
+    auto result = parse("DROP FOREIGN CATALOG c CASCADE");
+    EXPECT_FALSE(result);
 }
 
 TEST_F(sql_parser_statement_test, drop_statement) {

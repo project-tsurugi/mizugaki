@@ -40,6 +40,7 @@ public:
             node_kind_type::drop_view_statement,
             node_kind_type::drop_sequence_statement,
             node_kind_type::drop_schema_statement,
+            node_kind_type::drop_foreign_catalog_statement,
     };
 
     /**

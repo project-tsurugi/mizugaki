@@ -14,6 +14,7 @@
 #include <mizugaki/ast/statement/view_definition.h>
 #include <mizugaki/ast/statement/sequence_definition.h>
 #include <mizugaki/ast/statement/schema_definition.h>
+#include <mizugaki/ast/statement/foreign_catalog_definition.h>
 #include <mizugaki/ast/statement/alter_table_statement.h>
 #include <mizugaki/ast/statement/alter_index_statement.h>
 #include <mizugaki/ast/statement/drop_statement.h>
@@ -142,6 +143,9 @@ inline auto dispatch(Callback&& callback, E&& object, Args&&... args) {
             case schema_definition::tag:
                 return polymorphic_callback<schema_definition>(
                         std::forward<Callback>(callback), std::forward<E>(object), std::forward<Args>(args)...);
+            case foreign_catalog_definition::tag:
+                return polymorphic_callback<foreign_catalog_definition>(
+                        std::forward<Callback>(callback), std::forward<E>(object), std::forward<Args>(args)...);
 
             case alter_table_statement::tag:
                 return polymorphic_callback<alter_table_statement>(
@@ -155,6 +159,7 @@ inline auto dispatch(Callback&& callback, E&& object, Args&&... args) {
             case kind::drop_view_statement:
             case kind::drop_sequence_statement:
             case kind::drop_schema_statement:
+            case kind::drop_foreign_catalog_statement:
                 return polymorphic_callback<drop_statement>(
                         std::forward<Callback>(callback), std::forward<E>(object), std::forward<Args>(args)...);
 

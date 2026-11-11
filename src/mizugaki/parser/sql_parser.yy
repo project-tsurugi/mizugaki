@@ -34,6 +34,7 @@
     #include <mizugaki/ast/statement/view_definition.h>
     #include <mizugaki/ast/statement/sequence_definition.h>
     #include <mizugaki/ast/statement/schema_definition.h>
+    #include <mizugaki/ast/statement/foreign_catalog_definition.h>
     #include <mizugaki/ast/statement/alter_table_statement.h>
     #include <mizugaki/ast/statement/alter_index_statement.h>
     #include <mizugaki/ast/statement/drop_statement.h>
@@ -1025,6 +1026,8 @@
 %nterm <node_ptr<ast::name::name>> table_name_opt
 %nterm <node_ptr<ast::name::name>> schema_name
 %nterm <node_ptr<ast::name::name>> schema_name_opt
+%nterm <node_ptr<ast::name::name>> catalog_name
+%nterm <node_ptr<ast::name::name>> server_name
 %nterm <node_ptr<ast::name::name>> constraint_name
 %nterm <node_ptr<ast::name::name>> function_name
 %nterm <node_ptr<ast::name::simple>> column_name
@@ -1222,6 +1225,33 @@ statement
             }
             $$ = driver.node<ast::statement::drop_statement>(
                     regioned { ast::statement::kind::drop_sequence_statement, @k },
+                    $n,
+                    std::move(options),
+                    @$);
+        }
+    | CREATE FOREIGN CATALOG if_not_exists_opt[e] catalog_name[n] SERVER if_exists_opt[se] server_name[s]
+        {
+            auto options = driver.element_vector<ast::statement::foreign_catalog_definition::option_type>();
+            if (auto elem = $e) {
+                options.emplace_back(ast::statement::foreign_catalog_definition_option::if_not_exists, elem.region());
+            }
+            if (auto elem = $se) {
+                options.emplace_back(ast::statement::foreign_catalog_definition_option::if_server_exists, elem.region());
+            }
+            $$ = driver.node<ast::statement::foreign_catalog_definition>(
+                    $n,
+                    $s,
+                    std::move(options),
+                    @$);
+        }
+    | DROP FOREIGN CATALOG[k] if_exists_opt[e] catalog_name[n]
+        {
+            auto options = driver.element_vector<ast::statement::drop_statement::option_type>();
+            if (auto elem = $e) {
+                options.emplace_back(ast::statement::drop_statement_option::if_exists, elem.region());
+            }
+            $$ = driver.node<ast::statement::drop_statement>(
+                    regioned { ast::statement::kind::drop_foreign_catalog_statement, @k },
                     $n,
                     std::move(options),
                     @$);
@@ -4782,6 +4812,20 @@ table_name_opt
     ;
 
 schema_name
+    : identifier_chain[n]
+        {
+            $$ = $n;
+        }
+    ;
+
+catalog_name
+    : identifier_chain[n]
+        {
+            $$ = $n;
+        }
+    ;
+
+server_name
     : identifier_chain[n]
         {
             $$ = $n;

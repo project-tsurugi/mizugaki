@@ -139,6 +139,7 @@ add_library(mizugaki
     mizugaki/ast/statement/view_definition.cpp
     mizugaki/ast/statement/sequence_definition.cpp
     mizugaki/ast/statement/schema_definition.cpp
+    mizugaki/ast/statement/foreign_catalog_definition.cpp
     mizugaki/ast/statement/alter_table_statement.cpp
     mizugaki/ast/statement/alter_index_statement.cpp
     mizugaki/ast/statement/drop_statement.cpp

@@ -342,6 +342,12 @@ public:
         return true;
     }
 
+    [[nodiscard]] bool operator()(ast::statement::foreign_catalog_definition const& element, std::size_t depth) {
+        ACCEPT(element.name());
+        ACCEPT(element.server_name());
+        return true;
+    }
+
     [[nodiscard]] bool operator()(ast::statement::alter_table_statement const& element, std::size_t depth) {
         ACCEPT(element.name());
         ACCEPT(element.action());

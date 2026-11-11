@@ -19,6 +19,7 @@ class index_definition;
 class view_definition;
 class sequence_definition;
 class schema_definition;
+class foreign_catalog_definition;
 class alter_table_statement;
 class alter_index_statement;
 class drop_statement;
@@ -86,6 +87,12 @@ enum class kind {
     schema_definition,
 
     /**
+     * @brief foreign_catalog_definition
+     * @see foreign_catalog_definition
+     */
+    foreign_catalog_definition,
+
+    /**
      * @brief alter_table_statement.
      * @see alter_table_statement
      */
@@ -126,6 +133,12 @@ enum class kind {
      * @see drop_statement
      */
     drop_schema_statement,
+
+    /**
+     * @brief drop_statement for foreign catalogs.
+     * @see drop_statement
+     */
+    drop_foreign_catalog_statement,
 
     /**
      * @copydoc truncate_table_statement
@@ -198,6 +211,9 @@ template<> struct type_of<kind, kind::sequence_definition> : ::takatori::util::m
 /// @brief provides implementation type of kind::schema_definition.
 template<> struct type_of<kind, kind::schema_definition> : ::takatori::util::meta_type<schema_definition> {};
 
+/// @brief provides implementation type of kind::foreign_catalog_definition.
+template<> struct type_of<kind, kind::foreign_catalog_definition> : ::takatori::util::meta_type<foreign_catalog_definition> {};
+
 /// @brief provides implementation type of kind::alter_table_statement.
 template<> struct type_of<kind, kind::alter_table_statement> : ::takatori::util::meta_type<alter_table_statement> {};
 
@@ -218,6 +234,9 @@ template<> struct type_of<kind, kind::drop_sequence_statement> : ::takatori::uti
 
 /// @brief provides implementation type of kind::drop_schema_statement.
 template<> struct type_of<kind, kind::drop_schema_statement> : ::takatori::util::meta_type<drop_statement> {};
+
+/// @brief provides implementation type of kind::drop_foreign_catalog_statement.
+template<> struct type_of<kind, kind::drop_foreign_catalog_statement> : ::takatori::util::meta_type<drop_statement> {};
 
 /// @brief provides implementation type of kind::truncate_table_statement.
 template<> struct type_of<kind, kind::truncate_table_statement> : ::takatori::util::meta_type<truncate_table_statement> {};
@@ -248,6 +267,7 @@ constexpr std::string_view to_string_view(kind value) noexcept {
         case kind::view_definition: return "view_definition"sv;
         case kind::sequence_definition: return "sequence_definition"sv;
         case kind::schema_definition: return "schema_definition"sv;
+        case kind::foreign_catalog_definition: return "foreign_catalog_definition"sv;
         case kind::alter_table_statement: return "alter_table_statement"sv;
         case kind::alter_index_statement: return "alter_index_statement"sv;
         case kind::drop_table_statement: return "drop_table_statement"sv;
@@ -255,6 +275,7 @@ constexpr std::string_view to_string_view(kind value) noexcept {
         case kind::drop_view_statement: return "drop_view_statement"sv;
         case kind::drop_sequence_statement: return "drop_sequence_statement"sv;
         case kind::drop_schema_statement: return "drop_schema_statement"sv;
+        case kind::drop_foreign_catalog_statement: return "drop_foreign_catalog_statement"sv;
         case kind::truncate_table_statement: return "truncate_table_statement"sv;
         case kind::grant_privilege_statement: return "grant_privilege_statement"sv;
         case kind::revoke_privilege_statement: return "revoke_privilege_statement"sv;
