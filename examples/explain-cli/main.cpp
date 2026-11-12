@@ -24,6 +24,8 @@
 #include <yugawara/compiler_result.h>
 #include <yugawara/compiled_info.h>
 
+#include <yugawara/remote/location_object_scanner.h>
+
 #include <yugawara/variable/configurable_provider.h>
 #include <yugawara/variable/declaration.h>
 
@@ -36,6 +38,7 @@
 #include <mizugaki/analyzer/sql_analyzer.h>
 
 #include "ddl_interpreter.h"
+#include "location_query.h"
 #include "options.h"
 
 namespace mizugaki::examples::explain_cli {
@@ -141,6 +144,9 @@ DEFINE_string(text, "", "input text"); // NOLINT
 DEFINE_string(placeholders, "", "placeholder definitions (name:type, separated by ,)"); // NOLINT
 DEFINE_string(features, "", "runtime features (optional all or none, and then +name or -name, separated by ,)"); // NOLINT
 DEFINE_string(index_features, "", "additional features of the secondary indices declared by CREATE INDEX (+name, separated by ,)"); // NOLINT
+DEFINE_bool(locations, false, "computes the executable locations of each step and prints them in the plan (tables are local unless -remote_tables)"); // NOLINT
+DEFINE_string(remote_tables, "", "remote tables (table:location_id[:location_name], separated by ,), implies -locations"); // NOLINT
+DEFINE_bool(allow_empty_locations, false, "allows steps which cannot be executed in any locations, implies -locations"); // NOLINT
 
 static int do_main() {
     std::string path;
@@ -163,6 +169,11 @@ static int do_main() {
 
     auto variables = parse_variables(FLAGS_placeholders);
     auto compiler_opts = compiler_options(FLAGS_features, FLAGS_index_features);
+    bool const locations = FLAGS_locations || !FLAGS_remote_tables.empty() || FLAGS_allow_empty_locations;
+    if (locations) {
+        compiler_opts.symbol_location_query() = make_symbol_location_query(FLAGS_remote_tables);
+        compiler_opts.allow_empty_operation_location() = FLAGS_allow_empty_locations;
+    }
 
     // parse
     auto parser_opts = parser_options();
@@ -226,7 +237,11 @@ static int do_main() {
 
         if (!FLAGS_quiet) {
             ::takatori::serializer::json_printer printer { std::cout };
-            auto&& scanner = compiler_result.info().object_scanner();
+            ::yugawara::remote::location_object_scanner scanner {
+                    compiler_result.info().object_scanner(),
+                    compiler_result.operation_location_query(),
+                    compiler_opts.symbol_location_query(),
+            };
             auto&& compiled = compiler_result.statement();
             scanner(compiled, printer);
             std::cout << '\n' << std::flush;

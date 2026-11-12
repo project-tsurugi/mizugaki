@@ -3,6 +3,7 @@ add_executable(explain-cli
     options.cpp
     example_prototype_processor.cpp
     ddl_interpreter.cpp
+    location_query.cpp
 )
 
 target_include_directories(explain-cli

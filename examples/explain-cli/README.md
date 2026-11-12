@@ -44,6 +44,20 @@ Available options:
   * add features to the secondary indices declared by `CREATE INDEX`
   * format: `+<feature name>,+<feature name>,...`
   * available feature names are the names of `yugawara::storage::index_feature` (e.g. `ties_ordered_by_primary_key`)
+* `-locations`
+  * compute the executable locations of each step, and print them in the execution plan
+  * all tables are defined only in the local location (`0`), unless they are specified in `-remote_tables`
+  * the other symbols (functions, aggregate functions, and variables) are also defined only in the local location
+  * each step and the statement in the execution plan has an additional property `operation_locations`, which is an array of `{"location_id": ..., "location_name": ...}` ordered by `location_id` (see `yugawara::remote::location_object_scanner`)
+* `-remote_tables=<remote table specification>`
+  * define the tables which are defined only in the remote locations (implies `-locations`)
+  * format: `<table name>:<location ID>[:<location name>],...`
+    * `<table name>` is the simple name of the table (after identifier normalization, e.g. `t0`)
+    * `<location ID>` must be a positive integer (`0` is the local location)
+    * `<location name>` is used in the diagnostic messages (default: `remote<location ID>`)
+* `-allow_empty_locations`
+  * don't report errors even if there are steps which cannot be executed in any locations, and print their locations as `{}` (implies `-locations`)
+  * this corresponds to `yugawara::compiler_options::allow_empty_operation_location()`
 * `-echo`
   * print the processing SQL snippet
 * `-quiet`
