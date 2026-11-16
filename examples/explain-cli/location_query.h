@@ -8,6 +8,7 @@
 #include <vector>
 
 #include <yugawara/remote/location_info.h>
+#include <yugawara/remote/location_options.h>
 #include <yugawara/remote/symbol_location_query.h>
 
 namespace mizugaki::examples::explain_cli {
@@ -74,5 +75,18 @@ private:
  * @throws std::runtime_error if the specification is malformed
  */
 [[nodiscard]] std::shared_ptr<example_symbol_location_query> make_symbol_location_query(std::string_view specification);
+
+/**
+ * @brief sets the kinds of elements which can be executed in remote locations.
+ * @details The available names are:
+ *
+ *      - `universe`: all kinds (the default of yugawara::remote::location_options)
+ *      - `phase1`: the kinds which the distributed query engine accepts in its phase 1 (transient)
+ *
+ * @param options the target options
+ * @param name the name of the kind sets
+ * @throws std::runtime_error if the name is unknown
+ */
+void apply_remote_kinds(::yugawara::remote::location_options& options, std::string_view name);
 
 } // namespace mizugaki::examples::explain_cli

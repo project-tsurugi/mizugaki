@@ -1,5 +1,10 @@
 #include "location_query.h"
 
+#include <takatori/relation/expression_kind.h>
+#include <takatori/scalar/expression_kind.h>
+#include <takatori/plan/step_kind.h>
+#include <takatori/statement/statement_kind.h>
+
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -105,6 +110,46 @@ std::vector<remote_table_entry> parse_remote_tables(std::string_view specificati
 
 std::shared_ptr<example_symbol_location_query> make_symbol_location_query(std::string_view specification) {
     return std::make_shared<example_symbol_location_query>(parse_remote_tables(specification));
+}
+
+void apply_remote_kinds(::yugawara::remote::location_options& options, std::string_view name) {
+    using options_type = ::yugawara::remote::location_options;
+    if (name == "universe") {
+        options.remote_relation_expression_kinds() = options_type::default_remote_relation_expression_kinds;
+        options.remote_scalar_expression_kinds() = options_type::default_remote_scalar_expression_kinds;
+        options.remote_step_kinds() = options_type::default_remote_step_kinds;
+        options.remote_statement_kinds() = options_type::default_remote_statement_kinds;
+        return;
+    }
+    if (name == "phase1") {
+        using relation = ::takatori::relation::expression_kind;
+        using scalar = ::takatori::scalar::expression_kind;
+        using step = ::takatori::plan::step_kind;
+        using statement = ::takatori::statement::statement_kind;
+        options.remote_relation_expression_kinds() = {
+                relation::scan,
+                relation::find,
+                relation::filter,
+                relation::project,
+                relation::offer,
+        };
+        options.remote_scalar_expression_kinds() = {
+                scalar::immediate,
+                scalar::variable_reference,
+                scalar::unary,
+                scalar::cast,
+                scalar::binary,
+                scalar::compare,
+        };
+        options.remote_step_kinds() = {
+                step::process,
+        };
+        options.remote_statement_kinds() = {
+                statement::execute,
+        };
+        return;
+    }
+    throw std::runtime_error("unknown remote kinds: " + std::string { name });
 }
 
 } // namespace mizugaki::examples::explain_cli

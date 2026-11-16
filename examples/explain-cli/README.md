@@ -57,7 +57,14 @@ Available options:
     * `<location name>` is used in the diagnostic messages (default: `remote<location ID>`)
 * `-allow_empty_locations`
   * don't report errors even if there are steps which cannot be executed in any locations, and print their locations as `{}` (implies `-locations`)
-  * this corresponds to `yugawara::compiler_options::allow_empty_operation_location()`
+  * this corresponds to `yugawara::remote::location_options::allow_empty_operation_location()`
+* `-remote_kinds=<name>`
+  * set the kinds of elements which can be executed in remote locations, in `yugawara::remote::location_options`
+  * this is effective only if the locations are computed (`-locations`, `-remote_tables`, or `-allow_empty_locations`)
+  * available names:
+    * `universe` (default): all kinds
+    * `phase1`: the kinds which the distributed query engine accepts in its phase 1
+  * **this option is transient**: it is only for checking the compiler, and it may be changed or removed in the future without notice
 * `-echo`
   * print the processing SQL snippet
 * `-quiet`

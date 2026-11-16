@@ -147,6 +147,7 @@ DEFINE_string(index_features, "", "additional features of the secondary indices 
 DEFINE_bool(locations, false, "computes the executable locations of each step and prints them in the plan (tables are local unless -remote_tables)"); // NOLINT
 DEFINE_string(remote_tables, "", "remote tables (table:location_id[:location_name], separated by ,), implies -locations"); // NOLINT
 DEFINE_bool(allow_empty_locations, false, "allows steps which cannot be executed in any locations, implies -locations"); // NOLINT
+DEFINE_string(remote_kinds, "universe", "kinds of elements which can be executed in remote locations (universe or phase1, transient)"); // NOLINT
 
 static int do_main() {
     std::string path;
@@ -171,8 +172,10 @@ static int do_main() {
     auto compiler_opts = compiler_options(FLAGS_features, FLAGS_index_features);
     bool const locations = FLAGS_locations || !FLAGS_remote_tables.empty() || FLAGS_allow_empty_locations;
     if (locations) {
-        compiler_opts.symbol_location_query() = make_symbol_location_query(FLAGS_remote_tables);
-        compiler_opts.allow_empty_operation_location() = FLAGS_allow_empty_locations;
+        auto&& location_opts = compiler_opts.location_options();
+        location_opts.symbol_location_query() = make_symbol_location_query(FLAGS_remote_tables);
+        location_opts.allow_empty_operation_location() = FLAGS_allow_empty_locations;
+        apply_remote_kinds(location_opts, FLAGS_remote_kinds);
     }
 
     // parse
@@ -240,7 +243,7 @@ static int do_main() {
             ::yugawara::remote::location_object_scanner scanner {
                     compiler_result.info().object_scanner(),
                     compiler_result.operation_location_query(),
-                    compiler_opts.symbol_location_query(),
+                    compiler_opts.location_options().symbol_location_query(),
             };
             auto&& compiled = compiler_result.statement();
             scanner(compiled, printer);
