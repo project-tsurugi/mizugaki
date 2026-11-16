@@ -20,7 +20,10 @@ Available options:
   * compile the content of the given file
 * `-placeholders <placeholder definitions>`
   * define placeholders for the SQL statements
-  * format: `<name1>:<type1>,<name2>:<type2>,...`
+  * format: `<name1>:<type1>[:<location1>],<name2>:<type2>[:<location2>],...`
+  * `<location>` is the location where the placeholder is available, and it is effective only if the locations are computed (see `-locations`)
+    * `0` (the local location), a location ID specified in `-remote_tables`, or `*` (all locations)
+    * default: `*`
   * available types:
     * `int`
     * `bigint`
@@ -47,7 +50,8 @@ Available options:
 * `-locations`
   * compute the executable locations of each step, and print them in the execution plan
   * all tables are defined only in the local location (`0`), unless they are specified in `-remote_tables`
-  * the other symbols (functions, aggregate functions, and variables) are also defined only in the local location
+  * functions and aggregate functions are defined only in the local location
+  * placeholders are defined in all locations, unless their locations are specified in `-placeholders`
   * each step and the statement in the execution plan has an additional property `operation_locations`, which is an array of `{"location_id": ..., "location_name": ...}` ordered by `location_id` (see `yugawara::remote::location_object_scanner`)
 * `-remote_tables=<remote table specification>`
   * define the tables which are defined only in the remote locations (implies `-locations`)

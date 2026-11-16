@@ -4,6 +4,8 @@
 #include <iostream>
 #include <string>
 #include <string_view>
+#include <utility>
+#include <vector>
 
 #include <takatori/type/int.h>
 #include <takatori/type/float.h>
@@ -76,8 +78,12 @@ static void add_variable(
     }
 }
 
-static std::shared_ptr<::yugawara::variable::configurable_provider> parse_variables(std::string const& sequence) {
+static std::pair<
+        std::shared_ptr<::yugawara::variable::configurable_provider>,
+        std::vector<placeholder_location_entry>>
+parse_variables(std::string const& sequence) {
     auto result = std::make_shared<::yugawara::variable::configurable_provider>();
+    std::vector<placeholder_location_entry> locations {};
 
     // parse name:type pairs separated by ','
     std::size_t start = 0;
@@ -92,6 +98,11 @@ static std::shared_ptr<::yugawara::variable::configurable_provider> parse_variab
         if (equal_pos != std::string::npos) {
             auto key = pair.substr(0, equal_pos);
             auto value = pair.substr(equal_pos + 1);
+            // optional location after the type
+            if (auto location_pos = value.find(':'); location_pos != std::string::npos) {
+                locations.push_back(placeholder_location_entry { key, value.substr(location_pos + 1) });
+                value = value.substr(0, location_pos);
+            }
             for (auto& c : value) {
                 if ('A' <= c && c <= 'Z') {
                     c = static_cast<char>(c - 'A' + 'a');
@@ -103,7 +114,7 @@ static std::shared_ptr<::yugawara::variable::configurable_provider> parse_variab
         }
         start = end + 1;
     }
-    return result;
+    return { std::move(result), std::move(locations) };
 }
 
 static analyzer::sql_analyzer_result analyze(
@@ -141,7 +152,7 @@ DEFINE_bool(echo, false, "prints the source SQL"); // NOLINT
 DEFINE_bool(quiet, false, "only show diagnostic erroneous"); // NOLINT
 DEFINE_string(file, "", "input file path"); // NOLINT
 DEFINE_string(text, "", "input text"); // NOLINT
-DEFINE_string(placeholders, "", "placeholder definitions (name:type, separated by ,)"); // NOLINT
+DEFINE_string(placeholders, "", "placeholder definitions (name:type[:location], separated by ,)"); // NOLINT
 DEFINE_string(features, "", "runtime features (optional all or none, and then +name or -name, separated by ,)"); // NOLINT
 DEFINE_string(index_features, "", "additional features of the secondary indices declared by CREATE INDEX (+name, separated by ,)"); // NOLINT
 DEFINE_bool(locations, false, "computes the executable locations of each step and prints them in the plan (tables are local unless -remote_tables)"); // NOLINT
@@ -168,12 +179,12 @@ static int do_main() {
         ifs.close();
     }
 
-    auto variables = parse_variables(FLAGS_placeholders);
+    auto [variables, placeholder_locations] = parse_variables(FLAGS_placeholders);
     auto compiler_opts = compiler_options(FLAGS_features, FLAGS_index_features);
     bool const locations = FLAGS_locations || !FLAGS_remote_tables.empty() || FLAGS_allow_empty_locations;
     if (locations) {
         auto&& location_opts = compiler_opts.location_options();
-        location_opts.symbol_location_query() = make_symbol_location_query(FLAGS_remote_tables);
+        location_opts.symbol_location_query() = make_symbol_location_query(FLAGS_remote_tables, placeholder_locations);
         location_opts.allow_empty_operation_location() = FLAGS_allow_empty_locations;
         apply_remote_kinds(location_opts, FLAGS_remote_kinds);
     }

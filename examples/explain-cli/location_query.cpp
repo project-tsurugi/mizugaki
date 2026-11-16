@@ -48,7 +48,9 @@ constexpr location_id_type local_location_id = ::yugawara::remote::location_info
 
 } // namespace
 
-example_symbol_location_query::example_symbol_location_query(std::vector<remote_table_entry> const& remote_tables) {
+example_symbol_location_query::example_symbol_location_query(
+        std::vector<remote_table_entry> const& remote_tables,
+        std::vector<placeholder_location_entry> const& placeholders) {
     locations_.emplace(local_location_id, ::yugawara::remote::location_info { local_location_id, "local" });
     available_location_ids_.emplace(local_location_id);
     for (auto&& entry : remote_tables) {
@@ -57,6 +59,27 @@ example_symbol_location_query::example_symbol_location_query(std::vector<remote_
         if (auto [iter, success] = remote_tables_.emplace(entry.table_name, entry.location_id); !success) {
             throw std::runtime_error("duplicate remote table: " + entry.table_name);
         }
+    }
+    for (auto&& entry : placeholders) {
+        location_id_set_type locations {};
+        if (entry.location == "*") {
+            locations = available_location_ids_;
+        } else {
+            location_id_type id {};
+            std::size_t position {};
+            try {
+                id = std::stoull(entry.location, &position);
+            } catch (std::exception const&) {
+                position = 0;
+            }
+            if (entry.location.empty()
+                    || position != entry.location.size()
+                    || available_location_ids_.find(id) == available_location_ids_.end()) {
+                throw std::runtime_error("invalid placeholder location: " + entry.name + ":" + entry.location);
+            }
+            locations.emplace(id);
+        }
+        placeholders_.insert_or_assign(entry.name, std::move(locations));
     }
 }
 
@@ -83,8 +106,11 @@ location_id_set_type example_symbol_location_query::find(::yugawara::aggregate::
     return { local_location_id };
 }
 
-location_id_set_type example_symbol_location_query::find(::yugawara::variable::declaration const&) const {
-    return { local_location_id };
+location_id_set_type example_symbol_location_query::find(::yugawara::variable::declaration const& symbol) const {
+    if (auto iter = placeholders_.find(symbol.name()); iter != placeholders_.end()) {
+        return iter->second;
+    }
+    return available_location_ids_;
 }
 
 std::vector<remote_table_entry> parse_remote_tables(std::string_view specification) {
@@ -108,8 +134,10 @@ std::vector<remote_table_entry> parse_remote_tables(std::string_view specificati
     return results;
 }
 
-std::shared_ptr<example_symbol_location_query> make_symbol_location_query(std::string_view specification) {
-    return std::make_shared<example_symbol_location_query>(parse_remote_tables(specification));
+std::shared_ptr<example_symbol_location_query> make_symbol_location_query(
+        std::string_view specification,
+        std::vector<placeholder_location_entry> const& placeholders) {
+    return std::make_shared<example_symbol_location_query>(parse_remote_tables(specification), placeholders);
 }
 
 void apply_remote_kinds(::yugawara::remote::location_options& options, std::string_view name) {
