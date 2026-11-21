@@ -1674,6 +1674,178 @@ TEST_F(analyze_query_expression_aggregate_test, group_by_where) {
     EXPECT_EQ(relation_columns[1].variable(), project_columns[1].variable());
 }
 
+TEST_F(analyze_query_expression_aggregate_test, having_without_group_by) {
+    auto table = install_table("testing");
+    trelation::graph_type graph {};
+
+    auto r = analyze_query_expression(
+            context(),
+            graph,
+            // SELECT 1 FROM testing HAVING 1 < 2
+            ast::query::query {
+                    {
+                            ast::query::select_column {
+                                    literal(number("1")),
+                            },
+                    },
+                    {
+                            ast::table::table_reference {
+                                    id("testing"),
+                            }
+                    },
+                    {},
+                    {},
+                    {
+                            ast::scalar::comparison_predicate {
+                                    literal(number("1")),
+                                    ast::scalar::comparison_operator::less_than,
+                                    literal(number("2")),
+                            },
+                    },
+            },
+            {},
+            {});
+    ASSERT_TRUE(r);
+    expect_no_error();
+
+    // scan - aggregate - filter - project -
+
+    ASSERT_EQ(graph.size(), 4);
+    EXPECT_FALSE(r.output().opposite());
+
+    auto&& relation = r.relation();
+
+    auto&& project = downcast<trelation::project>(r.output().owner());
+    auto&& filter = *find_prev<trelation::filter>(project);
+    auto&& aggregate = *find_prev<trelation::intermediate::aggregate>(filter);
+    EXPECT_TRUE(find_prev<trelation::scan>(aggregate));
+
+    // implicitly grouped by "()"
+    EXPECT_EQ(aggregate.group_keys().size(), 0);
+    EXPECT_EQ(aggregate.columns().size(), 0);
+
+    auto&& project_columns = project.columns();
+    ASSERT_EQ(project_columns.size(), 1);
+    EXPECT_EQ(project_columns[0].value(), immediate(1));
+
+    // output
+
+    auto relation_columns = relation.columns();
+    ASSERT_EQ(relation_columns.size(), 1);
+    EXPECT_EQ(relation_columns[0].variable(), project_columns[0].variable());
+}
+
+TEST_F(analyze_query_expression_aggregate_test, having_without_group_by_where) {
+    auto table = install_table("testing");
+    trelation::graph_type graph {};
+
+    auto r = analyze_query_expression(
+            context(),
+            graph,
+            // SELECT 1 FROM testing WHERE k >= 0 HAVING 1 < 2
+            ast::query::query {
+                    {
+                            ast::query::select_column {
+                                    literal(number("1")),
+                            },
+                    },
+                    {
+                            ast::table::table_reference {
+                                    id("testing"),
+                            }
+                    },
+                    {
+                            ast::scalar::comparison_predicate {
+                                    vref(id("k")),
+                                    ast::scalar::comparison_operator::greater_than_or_equals,
+                                    literal(number("0")),
+                            },
+                    },
+                    {},
+                    {
+                            ast::scalar::comparison_predicate {
+                                    literal(number("1")),
+                                    ast::scalar::comparison_operator::less_than,
+                                    literal(number("2")),
+                            },
+                    },
+            },
+            {},
+            {});
+    ASSERT_TRUE(r);
+    expect_no_error();
+
+    // scan - filter (WHERE) - aggregate - filter (HAVING) - project -
+
+    ASSERT_EQ(graph.size(), 5);
+    EXPECT_FALSE(r.output().opposite());
+
+    auto&& project = downcast<trelation::project>(r.output().owner());
+    auto&& having = *find_prev<trelation::filter>(project);
+    auto&& aggregate = *find_prev<trelation::intermediate::aggregate>(having);
+    auto&& where = *find_prev<trelation::filter>(aggregate);
+    auto&& scan = *find_prev<trelation::scan>(where);
+
+    auto&& scan_columns = scan.columns();
+    ASSERT_EQ(scan_columns.size(), 4);
+
+    EXPECT_EQ(where.condition(), (tscalar::compare {
+            tscalar::comparison_operator::greater_equal,
+            vref(scan_columns[0].destination()),
+            immediate(0),
+    }));
+
+    // implicitly grouped by "()"
+    EXPECT_EQ(aggregate.group_keys().size(), 0);
+    EXPECT_EQ(aggregate.columns().size(), 0);
+}
+
+TEST_F(analyze_query_expression_aggregate_test, group_by_empty) {
+    auto table = install_table("testing");
+    trelation::graph_type graph {};
+
+    auto r = analyze_query_expression(
+            context(),
+            graph,
+            // SELECT 1 FROM testing GROUP BY ()
+            ast::query::query {
+                    {
+                            ast::query::select_column {
+                                    literal(number("1")),
+                            },
+                    },
+                    {
+                            ast::table::table_reference {
+                                    id("testing"),
+                            }
+                    },
+                    {},
+                    ast::query::group_by_clause {
+                            std::vector<std::unique_ptr<ast::query::grouping_element>> {},
+                    },
+            },
+            {},
+            {});
+    ASSERT_TRUE(r);
+    expect_no_error();
+
+    // scan - aggregate - project -
+
+    ASSERT_EQ(graph.size(), 3);
+    EXPECT_FALSE(r.output().opposite());
+
+    auto&& project = downcast<trelation::project>(r.output().owner());
+    auto&& aggregate = *find_prev<trelation::intermediate::aggregate>(project);
+    EXPECT_TRUE(find_prev<trelation::scan>(aggregate));
+
+    EXPECT_EQ(aggregate.group_keys().size(), 0);
+    EXPECT_EQ(aggregate.columns().size(), 0);
+
+    auto&& project_columns = project.columns();
+    ASSERT_EQ(project_columns.size(), 1);
+    EXPECT_EQ(project_columns[0].value(), immediate(1));
+}
+
 TEST_F(analyze_query_expression_aggregate_test, select_invalid_column) {
     auto table = install_table("testing");
     invalid(sql_analyzer_code::invalid_aggregation_column, ast::query::query {
