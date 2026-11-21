@@ -452,14 +452,15 @@ optional_ptr<output_port_type> set_function_processor::install(output_port_type&
         current = extracted_expressions_->output();
         extracted_expressions_.reset();
     }
-    if (aggregations_) {
-        if (!context_.resolve(*aggregations_)) {
-            return {};
-        }
-        aggregations_->input().connect_to(*current);
-        current = aggregations_->output();
-        aggregations_.reset();
+    // NOTE: the query is grouped even if it has neither group keys nor set functions,
+    // e.g., "SELECT 1 FROM t HAVING 1 < 2" is implicitly grouped by "()" and yields at most one row
+    auto&& aggregations = aggregations_store();
+    if (!context_.resolve(aggregations)) {
+        return {};
     }
+    aggregations.input().connect_to(*current);
+    current = aggregations.output();
+    aggregations_.reset();
     if (next) {
         current->connect_to(*next);
     }
