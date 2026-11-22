@@ -851,4 +851,213 @@ TEST_F(sql_parser_query_test, with_in_parens) {
     EXPECT_EQ(result.diagnostic().code(), sql_parser_code::syntax_error);
 }
 
+TEST_F(sql_parser_query_test, parenthesize_nested) {
+    auto result = parse("TABLE T0 UNION ((TABLE T1));");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (query::binary_expression {
+            query::table_reference {
+                    name::simple { "T0" },
+            },
+            query::binary_operator::union_,
+            query::table_reference {
+                    name::simple { "T1" },
+            },
+    }));
+}
+
+TEST_F(sql_parser_query_test, parenthesize_nested_many) {
+    auto result = parse("TABLE T0 UNION (((TABLE T1)));");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (query::binary_expression {
+            query::table_reference {
+                    name::simple { "T0" },
+            },
+            query::binary_operator::union_,
+            query::table_reference {
+                    name::simple { "T1" },
+            },
+    }));
+}
+
+TEST_F(sql_parser_query_test, parenthesize_nested_body) {
+    auto result = parse("TABLE T0 UNION ((TABLE T1 EXCEPT TABLE T2));");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (query::binary_expression {
+            query::table_reference {
+                    name::simple { "T0" },
+            },
+            query::binary_operator::union_,
+            query::binary_expression {
+                    query::table_reference {
+                            name::simple { "T1" },
+                    },
+                    query::binary_operator::except,
+                    query::table_reference {
+                            name::simple { "T2" },
+                    },
+            },
+    }));
+}
+
+TEST_F(sql_parser_query_test, parenthesize_nested_left) {
+    auto result = parse("((TABLE T0)) UNION TABLE T1;");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (query::binary_expression {
+            query::table_reference {
+                    name::simple { "T0" },
+            },
+            query::binary_operator::union_,
+            query::table_reference {
+                    name::simple { "T1" },
+            },
+    }));
+}
+
+TEST_F(sql_parser_query_test, parenthesize_nested_precedence) {
+    auto result = parse("TABLE T0 UNION ((TABLE T1)) INTERSECT TABLE T2;");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (query::binary_expression {
+            query::table_reference {
+                    name::simple { "T0" },
+            },
+            query::binary_operator::union_,
+            query::binary_expression {
+                    query::table_reference {
+                            name::simple { "T1" },
+                    },
+                    query::binary_operator::intersect,
+                    query::table_reference {
+                            name::simple { "T2" },
+                    },
+            },
+    }));
+}
+
+TEST_F(sql_parser_query_test, parenthesize_whole) {
+    auto result = parse("(TABLE T0);");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (query::table_reference {
+            name::simple { "T0" },
+    }));
+}
+
+TEST_F(sql_parser_query_test, parenthesize_whole_nested) {
+    auto result = parse("((TABLE T0));");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (query::table_reference {
+            name::simple { "T0" },
+    }));
+}
+
+TEST_F(sql_parser_query_test, with_in_nested_parens) {
+    auto result = parse("TABLE T0 UNION ((WITH q AS (TABLE T1) TABLE q));");
+    ASSERT_FALSE(result) << diagnostics(result);
+    EXPECT_EQ(result.diagnostic().code(), sql_parser_code::syntax_error);
+}
+
+TEST_F(sql_parser_query_test, with_expression_element_parenthesized) {
+    auto result = parse("WITH q AS ((TABLE T0)) TABLE q;");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (query::with_expression {
+            { // WITH
+                    {
+                            name::simple { "q" },
+                            query::table_reference {
+                                    name::simple { "T0" },
+                            },
+                    },
+            },
+            query::table_reference {
+                    name::simple { "q" },
+            },
+    }));
+}
+
+TEST_F(sql_parser_query_test, with_expression_body_parenthesized) {
+    auto result = parse("WITH q AS (TABLE T0) ((TABLE q));");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (query::with_expression {
+            { // WITH
+                    {
+                            name::simple { "q" },
+                            query::table_reference {
+                                    name::simple { "T0" },
+                            },
+                    },
+            },
+            query::table_reference {
+                    name::simple { "q" },
+            },
+    }));
+}
+
+TEST_F(sql_parser_query_test, table_value_constructor_scalar_subquery) {
+    auto result = parse("VALUES ((TABLE t0));");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (query::table_value_constructor {
+            scalar::value_constructor {
+                    scalar::subquery {
+                            query::table_reference {
+                                    name::simple { "t0" },
+                            },
+                            scalar::expression_context_kind::scalar,
+                    },
+            },
+    }));
+}
+
+TEST_F(sql_parser_query_test, with_expression_parenthesized) {
+    auto result = parse("(WITH q AS (TABLE T0) TABLE q);");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (query::with_expression {
+            { // WITH
+                    {
+                            name::simple { "q" },
+                            query::table_reference {
+                                    name::simple { "T0" },
+                            },
+                    },
+            },
+            query::table_reference {
+                    name::simple { "q" },
+            },
+    }));
+}
+
+TEST_F(sql_parser_query_test, with_expression_parenthesized_nested) {
+    auto result = parse("((WITH q AS (TABLE T0) TABLE q));");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (query::with_expression {
+            { // WITH
+                    {
+                            name::simple { "q" },
+                            query::table_reference {
+                                    name::simple { "T0" },
+                            },
+                    },
+            },
+            query::table_reference {
+                    name::simple { "q" },
+            },
+    }));
+}
+
+TEST_F(sql_parser_query_test, with_in_parens_left) {
+    auto result = parse("(WITH q AS (TABLE T1) TABLE q) UNION TABLE T0;");
+    ASSERT_FALSE(result) << diagnostics(result);
+    EXPECT_EQ(result.diagnostic().code(), sql_parser_code::syntax_error);
+}
+
 } // namespace mizugaki::parser

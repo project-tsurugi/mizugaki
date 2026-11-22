@@ -891,16 +891,13 @@
 %nterm <ast::statement::privilege_user> privilege_user
 
 %nterm <node_ptr<ast::query::expression>> query_expression
+%nterm <node_ptr<ast::query::expression>> query_expression_root
 %nterm <node_ptr<ast::query::expression>> query_body
-%nterm <node_ptr<ast::query::expression>> query_body_root
 %nterm <node_ptr<ast::query::expression>> query_body_part
 %nterm <node_ptr<ast::query::expression>> query_term
-%nterm <node_ptr<ast::query::expression>> query_term_root
 %nterm <node_ptr<ast::query::expression>> query_term_part
 %nterm <node_ptr<ast::query::expression>> query_factor
-%nterm <node_ptr<ast::query::expression>> query_factor_root
 %nterm <node_ptr<ast::query::expression>> query_primary
-%nterm <node_ptr<ast::query::expression>> query_primary_root
 %nterm <node_ptr<ast::query::expression>> query_primary_part
 
 %nterm <element_vector<ast::query::with_element>> with_list
@@ -938,6 +935,7 @@
 %nterm <node_ptr<ast::table::expression>> table_reference
 %nterm <node_ptr<ast::table::expression>> joined_table
 %nterm <node_ptr<ast::table::expression>> table_primary
+%nterm <node_ptr<ast::table::expression>> parenthesized_joined_table
 
 %nterm <ast::table::correlation_clause> correlation_clause
 %nterm <std::optional<ast::table::correlation_clause>> correlation_clause_opt
@@ -987,6 +985,7 @@
 %nterm <node_ptr<ast::query::expression>> row_subquery
 %nterm <node_ptr<ast::query::expression>> scalar_subquery
 %nterm <node_ptr<ast::query::expression>> subquery
+%nterm <node_ptr<ast::query::expression>> simple_subquery
 
 %nterm <node_ptr<ast::literal::literal>> literal
 %nterm <node_ptr<ast::literal::literal>> unsigned_integer
@@ -1041,6 +1040,18 @@
 %nterm <node_ptr<ast::name::name>> identifier_chain
 %nterm <node_ptr<ast::name::simple>> identifier
 %nterm <node_ptr<ast::name::simple>> contextual_identifier
+
+// NOTE: nested parentheses around a subquery belong to the subquery, not to the enclosing expression.
+//       "((SELECT ...))" in a value expression can be read as either a parenthesized scalar subquery or
+//       a nested subquery, and both readings produce the same AST.
+//       When ")" follows a subquery, these precedences compare:
+//       - reducing "scalar_subquery: subquery" (then ")" closes a parenthesized value expression), and
+//       - shifting ")" (as "subquery: ( subquery )" or "explicit_row_value_expression: ( subquery )").
+//       Because SUBQUERY_AS_VALUE < ")", the parser always shifts.
+//       This is the only use of these precedences; check "resolved as" in the bison report (-r all)
+//       when changing rules which end with ")".
+%precedence SUBQUERY_AS_VALUE
+%precedence ")"
 
 // predicate expression
 %left "OR"
@@ -2334,6 +2345,18 @@ privilege_user
     ;
 
 query_expression
+    : query_expression_root[e]
+        {
+            $$ = $e;
+        }
+    | subquery[e]
+        {
+            $$ = $e;
+        }
+    ;
+
+// query expression which is not entirely enclosed in parentheses
+query_expression_root
     : WITH recursive_opt[r] with_list[w] query_body[e]
         {
             $$ = driver.node<ast::query::with_expression>(
@@ -2342,7 +2365,15 @@ query_expression
                     $e,
                     @$);
         }
-    | query_body_root[e]
+    | query_body_part[e]
+        {
+            $$ = $e;
+        }
+    | query_term_part[e]
+        {
+            $$ = $e;
+        }
+    | query_primary_part[e]
         {
             $$ = $e;
         }
@@ -2376,7 +2407,7 @@ with_list
     ;
 
 with_element
-    : query_name[n] column_list_opt[c] AS "(" query_expression[q] ")"
+    : query_name[n] column_list_opt[c] AS subquery[q]
         {
             $$ = ast::query::with_element {
                     $n,
@@ -2404,17 +2435,6 @@ query_body
             $$ = $e;
         }
     | query_term[e]
-        {
-            $$ = $e;
-        }
-    ;
-
-query_body_root
-    : query_body_part[e]
-        {
-            $$ = $e;
-        }
-    | query_term_root[e]
         {
             $$ = $e;
         }
@@ -2464,17 +2484,6 @@ query_term
         }
     ;
 
-query_term_root
-    : query_term_part[e]
-        {
-            $$ = $e;
-        }
-    | query_factor_root[e]
-        {
-            $$ = $e;
-        }
-    ;
-
 query_term_part
     : query_term[l] INTERSECT[o] set_quantifier_opt[q] corresponding_spec_opt[c] query_factor[r]
         {
@@ -2495,37 +2504,23 @@ query_factor
         }
     ;
 
-query_factor_root
-    : query_primary_root[e]
-        {
-            $$ = $e;
-        }
-    ;
-
 query_primary
     : query_primary_part[e]
         {
             $$ = $e;
         }
-    | "(" query_expression[e] ")"
+    | subquery[e]
         {
-            // NOTE: WITH ... is not allowed in here, but avoid sr-conflict by reusing query_expression
+            // NOTE: WITH ... is not allowed in here, but avoid sr-conflict by reusing subquery
             auto expr = $e;
             if (expr->node_kind() == ast::query::with_expression::tag) {
                 driver.error(
                         sql_parser_code::syntax_error,
-                        @e,
+                        expr->region(),
                         "common table expressions declaration (WITH ...) is not allowed in query operand");
                 YYABORT;
             }
             $$ = std::move(expr);
-        }
-    ;
-
-query_primary_root
-    : query_primary_part[e]
-        {
-            $$ = $e;
         }
     ;
 
@@ -2967,7 +2962,7 @@ table_primary
                     $c,
                     @$);
         }
-    | "(" query_expression[e] ")" correlation_clause[c]
+    | subquery[e] correlation_clause[c]
         {
             $$ = driver.node<ast::table::subquery>(
                     regioned { false },
@@ -2975,7 +2970,7 @@ table_primary
                     $c,
                     @$);
         }
-    | LATERAL[q] "(" query_expression[e] ")" correlation_clause[c]
+    | LATERAL[q] subquery[e] correlation_clause[c]
         {
             $$ = driver.node<ast::table::subquery>(
                     regioned { true, @q },
@@ -2999,7 +2994,18 @@ table_primary
                     $c,
                     @$);
         }
-    | "(" joined_table[e] ")"
+    | parenthesized_joined_table[e]
+        {
+            $$ = $e;
+        }
+    ;
+
+parenthesized_joined_table
+    : "(" joined_table[e] ")"
+        {
+            $$ = $e;
+        }
+    | "(" parenthesized_joined_table[e] ")"
         {
             $$ = $e;
         }
@@ -3104,6 +3110,19 @@ explicit_row_value_expression
             $$ = driver.node<ast::scalar::value_constructor>(
                     regioned { ast::scalar::value_constructor_kind::row },
                     $e,
+                    @$);
+        }
+    // NOTE: a row of one scalar subquery. This is a part of the rule above,
+    //       but "(" subquery ")" never becomes a value_expression_list (see SUBQUERY_AS_VALUE)
+    | "(" subquery[e] ")"
+        {
+            $$ = driver.node<ast::scalar::value_constructor>(
+                    regioned { ast::scalar::value_constructor_kind::row },
+                    driver.to_node_vector<ast::scalar::expression>(
+                            driver.node<ast::scalar::subquery>(
+                                    $e,
+                                    ast::scalar::expression_context_kind::scalar,
+                                    @e)),
                     @$);
         }
     | row_subquery[e]
@@ -4241,21 +4260,36 @@ table_subquery
     ;
 
 scalar_subquery
-    : subquery[e]
+    // NOTE: see SUBQUERY_AS_VALUE
+    : subquery[e] %prec SUBQUERY_AS_VALUE
         {
             $$ = $e;
         }
     ;
 
 row_subquery
-    : subquery[e]
+    // NOTE: a row subquery is enclosed in exactly one pair of parentheses.
+    //       "((SELECT ...))" in a row is a row of one scalar subquery (see explicit_row_value_expression).
+    //       Accepting nested parentheses here makes the two readings conflict (reduce/reduce).
+    : simple_subquery[e]
         {
             $$ = $e;
         }
     ;
 
 subquery
-    : "(" query_expression[e] ")"
+    : simple_subquery[e]
+        {
+            $$ = $e;
+        }
+    | "(" subquery[e] ")"
+        {
+            $$ = $e;
+        }
+    ;
+
+simple_subquery
+    : "(" query_expression_root[e] ")"
         {
             $$ = $e;
         }

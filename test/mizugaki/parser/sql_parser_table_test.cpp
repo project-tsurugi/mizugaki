@@ -503,4 +503,54 @@ TEST_F(sql_parser_table_test, apply_correlation_columns) {
         }));
 }
 
+TEST_F(sql_parser_table_test, derived_table_parenthesized) {
+    auto result = parse("((TABLE T0)) AS X");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (table::subquery {
+            query::table_reference {
+                    name::simple { "T0" },
+            },
+            {
+                    name::simple { "X" },
+            }
+    }));
+}
+
+TEST_F(sql_parser_table_test, lateral_derived_table_parenthesized) {
+    auto result = parse("LATERAL ((TABLE T0)) AS X");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (table::subquery {
+            query::table_reference {
+                    name::simple { "T0" },
+            },
+            {
+                    name::simple { "X" },
+            },
+            true,
+    }));
+}
+
+TEST_F(sql_parser_table_test, join_parenthesized_nested) {
+    auto result = parse("T0 CROSS JOIN ((T1 CROSS JOIN T2))");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (table::join {
+        table::table_reference {
+                name::simple { "T0" },
+        },
+        table::join_type::cross,
+        table::join {
+                table::table_reference {
+                        name::simple { "T1" },
+                },
+                table::join_type::cross,
+                table::table_reference {
+                        name::simple { "T2" },
+                },
+        }
+    }));
+}
+
 } // namespace mizugaki::parser

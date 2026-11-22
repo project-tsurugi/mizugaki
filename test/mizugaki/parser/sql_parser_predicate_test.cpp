@@ -552,4 +552,45 @@ TEST_F(sql_parser_predicate_test, extension_is_contained_by_operator) {
     }));
 }
 
+TEST_F(sql_parser_predicate_test, in_predicate_subquery_parenthesized) {
+    auto result = parse("(1, 2) IN ((TABLE a))");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (scalar::in_predicate {
+            scalar::value_constructor {
+                    int_literal("1"),
+                    int_literal("2"),
+            },
+            query::table_reference {
+                    name::simple { "a" },
+            },
+    }));
+}
+
+TEST_F(sql_parser_predicate_test, quantified_comparison_predicate_parenthesized) {
+    auto result = parse("a = ANY ((TABLE t))");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (scalar::quantified_comparison_predicate {
+            v("a"),
+            scalar::comparison_operator::equals,
+            scalar::quantifier::any,
+            query::table_reference {
+                    name::simple { "t" },
+            },
+    }));
+}
+
+TEST_F(sql_parser_predicate_test, exists_predicate_parenthesized) {
+    auto result = parse("EXISTS ((TABLE a))");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (scalar::table_predicate {
+            scalar::table_operator::exists,
+            query::table_reference {
+                    name::simple { "a" },
+            },
+    }));
+}
+
 } // namespace mizugaki::parser

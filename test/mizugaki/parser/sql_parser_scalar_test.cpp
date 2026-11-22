@@ -621,4 +621,16 @@ TEST_F(sql_parser_scalar_test, placeholder_reference_multiple) {
     }));
 }
 
+TEST_F(sql_parser_scalar_test, scalar_subquery_parenthesized) {
+    auto result = parse("((TABLE a))");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (scalar::subquery {
+            query::table_reference {
+                    name::simple { "a" },
+            },
+            scalar::expression_context_kind::scalar,
+    }));
+}
+
 } // namespace mizugaki::parser

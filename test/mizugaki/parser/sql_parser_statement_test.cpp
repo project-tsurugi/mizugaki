@@ -30,6 +30,8 @@
 #include <mizugaki/ast/query/query.h>
 #include <mizugaki/ast/query/table_value_constructor.h>
 #include <mizugaki/ast/query/select_asterisk.h>
+#include <mizugaki/ast/query/table_reference.h>
+#include <mizugaki/ast/query/with_expression.h>
 
 #include <mizugaki/ast/table/table_reference.h>
 
@@ -2595,6 +2597,112 @@ TEST_F(sql_parser_statement_test, revoke_privilege_statement_multiple_users) {
                     },
                     {
                             name::simple { "u3" },
+                    },
+            },
+    }));
+}
+
+TEST_F(sql_parser_statement_test, insert_select_parenthesized) {
+    auto result = parse("INSERT INTO T0 ((SELECT * FROM T1));");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::insert_statement {
+            name::simple { "T0" },
+            {},
+            query::query {
+                    {},
+                    { // SELECT
+                            query::select_asterisk {},
+                    },
+                    { // FROM
+                            table::table_reference {
+                                    name::simple { "T1" },
+                            },
+                    },
+            }
+    }));
+}
+
+TEST_F(sql_parser_statement_test, insert_columns_select_parenthesized) {
+    auto result = parse("INSERT INTO T0 (C0, C1) (SELECT * FROM T1);");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::insert_statement {
+            name::simple { "T0" },
+            {
+                    name::simple { "C0" },
+                    name::simple { "C1" },
+            },
+            query::query {
+                    {},
+                    { // SELECT
+                            query::select_asterisk {},
+                    },
+                    { // FROM
+                            table::table_reference {
+                                    name::simple { "T1" },
+                            },
+                    },
+            }
+    }));
+}
+
+TEST_F(sql_parser_statement_test, view_definition_parenthesized) {
+    auto result = parse("CREATE VIEW v AS ((VALUES (1)))");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::view_definition {
+            name::simple { "v" },
+            {},
+            query::table_value_constructor{
+                    scalar::value_constructor{
+                            int_literal("1"),
+                    },
+            },
+    }));
+}
+
+TEST_F(sql_parser_statement_test, insert_with_parenthesized) {
+    auto result = parse("INSERT INTO T0 (WITH q AS (TABLE T1) TABLE q);");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::insert_statement {
+            name::simple { "T0" },
+            {},
+            query::with_expression {
+                    { // WITH
+                            {
+                                    name::simple { "q" },
+                                    query::table_reference {
+                                            name::simple { "T1" },
+                                    },
+                            },
+                    },
+                    query::table_reference {
+                            name::simple { "q" },
+                    },
+            }
+    }));
+}
+
+TEST_F(sql_parser_statement_test, view_definition_with_parenthesized) {
+    auto result = parse("CREATE VIEW v AS (WITH q AS (TABLE T1) TABLE q)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::view_definition {
+            name::simple { "v" },
+            {},
+            query::with_expression {
+                    { // WITH
+                            {
+                                    name::simple { "q" },
+                                    query::table_reference {
+                                            name::simple { "T1" },
+                                    },
+                            },
+                    },
+                    query::table_reference {
+                            name::simple { "q" },
                     },
             },
     }));
