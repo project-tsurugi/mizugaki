@@ -1173,4 +1173,47 @@ TEST_F(analyze_query_expression_apply_test, arguments_join) {
     EXPECT_EQ(apply->arguments()[1], vref(*u_v));
 }
 
+TEST_F(analyze_query_expression_apply_test, invalid_argument_preceding_table) {
+    /*
+     * -- t, u: table(k:int8, v:varchar, ...)
+     * -- f: (int8) -> table(c0:int4)
+     * SELECT x.c0
+     * FROM t, u APPLY f(t.k) x
+     * -- the arguments cannot refer to the columns of the preceding table reference in the FROM clause.
+     */
+    auto table_t = install_table("t");
+    auto table_u = install_table("u");
+    auto function = functions_->add({
+            ::yugawara::function::declaration::minimum_builtin_function_id + 1,
+            "f",
+            ttype::table {
+                {
+                    { "c0", ttype::int4 {} },
+                },
+            },
+            {
+                ttype::int8 {},
+            },
+            { ::yugawara::function::function_feature::table_valued_function },
+    });
+    invalid(sql_analyzer_code::symbol_not_found, ast::query::query {
+            {
+                    ast::query::select_column { vref(id("x", "c0")) },
+            },
+            {
+                    ast::table::table_reference { id("t") },
+                    ast::table::apply {
+                            ast::table::table_reference { id("u") },
+                            id("f"),
+                            {
+                                    vref(id("t", "k")),
+                            },
+                            {
+                                    id("x"),
+                            },
+                    },
+            },
+    });
+}
+
 } // namespace mizugaki::analyzer::details

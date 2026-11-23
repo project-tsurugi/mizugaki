@@ -1,5 +1,6 @@
 #pragma once
 
+#include <deque>
 #include <tuple>
 #include <vector>
 
@@ -9,7 +10,8 @@
 
 #include <takatori/util/enum_set.h>
 #include <takatori/util/optional_ptr.h>
-#include <takatori/util/sequence_view.h>
+#include <takatori/util/reference_extractor.h>
+#include <takatori/util/reference_list_view.h>
 
 #include <yugawara/storage/relation.h>
 
@@ -44,18 +46,36 @@ public:
 
     [[nodiscard]] ::takatori::util::optional_ptr<query_scope>& parent() noexcept;
     [[nodiscard]] ::takatori::util::optional_ptr<query_scope const> parent() const noexcept;
-    [[nodiscard]] ::takatori::util::sequence_view<relation_info> references() noexcept;
-    [[nodiscard]] ::takatori::util::sequence_view<relation_info const> references() const noexcept;
+    [[nodiscard]] ::takatori::util::reference_list_view<::takatori::util::double_pointer_extractor<relation_info>> references() noexcept;
+    [[nodiscard]] ::takatori::util::reference_list_view<::takatori::util::double_pointer_extractor<relation_info const>> references() const noexcept;
 
     void reserve(std::size_t size);
+
+    /**
+     * @brief adds a relation into this scope.
+     * @details this scope takes the ownership of the relation.
+     * @param info the relation
+     * @return the added relation
+     * @see add_reference()
+     */
     relation_info& add(relation_info info);
+
+    /**
+     * @brief adds a relation into this scope, without taking its ownership.
+     * @details this is equivalent to add(), but avoids copying the relation
+     *      which the caller keeps during this scope is in use.
+     * @attention the relation must not be moved nor destroyed while this scope is in use.
+     * @param info the relation
+     * @return the added relation
+     * @see add()
+     */
+    relation_info& add_reference(relation_info& info);
 
     [[nodiscard]] result_type find(std::string_view identifier);
     [[nodiscard]] const_result_type find(std::string_view identifier) const;
     [[nodiscard]] result_type find(::yugawara::storage::relation const& relation);
     [[nodiscard]] const_result_type find(::yugawara::storage::relation const& relation) const;
 
-    [[nodiscard]] position_type create_pivot() const noexcept;
 
     /**
      * @brief adds a query info with the given name.
@@ -109,7 +129,8 @@ private:
     static constexpr position_type ambiguous = std::numeric_limits<position_type>::max();
 
     ::takatori::util::optional_ptr<query_scope> parent_ {};
-    std::vector<relation_info> relations_ {};
+    std::deque<relation_info> owned_ {};
+    std::vector<relation_info*> relations_ {};
     ::tsl::hopscotch_map<std::string, position_type, std::hash<std::string_view>, std::equal_to<>> name_map_ {};
     ::tsl::hopscotch_map<yugawara::storage::relation const*, position_type> reference_map_ {};
     ::tsl::hopscotch_map<

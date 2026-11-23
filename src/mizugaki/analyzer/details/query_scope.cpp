@@ -12,8 +12,9 @@ namespace mizugaki::analyzer::details {
 
 namespace descriptor = ::takatori::descriptor;
 
+using ::takatori::util::double_pointer_extractor;
 using ::takatori::util::optional_ptr;
-using ::takatori::util::sequence_view;
+using ::takatori::util::reference_list_view;
 
 query_scope::query_scope(query_scope_feature_set features):
     features_ { features }
@@ -36,12 +37,12 @@ optional_ptr<query_scope const> query_scope::parent() const noexcept {
     return parent_;
 }
 
-sequence_view<relation_info> query_scope::references() noexcept {
-    return relations_;
+reference_list_view<double_pointer_extractor<relation_info>> query_scope::references() noexcept {
+    return reference_list_view<double_pointer_extractor<relation_info>> { relations_ };
 }
 
-sequence_view<relation_info const> query_scope::references() const noexcept {
-    return relations_;
+reference_list_view<double_pointer_extractor<relation_info const>> query_scope::references() const noexcept {
+    return reference_list_view<double_pointer_extractor<relation_info const>> { relations_ };
 }
 
 void query_scope::reserve(std::size_t size) {
@@ -51,8 +52,12 @@ void query_scope::reserve(std::size_t size) {
 }
 
 relation_info& query_scope::add(relation_info info) {
+    return add_reference(owned_.emplace_back(std::move(info)));
+}
+
+relation_info& query_scope::add_reference(relation_info& info) {
     auto position = relations_.size();
-    auto&& added = relations_.emplace_back(std::move(info));
+    auto&& added = *relations_.emplace_back(std::addressof(info));
 
     if (auto&& id = added.identifier(); !id.empty()) {
         if (auto [it, success] = name_map_.try_emplace(id, position); !success) {
@@ -75,7 +80,7 @@ query_scope::result_type query_scope::find(std::string_view identifier) {
         if (*pos == ambiguous) {
             return result_type::ambiguous;
         }
-        return relations_[*pos];
+        return *relations_[*pos];
     }
     return {};
 }
@@ -85,7 +90,7 @@ query_scope::const_result_type query_scope::find(std::string_view identifier) co
         if (*pos == ambiguous) {
             return const_result_type::ambiguous;
         }
-        return relations_[*pos];
+        return *relations_[*pos];
     }
     return {};
 }
@@ -95,7 +100,7 @@ query_scope::result_type query_scope::find(::yugawara::storage::relation const& 
         if (*pos == ambiguous) {
             return result_type::ambiguous;
         }
-        return relations_[*pos];
+        return *relations_[*pos];
     }
     return {};
 }
@@ -105,7 +110,7 @@ query_scope::const_result_type query_scope::find(::yugawara::storage::relation c
         if (*pos == ambiguous) {
             return const_result_type::ambiguous;
         }
-        return relations_[*pos];
+        return *relations_[*pos];
     }
     return {};
 }
@@ -126,9 +131,6 @@ std::optional<query_scope::position_type> query_scope::find_internal(::yugawara:
     return {};
 }
 
-query_scope::position_type query_scope::create_pivot() const noexcept {
-    return relations_.size();
-}
 
 bool query_scope::add(std::string name, std::shared_ptr<query_info const> query) { // NOLINT(performance-unnecessary-value-param)
     auto [it, added] = query_map_.try_emplace(std::move(name), std::move(query));

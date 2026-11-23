@@ -70,6 +70,69 @@ using node_vector = std::vector<std::unique_ptr<T>>;
 
 namespace {
 
+/**
+ * @brief the result of analyzing a table expression.
+ * @details a table expression yields a "concatenated relation", represented as a list of relation_info.
+ */
+class table_result {
+public:
+    /**
+     * @brief creates a new instance which represents the analysis was failed.
+     */
+    table_result() = default;
+
+    /**
+     * @brief creates a new instance which consists of a single relation.
+     * @param output the output port
+     * @param relation the relation
+     */
+    table_result(output_port& output, relation_info relation) :
+        output_ { output }
+    {
+        relations_.emplace_back(std::move(relation));
+    }
+
+    /**
+     * @brief creates a new instance.
+     * @param output the output port
+     * @param relations the relations which the table expression yields, in order
+     */
+    table_result(output_port& output, std::vector<relation_info> relations) noexcept :
+        output_ { output },
+        relations_ { std::move(relations) }
+    {}
+
+    /**
+     * @brief returns whether the analysis was succeeded.
+     * @return true if it was succeeded
+     * @return false otherwise
+     */
+    [[nodiscard]] explicit operator bool() const noexcept {
+        return static_cast<bool>(output_);
+    }
+
+    /**
+     * @brief returns the output port.
+     * @return the output port
+     * @warning undefined behavior if the analysis was failed
+     */
+    [[nodiscard]] output_port& output() {
+        return *output_;
+    }
+
+    /**
+     * @brief returns the relations which the table expression yields, in order.
+     * @return the relations
+     */
+    [[nodiscard]] std::vector<relation_info>& relations() noexcept {
+        return relations_;
+    }
+
+private:
+    optional_ptr<output_port> output_ {};
+    std::vector<relation_info> relations_ {};
+};
+
 class engine {
 public:
     engine(
@@ -800,7 +863,7 @@ public:
     }
 
     // table expressions
-    [[nodiscard]] optional_ptr<output_port> operator()(
+    [[nodiscard]] table_result operator()(
             ast::table::table_reference const& expr,
             query_scope& scope) {
         // FIXME: treat is_only()
@@ -814,8 +877,7 @@ public:
                 return {};
             }
         }
-        scope.add(std::move(info));
-        return result.output();
+        return { result.output(), std::move(info) };
     }
 
     [[nodiscard]] result_type process_relation_reference(
@@ -928,7 +990,7 @@ public:
         return { op.output(), std::move(info) };
     }
 
-    [[nodiscard]] optional_ptr<output_port> operator()(
+    [[nodiscard]] table_result operator()(
             ast::table::unnest const& expr,
             query_scope&) {
         // FIXME: impl
@@ -942,7 +1004,7 @@ public:
         return {};
     }
 
-    [[nodiscard]] optional_ptr<output_port> operator()(
+    [[nodiscard]] table_result operator()(
             ast::table::join const& expr,
             query_scope& scope) {
         using from = ast::table::join_type;
@@ -961,7 +1023,7 @@ public:
         ::takatori::util::fail();
     }
 
-    [[nodiscard]] optional_ptr<output_port> operator()(
+    [[nodiscard]] table_result operator()(
             ast::table::subquery const& expr,
             query_scope& scope) {
         // FIXME: treat is_lateral
@@ -981,11 +1043,10 @@ public:
         if (!rebuild_relation_info(info, expr.correlation())) {
             return {};
         }
-        scope.add(std::move(info));
-        return result.output();
+        return { result.output(), std::move(info) };
     }
 
-    [[nodiscard]] optional_ptr<output_port> operator()( // NOLINT(*-cognitive-complexity)
+    [[nodiscard]] table_result operator()( // NOLINT(*-cognitive-complexity)
             ast::table::apply const& expr,
             query_scope& scope) {
         auto operand = dispatch(*expr.operand(), scope);
@@ -1001,17 +1062,24 @@ public:
         arguments.reserve(expr.arguments().size());
         std::vector<std::shared_ptr<::takatori::type::data const>> argument_types {};
         argument_types.reserve(expr.arguments().size());
-        for (auto&& arg : expr.arguments()) {
-            auto value = analyze_scalar_expression(context_, *arg, scope);
-            if (!value) {
-                return {};
+        {
+            // NOTE: the arguments can only refer the columns of the operand (and the outer queries)
+            query_scope input { optional_ptr<query_scope> { scope } };
+            for (auto&& relation : operand.relations()) {
+                input.add_reference(relation);
             }
-            auto type = context_.resolve(*value);
-            if (!type) {
-                return {};
+            for (auto&& arg : expr.arguments()) {
+                auto value = analyze_scalar_expression(context_, *arg, input);
+                if (!value) {
+                    return {};
+                }
+                auto type = context_.resolve(*value);
+                if (!type) {
+                    return {};
+                }
+                arguments.push_back(value.release());
+                argument_types.emplace_back(type);
             }
-            arguments.push_back(value.release());
-            argument_types.emplace_back(type);
         }
 
         // search for table-valued functions
@@ -1122,19 +1190,19 @@ public:
                     std::move(name),
             });
         }
-        scope.add(std::move(info));
-
         auto&& op = graph_.emplace<trelation::apply>(
                 *operator_kind,
                 factory_(std::move(target)),
                 std::move(arguments),
                 std::move(columns));
         op.region() = context_.convert(expr.region());
-        op.input().connect_to(*operand);
+        op.input().connect_to(operand.output());
         if (!context_.resolve(op)) {
             return {};
         }
-        return op.output();
+        auto relations = std::move(operand.relations());
+        relations.emplace_back(std::move(info));
+        return { op.output(), std::move(relations) };
     }
 
     [[nodiscard]] std::optional<trelation::apply_kind> convert(
@@ -1313,11 +1381,20 @@ public:
 
     // join specification
 
-    [[nodiscard]] std::unique_ptr<tscalar::expression> operator()(
+    [[nodiscard]] std::unique_ptr<tscalar::expression> process_join_condition(
             ast::table::join_condition const& elem,
             query_scope& scope,
-            query_scope::position_type) {
-        auto r = analyze_scalar_expression(context_, *elem.expression(), scope);
+            std::vector<relation_info>& left_relations,
+            std::vector<relation_info>& right_relations) {
+        // NOTE: the join condition can only refer the columns of the join operands (and the outer queries)
+        query_scope input { optional_ptr<query_scope> { scope } };
+        for (auto&& relation : left_relations) {
+            input.add_reference(relation);
+        }
+        for (auto&& relation : right_relations) {
+            input.add_reference(relation);
+        }
+        auto r = analyze_scalar_expression(context_, *elem.expression(), input);
         if (!r) {
             return {};
         }
@@ -1331,86 +1408,102 @@ public:
         return r.release();
     }
 
-    [[nodiscard]] std::unique_ptr<tscalar::expression> operator()( // NOLINT(*-function-cognitive-complexity)
+    enum class find_column_status {
+        found,
+        not_found,
+        ambiguous,
+    };
+
+    /**
+     * @brief finds an exported column with the given name from the relation list.
+     * @details this is the same rule as the unqualified column references.
+     */
+    [[nodiscard]] std::pair<find_column_status, column_info*> find_exported_column(
+            std::vector<relation_info>& relations,
+            std::string_view id) {
+        column_info* found {};
+        for (auto&& relation : relations) {
+            for (auto column = relation.find(id); !column.is_absent(); column = relation.next(*column)) {
+                if (column.is_ambiguous()) {
+                    return { find_column_status::ambiguous, nullptr };
+                }
+                if (!column->exported()) {
+                    continue;
+                }
+                if (found) {
+                    return { find_column_status::ambiguous, nullptr };
+                }
+                found = std::addressof(column.value());
+            }
+        }
+        if (!found) {
+            return { find_column_status::not_found, nullptr };
+        }
+        return { find_column_status::found, found };
+    }
+
+    [[nodiscard]] std::unique_ptr<tscalar::expression> process_join_columns( // NOLINT(*-function-cognitive-complexity)
             ast::table::join_columns const& elem,
-            query_scope& scope,
-            query_scope::position_type pivot) {
+            std::vector<relation_info>& left_relations,
+            std::vector<relation_info>& right_relations) {
         std::unique_ptr<tscalar::expression> result {};
 
         for (auto&& name : elem.columns()) {
             auto&& id = normalize_identifier(context_, *name, name_kind::variable);
-            auto&& rels = scope.references();
-            optional_ptr<tdescriptor::variable const> left {};
-            for (query_scope::position_type i = 0, n = pivot; i < n; ++i) {
-                auto&& rel = rels[i];
-                for (auto&& column = rel.find(id); column; column = rel.next(*column)) {
-                    // FIXME: check existing
-                    if (!column->exported()) {
-                        continue;
-                    }
-                    if (left) {
-                        context_.report(
-                                sql_analyzer_code::column_ambiguous,
-                                string_builder {}
-                                        << "column \'" << id << "\" in join left hand side is ambiguous"
-                                        << string_builder::to_string,
-                                name->region());
-                        return {};
-                    }
-                    left = column->variable();
-                }
-            }
-            if (!left) {
+            auto [left_status, left] = find_exported_column(left_relations, id);
+            if (left_status == find_column_status::ambiguous) {
                 context_.report(
-                        sql_analyzer_code::column_not_found,
+                        sql_analyzer_code::column_ambiguous,
                         string_builder {}
-                                << "column \'" << id << "\" is not found in join left hand side"
+                                << "column '" << id << "' in join left hand side is ambiguous"
                                 << string_builder::to_string,
                         name->region());
                 return {};
             }
-            optional_ptr<tdescriptor::variable const> right {};
-            for (query_scope::position_type i = pivot, n = rels.size(); i < n; ++i) {
-                auto&& rel = rels[i];
-                for (auto&& column = rel.find(id); column; column = rel.next(*column)) {
-                    // FIXME: check existing
-                    if (!column->exported()) {
-                        continue;
-                    }
-                    if (right) {
-                        context_.report(
-                                sql_analyzer_code::column_ambiguous,
-                                string_builder {}
-                                        << "column \'" << id << "\" in join right hand side is ambiguous"
-                                        << string_builder::to_string,
-                                name->region());
-                        return {};
-                    }
-                    right = column->variable();
+            if (left_status == find_column_status::not_found) {
+                context_.report(
+                        sql_analyzer_code::column_not_found,
+                        string_builder {}
+                                << "column '" << id << "' is not found in join left hand side"
+                                << string_builder::to_string,
+                        name->region());
+                return {};
+            }
+            auto [right_status, right] = find_exported_column(right_relations, id);
+            if (right_status == find_column_status::ambiguous) {
+                context_.report(
+                        sql_analyzer_code::column_ambiguous,
+                        string_builder {}
+                                << "column '" << id << "' in join right hand side is ambiguous"
+                                << string_builder::to_string,
+                        name->region());
+                return {};
+            }
+            if (right_status == find_column_status::not_found) {
+                context_.report(
+                        sql_analyzer_code::column_not_found,
+                        string_builder {}
+                                << "column '" << id << "' is not found in join right hand side"
+                                << string_builder::to_string,
+                        name->region());
+                return {};
+            }
 
-                    // NOTE: hide column in RHS
-                    column->exported() = false;
-                }
-            }
-            if (!right) {
-                context_.report(
-                        sql_analyzer_code::column_not_found,
-                        string_builder {}
-                                << "column \'" << id << "\" is not found in join left hand side"
-                                << string_builder::to_string,
-                        name->region());
-                return {};
-            }
+            // NOTE: hide column in RHS
+            right->exported() = false;
+
+            auto left_variable = left->variable();
+            auto right_variable = right->variable();
 
             auto term = context_.create<tscalar::compare>(
                     name->region(),
                     tscalar::comparison_operator::equal,
                     context_.create<tscalar::variable_reference>(
                             name->region(),
-                            *left),
+                            left_variable),
                     context_.create<tscalar::variable_reference>(
                             name->region(),
-                            *right));
+                            right_variable));
             if (!result) {
                 result = std::move(term);
             } else {
@@ -1449,7 +1542,7 @@ private:
         return ast::query::dispatch(*this, expr, std::move(parent), val, continue_scope);
     }
 
-    [[nodiscard]] optional_ptr<output_port> dispatch(
+    [[nodiscard]] table_result dispatch(
             ast::table::expression const& expr,
             query_scope& scope) {
         return ast::table::dispatch(*this, expr, scope);
@@ -1580,13 +1673,17 @@ private:
         }
 
         optional_ptr<output_port> output {};
+        std::vector<relation_info> relations {};
         for (auto&& elem : elements) {
             auto next = dispatch(*elem, scope);
             if (!next) {
                 return {};
             }
+            for (auto&& r : next.relations()) {
+                relations.emplace_back(std::move(r));
+            }
             if (!output) {
-                output = std::move(next);
+                output = next.output();
             } else {
                 // cross join
                 auto&& join = graph_.emplace<trelation::intermediate::join>(trelation::join_kind::inner);
@@ -1594,9 +1691,13 @@ private:
                     return {};
                 }
                 join.left().connect_to(*output);
-                join.right().connect_to(*next);
+                join.right().connect_to(next.output());
                 output = join.output();
             }
+        }
+        // NOTE: the relations become visible in the query scope only after the whole FROM clause was analyzed
+        for (auto&& r : relations) {
+            scope.add(std::move(r));
         }
         return output;
     }
@@ -1620,7 +1721,7 @@ private:
         return empty;
     }
 
-    [[nodiscard]] optional_ptr<output_port> process_join(
+    [[nodiscard]] table_result process_join( // NOLINT(*-function-cognitive-complexity)
             trelation::join_kind join_type,
             bool natural,
             ast::table::join const& expr,
@@ -1630,13 +1731,14 @@ private:
         if (!left) {
             return {};
         }
-        auto pivot = scope.create_pivot();
         auto right = dispatch(*expr.right(), scope);
         if (!right) {
             return {};
         }
+        optional_ptr left_port { left.output() };
+        optional_ptr right_port { right.output() };
         if (transpose) {
-            std::swap(left, right);
+            std::swap(left_port, right_port);
         }
 
         std::unique_ptr<tscalar::expression> condition {};
@@ -1648,12 +1750,25 @@ private:
                         expr.specification()->region());
                 return {};
             }
-            condition = collect_natural_join_columns(expr, scope, pivot);
+            condition = collect_natural_join_columns(expr);
             if (!condition) {
                 return {};
             }
-        } else if (expr.specification()) {
-            condition = ast::table::dispatch(*this, *expr.specification(), scope, pivot);
+        } else if (auto&& spec = expr.specification()) {
+            if (spec->node_kind() == ast::table::join_columns::tag) {
+                condition = process_join_columns(
+                        unsafe_downcast<ast::table::join_columns>(*spec),
+                        left.relations(),
+                        right.relations());
+            } else if (spec->node_kind() == ast::table::join_condition::tag) {
+                condition = process_join_condition(
+                        unsafe_downcast<ast::table::join_condition>(*spec),
+                        scope,
+                        left.relations(),
+                        right.relations());
+            } else {
+                ::takatori::util::fail();
+            }
             if (!condition) {
                 return {};
             }
@@ -1666,21 +1781,24 @@ private:
         if (!context_.resolve(op)) {
             return {};
         }
-        op.left().connect_to(*left);
-        op.right().connect_to(*right);
-        return op.output();
+        op.left().connect_to(*left_port);
+        op.right().connect_to(*right_port);
+
+        // the result relation: [left relations..., right relations...]
+        std::vector<relation_info> relations {};
+        relations.reserve(left.relations().size() + right.relations().size());
+        for (auto&& r : left.relations()) {
+            relations.emplace_back(std::move(r));
+        }
+        for (auto&& r : right.relations()) {
+            relations.emplace_back(std::move(r));
+        }
+        return { op.output(), std::move(relations) };
     }
 
     [[nodiscard]] std::unique_ptr<tscalar::expression> collect_natural_join_columns(
-            ast::table::join const& expr,
-            query_scope& scope,
-            query_scope::position_type pivot) {
-        std::unique_ptr<tscalar::expression> result {};
-        ::tsl::hopscotch_set<std::string_view> saw {};
-
+            ast::table::join const& expr) {
         // FIXME: impl
-        (void) scope;
-        (void) pivot;
         context_.report(
                 sql_analyzer_code::unsupported_feature,
                 string_builder {}

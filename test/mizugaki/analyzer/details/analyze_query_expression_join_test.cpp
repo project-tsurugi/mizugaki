@@ -1416,4 +1416,114 @@ TEST_F(analyze_query_expression_join_test, qualified_references_join_columns_lef
     check_qualified_references_using_left(ast::table::join_type::full_outer);
 }
 
+TEST_F(analyze_query_expression_join_test, join_condition_invalid_outside_operands) {
+    /*
+     * SELECT a.v
+     * FROM a JOIN (b JOIN c ON a.k = c.k) ON a.k = b.k
+     * -- the inner ON cannot refer to the columns of a.
+     */
+    auto table_a = install_table("a");
+    auto table_b = install_table("b");
+    auto table_c = install_table("c");
+    invalid(sql_analyzer_code::symbol_not_found, ast::query::query {
+            {
+                    ast::query::select_column { vref(id("a", "v")) },
+            },
+            {
+                    ast::table::join {
+                            ast::table::table_reference { id("a") },
+                            ast::table::join_type::inner,
+                            ast::table::join {
+                                    ast::table::table_reference { id("b") },
+                                    ast::table::join_type::inner,
+                                    ast::table::table_reference { id("c") },
+                                    on_equals("a", "c"),
+                            },
+                            on_equals("a", "b"),
+                    },
+            },
+    });
+}
+
+TEST_F(analyze_query_expression_join_test, join_condition_invalid_preceding_table) {
+    /*
+     * SELECT a.v
+     * FROM a, b JOIN c ON a.k = c.k
+     * -- ON cannot refer to the columns of the preceding table reference in the FROM clause.
+     */
+    auto table_a = install_table("a");
+    auto table_b = install_table("b");
+    auto table_c = install_table("c");
+    invalid(sql_analyzer_code::symbol_not_found, ast::query::query {
+            {
+                    ast::query::select_column { vref(id("a", "v")) },
+            },
+            {
+                    ast::table::table_reference { id("a") },
+                    ast::table::join {
+                            ast::table::table_reference { id("b") },
+                            ast::table::join_type::inner,
+                            ast::table::table_reference { id("c") },
+                            on_equals("a", "c"),
+                    },
+            },
+    });
+}
+
+TEST_F(analyze_query_expression_join_test, join_columns_nested) {
+    /*
+     * SELECT a.v, b.w, c.x
+     * FROM a JOIN (b JOIN c USING (k)) ON a.k = b.k
+     * -- USING looks for the columns only in its operands, so that "k" in a does not conflict.
+     */
+    auto table_a = install_table("a");
+    auto table_b = install_table("b");
+    auto table_c = install_table("c");
+    trelation::graph_type graph {};
+    auto r = analyze_query_expression(
+            context(),
+            graph,
+            ast::query::query {
+                    {
+                            ast::query::select_column { vref(id("a", "v")) },
+                            ast::query::select_column { vref(id("b", "w")) },
+                            ast::query::select_column { vref(id("c", "x")) },
+                    },
+                    {
+                            ast::table::join {
+                                    ast::table::table_reference { id("a") },
+                                    ast::table::join_type::inner,
+                                    ast::table::join {
+                                            ast::table::table_reference { id("b") },
+                                            ast::table::join_type::inner,
+                                            ast::table::table_reference { id("c") },
+                                            ast::table::join_columns {
+                                                    id("k"),
+                                            },
+                                    },
+                                    on_equals("a", "b"),
+                            },
+                    },
+            },
+            {},
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
+    expect_source_columns(graph, r.relation(), {
+            &table_a->columns()[1],
+            &table_b->columns()[2],
+            &table_c->columns()[3],
+    });
+
+    auto a_k = scan_variable(graph, table_a->columns()[0]);
+    auto b_k = scan_variable(graph, table_b->columns()[0]);
+    auto c_k = scan_variable(graph, table_c->columns()[0]);
+    ASSERT_TRUE(a_k);
+    ASSERT_TRUE(b_k);
+    ASSERT_TRUE(c_k);
+    EXPECT_TRUE(has_join_condition(graph, equals(*b_k, *c_k)));
+    EXPECT_TRUE(has_join_condition(graph, equals(*a_k, *b_k)));
+}
+
 } // namespace mizugaki::analyzer::details
