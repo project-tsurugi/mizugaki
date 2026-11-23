@@ -14,11 +14,13 @@ column_info::column_info(
         optional_ptr<storage::column const> declaration,
         descriptor::variable variable,
         std::optional<name_type> identifier,
-        bool exported) noexcept :
+        bool exported,
+        bool accessible) noexcept :
     declaration_ { std::move(declaration) },
     variable_ { std::move(variable) },
     identifier_ { std::move(identifier) },
-    exported_ { exported }
+    exported_ { exported },
+    accessible_ { accessible }
 {}
 
 optional_ptr<storage::column const>& column_info::declaration() noexcept {
@@ -53,6 +55,14 @@ bool const& column_info::exported() const noexcept {
     return exported_;
 }
 
+bool& column_info::accessible() noexcept {
+    return accessible_;
+}
+
+bool const& column_info::accessible() const noexcept {
+    return accessible_;
+}
+
 std::optional<column_info::position_type>& column_info::next() noexcept {
     return next_;
 }
@@ -68,6 +78,7 @@ std::ostream& operator<<(std::ostream& out, column_info const& value) {
                << "variable=" << value.variable() << ", "
                << "identifier=" << print_support { value.identifier() } << ", "
                << "exported=" << value.exported() << ", "
+               << "accessible=" << value.accessible() << ", "
                << "next=" << print_support { value.next() } << ")";
 }
 

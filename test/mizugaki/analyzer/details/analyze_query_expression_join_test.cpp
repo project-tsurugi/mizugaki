@@ -252,6 +252,44 @@ protected:
                 all_columns(*table_a),
         }));
     }
+    /*
+     * SELECT b.k, b.*
+     * FROM a <type> JOIN b USING (k)
+     */
+    void check_qualified_references_using_right(ast::table::join_type type) {
+        auto table_a = install_table("a");
+        auto table_b = install_table("b");
+        trelation::graph_type graph {};
+        auto r = analyze_query_expression(
+                context(),
+                graph,
+                ast::query::query {
+                        {
+                                ast::query::select_column { vref(id("b", "k")) },
+                                ast::query::select_asterisk { vref(id("b")) },
+                        },
+                        {
+                                ast::table::join {
+                                        ast::table::table_reference { id("a") },
+                                        type,
+                                        ast::table::table_reference { id("b") },
+                                        ast::table::join_columns {
+                                                id("k"),
+                                        },
+                                },
+                        },
+                },
+                {},
+                {});
+        ASSERT_TRUE(r) << diagnostics();
+        expect_no_error();
+
+        expect_source_columns(graph, r.relation(), concat({
+                { &table_b->columns()[0] },
+                all_columns(*table_b),
+        }));
+    }
+
 };
 
 TEST_F(analyze_query_expression_join_test, multiple_from) {
@@ -1524,6 +1562,22 @@ TEST_F(analyze_query_expression_join_test, join_columns_nested) {
     ASSERT_TRUE(c_k);
     EXPECT_TRUE(has_join_condition(graph, equals(*b_k, *c_k)));
     EXPECT_TRUE(has_join_condition(graph, equals(*a_k, *b_k)));
+}
+
+TEST_F(analyze_query_expression_join_test, qualified_references_join_columns_right_inner) {
+    check_qualified_references_using_right(ast::table::join_type::inner);
+}
+
+TEST_F(analyze_query_expression_join_test, qualified_references_join_columns_right_left) {
+    check_qualified_references_using_right(ast::table::join_type::left_outer);
+}
+
+TEST_F(analyze_query_expression_join_test, qualified_references_join_columns_right_right) {
+    check_qualified_references_using_right(ast::table::join_type::right_outer);
+}
+
+TEST_F(analyze_query_expression_join_test, qualified_references_join_columns_right_full) {
+    check_qualified_references_using_right(ast::table::join_type::full_outer);
 }
 
 } // namespace mizugaki::analyzer::details

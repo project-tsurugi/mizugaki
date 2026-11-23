@@ -23,6 +23,7 @@ namespace {
     switch (filter) {
         case column_filter::all: return true;
         case column_filter::exported: return column.exported();
+        case column_filter::accessible: return column.accessible();
     }
     std::abort();
 }

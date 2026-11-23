@@ -355,12 +355,11 @@ TEST_F(analyze_query_expression_with_test, column_names_conflict) {
 
 TEST_F(analyze_query_expression_with_test, column_not_exported) {
     auto table = install_table("t");
-    ::yugawara::storage::column_feature_set system_flags {
-            ::yugawara::storage::column_feature::synthesized,
+    ::yugawara::storage::column_feature_set hidden_flags {
             ::yugawara::storage::column_feature::hidden,
     };
-    table->columns()[2].features() += system_flags;
-    table->columns()[3].features() += system_flags;
+    table->columns()[2].features() += hidden_flags;
+    table->columns()[3].features() += hidden_flags;
 
     trelation::graph_type graph {};
     auto r = analyze_query_expression(

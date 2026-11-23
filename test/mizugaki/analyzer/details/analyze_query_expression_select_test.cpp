@@ -1371,6 +1371,24 @@ void make_implicit_key(::yugawara::storage::column& column) {
     };
 }
 
+/*
+ * marks the column as hidden, but not synthesized.
+ */
+void make_hidden(::yugawara::storage::column& column) {
+    column.features() += ::yugawara::storage::column_feature_set {
+            ::yugawara::storage::column_feature::hidden,
+    };
+}
+
+/*
+ * marks the column as synthesized, but not hidden.
+ */
+void make_synthesized(::yugawara::storage::column& column) {
+    column.features() += ::yugawara::storage::column_feature_set {
+            ::yugawara::storage::column_feature::synthesized,
+    };
+}
+
 } // namespace
 
 TEST_F(analyze_query_expression_select_test, hidden_column_asterisk) {
@@ -1473,6 +1491,89 @@ TEST_F(analyze_query_expression_select_test, hidden_column_qualified_name) {
                     ast::table::table_reference { id("testing") },
             },
     });
+}
+
+TEST_F(analyze_query_expression_select_test, hidden_only_column_qualified_name) {
+    /*
+     * -- testing: table(k:hidden (not synthesized), v, w, x)
+     * SELECT testing.k FROM testing
+     * -- the hidden column cannot be referred, even if it is not synthesized.
+     */
+    auto table = install_table("testing");
+    make_hidden(table->columns()[0]);
+    invalid(sql_analyzer_code::column_not_found, ast::query::query {
+            {
+                    ast::query::select_column { vref(id("testing", "k")) },
+            },
+            {
+                    ast::table::table_reference { id("testing") },
+            },
+    });
+}
+
+TEST_F(analyze_query_expression_select_test, synthesized_column_asterisk) {
+    /*
+     * -- testing: table(k:synthesized (not hidden), v, w, x)
+     * SELECT * FROM testing
+     * -- the synthesized column is in the result, because it is not hidden.
+     */
+    auto table = install_table("testing");
+    make_synthesized(table->columns()[0]);
+    trelation::graph_type graph {};
+
+    auto r = analyze_query_expression(
+            context(),
+            graph,
+            ast::query::query {
+                    {
+                            ast::query::select_asterisk {},
+                    },
+                    {
+                            ast::table::table_reference { id("testing") },
+                    },
+            },
+            {},
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
+    auto relation_columns = r.relation().columns();
+    ASSERT_EQ(relation_columns.size(), 4);
+    EXPECT_EQ(relation_columns[0].identifier(), "k");
+    EXPECT_EQ(relation_columns[1].identifier(), "v");
+    EXPECT_EQ(relation_columns[2].identifier(), "w");
+    EXPECT_EQ(relation_columns[3].identifier(), "x");
+}
+
+TEST_F(analyze_query_expression_select_test, synthesized_column_qualified_name) {
+    /*
+     * -- testing: table(k:synthesized (not hidden), v, w, x)
+     * SELECT testing.k FROM testing
+     * -- the synthesized column can be referred, because it is not hidden.
+     */
+    auto table = install_table("testing");
+    make_synthesized(table->columns()[0]);
+    trelation::graph_type graph {};
+
+    auto r = analyze_query_expression(
+            context(),
+            graph,
+            ast::query::query {
+                    {
+                            ast::query::select_column { vref(id("testing", "k")) },
+                    },
+                    {
+                            ast::table::table_reference { id("testing") },
+                    },
+            },
+            {},
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
+    auto relation_columns = r.relation().columns();
+    ASSERT_EQ(relation_columns.size(), 1);
+    EXPECT_EQ(relation_columns[0].identifier(), "k");
 }
 
 } // namespace mizugaki::analyzer::details

@@ -864,7 +864,9 @@ private:
             relation_info const& parent,
             ast::name::name const& name) {
         ast::common::chars buffer;
-        auto v = parent.find(to_identifier(name.last_name(), buffer, name_kind::variable), column_filter::exported);
+        // NOTE: this is a qualified access through the relation, so that this considers only accessible columns,
+        // even if they are not exported (e.g. columns hidden by JOIN USING)
+        auto v = parent.find(to_identifier(name.last_name(), buffer, name_kind::variable), column_filter::accessible);
         if (v.is_ambiguous()) {
             report_column_ambiguous(name);
             return find_symbol_result<descriptor::variable>::error;

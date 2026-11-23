@@ -26,6 +26,8 @@ enum class column_filter {
     all,
     /// @brief only exported columns, which can be referred by unqualified names.
     exported,
+    /// @brief only accessible columns, which can be referred by qualified names.
+    accessible,
 };
 
 class relation_info {

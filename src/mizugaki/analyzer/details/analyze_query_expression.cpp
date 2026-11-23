@@ -1289,10 +1289,14 @@ public:
                 return {}; // error already reported
             }
             for (auto&& column : found->columns()) {
-                if (!column.exported()) {
+                if (!column.accessible()) {
                     continue;
                 }
-                info.add(column);
+                // NOTE: the columns are explicitly selected through the relation, so that they are exported
+                // in the result even if they are not in the FROM clause (e.g. columns hidden by JOIN USING)
+                auto copy = column;
+                copy.exported() = true;
+                info.add(std::move(copy));
             }
             return { true };
         }
@@ -1850,15 +1854,14 @@ analyze_query_expression_result analyze_query_expression(
         analyzer_context& context,
         ::yugawara::storage::table const& table,
         bool escape_columns,
-        bool include_system_columns) {
+        bool include_hidden_columns) {
     relation_info result { table, "" };
     result.reserve(table.columns().size(), true);
     ::yugawara::binding::factory f;
     for (auto&& column : table.columns()) {
-        bool system = column.features().contains(::yugawara::storage::column_feature::synthesized);
+        // NOTE: only hidden columns are not accessible by users, regardless of whether they are synthesized or not
         bool hidden = column.features().contains(::yugawara::storage::column_feature::hidden);
-        // keep the system columns
-        if (system && !include_system_columns) {
+        if (hidden && !include_hidden_columns) {
             continue;
         }
         auto variable = escape_columns ?
@@ -1871,7 +1874,8 @@ analyze_query_expression_result analyze_query_expression(
                 column,
                 std::move(variable),
                 column_info::name_type { column.simple_name() },
-                !hidden && !system,
+                !hidden,
+                !hidden,
         });
     }
     return result;

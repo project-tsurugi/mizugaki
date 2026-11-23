@@ -95,6 +95,22 @@ TEST_F(relation_info_test, find_filtered_follows_flag_changes) {
     EXPECT_TRUE(relation.find("c0", column_filter::exported).is_ambiguous());
 }
 
+TEST_F(relation_info_test, find_filtered_accessible) {
+    auto v0 = vdesc("v0");
+    auto v1 = vdesc("v1");
+    relation_info relation {};
+    relation.add(column_info { {}, v0, "c0", false, });
+    relation.add(column_info { {}, v1, "c0", false, false, });
+
+    EXPECT_TRUE(relation.find("c0", column_filter::exported).is_absent());
+
+    auto r = relation.find("c0", column_filter::accessible);
+    ASSERT_TRUE(r.is_found());
+    EXPECT_EQ(r->variable(), v0);
+
+    EXPECT_TRUE(relation.find("c0", column_filter::all).is_ambiguous());
+}
+
 TEST_F(relation_info_test, find_filtered_const) {
     auto v0 = vdesc("v0");
     relation_info relation {};

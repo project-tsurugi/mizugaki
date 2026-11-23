@@ -90,13 +90,12 @@ TEST_F(analyze_scalar_expression_subquery_test, subquery) {
 
 TEST_F(analyze_scalar_expression_subquery_test, subquery_table) {
     auto table = install_table("t");
-    ::yugawara::storage::column_feature_set system_flags {
-            ::yugawara::storage::column_feature::synthesized,
+    ::yugawara::storage::column_feature_set hidden_flags {
             ::yugawara::storage::column_feature::hidden,
     };
-    table->columns()[0].features() += system_flags;
-    table->columns()[2].features() += system_flags;
-    table->columns()[3].features() += system_flags;
+    table->columns()[0].features() += hidden_flags;
+    table->columns()[2].features() += hidden_flags;
+    table->columns()[3].features() += hidden_flags;
     auto r = analyze_scalar_expression(
             context(),
             ast::scalar::subquery {

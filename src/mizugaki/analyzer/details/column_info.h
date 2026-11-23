@@ -21,7 +21,8 @@ public:
             ::takatori::util::optional_ptr<::yugawara::storage::column const> declaration,
             ::takatori::descriptor::variable variable,
             std::optional<name_type> identifier,
-            bool exported = true) noexcept;
+            bool exported = true,
+            bool accessible = true) noexcept;
 
     [[nodiscard]] ::takatori::descriptor::variable& variable() noexcept;
     [[nodiscard]] ::takatori::descriptor::variable const& variable() const noexcept;
@@ -31,6 +32,15 @@ public:
     [[nodiscard]] std::optional<name_type> const& identifier() const noexcept;
     [[nodiscard]] bool& exported() noexcept;
     [[nodiscard]] bool const& exported() const noexcept;
+
+    /**
+     * @brief returns whether or not the column can be referred explicitly by users.
+     * @details inaccessible columns (e.g. hidden columns) cannot be referred even if they are qualified.
+     */
+    [[nodiscard]] bool& accessible() noexcept;
+
+    /// @copydoc accessible()
+    [[nodiscard]] bool const& accessible() const noexcept;
     [[nodiscard]] std::optional<position_type>& next() noexcept;
     [[nodiscard]] std::optional<position_type> const& next() const noexcept;
 
@@ -39,6 +49,7 @@ private:
     ::takatori::descriptor::variable variable_;
     std::optional<name_type> identifier_;
     bool exported_;
+    bool accessible_;
     std::optional<position_type> next_ {};
 };
 

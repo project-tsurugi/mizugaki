@@ -54,6 +54,6 @@ private:
         analyzer_context& context,
         ::yugawara::storage::table const& table,
         bool escape_columns = true,
-        bool include_system_columns = false);
+        bool include_hidden_columns = false);
 
 } // namespace mizugaki::analyzer::details

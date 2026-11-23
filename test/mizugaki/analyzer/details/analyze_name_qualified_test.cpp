@@ -193,6 +193,24 @@ TEST_F(analyze_name_qualified_test, column_variable_in_relation_info_ambiguous) 
     invalid(r, diagnostic_code::column_ambiguous);
 }
 
+TEST_F(analyze_name_qualified_test, column_variable_in_relation_info_inaccessible) {
+    auto v0 = vdesc("v0");
+    auto v1 = vdesc("v1");
+    auto v2 = vdesc("v2");
+
+    query_scope scope;
+    auto&& relation = scope.add({ {}, "t0", });
+    relation.add(column_info { {}, v0, "c0", });
+    relation.add(column_info { {}, v1, "c1", false, false, });
+    relation.add(column_info { {}, v2, "c2", });
+
+    auto r = analyze_variable_name(
+            context(),
+            id("t0", "c1"),
+            scope);
+    invalid(r, diagnostic_code::column_not_found);
+}
+
 TEST_F(analyze_name_qualified_test, column_variable_in_relation_info_not_exported) {
     auto v0 = vdesc("v0");
     auto v1 = vdesc("v1");
@@ -204,21 +222,22 @@ TEST_F(analyze_name_qualified_test, column_variable_in_relation_info_not_exporte
     relation.add(column_info { {}, v1, "c1", false, });
     relation.add(column_info { {}, v2, "c2", });
 
+    // NOTE: not exported columns (e.g. hidden by JOIN USING) are still available via qualified names
     auto r = analyze_variable_name(
             context(),
             id("t0", "c1"),
             scope);
-    invalid(r, diagnostic_code::column_not_found);
+    validate(r, v1);
 }
 
-TEST_F(analyze_name_qualified_test, column_variable_in_relation_info_ambiguous_not_exported) {
+TEST_F(analyze_name_qualified_test, column_variable_in_relation_info_ambiguous_inaccessible) {
     auto v0 = vdesc("v0");
     auto v1 = vdesc("v1");
     auto v2 = vdesc("v2");
 
     query_scope scope;
     auto&& relation = scope.add({ {}, "t0", });
-    relation.add(column_info { {}, v0, "c0", false, });
+    relation.add(column_info { {}, v0, "c0", false, false, });
     relation.add(column_info { {}, v1, "c1", });
     relation.add(column_info { {}, v2, "c0", true, });
 

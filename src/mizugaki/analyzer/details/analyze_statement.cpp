@@ -202,7 +202,7 @@ public:
             destination_columns.reserve(info.columns().size());
             columns_context.reserve(info.columns().size());
             for (auto&& column : info.columns()) {
-                if (column.exported()) {
+                if (column.accessible()) {
                     destination_columns.push_back(column.declaration().get());
                     columns_context.emplace_back(column.declaration()->shared_type());
                 }
@@ -213,7 +213,7 @@ public:
             columns_context.reserve(stmt.columns().size());
             for (auto&& column_name : stmt.columns()) {
                 auto identifier = normalize_identifier(context_, *column_name, name_kind::variable);
-                auto column = info.find(identifier, column_filter::exported);
+                auto column = info.find(identifier, column_filter::accessible);
                 if (!column || !column->declaration()) {
                     // may not ambiguous
                     context_.report(
