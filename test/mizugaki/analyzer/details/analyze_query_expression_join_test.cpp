@@ -440,7 +440,7 @@ protected:
             case ast::table::join_type::full_outer: {
                 auto value = defining_value(graph, *k);
                 ASSERT_TRUE(value);
-                EXPECT_EQ(*value, (tscalar::coalesce { vref(*a_k), vref(*b_k) }));
+                EXPECT_EQ(*value, (tscalar::coalesce { { vref(*a_k), vref(*b_k) } }));
                 break;
             }
             default:
@@ -1881,7 +1881,7 @@ TEST_F(analyze_query_expression_join_test, join_columns_common_in_where) {
     ASSERT_TRUE(left);
     auto value = defining_value(graph, left->variable());
     ASSERT_TRUE(value);
-    EXPECT_EQ(*value, (tscalar::coalesce { vref(*a_k), vref(*b_k) }));
+    EXPECT_EQ(*value, (tscalar::coalesce { { vref(*a_k), vref(*b_k) } }));
 }
 
 TEST_F(analyze_query_expression_join_test, join_columns_common_in_group_by) {
@@ -1938,7 +1938,7 @@ TEST_F(analyze_query_expression_join_test, join_columns_common_in_group_by) {
     ASSERT_EQ(keys.size(), 1);
     auto value = defining_value(graph, keys[0]);
     ASSERT_TRUE(value);
-    EXPECT_EQ(*value, (tscalar::coalesce { vref(*a_k), vref(*b_k) }));
+    EXPECT_EQ(*value, (tscalar::coalesce { { vref(*a_k), vref(*b_k) } }));
 }
 
 TEST_F(analyze_query_expression_join_test, join_columns_asterisk) {
@@ -1986,7 +1986,7 @@ TEST_F(analyze_query_expression_join_test, join_columns_asterisk) {
     ASSERT_TRUE(b_k);
     auto value = defining_value(graph, relation_columns[0].variable());
     ASSERT_TRUE(value);
-    EXPECT_EQ(*value, (tscalar::coalesce { vref(*a_k), vref(*b_k) }));
+    EXPECT_EQ(*value, (tscalar::coalesce { { vref(*a_k), vref(*b_k) } }));
 
     for (std::size_t i = 1; i < 4; ++i) {
         EXPECT_EQ(source_column(graph, relation_columns[i].variable()), &table_a->columns()[i]) << "column #" << i;
@@ -2097,7 +2097,7 @@ TEST_F(analyze_query_expression_join_test, join_columns_chain) {
     ASSERT_TRUE(inner_ref);
     auto inner = defining_value(graph, inner_ref->variable());
     ASSERT_TRUE(inner);
-    EXPECT_EQ(*inner, (tscalar::coalesce { vref(*a_k), vref(*b_k) }));
+    EXPECT_EQ(*inner, (tscalar::coalesce { { vref(*a_k), vref(*b_k) } }));
 
     EXPECT_TRUE(has_join_condition(graph, equals(inner_ref->variable(), *c_k)));
 }
