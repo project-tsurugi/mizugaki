@@ -80,6 +80,18 @@ public:
 
     [[nodiscard]] bool is_resolved(::takatori::descriptor::variable const& variable) const;
 
+    /**
+     * @brief returns the type of the given variable.
+     * @details this only inspects the current resolution of the variable, and never creates any expressions.
+     * @param variable the target variable
+     * @param region the region to report an error
+     * @return the type of the variable
+     * @return empty if the variable is not yet resolved, and then this reports an error
+     */
+    [[nodiscard]] std::shared_ptr<::takatori::type::data const> type_of(
+            ::takatori::descriptor::variable const& variable,
+            ast::node_region region);
+
     void resolve_as(
             ::takatori::descriptor::variable const& variable,
             ::yugawara::analyzer::variable_resolution resolution);

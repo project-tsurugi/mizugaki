@@ -12,6 +12,8 @@
 #include <takatori/scalar/immediate.h>
 #include <takatori/scalar/variable_reference.h>
 #include <takatori/scalar/binary.h>
+#include <takatori/scalar/cast.h>
+#include <takatori/scalar/coalesce.h>
 #include <takatori/scalar/compare.h>
 
 #include <takatori/relation/scan.h>
@@ -44,6 +46,8 @@
 #include <mizugaki/analyzer/details/analyze_name.h>
 #include <mizugaki/analyzer/details/analyze_scalar_expression.h>
 #include <yugawara/binding/extract.h>
+#include <yugawara/type/category.h>
+#include <yugawara/type/conversion.h>
 #include <yugawara/binding/variable_info.h>
 
 #include "set_function_processor.h"
@@ -1444,12 +1448,29 @@ public:
 
     [[nodiscard]] std::unique_ptr<tscalar::expression> process_join_columns( // NOLINT(*-function-cognitive-complexity)
             ast::table::join_columns const& elem,
+            trelation::join_kind join_kind,
+            bool transpose,
             std::vector<relation_info>& left_relations,
-            std::vector<relation_info>& right_relations) {
+            std::vector<relation_info>& right_relations,
+            relation_info& common_relation,
+            std::vector<trelation::project::column>& computed_columns) {
         std::unique_ptr<tscalar::expression> result {};
 
+        ::tsl::hopscotch_set<std::string> saw_column_names {};
         for (auto&& name : elem.columns()) {
             auto&& id = normalize_identifier(context_, *name, name_kind::variable);
+            auto [iter, inserted] = saw_column_names.emplace(id);
+            (void) iter;
+            if (!inserted) {
+                context_.report(
+                        sql_analyzer_code::column_already_exists,
+                        string_builder {}
+                                << "duplicate column name in JOIN USING: "
+                                << id
+                                << string_builder::to_string,
+                        name->region());
+                return {};
+            }
             auto [left_status, left] = find_exported_column(left_relations, id);
             if (left_status == find_column_status::ambiguous) {
                 context_.report(
@@ -1489,9 +1510,6 @@ public:
                 return {};
             }
 
-            // NOTE: hide column in RHS
-            right->exported() = false;
-
             auto left_variable = left->variable();
             auto right_variable = right->variable();
 
@@ -1513,6 +1531,64 @@ public:
                         std::move(result),
                         std::move(term));
             }
+
+            // the common column: COALESCE(L.c, R.c), with the unified type of L.c and R.c
+            auto left_type = context_.type_of(left_variable, name->region());
+            auto right_type = context_.type_of(right_variable, name->region());
+            if (!left_type || !right_type) {
+                return {};
+            }
+            auto common_type = ::yugawara::type::unifying_conversion(*left_type, *right_type);
+            if (!common_type
+                    || ::yugawara::type::category_of(*common_type) == ::yugawara::type::category::unresolved) {
+                context_.report(
+                        sql_analyzer_code::inconsistent_type,
+                        string_builder {}
+                                << "column '" << id << "' in JOIN USING has inconsistent types: "
+                                << *left_type << " and " << *right_type
+                                << string_builder::to_string,
+                        name->region());
+                return {};
+            }
+
+            std::optional<tdescriptor::variable> common_variable {};
+            if (join_kind == trelation::join_kind::full_outer) {
+                ::takatori::util::reference_vector<tscalar::expression> alternatives {};
+                alternatives.push_back(context_.create<tscalar::variable_reference>(name->region(), left_variable));
+                alternatives.push_back(context_.create<tscalar::variable_reference>(name->region(), right_variable));
+                auto variable = factory_.stream_variable(id);
+                computed_columns.emplace_back(
+                        variable,
+                        context_.create<tscalar::coalesce>(name->region(), std::move(alternatives)));
+                common_variable = std::move(variable);
+            } else {
+                // NOTE: COALESCE(L.c, R.c) is always L.c for INNER/LEFT, and R.c for RIGHT
+                auto&& base_variable = transpose ? right_variable : left_variable;
+                auto&& base_type = transpose ? right_type : left_type;
+                if (*base_type == *common_type) {
+                    common_variable = base_variable;
+                } else {
+                    auto variable = factory_.stream_variable(id);
+                    computed_columns.emplace_back(
+                            variable,
+                            context_.create<tscalar::cast>(
+                                    name->region(),
+                                    common_type,
+                                    tscalar::cast::loss_policy_type::ignore,
+                                    context_.create<tscalar::variable_reference>(name->region(), base_variable)));
+                    common_variable = std::move(variable);
+                }
+            }
+            common_relation.add({
+                    {},
+                    std::move(*common_variable),
+                    std::string { id },
+            });
+
+            // NOTE: the common column replaces the original columns for unqualified names,
+            // so that the original columns are only available via qualified names
+            left->exported() = false;
+            right->exported() = false;
         }
 
         if (!result) {
@@ -1741,6 +1817,8 @@ private:
             std::swap(left_port, right_port);
         }
 
+        relation_info common_relation {};
+        std::vector<trelation::project::column> computed_columns {};
         std::unique_ptr<tscalar::expression> condition {};
         if (natural) {
             if (expr.specification()) {
@@ -1758,8 +1836,12 @@ private:
             if (spec->node_kind() == ast::table::join_columns::tag) {
                 condition = process_join_columns(
                         unsafe_downcast<ast::table::join_columns>(*spec),
+                        join_type,
+                        transpose,
                         left.relations(),
-                        right.relations());
+                        right.relations(),
+                        common_relation,
+                        computed_columns);
             } else if (spec->node_kind() == ast::table::join_condition::tag) {
                 condition = process_join_condition(
                         unsafe_downcast<ast::table::join_condition>(*spec),
@@ -1784,16 +1866,30 @@ private:
         op.left().connect_to(*left_port);
         op.right().connect_to(*right_port);
 
-        // the result relation: [left relations..., right relations...]
+        optional_ptr<output_port> output { op.output() };
+        if (!computed_columns.empty()) {
+            auto&& project = graph_.emplace<trelation::project>(std::move(computed_columns));
+            project.region() = op.region();
+            if (!context_.resolve(project)) {
+                return {};
+            }
+            project.input().connect_to(op.output());
+            output = project.output();
+        }
+
+        // the result relation: [common columns, left relations..., right relations...]
         std::vector<relation_info> relations {};
-        relations.reserve(left.relations().size() + right.relations().size());
+        relations.reserve(1 + left.relations().size() + right.relations().size());
+        if (!common_relation.columns().empty()) {
+            relations.emplace_back(std::move(common_relation));
+        }
         for (auto&& r : left.relations()) {
             relations.emplace_back(std::move(r));
         }
         for (auto&& r : right.relations()) {
             relations.emplace_back(std::move(r));
         }
-        return { op.output(), std::move(relations) };
+        return { *output, std::move(relations) };
     }
 
     [[nodiscard]] std::unique_ptr<tscalar::expression> collect_natural_join_columns(

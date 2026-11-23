@@ -3,17 +3,25 @@
 #include <gtest/gtest.h>
 
 #include <takatori/type/primitive.h>
+#include <takatori/type/character.h>
+#include <takatori/type/decimal.h>
 
 #include <takatori/scalar/binary.h>
+#include <takatori/scalar/cast.h>
+#include <takatori/scalar/coalesce.h>
 #include <takatori/scalar/compare.h>
 #include <takatori/scalar/variable_reference.h>
 
 #include <takatori/relation/scan.h>
 #include <takatori/relation/filter.h>
 #include <takatori/relation/project.h>
+#include <takatori/relation/intermediate/aggregate.h>
+#include <takatori/relation/intermediate/distinct.h>
 #include <takatori/relation/intermediate/join.h>
 
 #include <yugawara/binding/extract.h>
+
+#include <yugawara/type/conversion.h>
 
 #include <yugawara/extension/scalar/exists.h>
 
@@ -32,6 +40,7 @@
 #include <mizugaki/ast/query/query.h>
 #include <mizugaki/ast/query/select_column.h>
 #include <mizugaki/ast/query/select_asterisk.h>
+#include <mizugaki/ast/query/grouping_column.h>
 
 #include "test_parent.h"
 
@@ -288,6 +297,181 @@ protected:
                 { &table_b->columns()[0] },
                 all_columns(*table_b),
         }));
+    }
+
+    /**
+     * @brief installs a table like install_table(), but its first column "k" has the given type.
+     */
+    std::shared_ptr<::yugawara::storage::table> install_keyed_table(std::string_view name, ttype::data&& key_type) {
+        auto table = storages_->add_table(::yugawara::storage::table {
+                name,
+                {
+                        { "k", std::move(key_type) },
+                        { "v", ttype::character { ttype::varying }, ::yugawara::variable::nullable },
+                        { "w", ttype::character { ttype::varying }, ::yugawara::variable::nullable },
+                        { "x", ttype::character { ttype::varying }, ::yugawara::variable::nullable },
+                },
+        });
+        storages_->add_index(::yugawara::storage::index {
+                table,
+                name,
+                {
+                        {
+                                table->columns()[0],
+                                ::yugawara::storage::index::key::direction_type::ascendant,
+                        },
+                },
+                {},
+                {
+                        ::yugawara::storage::index_feature::find,
+                        ::yugawara::storage::index_feature::scan,
+                        ::yugawara::storage::index_feature::primary,
+                        ::yugawara::storage::index_feature::unique,
+                },
+        });
+        return table;
+    }
+
+    /**
+     * @brief follows the project columns which only forward a variable.
+     */
+    static ::takatori::descriptor::variable forwarded(trelation::graph_type const& graph, ::takatori::descriptor::variable variable) {
+        for (bool changed = true; changed;) {
+            changed = false;
+            for (auto&& node : graph) {
+                if (auto project = downcast<trelation::project>(&node)) {
+                    for (auto&& column : project->columns()) {
+                        if (column.variable() != variable) {
+                            continue;
+                        }
+                        if (auto ref = downcast<tscalar::variable_reference>(&column.value())) {
+                            variable = ref->variable();
+                            changed = true;
+                        }
+                    }
+                }
+            }
+        }
+        return variable;
+    }
+
+    /**
+     * @brief returns the expression which computes the given variable in a project operator, or nullptr if there is not.
+     * @details this follows the project columns which only forward a variable.
+     */
+    static tscalar::expression const* defining_value(trelation::graph_type const& graph, ::takatori::descriptor::variable const& variable) {
+        auto target = forwarded(graph, variable);
+        for (auto&& node : graph) {
+            if (auto project = downcast<trelation::project>(&node)) {
+                for (auto&& column : project->columns()) {
+                    if (column.variable() == target) {
+                        return std::addressof(column.value());
+                    }
+                }
+            }
+        }
+        return nullptr;
+    }
+
+    /**
+     * @brief analyzes "SELECT k FROM <left> <type> JOIN <right> USING (k)", and returns the variable of "k".
+     */
+    std::optional<::takatori::descriptor::variable> analyze_common_column(
+            trelation::graph_type& graph,
+            std::string_view left,
+            ast::table::join_type type,
+            std::string_view right) {
+        auto r = analyze_query_expression(
+                context(),
+                graph,
+                ast::query::query {
+                        {
+                                ast::query::select_column { vref(id("k")) },
+                        },
+                        {
+                                ast::table::join {
+                                        ast::table::table_reference { id(left) },
+                                        type,
+                                        ast::table::table_reference { id(right) },
+                                        ast::table::join_columns {
+                                                id("k"),
+                                        },
+                                },
+                        },
+                },
+                {},
+                {});
+        if (!r) {
+            ADD_FAILURE() << diagnostics();
+            return {};
+        }
+        expect_no_error();
+        auto columns = r.relation().columns();
+        if (columns.size() != 1) {
+            ADD_FAILURE() << columns.size();
+            return {};
+        }
+        return columns[0].variable();
+    }
+
+    /*
+     * SELECT k
+     * FROM a <type> JOIN b USING (k)
+     * -- a.k and b.k have the same type.
+     */
+    void check_common_column_same_type(ast::table::join_type type) {
+        auto table_a = install_table("a");
+        auto table_b = install_table("b");
+        trelation::graph_type graph {};
+        auto k = analyze_common_column(graph, "a", type, "b");
+        ASSERT_TRUE(k);
+        auto a_k = scan_variable(graph, table_a->columns()[0]);
+        auto b_k = scan_variable(graph, table_b->columns()[0]);
+        ASSERT_TRUE(a_k);
+        ASSERT_TRUE(b_k);
+        switch (type) {
+            case ast::table::join_type::inner:
+            case ast::table::join_type::left_outer:
+                EXPECT_EQ(forwarded(graph, *k), *a_k);
+                break;
+            case ast::table::join_type::right_outer:
+                EXPECT_EQ(forwarded(graph, *k), *b_k);
+                break;
+            case ast::table::join_type::full_outer: {
+                auto value = defining_value(graph, *k);
+                ASSERT_TRUE(value);
+                EXPECT_EQ(*value, (tscalar::coalesce { vref(*a_k), vref(*b_k) }));
+                break;
+            }
+            default:
+                FAIL();
+        }
+    }
+
+    /*
+     * SELECT k
+     * FROM l <type> JOIN r USING (k)
+     * -- the common column is "CAST(<base>.k AS <unified type>)".
+     */
+    void check_common_column_cast(
+            ast::table::join_type type,
+            ::yugawara::storage::table const& left,
+            ::yugawara::storage::table const& right,
+            ::yugawara::storage::table const& base) {
+        trelation::graph_type graph {};
+        auto k = analyze_common_column(graph, left.simple_name(), type, right.simple_name());
+        ASSERT_TRUE(k);
+        auto base_k = scan_variable(graph, base.columns()[0]);
+        ASSERT_TRUE(base_k);
+        auto unified = ::yugawara::type::unifying_conversion(left.columns()[0].type(), right.columns()[0].type());
+        ASSERT_TRUE(unified);
+
+        auto value = defining_value(graph, *k);
+        ASSERT_TRUE(value);
+        auto cast = downcast<tscalar::cast>(value);
+        ASSERT_TRUE(cast) << *value;
+        EXPECT_EQ(cast->type(), *unified);
+        EXPECT_EQ(cast->operand(), vref(*base_k));
     }
 
 };
@@ -1578,6 +1762,419 @@ TEST_F(analyze_query_expression_join_test, qualified_references_join_columns_rig
 
 TEST_F(analyze_query_expression_join_test, qualified_references_join_columns_right_full) {
     check_qualified_references_using_right(ast::table::join_type::full_outer);
+}
+
+TEST_F(analyze_query_expression_join_test, join_columns_common_inner) {
+    check_common_column_same_type(ast::table::join_type::inner);
+}
+
+TEST_F(analyze_query_expression_join_test, join_columns_common_left) {
+    check_common_column_same_type(ast::table::join_type::left_outer);
+}
+
+TEST_F(analyze_query_expression_join_test, join_columns_common_right) {
+    check_common_column_same_type(ast::table::join_type::right_outer);
+}
+
+TEST_F(analyze_query_expression_join_test, join_columns_common_full) {
+    check_common_column_same_type(ast::table::join_type::full_outer);
+}
+
+TEST_F(analyze_query_expression_join_test, join_columns_common_cast_inner) {
+    auto table_a = install_keyed_table("a", ttype::int4 {});
+    auto table_b = install_keyed_table("b", ttype::int8 {});
+    check_common_column_cast(ast::table::join_type::inner, *table_a, *table_b, *table_a);
+}
+
+TEST_F(analyze_query_expression_join_test, join_columns_common_cast_left) {
+    auto table_a = install_keyed_table("a", ttype::int4 {});
+    auto table_b = install_keyed_table("b", ttype::int8 {});
+    check_common_column_cast(ast::table::join_type::left_outer, *table_a, *table_b, *table_a);
+}
+
+TEST_F(analyze_query_expression_join_test, join_columns_common_cast_right) {
+    auto table_a = install_keyed_table("a", ttype::int8 {});
+    auto table_b = install_keyed_table("b", ttype::int4 {});
+    check_common_column_cast(ast::table::join_type::right_outer, *table_a, *table_b, *table_b);
+}
+
+TEST_F(analyze_query_expression_join_test, join_columns_common_cast_decimal) {
+    /*
+     * -- a.k: DECIMAL(5, 2), b.k: DECIMAL(6, 1)
+     * SELECT k FROM a JOIN b USING (k)
+     * -- the types are different even if they are both DECIMAL, so that a.k is converted.
+     */
+    auto table_a = install_keyed_table("a", ttype::decimal { 5, 2 });
+    auto table_b = install_keyed_table("b", ttype::decimal { 6, 1 });
+    check_common_column_cast(ast::table::join_type::inner, *table_a, *table_b, *table_a);
+}
+
+TEST_F(analyze_query_expression_join_test, join_columns_common_same_type_right) {
+    /*
+     * -- a.k: INT, b.k: BIGINT
+     * SELECT k FROM a RIGHT JOIN b USING (k)
+     * -- b.k already has the unified type, so that it is used as is.
+     */
+    auto table_a = install_keyed_table("a", ttype::int4 {});
+    auto table_b = install_keyed_table("b", ttype::int8 {});
+    trelation::graph_type graph {};
+    auto k = analyze_common_column(graph, "a", ast::table::join_type::right_outer, "b");
+    ASSERT_TRUE(k);
+    auto b_k = scan_variable(graph, table_b->columns()[0]);
+    ASSERT_TRUE(b_k);
+    EXPECT_EQ(forwarded(graph, *k), *b_k);
+}
+
+TEST_F(analyze_query_expression_join_test, join_columns_common_in_where) {
+    /*
+     * SELECT a.v
+     * FROM a FULL JOIN b USING (k)
+     * WHERE k = k
+     * -- "k" in WHERE clause refers to the common column.
+     */
+    auto table_a = install_table("a");
+    auto table_b = install_table("b");
+    trelation::graph_type graph {};
+    auto r = analyze_query_expression(
+            context(),
+            graph,
+            ast::query::query {
+                    {
+                            ast::query::select_column { vref(id("a", "v")) },
+                    },
+                    {
+                            ast::table::join {
+                                    ast::table::table_reference { id("a") },
+                                    ast::table::join_type::full_outer,
+                                    ast::table::table_reference { id("b") },
+                                    ast::table::join_columns {
+                                            id("k"),
+                                    },
+                            },
+                    },
+                    ast::scalar::comparison_predicate {
+                            vref(id("k")),
+                            ast::scalar::comparison_operator::equals,
+                            vref(id("k")),
+                    },
+            },
+            {},
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
+    auto a_k = scan_variable(graph, table_a->columns()[0]);
+    auto b_k = scan_variable(graph, table_b->columns()[0]);
+    ASSERT_TRUE(a_k);
+    ASSERT_TRUE(b_k);
+
+    trelation::filter const* filter = nullptr;
+    for (auto&& node : graph) {
+        if (auto p = downcast<trelation::filter>(&node)) {
+            filter = p;
+        }
+    }
+    ASSERT_TRUE(filter);
+    auto compare = downcast<tscalar::compare>(&filter->condition());
+    ASSERT_TRUE(compare);
+    auto left = downcast<tscalar::variable_reference>(&compare->left());
+    ASSERT_TRUE(left);
+    auto value = defining_value(graph, left->variable());
+    ASSERT_TRUE(value);
+    EXPECT_EQ(*value, (tscalar::coalesce { vref(*a_k), vref(*b_k) }));
+}
+
+TEST_F(analyze_query_expression_join_test, join_columns_common_in_group_by) {
+    /*
+     * SELECT k
+     * FROM a FULL JOIN b USING (k)
+     * GROUP BY k
+     * -- "k" in GROUP BY clause refers to the common column.
+     */
+    auto table_a = install_table("a");
+    auto table_b = install_table("b");
+    trelation::graph_type graph {};
+    auto r = analyze_query_expression(
+            context(),
+            graph,
+            ast::query::query {
+                    {
+                            ast::query::select_column { vref(id("k")) },
+                    },
+                    {
+                            ast::table::join {
+                                    ast::table::table_reference { id("a") },
+                                    ast::table::join_type::full_outer,
+                                    ast::table::table_reference { id("b") },
+                                    ast::table::join_columns {
+                                            id("k"),
+                                    },
+                            },
+                    },
+                    {},
+                    ast::query::group_by_clause {
+                            ast::query::grouping_column { id("k") },
+                    },
+            },
+            {},
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
+    auto a_k = scan_variable(graph, table_a->columns()[0]);
+    auto b_k = scan_variable(graph, table_b->columns()[0]);
+    ASSERT_TRUE(a_k);
+    ASSERT_TRUE(b_k);
+
+    std::vector<::takatori::descriptor::variable> keys {};
+    for (auto&& node : graph) {
+        if (auto p = downcast<trelation::intermediate::aggregate>(&node)) {
+            keys.assign(p->group_keys().begin(), p->group_keys().end());
+        }
+        if (auto p = downcast<trelation::intermediate::distinct>(&node)) {
+            keys.assign(p->group_keys().begin(), p->group_keys().end());
+        }
+    }
+    ASSERT_EQ(keys.size(), 1);
+    auto value = defining_value(graph, keys[0]);
+    ASSERT_TRUE(value);
+    EXPECT_EQ(*value, (tscalar::coalesce { vref(*a_k), vref(*b_k) }));
+}
+
+TEST_F(analyze_query_expression_join_test, join_columns_asterisk) {
+    /*
+     * SELECT *
+     * FROM a FULL JOIN b USING (k)
+     * -- the common column, the rest of a, and then the rest of b.
+     */
+    auto table_a = install_table("a");
+    auto table_b = install_table("b");
+    trelation::graph_type graph {};
+    auto r = analyze_query_expression(
+            context(),
+            graph,
+            ast::query::query {
+                    {
+                            ast::query::select_asterisk {},
+                    },
+                    {
+                            ast::table::join {
+                                    ast::table::table_reference { id("a") },
+                                    ast::table::join_type::full_outer,
+                                    ast::table::table_reference { id("b") },
+                                    ast::table::join_columns {
+                                            id("k"),
+                                    },
+                            },
+                    },
+            },
+            {},
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
+    auto relation_columns = r.relation().columns();
+    ASSERT_EQ(relation_columns.size(), 7);
+    std::vector<std::string_view> names { "k", "v", "w", "x", "v", "w", "x" };
+    for (std::size_t i = 0; i < names.size(); ++i) {
+        EXPECT_EQ(relation_columns[i].identifier(), names[i]) << "column #" << i;
+    }
+
+    auto a_k = scan_variable(graph, table_a->columns()[0]);
+    auto b_k = scan_variable(graph, table_b->columns()[0]);
+    ASSERT_TRUE(a_k);
+    ASSERT_TRUE(b_k);
+    auto value = defining_value(graph, relation_columns[0].variable());
+    ASSERT_TRUE(value);
+    EXPECT_EQ(*value, (tscalar::coalesce { vref(*a_k), vref(*b_k) }));
+
+    for (std::size_t i = 1; i < 4; ++i) {
+        EXPECT_EQ(source_column(graph, relation_columns[i].variable()), &table_a->columns()[i]) << "column #" << i;
+        EXPECT_EQ(source_column(graph, relation_columns[i + 3].variable()), &table_b->columns()[i]) << "column #" << (i + 3);
+    }
+}
+
+TEST_F(analyze_query_expression_join_test, join_columns_asterisk_multiple) {
+    /*
+     * SELECT *
+     * FROM a JOIN b USING (w, k)
+     * -- the common columns in the order of USING, the rest of a, and then the rest of b.
+     */
+    auto table_a = install_table("a");
+    auto table_b = install_table("b");
+    trelation::graph_type graph {};
+    auto r = analyze_query_expression(
+            context(),
+            graph,
+            ast::query::query {
+                    {
+                            ast::query::select_asterisk {},
+                    },
+                    {
+                            ast::table::join {
+                                    ast::table::table_reference { id("a") },
+                                    ast::table::join_type::inner,
+                                    ast::table::table_reference { id("b") },
+                                    ast::table::join_columns {
+                                            id("w"),
+                                            id("k"),
+                                    },
+                            },
+                    },
+            },
+            {},
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
+    expect_source_columns(graph, r.relation(), {
+            &table_a->columns()[2], // w
+            &table_a->columns()[0], // k
+            &table_a->columns()[1], // a.v
+            &table_a->columns()[3], // a.x
+            &table_b->columns()[1], // b.v
+            &table_b->columns()[3], // b.x
+    });
+}
+
+TEST_F(analyze_query_expression_join_test, join_columns_chain) {
+    /*
+     * SELECT k
+     * FROM a FULL JOIN b USING (k) FULL JOIN c USING (k)
+     * -- the second USING refers to the common column of the first join.
+     */
+    auto table_a = install_table("a");
+    auto table_b = install_table("b");
+    auto table_c = install_table("c");
+    trelation::graph_type graph {};
+    auto r = analyze_query_expression(
+            context(),
+            graph,
+            ast::query::query {
+                    {
+                            ast::query::select_column { vref(id("k")) },
+                    },
+                    {
+                            ast::table::join {
+                                    ast::table::join {
+                                            ast::table::table_reference { id("a") },
+                                            ast::table::join_type::full_outer,
+                                            ast::table::table_reference { id("b") },
+                                            ast::table::join_columns {
+                                                    id("k"),
+                                            },
+                                    },
+                                    ast::table::join_type::full_outer,
+                                    ast::table::table_reference { id("c") },
+                                    ast::table::join_columns {
+                                            id("k"),
+                                    },
+                            },
+                    },
+            },
+            {},
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
+    auto a_k = scan_variable(graph, table_a->columns()[0]);
+    auto b_k = scan_variable(graph, table_b->columns()[0]);
+    auto c_k = scan_variable(graph, table_c->columns()[0]);
+    ASSERT_TRUE(a_k);
+    ASSERT_TRUE(b_k);
+    ASSERT_TRUE(c_k);
+
+    auto relation_columns = r.relation().columns();
+    ASSERT_EQ(relation_columns.size(), 1);
+    auto outer = defining_value(graph, relation_columns[0].variable());
+    ASSERT_TRUE(outer);
+    auto outer_coalesce = downcast<tscalar::coalesce>(outer);
+    ASSERT_TRUE(outer_coalesce) << *outer;
+    ASSERT_EQ(outer_coalesce->alternatives().size(), 2);
+    EXPECT_EQ(outer_coalesce->alternatives()[1], vref(*c_k));
+
+    auto inner_ref = downcast<tscalar::variable_reference>(&outer_coalesce->alternatives()[0]);
+    ASSERT_TRUE(inner_ref);
+    auto inner = defining_value(graph, inner_ref->variable());
+    ASSERT_TRUE(inner);
+    EXPECT_EQ(*inner, (tscalar::coalesce { vref(*a_k), vref(*b_k) }));
+
+    EXPECT_TRUE(has_join_condition(graph, equals(inner_ref->variable(), *c_k)));
+}
+
+TEST_F(analyze_query_expression_join_test, join_columns_invalid_type) {
+    /*
+     * -- a.k: BIGINT, b.k: VARCHAR
+     * SELECT * FROM a JOIN b USING (k)
+     */
+    auto table_a = install_keyed_table("a", ttype::int8 {});
+    auto table_b = install_keyed_table("b", ttype::character { ttype::varying });
+    invalid(sql_analyzer_code::inconsistent_type, ast::query::query {
+            {
+                    ast::query::select_asterisk {},
+            },
+            {
+                    ast::table::join {
+                            ast::table::table_reference { id("a") },
+                            ast::table::join_type::inner,
+                            ast::table::table_reference { id("b") },
+                            ast::table::join_columns {
+                                    id("k"),
+                            },
+                    },
+            },
+    });
+}
+
+TEST_F(analyze_query_expression_join_test, join_columns_invalid_duplicate) {
+    /*
+     * SELECT * FROM a JOIN b USING (k, k)
+     */
+    auto table_a = install_table("a");
+    auto table_b = install_table("b");
+    invalid(sql_analyzer_code::column_already_exists, ast::query::query {
+            {
+                    ast::query::select_asterisk {},
+            },
+            {
+                    ast::table::join {
+                            ast::table::table_reference { id("a") },
+                            ast::table::join_type::inner,
+                            ast::table::table_reference { id("b") },
+                            ast::table::join_columns {
+                                    id("k"),
+                                    id("k"),
+                            },
+                    },
+            },
+    });
+}
+
+TEST_F(analyze_query_expression_join_test, join_columns_invalid_hidden) {
+    /*
+     * -- a.k is hidden
+     * SELECT * FROM a JOIN b USING (k)
+     */
+    auto table_a = install_table("a");
+    auto table_b = install_table("b");
+    table_a->columns()[0].features() += ::yugawara::storage::column_feature_set {
+            ::yugawara::storage::column_feature::hidden,
+    };
+    invalid(sql_analyzer_code::column_not_found, ast::query::query {
+            {
+                    ast::query::select_asterisk {},
+            },
+            {
+                    ast::table::join {
+                            ast::table::table_reference { id("a") },
+                            ast::table::join_type::inner,
+                            ast::table::table_reference { id("b") },
+                            ast::table::join_columns {
+                                    id("k"),
+                            },
+                    },
+            },
+    });
 }
 
 } // namespace mizugaki::analyzer::details

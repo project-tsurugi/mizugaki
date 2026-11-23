@@ -119,6 +119,19 @@ bool analyzer_context::is_resolved(takatori::descriptor::variable const& variabl
     return resolution.is_resolved();
 }
 
+std::shared_ptr<::takatori::type::data const> analyzer_context::type_of(
+        ::takatori::descriptor::variable const& variable,
+        ast::node_region region) {
+    auto result = expression_analyzer_.inspect(variable);
+    if (!result) {
+        report(sql_analyzer_code::unknown,
+                "unknown error occurred while analyzing type of variable",
+                region);
+        return {};
+    }
+    return result;
+}
+
 void analyzer_context::resolve_as(
         ::takatori::descriptor::variable const& variable,
         ::yugawara::analyzer::variable_resolution resolution) {
