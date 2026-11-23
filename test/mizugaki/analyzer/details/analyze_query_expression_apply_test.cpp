@@ -18,10 +18,14 @@
 #include <yugawara/function/declaration.h>
 
 #include <mizugaki/ast/table/apply.h>
+#include <mizugaki/ast/table/join.h>
+#include <mizugaki/ast/table/join_condition.h>
 #include <mizugaki/ast/table/table_reference.h>
 
 #include <mizugaki/ast/query/query.h>
 #include <mizugaki/ast/query/select_column.h>
+
+#include <mizugaki/ast/scalar/comparison_predicate.h>
 
 #include "test_parent.h"
 
@@ -1076,6 +1080,97 @@ TEST_F(analyze_query_expression_apply_test, invalid_correlation_columns_conflict
                     },
             },
     });
+}
+
+TEST_F(analyze_query_expression_apply_test, arguments_join) {
+    /*
+     * -- t, u: table(k:int8, v:varchar, ...)
+     * -- f: (int8, varchar) -> table(c0:int4)
+     * SELECT x.c0
+     * FROM t JOIN u ON t.k = u.k
+     * APPLY f(t.k, u.v) x
+     * -- the arguments can refer to the columns of all tables in the left operand.
+     */
+    auto table_t = install_table("t");
+    auto table_u = install_table("u");
+    auto function = functions_->add({
+            ::yugawara::function::declaration::minimum_builtin_function_id + 1,
+            "f",
+            ttype::table {
+                {
+                    { "c0", ttype::int4 {} },
+                },
+            },
+            {
+                ttype::int8 {},
+                ttype::character { ttype::varying, {} },
+            },
+            { ::yugawara::function::function_feature::table_valued_function },
+    });
+    trelation::graph_type graph {};
+    auto r = analyze_query_expression(
+            context(),
+            graph,
+            ast::query::query {
+                    {
+                            ast::query::select_column { vref(id("x", "c0")) },
+                    },
+                    {
+                            ast::table::apply {
+                                    ast::table::join {
+                                            ast::table::table_reference { id("t") },
+                                            ast::table::join_type::inner,
+                                            ast::table::table_reference { id("u") },
+                                            ast::table::join_condition {
+                                                    ast::scalar::comparison_predicate {
+                                                            vref(id("t", "k")),
+                                                            ast::scalar::comparison_operator::equals,
+                                                            vref(id("u", "k")),
+                                                    },
+                                            },
+                                    },
+                                    id("f"),
+                                    {
+                                            vref(id("t", "k")),
+                                            vref(id("u", "v")),
+                                    },
+                                    {
+                                            id("x"),
+                                    },
+                            },
+                    },
+            },
+            {},
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
+    trelation::apply const* apply = nullptr;
+    std::optional<::takatori::descriptor::variable> t_k {};
+    std::optional<::takatori::descriptor::variable> u_v {};
+    for (auto&& node : graph) {
+        if (auto p = downcast<trelation::apply>(&node)) {
+            apply = p;
+        }
+        if (auto scan = downcast<trelation::scan>(&node)) {
+            for (auto&& column : scan->columns()) {
+                auto&& source = extract<::yugawara::storage::column>(column.source());
+                if (std::addressof(source) == std::addressof(table_t->columns()[0])) {
+                    t_k = column.destination();
+                }
+                if (std::addressof(source) == std::addressof(table_u->columns()[1])) {
+                    u_v = column.destination();
+                }
+            }
+        }
+    }
+    ASSERT_TRUE(apply);
+    ASSERT_TRUE(t_k);
+    ASSERT_TRUE(u_v);
+
+    ASSERT_EQ(apply->arguments().size(), 2);
+    EXPECT_EQ(apply->arguments()[0], vref(*t_k));
+    EXPECT_EQ(apply->arguments()[1], vref(*u_v));
 }
 
 } // namespace mizugaki::analyzer::details

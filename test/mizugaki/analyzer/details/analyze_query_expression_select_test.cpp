@@ -1359,4 +1359,120 @@ TEST_F(analyze_query_expression_select_test, invalid_limit_not_constant) {
     });
 }
 
+namespace {
+
+/*
+ * marks the column as the implicit primary key column (both synthesized and hidden).
+ */
+void make_implicit_key(::yugawara::storage::column& column) {
+    column.features() += ::yugawara::storage::column_feature_set {
+            ::yugawara::storage::column_feature::synthesized,
+            ::yugawara::storage::column_feature::hidden,
+    };
+}
+
+} // namespace
+
+TEST_F(analyze_query_expression_select_test, hidden_column_asterisk) {
+    /*
+     * -- testing: table(k:hidden, v, w, x)
+     * SELECT * FROM testing
+     * -- the hidden column is not in the result.
+     */
+    auto table = install_table("testing");
+    make_implicit_key(table->columns()[0]);
+    trelation::graph_type graph {};
+
+    auto r = analyze_query_expression(
+            context(),
+            graph,
+            ast::query::query {
+                    {
+                            ast::query::select_asterisk {},
+                    },
+                    {
+                            ast::table::table_reference { id("testing") },
+                    },
+            },
+            {},
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
+    auto relation_columns = r.relation().columns();
+    ASSERT_EQ(relation_columns.size(), 3);
+    EXPECT_EQ(relation_columns[0].identifier(), "v");
+    EXPECT_EQ(relation_columns[1].identifier(), "w");
+    EXPECT_EQ(relation_columns[2].identifier(), "x");
+}
+
+TEST_F(analyze_query_expression_select_test, hidden_column_qualified_asterisk) {
+    /*
+     * -- testing: table(k:hidden, v, w, x)
+     * SELECT testing.* FROM testing
+     * -- the hidden column is not in the result.
+     */
+    auto table = install_table("testing");
+    make_implicit_key(table->columns()[0]);
+    trelation::graph_type graph {};
+
+    auto r = analyze_query_expression(
+            context(),
+            graph,
+            ast::query::query {
+                    {
+                            ast::query::select_asterisk { vref(id("testing")) },
+                    },
+                    {
+                            ast::table::table_reference { id("testing") },
+                    },
+            },
+            {},
+            {});
+    ASSERT_TRUE(r) << diagnostics();
+    expect_no_error();
+
+    auto relation_columns = r.relation().columns();
+    ASSERT_EQ(relation_columns.size(), 3);
+    EXPECT_EQ(relation_columns[0].identifier(), "v");
+    EXPECT_EQ(relation_columns[1].identifier(), "w");
+    EXPECT_EQ(relation_columns[2].identifier(), "x");
+}
+
+TEST_F(analyze_query_expression_select_test, hidden_column_simple_name) {
+    /*
+     * -- testing: table(k:hidden, v, w, x)
+     * SELECT k FROM testing
+     * -- the hidden column cannot be referred.
+     */
+    auto table = install_table("testing");
+    make_implicit_key(table->columns()[0]);
+    invalid(sql_analyzer_code::variable_not_found, ast::query::query {
+            {
+                    ast::query::select_column { vref(id("k")) },
+            },
+            {
+                    ast::table::table_reference { id("testing") },
+            },
+    });
+}
+
+TEST_F(analyze_query_expression_select_test, hidden_column_qualified_name) {
+    /*
+     * -- testing: table(k:hidden, v, w, x)
+     * SELECT testing.k FROM testing
+     * -- the hidden column cannot be referred, even if it is qualified.
+     */
+    auto table = install_table("testing");
+    make_implicit_key(table->columns()[0]);
+    invalid(sql_analyzer_code::column_not_found, ast::query::query {
+            {
+                    ast::query::select_column { vref(id("testing", "k")) },
+            },
+            {
+                    ast::table::table_reference { id("testing") },
+            },
+    });
+}
+
 } // namespace mizugaki::analyzer::details
