@@ -61,7 +61,6 @@ mantissa ({unsigned_integer}|{decimal})
 exponent {signed_integer}
 
 /* special phrases */
-union_join "UNION"{space}+"JOIN"
 outer_apply "OUTER"{space}+"APPLY"
 dot_asterisk "."{space}*"*"
 
@@ -119,8 +118,6 @@ UTF8_CHAR {ASCII}|{UTF8_2}{U}|{UTF8_3}{U}{U}|{UTF8_4}{U}{U}{U}
     {UTF8_CHAR} {}
     . {}
 }
-
-{union_join} { TRACE_RETURN parser_type::make_UNION_JOIN(location()); }
 
 {outer_apply} { TRACE_RETURN parser_type::make_OUTER_APPLY(location()); }
 

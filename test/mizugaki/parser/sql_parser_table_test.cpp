@@ -321,21 +321,6 @@ TEST_F(sql_parser_table_test, natural_join) {
     }));
 }
 
-TEST_F(sql_parser_table_test, union_join) {
-    auto result = parse("T0 UNION JOIN T1");
-    ASSERT_TRUE(result) << diagnostics(result);
-
-    EXPECT_EQ(extract(result), (table::join {
-            table::table_reference {
-                    name::simple { "T0" },
-            },
-            table::join_type::union_,
-            table::table_reference {
-                    name::simple { "T1" },
-            },
-    }));
-}
-
 TEST_F(sql_parser_table_test, join_multiple) {
     auto result = parse("T0 CROSS JOIN T1 CROSS JOIN T2");
     ASSERT_TRUE(result) << diagnostics(result);

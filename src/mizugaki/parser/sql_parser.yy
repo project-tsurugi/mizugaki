@@ -800,7 +800,6 @@
 %token APPLY "APPLY"
 
 %token DOT_ASTERISK ". *"
-%token UNION_JOIN "UNION JOIN"
 %token OUTER_APPLY "OUTER APPLY"
 
 %token <ast::common::chars> REGULAR_IDENTIFIER "<identifier>"
@@ -2847,15 +2846,6 @@ joined_table
             $$ = driver.node<ast::table::join>(
                     $l,
                     $t,
-                    $r,
-                    nullptr,
-                    @$);
-        }
-    | table_reference[l] "UNION JOIN"[t] table_primary[r]
-        {
-            $$ = driver.node<ast::table::join>(
-                    $l,
-                    regioned { ast::table::join_type::union_, @t },
                     $r,
                     nullptr,
                     @$);

@@ -957,14 +957,6 @@ public:
             case from::natural_left_outer: return process_join(to::left_outer, true, expr, scope);
             case from::natural_right_outer: return process_join(to::left_outer, true, expr, scope, true);
             case from::natural_full_outer: return process_join(to::full_outer, true, expr, scope);
-            case from::union_:
-                // FIXME: enable union join
-                // return process_union_join(expr, scope);
-                context_.report(
-                        sql_analyzer_code::unsupported_feature,
-                        "UNION JOIN is not yet supported",
-                        expr.operator_kind().region());
-                return {};
         }
         ::takatori::util::fail();
     }
@@ -1696,54 +1688,6 @@ private:
                         << string_builder::to_string,
                 expr.region());
         return {};
-    }
-
-    [[nodiscard]] optional_ptr<output_port> process_union_join(
-            ast::table::join const& expr,
-            query_scope& scope) {
-        auto left = dispatch(*expr.left(), scope);
-        if (!left) {
-            return {};
-        }
-        auto pivot = scope.create_pivot();
-        auto right = dispatch(*expr.right(), scope);
-        if (!right) {
-            return {};
-        }
-
-        auto mappings = create_vector<trelation::intermediate::union_::mapping>();
-        for (query_scope::position_type i = 0, n = pivot; i < n; ++i) {
-            for (auto&& relation : scope.references()) {
-                for (auto&& column : relation.columns()) {
-                    mappings.emplace_back(
-                            column.variable(),
-                            std::nullopt,
-                            factory_.stream_variable(column.variable()));
-                }
-            }
-        }
-        for (query_scope::position_type i = pivot, n = scope.references().size(); i < n; ++i) {
-            for (auto&& relation : scope.references()) {
-                for (auto&& column : relation.columns()) {
-                    mappings.emplace_back(
-                            std::nullopt,
-                            column.variable(),
-                            factory_.stream_variable(column.variable()));
-                }
-            }
-        }
-
-        auto&& op = graph_.emplace<trelation::intermediate::union_>(
-                trelation::set_quantifier::all,
-                std::move(mappings));
-        op.region() = context_.convert(expr.region());
-        if (!context_.resolve(op)) {
-            return {};
-        }
-
-        op.left().connect_to(*left);
-        op.right().connect_to(*right);
-        return op.output();
     }
 };
 

@@ -31,15 +31,13 @@ enum class join_type {
     natural_right_outer,
     /// @brief `NATURAL FULL OUTER`
     natural_full_outer,
-    /// @brief `UNION`
-    union_,
 };
 
 /// @brief set of literal join_kind.
 using join_kind_set = ::takatori::util::enum_set<
         join_type,
         join_type::cross,
-        join_type::union_>;
+        join_type::natural_full_outer>;
 
 /**
  * @brief returns string representation of the value.
@@ -59,7 +57,6 @@ inline constexpr std::string_view to_string_view(join_type value) noexcept {
         case kind::natural_left_outer: return "natural_left_outer"sv;
         case kind::natural_right_outer: return "natural_right_outer"sv;
         case kind::natural_full_outer: return "natural_full_outer"sv;
-        case kind::union_: return "union"sv;
     }
     std::abort();
 }
