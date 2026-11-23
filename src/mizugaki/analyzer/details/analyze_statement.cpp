@@ -213,8 +213,8 @@ public:
             columns_context.reserve(stmt.columns().size());
             for (auto&& column_name : stmt.columns()) {
                 auto identifier = normalize_identifier(context_, *column_name, name_kind::variable);
-                auto column = info.find(identifier);
-                if (!column || !column->declaration() || !column->exported()) {
+                auto column = info.find(identifier, column_filter::exported);
+                if (!column || !column->declaration()) {
                     // may not ambiguous
                     context_.report(
                             sql_analyzer_code::column_not_found,
@@ -494,7 +494,7 @@ public:
             }
 
             auto identifier = normalize_identifier(context_, element.target()->last_name(), name_kind::variable);
-            auto column = info.find(identifier);
+            auto column = info.find(identifier, column_filter::all);
             if (!column || !column->declaration()) {
                 context_.report(
                         sql_analyzer_code::column_not_found,

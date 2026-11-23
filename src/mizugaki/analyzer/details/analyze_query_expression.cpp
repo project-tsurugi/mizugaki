@@ -1423,18 +1423,14 @@ public:
             std::string_view id) {
         column_info* found {};
         for (auto&& relation : relations) {
-            for (auto column = relation.find(id); !column.is_absent(); column = relation.next(*column)) {
-                if (column.is_ambiguous()) {
-                    return { find_column_status::ambiguous, nullptr };
-                }
-                if (!column->exported()) {
-                    continue;
-                }
-                if (found) {
-                    return { find_column_status::ambiguous, nullptr };
-                }
-                found = std::addressof(column.value());
+            auto column = relation.find(id, column_filter::exported);
+            if (column.is_absent()) {
+                continue;
             }
+            if (column.is_ambiguous() || found) {
+                return { find_column_status::ambiguous, nullptr };
+            }
+            found = std::addressof(column.value());
         }
         if (!found) {
             return { find_column_status::not_found, nullptr };

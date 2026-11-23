@@ -92,3 +92,4 @@ add_analyzer_test_executable(mizugaki/analyzer/details/analyze_statement_index_d
 add_analyzer_test_executable(mizugaki/analyzer/details/analyze_statement_identity_column_test.cpp)
 add_analyzer_test_executable(mizugaki/analyzer/details/analyze_description_test.cpp)
 add_analyzer_test_executable(mizugaki/analyzer/details/set_function_processor_test.cpp)
+add_analyzer_test_executable(mizugaki/analyzer/details/relation_info_test.cpp)

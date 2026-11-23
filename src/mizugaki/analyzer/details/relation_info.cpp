@@ -1,6 +1,6 @@
 #include <mizugaki/analyzer/details/relation_info.h>
 
-#include <boost/dynamic_bitset.hpp>
+#include <boost/assert.hpp>
 
 #include <takatori/util/downcast.h>
 #include <takatori/util/fail.h>
@@ -16,6 +16,18 @@ using ::takatori::util::sequence_view;
 using ::takatori::util::unsafe_downcast;
 
 namespace storage = ::yugawara::storage;
+
+namespace {
+
+[[nodiscard]] bool satisfies(column_info const& column, column_filter filter) noexcept {
+    switch (filter) {
+        case column_filter::all: return true;
+        case column_filter::exported: return column.exported();
+    }
+    std::abort();
+}
+
+} // namespace
 
 relation_info::relation_info(
         optional_ptr<storage::relation const> declaration,
@@ -88,8 +100,8 @@ void relation_info::erase(position_type first, position_type last) {
             columns_.begin() + static_cast<difference_type>(last));
 }
 
-find_element_result<column_info> relation_info::find(std::string_view identifier) {
-    if (auto pos = find_internal(identifier)) {
+find_element_result<column_info> relation_info::find(std::string_view identifier, column_filter filter) {
+    if (auto pos = find_internal(identifier, filter)) {
         if (pos == ambiguous) {
             return find_element_result<column_info>::ambiguous;
         }
@@ -98,8 +110,8 @@ find_element_result<column_info> relation_info::find(std::string_view identifier
     return {};
 }
 
-find_element_result<column_info const> relation_info::find(std::string_view identifier) const {
-    if (auto pos = find_internal(identifier)) {
+find_element_result<column_info const> relation_info::find(std::string_view identifier, column_filter filter) const {
+    if (auto pos = find_internal(identifier, filter)) {
         if (pos == ambiguous) {
             return find_element_result<column_info const>::ambiguous;
         }
@@ -139,25 +151,23 @@ void relation_info::rebuild() {
     }
 }
 
-optional_ptr<column_info> relation_info::next(column_info const& column) {
-    if (auto&& pos = column.next()) {
-        return columns_[*pos];
+std::optional<relation_info::position_type> relation_info::find_internal(std::string_view identifier, column_filter filter) const {
+    auto it = name_map_.find(identifier);
+    if (it == name_map_.end()) {
+        return {};
     }
-    return {};
-}
-
-optional_ptr<column_info const> relation_info::next(column_info const& column) const {
-    if (auto&& pos = column.next()) {
-        return columns_[*pos];
+    // NOTE: walk the columns with the same name, and decide the ambiguity only from the filtered columns
+    std::optional<position_type> result {};
+    for (std::optional<position_type> pos = it.value(); pos; pos = columns_[*pos].next()) {
+        if (!satisfies(columns_[*pos], filter)) {
+            continue;
+        }
+        if (result) {
+            return ambiguous;
+        }
+        result = pos;
     }
-    return {};
-}
-
-std::optional<relation_info::position_type> relation_info::find_internal(std::string_view identifier) const {
-    if (auto it = name_map_.find(identifier); it != name_map_.end()) {
-        return it.value();
-    }
-    return {};
+    return result;
 }
 
 std::optional<relation_info::position_type> relation_info::find_internal(yugawara::storage::column const& column) const {
@@ -171,26 +181,14 @@ column_info& relation_info::build_internal(position_type position) {
     auto&& target = columns_[position];
     if (auto&& id = target.identifier()) {
         if (auto [it, success] = name_map_.emplace(id.value(), position); !success) {
+            // NOTE: append to the tail of the columns with the same name;
+            // this never cycles, because add() and rebuild() always clear next() before linking
             auto pos = it.value();
-            ::boost::dynamic_bitset<> saw { columns_.size() };
-            while (true) {
-                if (pos == ambiguous) {
-                    break;
-                }
-                // FIXME: avoid cyclic reference
-                auto&& current = columns_[pos];
-                if (saw.test(pos)) {
-                    current.next() = ambiguous;
-                    break;
-                }
-                saw.set(pos);
-                if (auto&& next = current.next()) {
-                    pos = *next;
-                } else {
-                    next = position;
-                    break;
-                }
+            while (auto&& next = columns_[pos].next()) {
+                BOOST_ASSERT(*next < position); // NOLINT
+                pos = *next;
             }
+            columns_[pos].next() = position;
         }
     }
     if (auto decl = target.declaration()) {

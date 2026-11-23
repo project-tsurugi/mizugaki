@@ -825,20 +825,15 @@ private:
         ast::common::chars buffer;
         std::optional<descriptor::variable> found {};
         for (auto&& r : scope.references()) {
-            for (auto v = r.find(to_identifier(name, buffer, name_kind::variable)); !v.is_absent(); v = r.next(*v)) {
-                if (v.is_ambiguous()) {
-                    report_column_ambiguous(name);
-                    return find_symbol_result<scoped_variable_info>::error;
-                }
-                if (!v->exported()) {
-                    continue;
-                }
-                if (found) {
-                    report_column_ambiguous(name);
-                    return find_symbol_result<scoped_variable_info>::error;
-                }
-                found = context_.bless(v->variable(), name.region());
+            auto v = r.find(to_identifier(name, buffer, name_kind::variable), column_filter::exported);
+            if (v.is_absent()) {
+                continue;
             }
+            if (v.is_ambiguous() || found) {
+                report_column_ambiguous(name);
+                return find_symbol_result<scoped_variable_info>::error;
+            }
+            found = context_.bless(v->variable(), name.region());
         }
         if (found) {
             return { scoped_variable_info { std::move(*found), scope } };
@@ -869,26 +864,15 @@ private:
             relation_info const& parent,
             ast::name::name const& name) {
         ast::common::chars buffer;
-        std::optional<descriptor::variable> found {};
-        for (auto v = parent.find(to_identifier(name.last_name(), buffer, name_kind::variable));; v = parent.next(*v)) {
-            if (v.is_ambiguous()) {
-                report_column_ambiguous(name);
-                return find_symbol_result<descriptor::variable>::error;
-            }
-            if (v.is_absent()) {
-                break;
-            }
-            if (!v.value().exported()) {
-                continue;
-            }
-            // NOTE: treats even if not exported
-            if (found) {
-                report_column_ambiguous(name);
-                return find_symbol_result<descriptor::variable>::error;
-            }
-            found = context_.bless(v->variable(), name.region());
+        auto v = parent.find(to_identifier(name.last_name(), buffer, name_kind::variable), column_filter::exported);
+        if (v.is_ambiguous()) {
+            report_column_ambiguous(name);
+            return find_symbol_result<descriptor::variable>::error;
         }
-        return { std::move(found) };
+        if (v.is_absent()) {
+            return {};
+        }
+        return { context_.bless(v->variable(), name.region()) };
     }
 
     [[nodiscard]] symbol_info find_variable_in_schema(

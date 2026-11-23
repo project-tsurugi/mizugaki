@@ -18,6 +18,16 @@
 
 namespace mizugaki::analyzer::details {
 
+/**
+ * @brief the condition of columns to find in relation_info::find().
+ */
+enum class column_filter {
+    /// @brief all columns.
+    all,
+    /// @brief only exported columns, which can be referred by unqualified names.
+    exported,
+};
+
 class relation_info {
 public:
     using position_type = std::size_t;
@@ -48,15 +58,26 @@ public:
     column_info& add(column_info info);
     void erase(position_type first, position_type last);
 
-    [[nodiscard]] find_element_result<column_info> find(std::string_view identifier);
-    [[nodiscard]] find_element_result<column_info const> find(std::string_view identifier) const;
+    /**
+     * @brief finds a column with the given name, only from the columns which satisfy the filter.
+     * @details this filters the columns and decides whether the result is ambiguous at once,
+     *      by using the current flags of the columns (they may be changed after the columns were added).
+     *      Callers should not decide the ambiguity by themselves, or it may contradict the filter.
+     * @param identifier the column name
+     * @param filter the condition of columns
+     * @return the found column
+     * @return ambiguous if there are two or more such columns
+     * @return absent if there are no such columns
+     */
+    [[nodiscard]] find_element_result<column_info> find(std::string_view identifier, column_filter filter);
+
+    /// @copydoc find(std::string_view, column_filter)
+    [[nodiscard]] find_element_result<column_info const> find(std::string_view identifier, column_filter filter) const;
+
     [[nodiscard]] find_element_result<column_info> find(::yugawara::storage::column const& column);
     [[nodiscard]] find_element_result<column_info const> find(::yugawara::storage::column const& column) const;
 
     void rebuild();
-
-    [[nodiscard]] ::takatori::util::optional_ptr<column_info> next(column_info const& column);
-    [[nodiscard]] ::takatori::util::optional_ptr<column_info const> next(column_info const& column) const;
 
 private:
     ::takatori::util::optional_ptr<::yugawara::storage::relation const> declaration_ {};
@@ -66,7 +87,7 @@ private:
     ::tsl::hopscotch_map<::yugawara::storage::column const*, position_type> declaration_map_ {};
 
     column_info& build_internal(position_type position);
-    [[nodiscard]] std::optional<position_type> find_internal(std::string_view identifier) const;
+    [[nodiscard]] std::optional<position_type> find_internal(std::string_view identifier, column_filter filter) const;
     [[nodiscard]] std::optional<position_type> find_internal(::yugawara::storage::column const& column) const;
 };
 
