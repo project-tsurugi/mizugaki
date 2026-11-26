@@ -9,6 +9,7 @@
 #include <takatori/statement/drop_partition.h>
 
 #include <takatori/type/date.h>
+#include <takatori/type/time_point.h>
 #include <takatori/value/date.h>
 
 #include <yugawara/binding/extract.h>
@@ -477,6 +478,54 @@ TEST_F(analyze_statement_alter_test, alter_table_drop_partition_simple) {
     ASSERT_EQ(elements[0].predicates().size(), 1);
     EXPECT_EQ(elements[0].predicates()[0].first, top::equal);
     EXPECT_EQ(*elements[0].predicates()[0].second, tvalue::int8 { 1 });
+}
+
+TEST_F(analyze_statement_alter_test, alter_table_drop_partition_virtual_column) {
+    namespace p = ::yugawara::storage::partition;
+    // partition key: (division_id, EXTRACT(YEAR TO MONTH FROM event_timestamp) AS event_month)
+    auto table = storages_->add_table(::yugawara::storage::table {
+            "d3",
+            {
+                    { "division_id", ttype::int4 {} },
+                    { "event_timestamp", ttype::time_point {} },
+            },
+    });
+    ::yugawara::storage::index index {
+            table,
+            "d3",
+            {
+                    table->columns()[0],
+                    table->columns()[1],
+            },
+            {},
+            {
+                    ::yugawara::storage::index_feature::find,
+                    ::yugawara::storage::index_feature::scan,
+                    ::yugawara::storage::index_feature::primary,
+                    ::yugawara::storage::index_feature::unique,
+            },
+    };
+    index.partition_key_columns().emplace_back(table->columns()[0]);
+    index.partition_key_columns().emplace_back(
+            table->columns()[1],
+            "event_month",
+            p::timestamp_truncate { p::timestamp_unit::month });
+    storages_->add_index(std::move(index));
+
+    auto r = analyze_statement(context(), drop_partition({
+            ast::statement::partition_criteria { {
+                    compare(vref(id("division_id")), op::equals, literal(number("1"))),
+                    compare(vref(id("event_month")), op::equals, date("'2000-01-01'")),
+            } },
+    }, "d3"));
+    auto&& stmt = extract_drop_partition(r);
+    expect_no_error();
+
+    ASSERT_EQ(stmt.target().size(), 1);
+    auto&& elements = stmt.target()[0].elements();
+    ASSERT_EQ(elements.size(), 2);
+    EXPECT_EQ(extract<::yugawara::storage::column>(elements[1].column()), table->columns()[1]);
+    EXPECT_EQ(elements[1].column_name(), "event_month");
 }
 
 TEST_F(analyze_statement_alter_test, alter_table_drop_partition_multiple_columns) {

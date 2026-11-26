@@ -146,6 +146,12 @@ public:
     static constexpr std::string_view default_advance_sequence_function_name { "nextval" };
 
     /**
+     * @brief the default value of the function name of the floor division.
+     * @see floor_division_function_name()
+     */
+    static constexpr std::string_view default_floor_division_function_name { "floor_div" };
+
+    /**
      * @brief the zone offset unit type.
      */
     using zone_offset_type = std::chrono::duration<std::int32_t, std::ratio<60>>;
@@ -557,6 +563,23 @@ public:
     }
 
     /**
+     * @brief returns the function name of the floor division.
+     * @details The function `<name>(x, d)` computes the floor of the quotient `x / d`,
+     *      and it is available for the virtual columns of the partition keys (as the floor division of the prefix
+     *      extractors). The function must be declared as a built-in function.
+     * @return the function name of the floor division
+     * @attention If you want to modify this, please care to keep the string lifecycle.
+     */
+    [[nodiscard]] std::string_view& floor_division_function_name() noexcept {
+        return floor_division_function_name_;
+    }
+
+    /// @copydoc floor_division_function_name()
+    [[nodiscard]] std::string_view const& floor_division_function_name() const noexcept {
+        return floor_division_function_name_;
+    }
+
+    /**
      * @brief returns the system time zone offset.
      * @return return the system time zone offset
      */
@@ -602,6 +625,7 @@ private:
     bool default_sequence_cycle_ { default_default_sequence_cycle };
 
     std::string_view advance_sequence_function_name_ { default_advance_sequence_function_name };
+    std::string_view floor_division_function_name_ { default_floor_division_function_name };
     zone_offset_type system_zone_offset_ { default_system_zone_offset };
 };
 

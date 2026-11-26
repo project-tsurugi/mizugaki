@@ -1,6 +1,10 @@
 #include <mizugaki/analyzer/details/analyze_statement.h>
 
+#include <algorithm>
+#include <functional>
 #include <limits>
+#include <optional>
+#include <utility>
 #include <vector>
 
 #include <cstdint>
@@ -52,10 +56,16 @@
 #include <yugawara/extension/scalar/exists.h>
 #include <yugawara/extension/scalar/quantified_compare.h>
 
+#include <yugawara/function/declaration.h>
+
 #include <yugawara/storage/sequence.h>
+#include <yugawara/storage/partition/prefix_extractor.h>
 
 #include <mizugaki/ast/statement/dispatch.h>
 #include <mizugaki/ast/scalar/variable_reference.h>
+#include <mizugaki/ast/scalar/extract_expression.h>
+#include <mizugaki/ast/scalar/builtin_function_invocation.h>
+#include <mizugaki/ast/scalar/function_invocation.h>
 
 #include <mizugaki/analyzer/details/analyze_description.h>
 #include <mizugaki/analyzer/details/analyze_name.h>
@@ -63,6 +73,7 @@
 #include <mizugaki/analyzer/details/analyze_scalar_expression.h>
 #include <mizugaki/analyzer/details/analyze_type.h>
 
+#include "extract_function_constants.h"
 #include "name_print_support.h"
 
 namespace mizugaki::analyzer::details {
@@ -1350,43 +1361,391 @@ public:
             if (!result) {
                 return false;
             }
-            auto&& expr = context_.clear_expression_resolution(result.release());
-            optional_ptr<::yugawara::storage::column const> column {};
-            if (expr.kind() == tscalar::expression_kind::variable_reference) {
-                auto&& variable = unsafe_downcast<tscalar::variable_reference>(expr).variable();
-                column = ::yugawara::binding::extract_if<::yugawara::storage::column>(variable);
+            std::optional<::yugawara::storage::partition_key_element> key {};
+            if (auto column = extract_column(*result)) {
+                key = process_partition_column(element, *column);
+            } else {
+                key = process_virtual_column(element, *result, table);
+                if (key && i + 1 != n) {
+                    context_.report(
+                            sql_analyzer_code::invalid_partition_key,
+                            string_builder {}
+                                    << "virtual column must be the last partition key element: "
+                                    << key->column_name()
+                                    << string_builder::to_string,
+                            element.value()->region());
+                    key.reset();
+                }
             }
-            if (!column) {
-                context_.report(
-                        sql_analyzer_code::unsupported_feature,
-                        "partition key element must be a table column",
-                        element.value()->region());
+            context_.clear_expression_resolution(result.release());
+            if (!key) {
                 return false;
             }
-            if (element.name()) {
-                context_.report(
-                        sql_analyzer_code::invalid_partition_key,
-                        string_builder {}
-                                << "virtual column name is not allowed for table column: "
-                                << column->simple_name()
-                                << string_builder::to_string,
-                        element.name()->region());
+            if (!check_partition_key_position(element, key->column(), i, keys)) {
                 return false;
             }
-            if (i >= keys.size() || keys[i].column() != *column) {
-                context_.report(
-                        sql_analyzer_code::invalid_partition_key,
-                        string_builder {}
-                                << "partition key must be a prefix of primary key: "
-                                << column->simple_name()
-                                << " is not the primary key column at position " << (i + 1)
-                                << string_builder::to_string,
-                        element.value()->region());
-                return false;
-            }
-            partition_keys.emplace_back(*column);
+            partition_keys.emplace_back(std::move(*key));
         }
         return true;
+    }
+
+    [[nodiscard]] static optional_ptr<::yugawara::storage::column const> extract_column(tscalar::expression const& expr) {
+        if (expr.kind() != tscalar::expression_kind::variable_reference) {
+            return {};
+        }
+        auto&& variable = unsafe_downcast<tscalar::variable_reference>(expr).variable();
+        return ::yugawara::binding::extract_if<::yugawara::storage::column>(variable);
+    }
+
+    [[nodiscard]] std::optional<::yugawara::storage::partition_key_element> process_partition_column(
+            ast::statement::partition_key_element const& element,
+            ::yugawara::storage::column const& column) {
+        if (element.name()) {
+            context_.report(
+                    sql_analyzer_code::invalid_partition_key,
+                    string_builder {}
+                            << "virtual column name is not allowed for table column: "
+                            << column.simple_name()
+                            << string_builder::to_string,
+                    element.name()->region());
+            return {};
+        }
+        return ::yugawara::storage::partition_key_element { column };
+    }
+
+    [[nodiscard]] bool check_partition_key_position(
+            ast::statement::partition_key_element const& element,
+            ::yugawara::storage::column const& column,
+            std::size_t position,
+            std::vector<::yugawara::storage::index::key> const& keys) {
+        if (position >= keys.size() || keys[position].column() != column) {
+            context_.report(
+                    sql_analyzer_code::invalid_partition_key,
+                    string_builder {}
+                            << "partition key must be a prefix of primary key: "
+                            << column.simple_name()
+                            << " is not the primary key column at position " << (position + 1)
+                            << string_builder::to_string,
+                    element.value()->region());
+            return false;
+        }
+        return true;
+    }
+
+    [[nodiscard]] std::optional<::yugawara::storage::partition_key_element> process_virtual_column(
+            ast::statement::partition_key_element const& element,
+            tscalar::expression const& expr,
+            ::yugawara::storage::table const& table) {
+        // NOTE: the expression has been analyzed as a plain SQL expression, so that it is a valid expression here
+        auto source = build_virtual_column_source(*element.value(), expr);
+        if (!source) {
+            return {};
+        }
+        auto&& column = source->first.get();
+        auto&& extractor = source->second;
+        if (!element.name()) {
+            context_.report(
+                    sql_analyzer_code::invalid_partition_key,
+                    "virtual column name is required for the partition key expression",
+                    element.value()->region());
+            return {};
+        }
+        auto name = normalize_identifier(context_, *element.name(), name_kind::variable);
+        for (auto&& table_column : table.columns()) {
+            if (table_column.simple_name() == name) {
+                context_.report(
+                        sql_analyzer_code::column_already_exists,
+                        string_builder {}
+                                << "virtual column name conflicts with table column: "
+                                << name
+                                << string_builder::to_string,
+                        element.name()->region());
+                return {};
+            }
+        }
+        if (!::yugawara::storage::partition::is_applicable(extractor.kind(), column.type())) {
+            context_.report(
+                    sql_analyzer_code::invalid_partition_key,
+                    string_builder {}
+                            << "virtual column " << name << " is not available for the column type: "
+                            << column.simple_name()
+                            << " (" << column.type() << ")"
+                            << string_builder::to_string,
+                    element.value()->region());
+            return {};
+        }
+        auto expected = ::yugawara::storage::partition::compute_type(extractor, column.type(), context_.types());
+        auto actual = context_.resolve(expr);
+        if (!actual || *actual != *expected) {
+            // NOTE: the function declaration does not follow the typing rules of the prefix extractors
+            string_builder message {};
+            message << "inconsistent function type for virtual column " << name << ": "
+                    << "expected=" << *expected << ", ";
+            if (actual) {
+                message << "actual=" << *actual;
+            } else {
+                message << "actual=(unresolved)";
+            }
+            context_.report(
+                    sql_analyzer_code::inconsistent_function_type,
+                    message << string_builder::to_string,
+                    element.value()->region());
+            return {};
+        }
+        return ::yugawara::storage::partition_key_element {
+                column,
+                std::move(name),
+                extractor,
+        };
+    }
+
+    using virtual_column_source = std::pair<
+            std::reference_wrapper<::yugawara::storage::column const>,
+            ::yugawara::storage::partition::prefix_extractor>;
+
+    [[nodiscard]] std::optional<virtual_column_source> build_virtual_column_source(
+            ast::scalar::expression const& source,
+            tscalar::expression const& expr) {
+        if (expr.kind() != tscalar::expression_kind::function_call) {
+            report_unsupported_virtual_column(source);
+            return {};
+        }
+        auto&& call = unsafe_downcast<tscalar::function_call>(expr);
+        switch (source.node_kind()) {
+            case ast::scalar::extract_expression::tag:
+                return build_extract_source(
+                        unsafe_downcast<ast::scalar::extract_expression>(source),
+                        call);
+            case ast::scalar::builtin_function_invocation::tag:
+                return build_builtin_function_source(
+                        unsafe_downcast<ast::scalar::builtin_function_invocation>(source),
+                        call);
+            case ast::scalar::function_invocation::tag:
+                return build_function_source(
+                        unsafe_downcast<ast::scalar::function_invocation>(source),
+                        call);
+            default:
+                break;
+        }
+        report_unsupported_virtual_column(source);
+        return {};
+    }
+
+    void report_unsupported_virtual_column(ast::scalar::expression const& source) {
+        context_.report(
+                sql_analyzer_code::invalid_partition_key,
+                "unsupported expression for virtual column",
+                source.region());
+    }
+
+    [[nodiscard]] optional_ptr<::yugawara::storage::column const> extract_source_column(
+            ast::scalar::expression const& source,
+            tscalar::function_call const& call,
+            std::size_t index) {
+        auto&& arguments = call.arguments();
+        if (index < arguments.size()) {
+            if (auto column = extract_column(arguments[index])) {
+                return column;
+            }
+        }
+        context_.report(
+                sql_analyzer_code::invalid_partition_key,
+                "virtual column must be computed from a table column",
+                source.region());
+        return {};
+    }
+
+    [[nodiscard]] std::optional<virtual_column_source> build_extract_source(
+            ast::scalar::extract_expression const& source,
+            tscalar::function_call const& call) {
+        namespace p = ::yugawara::storage::partition;
+        using kind = ast::scalar::extract_field_kind;
+        auto field = *source.field();
+        if (call.arguments().size() != (extract_includes_second.contains(field) ? 2U : 1U)) {
+            report_unsupported_virtual_column(source);
+            return {};
+        }
+        auto column = extract_source_column(source, call, 0);
+        if (!column) {
+            return {};
+        }
+        if (column->type().kind() == ::takatori::type::type_kind::date) {
+            switch (field) {
+                case kind::year: return virtual_column_source { *column, p::date_truncate { p::date_unit::year } };
+                case kind::year_to_month: return virtual_column_source { *column, p::date_truncate { p::date_unit::month } };
+                case kind::year_to_day: return virtual_column_source { *column, p::date_truncate { p::date_unit::day } };
+                default: break;
+            }
+        } else {
+            switch (field) {
+                case kind::year: return virtual_column_source { *column, p::timestamp_truncate { p::timestamp_unit::year } };
+                case kind::year_to_month: return virtual_column_source { *column, p::timestamp_truncate { p::timestamp_unit::month } };
+                case kind::year_to_day: return virtual_column_source { *column, p::timestamp_truncate { p::timestamp_unit::day } };
+                case kind::year_to_hour: return virtual_column_source { *column, p::timestamp_truncate { p::timestamp_unit::hour } };
+                case kind::year_to_minute: return virtual_column_source { *column, p::timestamp_truncate { p::timestamp_unit::minute } };
+                case kind::year_to_second: {
+                    // NOTE: the second precision has been resolved in the second argument
+                    auto precision = read_integer(call.arguments()[1]);
+                    if (!precision
+                            || *precision < 0
+                            || static_cast<std::uint64_t>(*precision) > extract_max_second_precision) {
+                        report_unsupported_virtual_column(source);
+                        return {};
+                    }
+                    return virtual_column_source {
+                            *column,
+                            p::timestamp_truncate {
+                                    p::timestamp_unit::second,
+                                    static_cast<std::size_t>(*precision),
+                            },
+                    };
+                }
+                default: break;
+            }
+        }
+        context_.report(
+                sql_analyzer_code::invalid_partition_key,
+                string_builder {}
+                        << "unsupported EXTRACT field for virtual column: "
+                        << field
+                        << string_builder::to_string,
+                source.field().region());
+        return {};
+    }
+
+    [[nodiscard]] std::optional<virtual_column_source> build_builtin_function_source(
+            ast::scalar::builtin_function_invocation const& source,
+            tscalar::function_call const& call) {
+        namespace p = ::yugawara::storage::partition;
+        using kind = ast::scalar::builtin_function_kind;
+        auto&& arguments = call.arguments();
+        switch (*source.function()) {
+            case kind::substring: {
+                if (arguments.size() != 3) {
+                    context_.report(
+                            sql_analyzer_code::invalid_partition_key,
+                            "SUBSTRING for virtual column must have the length (FOR clause)",
+                            source.region());
+                    return {};
+                }
+                auto column = extract_source_column(source, call, 0);
+                if (!column) {
+                    return {};
+                }
+                auto start = read_integer(arguments[1]);
+                if (!start || *start != 1) {
+                    context_.report(
+                            sql_analyzer_code::invalid_partition_key,
+                            "the start position of SUBSTRING for virtual column must be 1",
+                            source.arguments()[1]->region());
+                    return {};
+                }
+                auto length = read_integer(arguments[2]);
+                if (!length || *length <= 0) {
+                    context_.report(
+                            sql_analyzer_code::invalid_partition_key,
+                            "the length of SUBSTRING for virtual column must be a positive integer literal",
+                            source.arguments()[2]->region());
+                    return {};
+                }
+                if (column->type().kind() == ::takatori::type::type_kind::octet) {
+                    return virtual_column_source { *column, p::binary_prefix { static_cast<std::size_t>(*length) } };
+                }
+                return virtual_column_source { *column, p::character_prefix { static_cast<std::size_t>(*length) } };
+            }
+            case kind::floor: {
+                if (arguments.size() != 1 && arguments.size() != 2) {
+                    break;
+                }
+                auto column = extract_source_column(source, call, 0);
+                if (!column) {
+                    return {};
+                }
+                if (arguments.size() == 1) {
+                    return virtual_column_source { *column, p::floor_fractional { 0 } };
+                }
+                auto scale = read_integer(arguments[1]);
+                if (!scale || *scale < 0) {
+                    context_.report(
+                            sql_analyzer_code::invalid_partition_key,
+                            "the number of fractional digits of FLOOR for virtual column must be a non-negative integer literal",
+                            source.region());
+                    return {};
+                }
+                // NOTE: the scale larger than the max decimal digits does not change the result
+                auto max_scale = static_cast<std::uint64_t>(std::numeric_limits<std::size_t>::max());
+                auto resolved = std::min(static_cast<std::uint64_t>(*scale), max_scale);
+                return virtual_column_source { *column, p::floor_fractional { static_cast<std::size_t>(resolved) } };
+            }
+            default:
+                break;
+        }
+        report_unsupported_virtual_column(source);
+        return {};
+    }
+
+    [[nodiscard]] std::optional<virtual_column_source> build_function_source(
+            ast::scalar::function_invocation const& source,
+            tscalar::function_call const& call) {
+        namespace p = ::yugawara::storage::partition;
+        if (!is_floor_division_function(source, call)) {
+            report_unsupported_virtual_column(source);
+            return {};
+        }
+        auto column = extract_source_column(source, call, 0);
+        if (!column) {
+            return {};
+        }
+        auto divisor = read_integer(call.arguments()[1]);
+        if (!divisor || *divisor <= 0) {
+            context_.report(
+                    sql_analyzer_code::invalid_partition_key,
+                    "the divisor of the floor division for virtual column must be a positive integer literal",
+                    source.region());
+            return {};
+        }
+        return virtual_column_source { *column, p::floor_division { *divisor } };
+    }
+
+    [[nodiscard]] bool is_floor_division_function(
+            ast::scalar::function_invocation const& source,
+            tscalar::function_call const& call) {
+        // NOTE: the floor division function is identified by its name, the number of arguments,
+        // and whether it is a built-in function
+        using ::yugawara::function::declaration;
+        if (call.arguments().size() != 2) {
+            return false;
+        }
+        auto&& name = *source.name();
+        if (name.node_kind() != ast::name::kind::simple) {
+            return false;
+        }
+        auto identifier = normalize_identifier(context_, name.last_name(), name_kind::function);
+        if (identifier != context_.options()->floor_division_function_name()) {
+            return false;
+        }
+        auto function = ::yugawara::binding::extract_if<declaration>(call.function());
+        if (!function) {
+            return false;
+        }
+        auto id = function->definition_id();
+        return declaration::minimum_builtin_function_id <= id && id < declaration::minimum_user_function_id;
+    }
+
+    [[nodiscard]] static std::optional<std::int64_t> read_integer(tscalar::expression const& expr) {
+        if (expr.kind() != tscalar::expression_kind::immediate) {
+            return {};
+        }
+        auto&& value = unsafe_downcast<tscalar::immediate>(expr).value();
+        switch (value.kind()) {
+            case tvalue::value_kind::int4:
+                return unsafe_downcast<tvalue::int4>(value).get();
+            case tvalue::value_kind::int8:
+                return unsafe_downcast<tvalue::int8>(value).get();
+            default:
+                break;
+        }
+        return {};
     }
 
     [[nodiscard]] std::vector<::yugawara::storage::index::key> build_index_keys(

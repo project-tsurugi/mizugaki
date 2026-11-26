@@ -8,6 +8,11 @@
 #include <takatori/util/clonable.h>
 #include <takatori/value/primitive.h>
 #include <takatori/type/primitive.h>
+#include <takatori/type/decimal.h>
+#include <takatori/type/character.h>
+#include <takatori/type/octet.h>
+#include <takatori/type/date.h>
+#include <takatori/type/time_point.h>
 
 #include <takatori/statement/empty.h>
 #include <takatori/statement/create_table.h>
@@ -24,10 +29,16 @@
 #include <mizugaki/ast/type/simple.h>
 #include <mizugaki/ast/type/character_string.h>
 #include <mizugaki/ast/type/user_defined.h>
+#include <mizugaki/ast/type/decimal.h>
+#include <mizugaki/ast/type/datetime.h>
+#include <mizugaki/ast/type/octet_string.h>
 
 #include <mizugaki/ast/scalar/unary_expression.h>
 #include <mizugaki/ast/scalar/host_parameter_reference.h>
 #include <mizugaki/ast/scalar/builtin_function_invocation.h>
+#include <mizugaki/ast/scalar/function_invocation.h>
+#include <mizugaki/ast/scalar/extract_expression.h>
+#include <mizugaki/ast/scalar/binary_expression.h>
 
 #include <mizugaki/ast/statement/table_definition.h>
 #include <mizugaki/ast/statement/column_definition.h>
@@ -90,6 +101,100 @@ protected:
                 std::move(definition),
         };
     }
+
+    /**
+     * @brief returns a table definition with columns k (INT), v, and w (INT), whose primary key is (k, v).
+     * @param value_type the type of column v
+     * @param partition the partition key elements
+     */
+    static ast::statement::table_definition virtual_column_table(
+            ast::type::type&& value_type,
+            std::initializer_list<ast::statement::partition_key_element> partition) {
+        std::vector<std::unique_ptr<ast::statement::table_element>> elements {};
+        elements.emplace_back(std::make_unique<ast::statement::column_definition>(
+                id("k"),
+                ast::type::simple { ast::type::kind::integer }));
+        elements.emplace_back(std::make_unique<ast::statement::column_definition>(
+                id("v"),
+                std::move(value_type)));
+        elements.emplace_back(std::make_unique<ast::statement::column_definition>(
+                id("w"),
+                ast::type::simple { ast::type::kind::integer }));
+        elements.emplace_back(std::make_unique<ast::statement::table_constraint_definition>(
+                ast::statement::key_constraint {
+                        ast::statement::constraint_kind::primary_key,
+                        {
+                                { id("k") },
+                                { id("v") },
+                        },
+                }));
+        return ast::statement::table_definition {
+                ::takatori::util::clone_unique(id("testing")),
+                std::move(elements),
+                ast::statement::partition_definition { partition },
+        };
+    }
+
+    /**
+     * @brief returns a partition key element of the virtual column.
+     */
+    static ast::statement::partition_key_element virtual_column(
+            ast::scalar::expression&& expression,
+            std::string_view name = "x") {
+        return ast::statement::partition_key_element {
+                std::move(expression),
+                id(name),
+        };
+    }
+
+    void declare_function(std::string_view name, ttype::data&& return_type, ttype::data&& parameter) {
+        functions_->add(::yugawara::function::declaration {
+                next_function_id_++,
+                name,
+                std::move(return_type),
+                { std::move(parameter) },
+                { ::yugawara::function::function_feature::scalar_function },
+        });
+    }
+
+    void declare_function(
+            std::string_view name,
+            ttype::data&& return_type,
+            ttype::data&& parameter0,
+            ttype::data&& parameter1) {
+        functions_->add(::yugawara::function::declaration {
+                next_function_id_++,
+                name,
+                std::move(return_type),
+                { std::move(parameter0), std::move(parameter1) },
+                { ::yugawara::function::function_feature::scalar_function },
+        });
+    }
+
+    void declare_function(
+            std::string_view name,
+            ttype::data&& return_type,
+            ttype::data&& parameter0,
+            ttype::data&& parameter1,
+            ttype::data&& parameter2) {
+        functions_->add(::yugawara::function::declaration {
+                next_function_id_++,
+                name,
+                std::move(return_type),
+                { std::move(parameter0), std::move(parameter1), std::move(parameter2) },
+                { ::yugawara::function::function_feature::scalar_function },
+        });
+    }
+
+    ::yugawara::storage::partition_key_element const& virtual_key_of(analyze_statement_result_type const& r) {
+        auto&& keys = primary_index_of(r).partition_key_columns();
+        if (keys.size() != 2) {
+            throw std::domain_error(diagnostics());
+        }
+        return keys[1];
+    }
+
+    std::size_t next_function_id_ { ::yugawara::function::declaration::minimum_builtin_function_id };
 
     ::yugawara::storage::index const& primary_index_of(analyze_statement_result_type const& r) {
         auto alternative = std::get_if<statement_result_type>(&r);
@@ -1661,6 +1766,347 @@ TEST_F(analyze_statement_table_definition_test, partition_column_not_found) {
     invalid(sql_analyzer_code::variable_not_found, partitioned_table(
             { { id("c1") }, { id("c2") } },
             { { id("x") } }));
+}
+
+
+TEST_F(analyze_statement_table_definition_test, partition_virtual_column_extract_timestamp) {
+    declare_function("extract_year_to_month", ttype::date {}, ttype::time_point {});
+    auto r = analyze_statement(context(), virtual_column_table(
+            ast::type::datetime { ast::type::kind::timestamp },
+            {
+                    { id("k") },
+                    virtual_column(ast::scalar::extract_expression { ast::scalar::extract_field_kind::year_to_month, vref(id("v")) }),
+            }));
+    ASSERT_TRUE(std::holds_alternative<statement_result_type>(r)) << diagnostics();
+    expect_no_error();
+
+    namespace p = ::yugawara::storage::partition;
+    auto&& key = virtual_key_of(r);
+    EXPECT_EQ(key.column(), primary_index_of(r).table().columns()[1]);
+    EXPECT_EQ(key.column_name(), "x");
+    EXPECT_EQ(key.prefix_extractor(), p::prefix_extractor { p::timestamp_truncate { p::timestamp_unit::month } });
+}
+
+TEST_F(analyze_statement_table_definition_test, partition_virtual_column_extract_date) {
+    declare_function("extract_year_to_day", ttype::date {}, ttype::date {});
+    auto r = analyze_statement(context(), virtual_column_table(
+            ast::type::simple { ast::type::kind::date },
+            {
+                    { id("k") },
+                    virtual_column(ast::scalar::extract_expression { ast::scalar::extract_field_kind::year_to_day, vref(id("v")) }),
+            }));
+    ASSERT_TRUE(std::holds_alternative<statement_result_type>(r)) << diagnostics();
+    expect_no_error();
+
+    namespace p = ::yugawara::storage::partition;
+    EXPECT_EQ(virtual_key_of(r).prefix_extractor(), p::prefix_extractor { p::date_truncate { p::date_unit::day } });
+}
+
+TEST_F(analyze_statement_table_definition_test, partition_virtual_column_extract_year) {
+    declare_function("extract_year", ttype::int4 {}, ttype::time_point {});
+    auto r = analyze_statement(context(), virtual_column_table(
+            ast::type::datetime { ast::type::kind::timestamp },
+            {
+                    { id("k") },
+                    virtual_column(ast::scalar::extract_expression { ast::scalar::extract_field_kind::year, vref(id("v")) }),
+            }));
+    ASSERT_TRUE(std::holds_alternative<statement_result_type>(r)) << diagnostics();
+    expect_no_error();
+
+    namespace p = ::yugawara::storage::partition;
+    EXPECT_EQ(virtual_key_of(r).prefix_extractor(), p::prefix_extractor { p::timestamp_truncate { p::timestamp_unit::year } });
+}
+
+TEST_F(analyze_statement_table_definition_test, partition_virtual_column_extract_date_hour) {
+    // NOTE: reported as the plain SQL expression, before checking the virtual column
+    declare_function("extract_year_to_hour", ttype::time_point {}, ttype::time_point {});
+    invalid(sql_analyzer_code::function_not_found, virtual_column_table(
+            ast::type::simple { ast::type::kind::date },
+            {
+                    { id("k") },
+                    virtual_column(ast::scalar::extract_expression { ast::scalar::extract_field_kind::year_to_hour, vref(id("v")) }),
+            }));
+}
+
+TEST_F(analyze_statement_table_definition_test, partition_virtual_column_extract_with_time_zone) {
+    declare_function("extract_year_to_month", ttype::date {}, ttype::time_point { ttype::with_time_zone });
+    invalid(sql_analyzer_code::invalid_partition_key, virtual_column_table(
+            ast::type::datetime { ast::type::kind::timestamp, true },
+            {
+                    { id("k") },
+                    virtual_column(ast::scalar::extract_expression { ast::scalar::extract_field_kind::year_to_month, vref(id("v")) }),
+            }));
+}
+
+TEST_F(analyze_statement_table_definition_test, partition_virtual_column_extract_unsupported_field) {
+    declare_function("extract_month", ttype::int4 {}, ttype::time_point {});
+    invalid(sql_analyzer_code::invalid_partition_key, virtual_column_table(
+            ast::type::datetime { ast::type::kind::timestamp },
+            {
+                    { id("k") },
+                    virtual_column(ast::scalar::extract_expression { ast::scalar::extract_field_kind::month, vref(id("v")) }),
+            }));
+}
+
+TEST_F(analyze_statement_table_definition_test, partition_virtual_column_substring_character) {
+    declare_function("substring", ttype::character { ttype::varying }, ttype::character { ttype::varying }, ttype::int8 {}, ttype::int8 {});
+    auto r = analyze_statement(context(), virtual_column_table(
+            ast::type::character_string { ast::type::kind::character_varying, 20 },
+            {
+                    { id("k") },
+                    virtual_column(ast::scalar::builtin_function_invocation {
+                            ast::scalar::builtin_function_kind::substring,
+                            { vref(id("v")), literal(number("1")), literal(number("3")) },
+                    }),
+            }));
+    ASSERT_TRUE(std::holds_alternative<statement_result_type>(r)) << diagnostics();
+    expect_no_error();
+
+    namespace p = ::yugawara::storage::partition;
+    EXPECT_EQ(virtual_key_of(r).prefix_extractor(), p::prefix_extractor { p::character_prefix { 3 } });
+}
+
+TEST_F(analyze_statement_table_definition_test, partition_virtual_column_substring_binary) {
+    declare_function("substring", ttype::octet { ttype::varying }, ttype::octet { ttype::varying }, ttype::int8 {}, ttype::int8 {});
+    auto r = analyze_statement(context(), virtual_column_table(
+            ast::type::octet_string { ast::type::kind::octet_varying, 20 },
+            {
+                    { id("k") },
+                    virtual_column(ast::scalar::builtin_function_invocation {
+                            ast::scalar::builtin_function_kind::substring,
+                            { vref(id("v")), literal(number("1")), literal(number("3")) },
+                    }),
+            }));
+    ASSERT_TRUE(std::holds_alternative<statement_result_type>(r)) << diagnostics();
+    expect_no_error();
+
+    namespace p = ::yugawara::storage::partition;
+    EXPECT_EQ(virtual_key_of(r).prefix_extractor(), p::prefix_extractor { p::binary_prefix { 3 } });
+}
+
+TEST_F(analyze_statement_table_definition_test, partition_virtual_column_substring_start) {
+    declare_function("substring", ttype::character { ttype::varying }, ttype::character { ttype::varying }, ttype::int8 {}, ttype::int8 {});
+    invalid(sql_analyzer_code::invalid_partition_key, virtual_column_table(
+            ast::type::character_string { ast::type::kind::character_varying, 20 },
+            {
+                    { id("k") },
+                    virtual_column(ast::scalar::builtin_function_invocation {
+                            ast::scalar::builtin_function_kind::substring,
+                            { vref(id("v")), literal(number("2")), literal(number("3")) },
+                    }),
+            }));
+}
+
+TEST_F(analyze_statement_table_definition_test, partition_virtual_column_floor_division) {
+    declare_function("floor_div", ttype::int8 {}, ttype::int8 {}, ttype::int8 {});
+    auto r = analyze_statement(context(), virtual_column_table(
+            ast::type::simple { ast::type::kind::big_integer },
+            {
+                    { id("k") },
+                    virtual_column(ast::scalar::function_invocation {
+                            id("floor_div"),
+                            { vref(id("v")), literal(number("1000")) },
+                    }),
+            }));
+    ASSERT_TRUE(std::holds_alternative<statement_result_type>(r)) << diagnostics();
+    expect_no_error();
+
+    namespace p = ::yugawara::storage::partition;
+    EXPECT_EQ(virtual_key_of(r).prefix_extractor(), p::prefix_extractor { p::floor_division { 1000 } });
+}
+
+TEST_F(analyze_statement_table_definition_test, partition_virtual_column_floor_division_function_name) {
+    options_.floor_division_function_name() = "fdiv";
+    declare_function("fdiv", ttype::int8 {}, ttype::int8 {}, ttype::int8 {});
+    auto r = analyze_statement(context(), virtual_column_table(
+            ast::type::simple { ast::type::kind::big_integer },
+            {
+                    { id("k") },
+                    virtual_column(ast::scalar::function_invocation {
+                            id("fdiv"),
+                            { vref(id("v")), literal(number("10")) },
+                    }),
+            }));
+    ASSERT_TRUE(std::holds_alternative<statement_result_type>(r)) << diagnostics();
+    expect_no_error();
+
+    namespace p = ::yugawara::storage::partition;
+    EXPECT_EQ(virtual_key_of(r).prefix_extractor(), p::prefix_extractor { p::floor_division { 10 } });
+}
+
+TEST_F(analyze_statement_table_definition_test, partition_virtual_column_floor_division_user_function) {
+    next_function_id_ = ::yugawara::function::declaration::minimum_user_function_id;
+    declare_function("floor_div", ttype::int8 {}, ttype::int8 {}, ttype::int8 {});
+    invalid(sql_analyzer_code::invalid_partition_key, virtual_column_table(
+            ast::type::simple { ast::type::kind::big_integer },
+            {
+                    { id("k") },
+                    virtual_column(ast::scalar::function_invocation {
+                            id("floor_div"),
+                            { vref(id("v")), literal(number("1000")) },
+                    }),
+            }));
+}
+
+TEST_F(analyze_statement_table_definition_test, partition_virtual_column_floor_division_divisor) {
+    declare_function("floor_div", ttype::int8 {}, ttype::int8 {}, ttype::int8 {});
+    invalid(sql_analyzer_code::invalid_partition_key, virtual_column_table(
+            ast::type::simple { ast::type::kind::big_integer },
+            {
+                    { id("k") },
+                    virtual_column(ast::scalar::function_invocation {
+                            id("floor_div"),
+                            { vref(id("v")), literal(number("10", ast::literal::sign::minus)) },
+                    }),
+            }));
+}
+
+TEST_F(analyze_statement_table_definition_test, partition_virtual_column_floor_quotient) {
+    // NOTE: FLOOR(c / d) is not in the allow list
+    declare_function("floor", ttype::int8 {}, ttype::int8 {});
+    invalid(sql_analyzer_code::invalid_partition_key, virtual_column_table(
+            ast::type::simple { ast::type::kind::big_integer },
+            {
+                    { id("k") },
+                    virtual_column(ast::scalar::builtin_function_invocation {
+                            ast::scalar::builtin_function_kind::floor,
+                            {
+                                    ast::scalar::binary_expression {
+                                            vref(id("v")),
+                                            ast::scalar::binary_operator::solidus,
+                                            literal(number("1000")),
+                                    },
+                            },
+                    }),
+            }));
+}
+
+TEST_F(analyze_statement_table_definition_test, partition_virtual_column_floor_fractional) {
+    declare_function("floor", ttype::decimal {}, ttype::decimal {}, ttype::int8 {});
+    auto r = analyze_statement(context(), virtual_column_table(
+            ast::type::decimal { ast::type::kind::decimal, 10, 4 },
+            {
+                    { id("k") },
+                    virtual_column(ast::scalar::builtin_function_invocation {
+                            ast::scalar::builtin_function_kind::floor,
+                            { vref(id("v")), literal(number("2")) },
+                    }),
+            }));
+    ASSERT_TRUE(std::holds_alternative<statement_result_type>(r)) << diagnostics();
+    expect_no_error();
+
+    namespace p = ::yugawara::storage::partition;
+    EXPECT_EQ(virtual_key_of(r).prefix_extractor(), p::prefix_extractor { p::floor_fractional { 2 } });
+}
+
+TEST_F(analyze_statement_table_definition_test, partition_virtual_column_floor_fractional_single_argument) {
+    declare_function("floor", ttype::decimal {}, ttype::decimal {});
+    auto r = analyze_statement(context(), virtual_column_table(
+            ast::type::decimal { ast::type::kind::decimal, 10, 2 },
+            {
+                    { id("k") },
+                    virtual_column(ast::scalar::builtin_function_invocation {
+                            ast::scalar::builtin_function_kind::floor,
+                            { vref(id("v")) },
+                    }),
+            }));
+    ASSERT_TRUE(std::holds_alternative<statement_result_type>(r)) << diagnostics();
+    expect_no_error();
+
+    namespace p = ::yugawara::storage::partition;
+    EXPECT_EQ(virtual_key_of(r).prefix_extractor(), p::prefix_extractor { p::floor_fractional { 0 } });
+}
+
+TEST_F(analyze_statement_table_definition_test, partition_virtual_column_floor_fractional_integer) {
+    // NOTE: the function is found, but the prefix extractor is not applicable to the integral types
+    declare_function("floor", ttype::int4 {}, ttype::int4 {}, ttype::int8 {});
+    invalid(sql_analyzer_code::invalid_partition_key, virtual_column_table(
+            ast::type::simple { ast::type::kind::integer },
+            {
+                    { id("k") },
+                    virtual_column(ast::scalar::builtin_function_invocation {
+                            ast::scalar::builtin_function_kind::floor,
+                            { vref(id("v")), literal(number("2")) },
+                    }),
+            }));
+}
+
+TEST_F(analyze_statement_table_definition_test, partition_virtual_column_floor_fractional_integer_single_argument) {
+    declare_function("floor", ttype::int4 {}, ttype::int4 {});
+    invalid(sql_analyzer_code::invalid_partition_key, virtual_column_table(
+            ast::type::simple { ast::type::kind::integer },
+            {
+                    { id("k") },
+                    virtual_column(ast::scalar::builtin_function_invocation {
+                            ast::scalar::builtin_function_kind::floor,
+                            { vref(id("v")) },
+                    }),
+            }));
+}
+
+TEST_F(analyze_statement_table_definition_test, partition_virtual_column_unsupported_function) {
+    declare_function("upper", ttype::character { ttype::varying }, ttype::character { ttype::varying });
+    invalid(sql_analyzer_code::invalid_partition_key, virtual_column_table(
+            ast::type::character_string { ast::type::kind::character_varying, 20 },
+            {
+                    { id("k") },
+                    virtual_column(ast::scalar::builtin_function_invocation {
+                            ast::scalar::builtin_function_kind::upper,
+                            { vref(id("v")) },
+                    }),
+            }));
+}
+
+TEST_F(analyze_statement_table_definition_test, partition_virtual_column_not_last) {
+    declare_function("extract_year", ttype::int4 {}, ttype::time_point {});
+    invalid(sql_analyzer_code::invalid_partition_key, virtual_column_table(
+            ast::type::datetime { ast::type::kind::timestamp },
+            {
+                    virtual_column(ast::scalar::extract_expression { ast::scalar::extract_field_kind::year, vref(id("v")) }),
+                    { id("k") },
+            }));
+}
+
+TEST_F(analyze_statement_table_definition_test, partition_virtual_column_source_not_primary_key) {
+    declare_function("extract_year", ttype::int4 {}, ttype::time_point {});
+    invalid(sql_analyzer_code::invalid_partition_key, virtual_column_table(
+            ast::type::datetime { ast::type::kind::timestamp },
+            {
+                    virtual_column(ast::scalar::extract_expression { ast::scalar::extract_field_kind::year, vref(id("v")) }),
+            }));
+}
+
+TEST_F(analyze_statement_table_definition_test, partition_virtual_column_name_conflict) {
+    declare_function("extract_year", ttype::int4 {}, ttype::time_point {});
+    invalid(sql_analyzer_code::column_already_exists, virtual_column_table(
+            ast::type::datetime { ast::type::kind::timestamp },
+            {
+                    { id("k") },
+                    virtual_column(ast::scalar::extract_expression { ast::scalar::extract_field_kind::year, vref(id("v")) }, "w"),
+            }));
+}
+
+TEST_F(analyze_statement_table_definition_test, partition_virtual_column_without_name) {
+    declare_function("extract_year", ttype::int4 {}, ttype::time_point {});
+    invalid(sql_analyzer_code::invalid_partition_key, virtual_column_table(
+            ast::type::datetime { ast::type::kind::timestamp },
+            {
+                    { id("k") },
+                    ast::statement::partition_key_element {
+                            ast::scalar::extract_expression { ast::scalar::extract_field_kind::year, vref(id("v")) },
+                    },
+            }));
+}
+
+TEST_F(analyze_statement_table_definition_test, partition_virtual_column_inconsistent_function_type) {
+    // NOTE: the function declaration does not follow the typing rules of the prefix extractors
+    declare_function("extract_year", ttype::int8 {}, ttype::time_point {});
+    invalid(sql_analyzer_code::inconsistent_function_type, virtual_column_table(
+            ast::type::datetime { ast::type::kind::timestamp },
+            {
+                    { id("k") },
+                    virtual_column(ast::scalar::extract_expression { ast::scalar::extract_field_kind::year, vref(id("v")) }),
+            }));
 }
 
 } // namespace mizugaki::analyzer::details
