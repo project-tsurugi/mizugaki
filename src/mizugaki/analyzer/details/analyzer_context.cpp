@@ -165,6 +165,7 @@ sql_analyzer_code analyzer_context::convert_code(
         case kind::unresolved_variable: return sql_analyzer_code::unresolved_variable;
         case kind::inconsistent_elements: return sql_analyzer_code::inconsistent_elements;
         case kind::inconsistent_function_type: return sql_analyzer_code::function_not_found;
+        case kind::invalid_value: return sql_analyzer_code::invalid_partition_key;
     }
     return sql_analyzer_code::unknown;
 }
