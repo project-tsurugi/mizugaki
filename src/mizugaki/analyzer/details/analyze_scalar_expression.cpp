@@ -47,6 +47,7 @@
 #include <mizugaki/analyzer/details/analyze_type.h>
 #include <mizugaki/analyzer/details/analyze_query_expression.h>
 
+#include "extract_function_name.h"
 #include "name_print_support.h"
 
 namespace mizugaki::analyzer::details {
@@ -615,40 +616,10 @@ public:
         return result;
     }
 
-    static constexpr std::string_view extract_function_name_year { "extract_year" };
-    static constexpr std::string_view extract_function_name_month { "extract_month" };
-    static constexpr std::string_view extract_function_name_day { "extract_day" };
-    static constexpr std::string_view extract_function_name_hour { "extract_hour" };
-    static constexpr std::string_view extract_function_name_minute { "extract_minute" };
-    static constexpr std::string_view extract_function_name_second { "extract_second" };
-    static constexpr std::string_view extract_function_name_timezone_hour { "extract_timezone_hour" };
-    static constexpr std::string_view extract_function_name_timezone_minute { "extract_timezone_minute" };
-
-    static constexpr std::string_view extract_function_name_date { "date" };
-    static constexpr std::string_view extract_function_name_year_to_month { "extract_year_to_month" };
-    static constexpr std::string_view extract_function_name_year_to_day { "extract_year_to_day" };
-    static constexpr std::string_view extract_function_name_year_to_hour { "extract_year_to_hour" };
-    static constexpr std::string_view extract_function_name_year_to_minute { "extract_year_to_minute" };
-    static constexpr std::string_view extract_function_name_year_to_second { "extract_year_to_second" };
-
     [[nodiscard]] std::string_view extract_function_name(
             ast::common::regioned<ast::scalar::extract_field_kind> field) {
-        using kind = ast::scalar::extract_field_kind;
-        switch (*field) {
-            case kind::year: return extract_function_name_year;
-            case kind::month: return extract_function_name_month;
-            case kind::day: return extract_function_name_day;
-            case kind::hour: return extract_function_name_hour;
-            case kind::minute: return extract_function_name_minute;
-            case kind::second: return extract_function_name_second;
-            case kind::timezone_hour: return extract_function_name_timezone_hour;
-            case kind::timezone_minute: return extract_function_name_timezone_minute;
-            case kind::date: return extract_function_name_date;
-            case kind::year_to_month: return extract_function_name_year_to_month;
-            case kind::year_to_day: return extract_function_name_year_to_day;
-            case kind::year_to_hour: return extract_function_name_year_to_hour;
-            case kind::year_to_minute: return extract_function_name_year_to_minute;
-            case kind::year_to_second: return extract_function_name_year_to_second;
+        if (auto name = details::extract_function_name(*field); !name.empty()) {
+            return name;
         }
         context_.report(
                 sql_analyzer_code::unsupported_feature,
