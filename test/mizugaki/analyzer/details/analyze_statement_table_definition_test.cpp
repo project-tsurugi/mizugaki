@@ -1,7 +1,11 @@
 #include <mizugaki/analyzer/details/analyze_statement.h>
 
+#include <optional>
+#include <stdexcept>
+
 #include <gtest/gtest.h>
 
+#include <takatori/util/clonable.h>
 #include <takatori/value/primitive.h>
 #include <takatori/type/primitive.h>
 
@@ -31,6 +35,7 @@
 #include <mizugaki/ast/statement/simple_constraint.h>
 #include <mizugaki/ast/statement/key_constraint.h>
 #include <mizugaki/ast/statement/expression_constraint.h>
+#include <mizugaki/ast/statement/partition_definition.h>
 
 #include "test_parent.h"
 
@@ -52,6 +57,47 @@ protected:
     void invalid(sql_analyzer_code code, ast::statement::statement const& stmt) {
         invalid(stmt);
         EXPECT_TRUE(find_error(code)) << diagnostics();
+    }
+
+    /**
+     * @brief returns a table definition with columns c1, c2, and c3 (INT).
+     * @param primary_key the primary key elements, or empty to omit the primary key
+     * @param partition the partition key elements, or empty to omit the partition definition
+     */
+    static ast::statement::table_definition partitioned_table(
+            std::initializer_list<ast::common::sort_element> primary_key,
+            std::initializer_list<ast::statement::partition_key_element> partition) {
+        std::vector<std::unique_ptr<ast::statement::table_element>> elements {};
+        for (auto&& name : { "c1", "c2", "c3" }) {
+            elements.emplace_back(std::make_unique<ast::statement::column_definition>(
+                    id(name),
+                    ast::type::simple { ast::type::kind::integer }));
+        }
+        if (primary_key.size() != 0) {
+            elements.emplace_back(std::make_unique<ast::statement::table_constraint_definition>(
+                    ast::statement::key_constraint {
+                            ast::statement::constraint_kind::primary_key,
+                            primary_key,
+                    }));
+        }
+        std::optional<ast::statement::partition_definition> definition {};
+        if (partition.size() != 0) {
+            definition.emplace(partition);
+        }
+        return ast::statement::table_definition {
+                ::takatori::util::clone_unique(id("testing")),
+                std::move(elements),
+                std::move(definition),
+        };
+    }
+
+    ::yugawara::storage::index const& primary_index_of(analyze_statement_result_type const& r) {
+        auto alternative = std::get_if<statement_result_type>(&r);
+        if (!alternative) {
+            throw std::domain_error("not a statement");
+        }
+        auto&& stmt = downcast<tstatement::create_table>(**alternative);
+        return extract<::yugawara::storage::index>(stmt.primary_key());
     }
 };
 
@@ -1517,6 +1563,104 @@ TEST_F(analyze_statement_table_definition_test, table_primary_key_column_duplica
                     },
             },
     });
+}
+
+TEST_F(analyze_statement_table_definition_test, partition) {
+    auto r = analyze_statement(context(), partitioned_table(
+            { { id("c1") }, { id("c2") } },
+            { { id("c1") } }));
+    ASSERT_TRUE(std::holds_alternative<statement_result_type>(r)) << diagnostics();
+    expect_no_error();
+
+    auto&& index = primary_index_of(r);
+    auto&& table_columns = index.table().columns();
+    auto&& partition_keys = index.partition_key_columns();
+    ASSERT_EQ(partition_keys.size(), 1);
+    EXPECT_EQ(partition_keys[0].column(), table_columns[0]);
+    EXPECT_EQ(partition_keys[0].column_name(), "c1");
+    EXPECT_FALSE(partition_keys[0].prefix_extractor());
+}
+
+TEST_F(analyze_statement_table_definition_test, partition_multiple_columns) {
+    auto r = analyze_statement(context(), partitioned_table(
+            { { id("c1") }, { id("c2") }, { id("c3") } },
+            { { id("c1") }, { id("c2") } }));
+    ASSERT_TRUE(std::holds_alternative<statement_result_type>(r)) << diagnostics();
+    expect_no_error();
+
+    auto&& index = primary_index_of(r);
+    auto&& table_columns = index.table().columns();
+    auto&& partition_keys = index.partition_key_columns();
+    ASSERT_EQ(partition_keys.size(), 2);
+    EXPECT_EQ(partition_keys[0].column(), table_columns[0]);
+    EXPECT_EQ(partition_keys[1].column(), table_columns[1]);
+}
+
+TEST_F(analyze_statement_table_definition_test, partition_primary_key_descendant) {
+    auto r = analyze_statement(context(), partitioned_table(
+            {
+                    { id("c1"), ast::common::ordering_specification::desc },
+                    { id("c2") },
+            },
+            { { id("c1") } }));
+    ASSERT_TRUE(std::holds_alternative<statement_result_type>(r)) << diagnostics();
+    expect_no_error();
+
+    auto&& index = primary_index_of(r);
+    auto&& partition_keys = index.partition_key_columns();
+    ASSERT_EQ(partition_keys.size(), 1);
+    EXPECT_EQ(partition_keys[0].column(), index.table().columns()[0]);
+}
+
+TEST_F(analyze_statement_table_definition_test, partition_absent) {
+    auto r = analyze_statement(context(), partitioned_table(
+            { { id("c1") } },
+            {}));
+    ASSERT_TRUE(std::holds_alternative<statement_result_type>(r)) << diagnostics();
+    expect_no_error();
+
+    auto&& index = primary_index_of(r);
+    EXPECT_TRUE(index.partition_key_columns().empty());
+}
+
+TEST_F(analyze_statement_table_definition_test, partition_not_prefix) {
+    invalid(sql_analyzer_code::invalid_partition_key, partitioned_table(
+            { { id("c1") }, { id("c2") } },
+            { { id("c2") } }));
+}
+
+TEST_F(analyze_statement_table_definition_test, partition_without_primary_key) {
+    // NOTE: tables without primary key must be rejected, even if the primary key prefix check implies it
+    invalid(sql_analyzer_code::invalid_partition_key, partitioned_table(
+            {},
+            { { id("c1") } }));
+}
+
+TEST_F(analyze_statement_table_definition_test, partition_duplicate_columns) {
+    // NOTE: duplicate columns must be rejected, even if the primary key prefix check implies it
+    invalid(sql_analyzer_code::invalid_partition_key, partitioned_table(
+            { { id("c1") }, { id("c2") } },
+            { { id("c1") }, { id("c1") } }));
+}
+
+TEST_F(analyze_statement_table_definition_test, partition_empty_elements) {
+    auto stmt = partitioned_table(
+            { { id("c1") } },
+            {});
+    stmt.partition().emplace(std::vector<ast::statement::partition_key_element> {});
+    invalid(sql_analyzer_code::malformed_syntax, stmt);
+}
+
+TEST_F(analyze_statement_table_definition_test, partition_column_with_name) {
+    invalid(sql_analyzer_code::invalid_partition_key, partitioned_table(
+            { { id("c1") } },
+            { ast::statement::partition_key_element { vref(id("c1")), id("x") } }));
+}
+
+TEST_F(analyze_statement_table_definition_test, partition_column_not_found) {
+    invalid(sql_analyzer_code::variable_not_found, partitioned_table(
+            { { id("c1") }, { id("c2") } },
+            { { id("x") } }));
 }
 
 } // namespace mizugaki::analyzer::details

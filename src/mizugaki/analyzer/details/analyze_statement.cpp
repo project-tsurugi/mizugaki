@@ -1019,6 +1019,11 @@ public:
                             ::yugawara::storage::index_feature::primary,
                     });
         }
+        if (auto&& partition = stmt.partition()) {
+            if (!process_partition(*partition, *primary_index, *declaration)) {
+                return {};
+            }
+        }
         // fill implicit column default values
         for (auto&& column : declaration->columns()) {
             if (column.criteria().nullity() == ::yugawara::variable::nullable && !column.default_value()) {
@@ -1312,6 +1317,73 @@ public:
                 ::yugawara::storage::index_feature_set {});
 
         return declaration;
+    }
+
+    [[nodiscard]] bool process_partition(
+            ast::statement::partition_definition const& partition,
+            ::yugawara::storage::index& primary_index,
+            ::yugawara::storage::table const& table) {
+        if (partition.elements().empty()) {
+            context_.report(
+                    sql_analyzer_code::malformed_syntax,
+                    "partition definition must have at least one key element",
+                    partition.region());
+            return false;
+        }
+
+        query_scope scope {};
+        scope.add(build_relation_info(context_, table, false));
+
+        auto&& keys = primary_index.keys();
+        auto&& partition_keys = primary_index.partition_key_columns();
+        auto&& elements = partition.elements();
+        for (std::size_t i = 0, n = elements.size(); i < n; ++i) {
+            auto&& element = elements[i];
+            auto result = analyze_scalar_expression(
+                    context_,
+                    *element.value(),
+                    scope,
+                    {});
+            if (!result) {
+                return false;
+            }
+            auto&& expr = context_.clear_expression_resolution(result.release());
+            optional_ptr<::yugawara::storage::column const> column {};
+            if (expr.kind() == tscalar::expression_kind::variable_reference) {
+                auto&& variable = unsafe_downcast<tscalar::variable_reference>(expr).variable();
+                column = ::yugawara::binding::extract_if<::yugawara::storage::column>(variable);
+            }
+            if (!column) {
+                context_.report(
+                        sql_analyzer_code::unsupported_feature,
+                        "partition key element must be a table column",
+                        element.value()->region());
+                return false;
+            }
+            if (element.name()) {
+                context_.report(
+                        sql_analyzer_code::invalid_partition_key,
+                        string_builder {}
+                                << "virtual column name is not allowed for table column: "
+                                << column->simple_name()
+                                << string_builder::to_string,
+                        element.name()->region());
+                return false;
+            }
+            if (i >= keys.size() || keys[i].column() != *column) {
+                context_.report(
+                        sql_analyzer_code::invalid_partition_key,
+                        string_builder {}
+                                << "partition key must be a prefix of primary key: "
+                                << column->simple_name()
+                                << " is not the primary key column at position " << (i + 1)
+                                << string_builder::to_string,
+                        element.value()->region());
+                return false;
+            }
+            partition_keys.emplace_back(*column);
+        }
+        return true;
     }
 
     [[nodiscard]] std::vector<::yugawara::storage::index::key> build_index_keys(
