@@ -2,6 +2,8 @@
 
 #include <string_view>
 
+#include <cstddef>
+
 #include <mizugaki/ast/scalar/extract_field_kind.h>
 
 namespace mizugaki::analyzer::details {
@@ -47,6 +49,24 @@ inline constexpr std::string_view extract_function_name_year_to_minute { "extrac
 
 /// @brief the built-in function name for `EXTRACT(YEAR TO SECOND FROM ...)`.
 inline constexpr std::string_view extract_function_name_year_to_second { "extract_year_to_second" };
+
+/**
+ * @brief the fields of `EXTRACT` whose built-in function takes the second precision as the second argument.
+ * @details The first argument is the operand of `EXTRACT`, and the second argument is the second precision
+ *      (an `INT` value, from `0` to extract_max_second_precision).
+ *      The built-in functions of the other fields only take the operand.
+ */
+inline constexpr ast::scalar::extract_field_kind_set extract_includes_second {
+        ast::scalar::extract_field_kind::second,
+        ast::scalar::extract_field_kind::year_to_second,
+};
+
+/**
+ * @brief the max second precision of `EXTRACT`.
+ * @details The second precision is this value if it is omitted, or it is capped to this value.
+ * @see extract_includes_second
+ */
+inline constexpr std::size_t extract_max_second_precision { 9 };
 
 /**
  * @brief returns the name of the built-in function which computes `EXTRACT` of the given field.

@@ -47,7 +47,7 @@
 #include <mizugaki/analyzer/details/analyze_type.h>
 #include <mizugaki/analyzer/details/analyze_query_expression.h>
 
-#include "extract_function_name.h"
+#include "extract_function_constants.h"
 #include "name_print_support.h"
 
 namespace mizugaki::analyzer::details {
@@ -444,11 +444,6 @@ public:
     // FIXME: impl @>
     // FIXME: impl &&
 
-    static constexpr ast::scalar::extract_field_kind_set extract_includes_second {
-            ast::scalar::extract_field_kind::second,
-            ast::scalar::extract_field_kind::year_to_second,
-    };
-
     [[nodiscard]] std::unique_ptr<tscalar::expression> operator()(
             ast::scalar::extract_expression const& expr,
             value_context const& context) {
@@ -595,8 +590,6 @@ public:
                 expr.region());
         return false;
     }
-
-    static constexpr std::size_t extract_max_second_precision { 9 };
 
     [[nodiscard]] std::unique_ptr<tscalar::expression> extract_second_precision(
             ast::scalar::extract_expression const& expr) {
