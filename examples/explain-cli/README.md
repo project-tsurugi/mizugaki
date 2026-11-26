@@ -69,6 +69,9 @@ Available options:
     * `universe` (default): all kinds
     * `phase1`: the kinds which the distributed query engine accepts in its phase 1
   * **this option is transient**: it is only for checking the compiler, and it may be changed or removed in the future without notice
+* `-allow_context_independent_null`
+  * allow `NULL` literals which do not have any type context (e.g. `SELECT NULL`), instead of reporting `missing_context_of_null`
+  * this corresponds to `mizugaki::analyzer::sql_analyzer_options::allow_context_independent_null()`, and its default value is `false`
 * `-echo`
   * print the processing SQL snippet
 * `-quiet`

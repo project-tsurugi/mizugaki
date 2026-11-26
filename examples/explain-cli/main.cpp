@@ -159,6 +159,7 @@ DEFINE_bool(locations, false, "computes the executable locations of each step an
 DEFINE_string(remote_tables, "", "remote tables (table:location_id[:location_name], separated by ,), implies -locations"); // NOLINT
 DEFINE_bool(allow_empty_locations, false, "allows steps which cannot be executed in any locations, implies -locations"); // NOLINT
 DEFINE_string(remote_kinds, "universe", "kinds of elements which can be executed in remote locations (universe or phase1, transient)"); // NOLINT
+DEFINE_bool(allow_context_independent_null, false, "allows NULL literals without type context, as same as sql_analyzer_options::allow_context_independent_null()"); // NOLINT
 
 static int do_main() {
     std::string path;
@@ -212,6 +213,7 @@ static int do_main() {
         }
 
         auto analyzer_opts = analyzer_options(schema);
+        analyzer_opts.allow_context_independent_null() = FLAGS_allow_context_independent_null;
         auto analyzer_result = analyze(*statement, *compilation_unit, analyzer_opts, *variables);
 
         ::yugawara::compiler_result compiler_result {};
