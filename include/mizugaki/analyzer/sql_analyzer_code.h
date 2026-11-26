@@ -88,6 +88,8 @@ enum class sql_analyzer_code {
     primary_index_already_exists,
     /// @brief the partition key is not valid for the table (e.g., not a prefix of the primary key).
     invalid_partition_key,
+    /// @brief the target index is not partitioned.
+    index_not_partitioned,
 
     /// @brief the constraint with the same name is already present.
     constraint_already_exists,
@@ -178,6 +180,7 @@ inline constexpr std::string_view to_string_view(sql_analyzer_code value) noexce
         case kind::primary_index_not_found: return "primary_index_not_found"sv;
         case kind::primary_index_already_exists: return "primary_index_already_exists"sv;
         case kind::invalid_partition_key: return "invalid_partition_key"sv;
+        case kind::index_not_partitioned: return "index_not_partitioned"sv;
 
         case kind::constraint_already_exists: return "constraint_already_exists"sv;
         case kind::invalid_constraint: return "invalid_constraint"sv;

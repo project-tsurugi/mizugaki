@@ -18,6 +18,7 @@
 #include <takatori/scalar/function_call.h>
 #include <takatori/scalar/extension.h>
 #include <takatori/scalar/walk.h>
+#include <takatori/scalar/comparison_operator.h>
 
 #include <takatori/relation/emit.h>
 #include <takatori/relation/filter.h>
@@ -34,6 +35,7 @@
 #include <takatori/statement/rename_column.h>
 #include <takatori/statement/drop_table.h>
 #include <takatori/statement/drop_index.h>
+#include <takatori/statement/drop_partition.h>
 #include <takatori/statement/truncate_table.h>
 #include <takatori/statement/grant_table.h>
 #include <takatori/statement/revoke_table.h>
@@ -53,6 +55,7 @@
 #include <yugawara/storage/sequence.h>
 
 #include <mizugaki/ast/statement/dispatch.h>
+#include <mizugaki/ast/scalar/variable_reference.h>
 
 #include <mizugaki/analyzer/details/analyze_description.h>
 #include <mizugaki/analyzer/details/analyze_name.h>
@@ -1777,15 +1780,310 @@ public:
             ast::statement::alter_table_statement const& stmt,
             ::takatori::util::maybe_shared_ptr<::yugawara::schema::declaration const> const& schema,
             std::shared_ptr<::yugawara::storage::table const> const& table) {
-        (void) stmt;
-        (void) schema;
-        (void) table;
+        auto index = schema->shared_storage_provider()->find_primary_index(*table);
+        if (!index) {
+            context_.report(
+                    sql_analyzer_code::primary_index_not_found,
+                    string_builder {}
+                            << "missing primary index for table: " << table->simple_name()
+                            << string_builder::to_string,
+                    stmt.name()->region());
+            return {};
+        }
+        auto&& keys = index->partition_key_columns();
+        if (keys.empty()) {
+            context_.report(
+                    sql_analyzer_code::index_not_partitioned,
+                    string_builder {}
+                            << "table is not partitioned: " << table->simple_name()
+                            << string_builder::to_string,
+                    stmt.name()->region());
+            return {};
+        }
+        std::vector<tstatement::details::partition_criteria> target {};
+        target.reserve(action.target().size());
+        for (auto&& criteria : action.target()) {
+            auto result = process_partition_criteria(criteria, keys);
+            if (!result) {
+                return {};
+            }
+            target.emplace_back(std::move(*result));
+        }
+        return context_.create<tstatement::drop_partition>(
+                stmt.region(),
+                factory_.index(std::move(index)),
+                std::move(target));
+    }
+
+    /**
+     * @brief a predicate in partition criteria, whose partition key column and literal value are resolved.
+     */
+    struct partition_predicate {
+        /// @brief the position of the target column in the partition key.
+        std::size_t position {};
+        /// @brief the comparison operator, where the target column is on the left hand side.
+        tscalar::comparison_operator operator_kind {};
+        /// @brief the literal value.
+        std::shared_ptr<tvalue::data const> value {};
+        /// @brief the region of the source predicate.
+        ast::node::region_type region {};
+    };
+
+    [[nodiscard]] std::optional<tstatement::details::partition_criteria> process_partition_criteria(
+            ast::statement::partition_criteria const& criteria,
+            std::vector<::yugawara::storage::partition_key_element> const& keys) {
+        if (criteria.predicates().empty()) {
+            context_.report(
+                    sql_analyzer_code::malformed_syntax,
+                    "partition criteria must have at least one predicate",
+                    criteria.region());
+            return {};
+        }
+
+        // resolves each predicate, and groups them by the partition key column
+        std::vector<std::vector<partition_predicate>> groups {};
+        groups.resize(keys.size());
+        for (auto&& predicate : criteria.predicates()) {
+            auto resolved = resolve_partition_predicate(*predicate, keys);
+            if (!resolved) {
+                return {};
+            }
+            groups[resolved->position].emplace_back(std::move(*resolved));
+        }
+
+        // removes the trailing columns without predicates (the remaining last one is not empty)
+        while (groups.back().empty()) {
+            groups.pop_back();
+        }
+
+        // checks whether the criteria represents a single range in the lexicographic order of the partition key:
+        // equalities for each column except the last one, and a range for the last one
+        for (std::size_t position = 0, n = groups.size(); position < n; ++position) {
+            auto&& group = groups[position];
+            if (position + 1 < n) {
+                if (!check_partition_equality_predicates(group, keys[position], criteria.region())) {
+                    return {};
+                }
+            } else if (!normalize_partition_range_predicates(group, keys[position])) {
+                return {};
+            }
+        }
+
+        std::vector<tstatement::details::partition_key_element> elements {};
+        elements.reserve(groups.size());
+        for (std::size_t position = 0, n = groups.size(); position < n; ++position) {
+            auto&& key = keys[position];
+            std::vector<tstatement::details::partition_key_element::predicate_type> predicates {};
+            predicates.reserve(groups[position].size());
+            for (auto&& predicate : groups[position]) {
+                predicates.emplace_back(predicate.operator_kind, std::move(predicate.value));
+            }
+            elements.emplace_back(
+                    factory_.table_column(key.column()),
+                    std::string { key.column_name() },
+                    std::move(predicates));
+        }
+        return tstatement::details::partition_criteria { std::move(elements) };
+    }
+
+    [[nodiscard]] std::optional<partition_predicate> resolve_partition_predicate(
+            ast::scalar::comparison_predicate const& predicate,
+            std::vector<::yugawara::storage::partition_key_element> const& keys) {
+        auto operator_kind = convert_partition_operator(predicate.operator_kind());
+        if (!operator_kind) {
+            return {};
+        }
+        auto left_name = extract_partition_column_name(*predicate.left());
+        auto right_name = extract_partition_column_name(*predicate.right());
+        if (static_cast<bool>(left_name) == static_cast<bool>(right_name)) {
+            context_.report(
+                    sql_analyzer_code::unsupported_feature,
+                    "partition criteria must compare a partition key column with a literal",
+                    predicate.region());
+            return {};
+        }
+        auto column_name = left_name ? left_name : right_name;
+        auto&& value_expression = left_name ? *predicate.right() : *predicate.left();
+        if (!left_name) {
+            // `<literal> <op> <column>` -> `<column> <transposed op> <literal>`
+            operator_kind = tscalar::transpose(*operator_kind);
+        }
+
+        auto name = normalize_identifier(context_, *column_name, name_kind::variable);
+        auto iter = std::find_if(keys.begin(), keys.end(), [&](auto&& key) {
+            return key.column_name() == name;
+        });
+        if (iter == keys.end()) {
+            context_.report(
+                    sql_analyzer_code::column_not_found,
+                    string_builder {}
+                            << "partition key column is not found: \""
+                            << print_support { *column_name }
+                            << "\""
+                            << string_builder::to_string,
+                    column_name->region());
+            return {};
+        }
+
+        auto value = resolve_partition_value(value_expression);
+        if (!value) {
+            return {};
+        }
+        return partition_predicate {
+                static_cast<std::size_t>(std::distance(keys.begin(), iter)),
+                *operator_kind,
+                std::move(value),
+                predicate.region(),
+        };
+    }
+
+    [[nodiscard]] std::optional<tscalar::comparison_operator> convert_partition_operator(
+            ast::common::regioned<ast::scalar::comparison_operator> const& source) {
+        using from = ast::scalar::comparison_operator;
+        using to = tscalar::comparison_operator;
+        switch (*source) {
+            case from::equals: return to::equal;
+            case from::less_than: return to::less;
+            case from::less_than_or_equals: return to::less_equal;
+            case from::greater_than: return to::greater;
+            case from::greater_than_or_equals: return to::greater_equal;
+            default: break;
+        }
         context_.report(
                 sql_analyzer_code::unsupported_feature,
-                "DROP PARTITION is not supported yet",
-                action.region());
+                string_builder {}
+                        << "unsupported comparison operator in partition criteria: " << *source
+                        << string_builder::to_string,
+                source.region());
         return {};
     }
+
+    [[nodiscard]] static optional_ptr<ast::name::simple const> extract_partition_column_name(
+            ast::scalar::expression const& expression) noexcept {
+        if (expression.node_kind() != ast::scalar::variable_reference::tag) {
+            return {};
+        }
+        auto&& name = unsafe_downcast<ast::scalar::variable_reference>(expression).name();
+        if (name->node_kind() != ast::name::kind::simple) {
+            return {};
+        }
+        return unsafe_downcast<ast::name::simple>(*name);
+    }
+
+    [[nodiscard]] std::shared_ptr<tvalue::data const> resolve_partition_value(ast::scalar::expression const& expression) {
+        // NOTE: `NULL` is reported as missing_context_of_null here, unless allow_context_independent_null() is set
+        query_scope scope {};
+        auto result = analyze_scalar_expression(context_, expression, scope, {});
+        if (!result) {
+            return {};
+        }
+        auto&& resolved = context_.clear_expression_resolution(result.release());
+        if (resolved.kind() != tscalar::expression_kind::immediate) {
+            context_.report(
+                    sql_analyzer_code::unsupported_feature,
+                    "partition criteria value must be a literal",
+                    expression.region());
+            return {};
+        }
+        auto&& value = unsafe_downcast<tscalar::immediate>(resolved).value();
+        if (value.kind() == tvalue::value_kind::unknown) {
+            context_.report(
+                    sql_analyzer_code::unsupported_feature,
+                    "partition criteria value must not be NULL",
+                    expression.region());
+            return {};
+        }
+        return context_.values().get(value);
+    }
+
+    /**
+     * @brief checks whether the predicates for a partition key column, except the last one, are a single equality.
+     * @param predicates the predicates for the same partition key column
+     * @param key the partition key column
+     * @param criteria_region the region of the partition criteria, used if no predicates are specified
+     * @return true if the form is valid
+     * @return false otherwise, and the error is reported
+     */
+    [[nodiscard]] bool check_partition_equality_predicates(
+            std::vector<partition_predicate> const& predicates,
+            ::yugawara::storage::partition_key_element const& key,
+            ast::node::region_type criteria_region) {
+        if (predicates.empty()) {
+            context_.report(
+                    sql_analyzer_code::invalid_partition_key,
+                    string_builder {}
+                            << "partition criteria must specify the partition key columns from the first one: "
+                            << key.column_name()
+                            << " is not specified"
+                            << string_builder::to_string,
+                    criteria_region);
+            return false;
+        }
+        for (auto&& predicate : predicates) {
+            if (predicate.operator_kind != tscalar::comparison_operator::equal) {
+                context_.report(
+                        sql_analyzer_code::invalid_partition_key,
+                        string_builder {}
+                                << "partition criteria must have only an equality for each column except the last one: "
+                                << key.column_name()
+                                << string_builder::to_string,
+                        predicate.region);
+                return false;
+            }
+        }
+        if (predicates.size() != 1) {
+            context_.report(
+                    sql_analyzer_code::unsupported_feature,
+                    string_builder {}
+                            << "partition criteria must have a single equality for each column except the last one: "
+                            << key.column_name()
+                            << string_builder::to_string,
+                    predicates[1].region);
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * @brief checks the form of predicates for the last partition key column in the criteria, and arranges them.
+     * @details The valid forms are: a single equality, a single inequality, or a pair of lower and upper bounds.
+     *      The pair is arranged as the lower bound, and then the upper bound.
+     * @param predicates the predicates for the same partition key column, must not be empty
+     * @param key the partition key column
+     * @return true if the form is valid
+     * @return false otherwise, and the error is reported
+     */
+    [[nodiscard]] bool normalize_partition_range_predicates(
+            std::vector<partition_predicate>& predicates,
+            ::yugawara::storage::partition_key_element const& key) {
+        using kind = tscalar::comparison_operator;
+        if (predicates.size() == 1) {
+            return true;
+        }
+        auto is_lower = [](kind k) { return k == kind::greater || k == kind::greater_equal; };
+        auto is_upper = [](kind k) { return k == kind::less || k == kind::less_equal; };
+        if (predicates.size() == 2) {
+            auto&& first = predicates[0];
+            auto&& second = predicates[1];
+            if (is_lower(first.operator_kind) && is_upper(second.operator_kind)) {
+                return true;
+            }
+            if (is_upper(first.operator_kind) && is_lower(second.operator_kind)) {
+                std::swap(first, second);
+                return true;
+            }
+        }
+        context_.report(
+                sql_analyzer_code::unsupported_feature,
+                string_builder {}
+                        << "partition criteria must have a single equality, a single inequality, "
+                           "or a pair of lower and upper bounds for the last column: "
+                        << key.column_name()
+                        << string_builder::to_string,
+                predicates[1].region);
+        return false;
+    }
+
 
     [[nodiscard]] optional_ptr<::yugawara::storage::column const> find_column(
             ::yugawara::storage::table const& table,
