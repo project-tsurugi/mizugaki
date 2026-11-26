@@ -93,11 +93,17 @@ The index definitions, including the ones created by `CREATE TABLE` or `CREATE I
 the primary index has all non-key columns as its values, and the secondary index has no values.
 On the other hand, this never generates a hidden primary key column for the table without primary key.
 * scalar functions
-  * `OCTET_LENGTH(T)`
-    * `VARCHAR(*)`
-    * `VARBINARY(*)`
-    * `BLOB`
-    * `CLOB`
+  * the following built-in functions (a subset of the ones in jogasaki, and the ones for the virtual columns of the partition keys)
+    * `OCTET_LENGTH(T)`
+      * `VARCHAR(*)`, `VARBINARY(*)`, `BLOB` (not yet in jogasaki), `CLOB` (not yet in jogasaki)
+    * `SUBSTRING(T FROM BIGINT [FOR BIGINT])`
+      * `VARCHAR(*)`, `VARBINARY(*)`
+    * `ABS(T)`, `FLOOR(T)`
+      * `INT`, `BIGINT`, `REAL`, `DOUBLE`, `DECIMAL(*, *)`
+    * `FLOOR(T, BIGINT)`, `FLOOR_DIV(T, BIGINT)` (not yet in jogasaki)
+      * `INT`, `BIGINT`, `DECIMAL(*, *)`
+    * `EXTRACT(<field> FROM T)`
+      * `DATE`, `TIME`, `TIMESTAMP`, `TIMESTAMP WITH TIME ZONE` (as same as jogasaki for each field)
 * aggregate functions
   * `COUNT(*)`
   * `COUNT(T)`, `COUNT(DISTINCT T)`, `MIN(T)`, `MAX(T)`

@@ -230,38 +230,96 @@ std::shared_ptr<::yugawara::storage::provider> storage_provider() {
     return provider;
 }
 
+// NOTE: a subset of the built-in scalar functions in jogasaki, and the functions for the virtual columns of the partition keys
+static void add_builtin_functions(::yugawara::function::configurable_provider& provider) {
+    using ::yugawara::function::declaration;
+    namespace tt = ::takatori::type;
+    auto definition_id = declaration::minimum_builtin_function_id;
+    auto add = [&](
+            std::string_view name,
+            declaration::type_pointer return_type,
+            std::vector<declaration::type_pointer> parameter_types) {
+        provider.add(std::make_shared<declaration>(
+                ++definition_id,
+                declaration::name_type { name },
+                std::move(return_type),
+                std::move(parameter_types),
+                declaration::feature_set_type { ::yugawara::function::function_feature::scalar_function }));
+    };
+    declaration::type_pointer const int4 = std::make_shared<tt::int4>();
+    declaration::type_pointer const int8 = std::make_shared<tt::int8>();
+    declaration::type_pointer const float4 = std::make_shared<tt::float4>();
+    declaration::type_pointer const float8 = std::make_shared<tt::float8>();
+    declaration::type_pointer const decimal = std::make_shared<tt::decimal>();
+    declaration::type_pointer const varchar = std::make_shared<tt::character>(tt::varying);
+    declaration::type_pointer const varbinary = std::make_shared<tt::octet>(tt::varying);
+    declaration::type_pointer const date = std::make_shared<tt::date>();
+    declaration::type_pointer const time = std::make_shared<tt::time_of_day>();
+    declaration::type_pointer const timestamp = std::make_shared<tt::time_point>();
+    declaration::type_pointer const timestamp_tz = std::make_shared<tt::time_point>(tt::with_time_zone);
+    declaration::type_pointer const clob = std::make_shared<tt::clob>();
+    declaration::type_pointer const blob = std::make_shared<tt::blob>();
+
+    // OCTET_LENGTH(T) - CLOB and BLOB are not yet in jogasaki
+    for (auto&& type : { varchar, varbinary, clob, blob }) {
+        add("octet_length", int8, { type });
+    }
+
+    // SUBSTRING(T FROM BIGINT [FOR BIGINT])
+    for (auto&& type : { varchar, varbinary }) {
+        add("substring", type, { type, int8, int8 });
+        add("substring", type, { type, int8 });
+    }
+
+    // ABS(T), FLOOR(T)
+    for (auto&& type : { int4, int8, float4, float8, decimal }) {
+        add("abs", type, { type });
+        add("floor", type, { type });
+    }
+
+    // FLOOR(T, BIGINT), FLOOR_DIV(T, BIGINT) - not yet in jogasaki
+    for (auto&& type : { int4, int8, decimal }) {
+        add("floor", type, { type, int8 });
+        add("floor_div", type, { type, int8 });
+    }
+
+    // EXTRACT(<field> FROM T)
+    for (auto&& name : { "extract_year", "extract_month", "extract_day" }) {
+        for (auto&& type : { date, timestamp, timestamp_tz }) {
+            add(name, int4, { type });
+        }
+    }
+    for (auto&& name : { "extract_hour", "extract_minute" }) {
+        for (auto&& type : { time, timestamp, timestamp_tz }) {
+            add(name, int4, { type });
+        }
+    }
+    for (auto&& type : { time, timestamp, timestamp_tz }) {
+        add("extract_second", decimal, { type, int4 });
+    }
+    for (auto&& name : { "extract_timezone_hour", "extract_timezone_minute" }) {
+        add(name, int4, { timestamp_tz });
+    }
+    for (auto&& name : { "date", "extract_year_to_month", "extract_year_to_day" }) {
+        for (auto&& type : { date, timestamp, timestamp_tz }) {
+            add(name, date, { type });
+        }
+    }
+    for (auto&& name : { "extract_year_to_hour", "extract_year_to_minute" }) {
+        for (auto&& type : { timestamp, timestamp_tz }) {
+            add(name, type, { type });
+        }
+    }
+    for (auto&& type : { timestamp, timestamp_tz }) {
+        add("extract_year_to_second", type, { type, int4 });
+    }
+}
+
 std::shared_ptr<::yugawara::function::provider> function_provider() {
     auto definition_id = ::yugawara::function::declaration::minimum_user_function_id;
     namespace tt = ::takatori::type;
     auto provider = std::make_shared<::yugawara::function::configurable_provider>();
-    provider->add({ // OCTET_LENGTH(VARCHAR(*))
-            ++definition_id,
-            "octet_length",
-            tt::int8 {},
-            { tt::character { tt::varying, {} } },
-            { ::yugawara::function::function_feature::scalar_function },
-    });
-    provider->add({ // OCTET_LENGTH(VARBINARY(*))
-            ++definition_id,
-            "octet_length",
-            tt::int8 {},
-            { tt::octet { tt::varying, {} } },
-            { ::yugawara::function::function_feature::scalar_function },
-    });
-    provider->add({ // OCTET_LENGTH(CLOB)
-            ++definition_id,
-            "octet_length",
-            tt::int8 {},
-            { tt::clob {} },
-            { ::yugawara::function::function_feature::scalar_function },
-    });
-    provider->add({ // OCTET_LENGTH(BLOB)
-            ++definition_id,
-            "octet_length",
-            tt::int8 {},
-            { tt::blob {} },
-            { ::yugawara::function::function_feature::scalar_function },
-    });
+    add_builtin_functions(*provider);
     provider->add({ // tvf(a:BIGINT) -> TABLE(u:BIGINT, v:VARCHAR(*), w:DECIMAL(*, *))
             ++definition_id,
             "tvf",
