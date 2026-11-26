@@ -462,6 +462,20 @@ public:
         return true;
     }
 
+    [[nodiscard]] bool operator()(ast::statement::drop_partition_action const& element, std::size_t depth) {
+        for (auto&& criteria : element.target()) {
+            for (auto&& predicate : criteria.predicates()) {
+                if (!check(*predicate, depth + 1)) {
+                    return false;
+                }
+                if (!operator()(*predicate, depth + 1)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
     [[nodiscard]] bool operator()(ast::statement::rename_index_action const& element, std::size_t depth) {
         ACCEPT(element.replacement()); // NOLINT(*-simplify-boolean-expr)
         return true;

@@ -151,6 +151,7 @@ add_library(mizugaki
     mizugaki/ast/statement/storage_parameter.cpp
     mizugaki/ast/statement/partition_definition.cpp
     mizugaki/ast/statement/partition_key_element.cpp
+    mizugaki/ast/statement/partition_criteria.cpp
     mizugaki/ast/statement/table_element.cpp
     mizugaki/ast/statement/column_definition.cpp
     mizugaki/ast/statement/table_constraint_definition.cpp
@@ -165,6 +166,7 @@ add_library(mizugaki
     mizugaki/ast/statement/alter_table_action.cpp
     mizugaki/ast/statement/rename_table_action.cpp
     mizugaki/ast/statement/rename_column_action.cpp
+    mizugaki/ast/statement/drop_partition_action.cpp
     mizugaki/ast/statement/alter_index_action.cpp
     mizugaki/ast/statement/rename_index_action.cpp
     mizugaki/ast/statement/privilege_action.cpp

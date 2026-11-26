@@ -54,6 +54,7 @@
     #include <mizugaki/ast/statement/alter_table_action.h>
     #include <mizugaki/ast/statement/rename_table_action.h>
     #include <mizugaki/ast/statement/rename_column_action.h>
+    #include <mizugaki/ast/statement/drop_partition_action.h>
     #include <mizugaki/ast/statement/alter_index_action.h>
     #include <mizugaki/ast/statement/rename_index_action.h>
 
@@ -881,6 +882,10 @@
 
 %nterm <node_ptr<ast::statement::alter_table_action>> alter_table_action
 %nterm <node_ptr<ast::statement::alter_index_action>> alter_index_action
+%nterm <element_vector<ast::statement::partition_criteria>> partition_criteria_list
+%nterm <ast::statement::partition_criteria> partition_criteria
+%nterm <std::vector<node_ptr<ast::scalar::comparison_predicate>>> partition_predicate_list
+%nterm <node_ptr<ast::scalar::comparison_predicate>> partition_predicate
 %nterm <std::optional<ast::common::regioned<ast::statement::drop_statement_option>>> drop_behavior_opt
 
 %nterm <std::optional<ast::common::regioned<ast::statement::identity_column_restart_option>>> identity_column_restart_option_opt
@@ -2200,6 +2205,62 @@ alter_table_action
             $$ = driver.node<ast::statement::rename_column_action>(
                     $e,
                     $n,
+                    $r,
+                    @$);
+        }
+    | DROP partition_criteria_list[L]
+        {
+            $$ = driver.node<ast::statement::drop_partition_action>($L, @$);
+        }
+    ;
+
+partition_criteria_list
+    : partition_criteria_list[L] ","[s] partition_criteria[e]
+        {
+            $$ = $L;
+            $$.emplace_back($e);
+            if (!driver.validate(@s, $$, element_kind::row_expression)) {
+                YYABORT;
+            }
+        }
+    | partition_criteria[e]
+        {
+            $$ = driver.element_vector<ast::statement::partition_criteria>();
+            $$.emplace_back($e);
+        }
+    ;
+
+partition_criteria
+    : PARTITION "(" partition_predicate_list[L] ")"
+        {
+            $$ = ast::statement::partition_criteria(
+                    $L,
+                    @$);
+        }
+    ;
+
+partition_predicate_list
+    : partition_predicate_list[L] ","[s] partition_predicate[e]
+        {
+            $$ = $L;
+            $$.emplace_back($e);
+            if (!driver.validate(@s, $$, element_kind::scalar_expression)) {
+                YYABORT;
+            }
+        }
+    | partition_predicate[e]
+        {
+            $$ = driver.node_vector<ast::scalar::comparison_predicate>();
+            $$.emplace_back($e);
+        }
+    ;
+
+partition_predicate
+    : row_value_expression[l] comparison_operator[o] row_value_expression[r]
+        {
+            $$ = driver.node<ast::scalar::comparison_predicate>(
+                    $l,
+                    $o,
                     $r,
                     @$);
         }

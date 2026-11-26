@@ -37,6 +37,7 @@
 #include <mizugaki/ast/statement/alter_table_action.h>
 #include <mizugaki/ast/statement/rename_table_action.h>
 #include <mizugaki/ast/statement/rename_column_action.h>
+#include <mizugaki/ast/statement/drop_partition_action.h>
 
 #include <mizugaki/ast/statement/alter_index_action.h>
 #include <mizugaki/ast/statement/rename_index_action.h>
@@ -227,6 +228,9 @@ inline auto dispatch(Callback&& callback, E&& object, Args&&... args) {
                         std::forward<Callback>(callback), std::forward<E>(object), std::forward<Args>(args)...);
             case rename_column_action::tag:
                 return polymorphic_callback<rename_column_action>(
+                        std::forward<Callback>(callback), std::forward<E>(object), std::forward<Args>(args)...);
+            case drop_partition_action::tag:
+                return polymorphic_callback<drop_partition_action>(
                         std::forward<Callback>(callback), std::forward<E>(object), std::forward<Args>(args)...);
         }
         impl::unsupported(object);

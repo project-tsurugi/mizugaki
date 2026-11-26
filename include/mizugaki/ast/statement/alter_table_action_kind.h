@@ -20,6 +20,11 @@ enum class alter_table_action_kind {
      * @brief `ALTER TABLE ... RENAME COLUMN ... TO ...`.
      */
     rename_column,
+
+    /**
+     * @brief `ALTER TABLE ... DROP PARTITION (...)`.
+     */
+    drop_partition,
 };
 
 /**
@@ -33,6 +38,7 @@ constexpr std::string_view to_string_view(alter_table_action_kind value) noexcep
     switch (value) {
         case kind::rename_table: return "rename_table"sv;
         case kind::rename_column: return "rename_column"sv;
+        case kind::drop_partition: return "drop_partition"sv;
     }
     std::abort();
 }

@@ -1772,6 +1772,21 @@ public:
                 normalize_identifier(context_, *action.replacement(), name_kind::variable));
     }
 
+    [[nodiscard]] result_type operator()(
+            ast::statement::drop_partition_action const& action,
+            ast::statement::alter_table_statement const& stmt,
+            ::takatori::util::maybe_shared_ptr<::yugawara::schema::declaration const> const& schema,
+            std::shared_ptr<::yugawara::storage::table const> const& table) {
+        (void) stmt;
+        (void) schema;
+        (void) table;
+        context_.report(
+                sql_analyzer_code::unsupported_feature,
+                "DROP PARTITION is not supported yet",
+                action.region());
+        return {};
+    }
+
     [[nodiscard]] optional_ptr<::yugawara::storage::column const> find_column(
             ::yugawara::storage::table const& table,
             ast::name::simple const& name) {

@@ -10,6 +10,11 @@
 #include <mizugaki/ast/statement/rename_table_action.h>
 #include <mizugaki/ast/statement/rename_column_action.h>
 #include <mizugaki/ast/statement/rename_index_action.h>
+#include <mizugaki/ast/statement/drop_partition_action.h>
+
+#include <mizugaki/ast/scalar/comparison_predicate.h>
+#include <mizugaki/ast/scalar/literal_expression.h>
+#include <mizugaki/ast/literal/datetime.h>
 
 #include <mizugaki/ast/name/simple.h>
 
@@ -104,6 +109,140 @@ TEST_F(sql_parser_statement_alter_test, alter_table_statement_rename_column_if_e
             name::simple { "c" },
             name::simple { "x" },
             true,
+        },
+        false,
+    }));
+}
+
+TEST_F(sql_parser_statement_alter_test, alter_table_statement_drop_partition) {
+    auto result = parse("ALTER TABLE t DROP PARTITION (a = 1)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (ast::statement::alter_table_statement {
+        name::simple { "t" },
+        ast::statement::drop_partition_action {
+            {
+                ast::statement::partition_criteria {
+                    {
+                        scalar::comparison_predicate {
+                            v("a"),
+                            scalar::comparison_operator::equals,
+                            int_literal("1"),
+                        },
+                    },
+                },
+            },
+        },
+        false,
+    }));
+}
+
+TEST_F(sql_parser_statement_alter_test, alter_table_statement_drop_partition_multiple) {
+    auto result = parse("ALTER TABLE t DROP PARTITION (a = 1, b >= DATE '2000-01-01'), PARTITION (a = 2)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (ast::statement::alter_table_statement {
+        name::simple { "t" },
+        ast::statement::drop_partition_action {
+            {
+                ast::statement::partition_criteria {
+                    {
+                        scalar::comparison_predicate {
+                            v("a"),
+                            scalar::comparison_operator::equals,
+                            int_literal("1"),
+                        },
+                        scalar::comparison_predicate {
+                            v("b"),
+                            scalar::comparison_operator::greater_than_or_equals,
+                            scalar::literal_expression {
+                                literal::datetime {
+                                    literal::kind::date,
+                                    "'2000-01-01'",
+                                },
+                            },
+                        },
+                    },
+                },
+                ast::statement::partition_criteria {
+                    {
+                        scalar::comparison_predicate {
+                            v("a"),
+                            scalar::comparison_operator::equals,
+                            int_literal("2"),
+                        },
+                    },
+                },
+            },
+        },
+        false,
+    }));
+}
+
+TEST_F(sql_parser_statement_alter_test, alter_table_statement_drop_partition_literal_first) {
+    auto result = parse("ALTER TABLE t DROP PARTITION (1 < a)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (ast::statement::alter_table_statement {
+        name::simple { "t" },
+        ast::statement::drop_partition_action {
+            {
+                ast::statement::partition_criteria {
+                    {
+                        scalar::comparison_predicate {
+                            int_literal("1"),
+                            scalar::comparison_operator::less_than,
+                            v("a"),
+                        },
+                    },
+                },
+            },
+        },
+        false,
+    }));
+}
+
+TEST_F(sql_parser_statement_alter_test, alter_table_statement_drop_partition_not_equals) {
+    auto result = parse("ALTER TABLE t DROP PARTITION (a <> 1)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (ast::statement::alter_table_statement {
+        name::simple { "t" },
+        ast::statement::drop_partition_action {
+            {
+                ast::statement::partition_criteria {
+                    {
+                        scalar::comparison_predicate {
+                            v("a"),
+                            scalar::comparison_operator::not_equals,
+                            int_literal("1"),
+                        },
+                    },
+                },
+            },
+        },
+        false,
+    }));
+}
+
+TEST_F(sql_parser_statement_alter_test, alter_table_statement_drop_partition_contextual_keywords) {
+    auto result = parse("ALTER TABLE partition DROP PARTITION (range = 1)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (ast::statement::alter_table_statement {
+        name::simple { "partition" },
+        ast::statement::drop_partition_action {
+            {
+                ast::statement::partition_criteria {
+                    {
+                        scalar::comparison_predicate {
+                            v("range"),
+                            scalar::comparison_operator::equals,
+                            int_literal("1"),
+                        },
+                    },
+                },
+            },
         },
         false,
     }));
