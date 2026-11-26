@@ -43,6 +43,7 @@
 #include <mizugaki/ast/scalar/value_constructor.h>
 #include <mizugaki/ast/scalar/current_of_cursor.h>
 #include <mizugaki/ast/scalar/builtin_function_invocation.h>
+#include <mizugaki/ast/scalar/extract_expression.h>
 
 #include <mizugaki/ast/name/simple.h>
 #include <mizugaki/ast/name/qualified.h>
@@ -1204,6 +1205,64 @@ TEST_F(sql_parser_statement_test, table_definition_partition_multiple) {
             statement::partition_definition {
                     name::simple { "a" },
                     name::simple { "b" },
+            },
+    }));
+}
+
+TEST_F(sql_parser_statement_test, table_definition_partition_virtual_column) {
+    auto result = parse("CREATE TABLE t (a DECIMAL, b DATE) PARTITION BY RANGE (a, EXTRACT(YEAR FROM b) AS k)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::table_definition {
+            name::simple { "t" },
+            {
+                    statement::column_definition {
+                            name::simple { "a" },
+                            type::decimal {},
+                    },
+                    statement::column_definition {
+                            name::simple { "b" },
+                            type::simple { type::kind::date },
+                    },
+            },
+            statement::partition_definition {
+                    name::simple { "a" },
+                    statement::partition_key_element {
+                            scalar::extract_expression {
+                                    scalar::extract_field_kind::year,
+                                    v("b"),
+                            },
+                            name::simple { "k" },
+                    },
+            },
+    }));
+}
+
+TEST_F(sql_parser_statement_test, table_definition_partition_virtual_column_without_as) {
+    auto result = parse("CREATE TABLE t (a DECIMAL, b DATE) PARTITION BY RANGE (a, EXTRACT(YEAR FROM b) k)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::table_definition {
+            name::simple { "t" },
+            {
+                    statement::column_definition {
+                            name::simple { "a" },
+                            type::decimal {},
+                    },
+                    statement::column_definition {
+                            name::simple { "b" },
+                            type::simple { type::kind::date },
+                    },
+            },
+            statement::partition_definition {
+                    name::simple { "a" },
+                    statement::partition_key_element {
+                            scalar::extract_expression {
+                                    scalar::extract_field_kind::year,
+                                    v("b"),
+                            },
+                            name::simple { "k" },
+                    },
             },
     }));
 }

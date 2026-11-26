@@ -2013,11 +2013,11 @@ partition_key_element_list
     ;
 
 partition_key_element
-    : column_name[n]
+    : value_expression[e] as_clause_opt[a]
         {
             $$ = ast::statement::partition_key_element(
-                    driver.node<ast::scalar::variable_reference>($n, @n),
-                    nullptr,
+                    $e,
+                    $a,
                     @$);
         }
     ;

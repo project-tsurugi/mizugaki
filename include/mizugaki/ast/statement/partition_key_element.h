@@ -28,8 +28,8 @@ public:
 
     /**
      * @brief creates a new instance.
-     * @param value the key expression
-     * @param name the optional key name, or empty if it is omitted
+     * @param value the key column, or the expression of the virtual column
+     * @param name the virtual column name, or empty if this is not a virtual column
      * @param region the element region
      */
     explicit partition_key_element(
@@ -39,8 +39,8 @@ public:
 
     /**
      * @brief creates a new instance.
-     * @param value the key expression
-     * @param name the optional key name, or empty if it is omitted
+     * @param value the key column, or the expression of the virtual column
+     * @param name the virtual column name, or empty if this is not a virtual column
      * @param region the element region
      * @attention this will take copy of arguments
      */
@@ -72,8 +72,8 @@ public:
     explicit partition_key_element(::takatori::util::clone_tag_t, partition_key_element&& other);
 
     /**
-     * @brief returns the key expression.
-     * @return the key expression
+     * @brief returns the key column, or the expression of the virtual column.
+     * @return the key column, or the expression of the virtual column
      */
     [[nodiscard]] std::unique_ptr<scalar::expression>& value() noexcept;
 
@@ -81,9 +81,9 @@ public:
     [[nodiscard]] std::unique_ptr<scalar::expression> const& value() const noexcept;
 
     /**
-     * @brief returns the key name.
-     * @return the key name
-     * @return empty if it is omitted
+     * @brief returns the virtual column name.
+     * @return the virtual column name
+     * @return empty if this is not a virtual column
      */
     [[nodiscard]] std::unique_ptr<name::simple>& name() noexcept;
 
