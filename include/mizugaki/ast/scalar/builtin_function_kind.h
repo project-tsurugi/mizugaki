@@ -79,14 +79,14 @@ enum class builtin_function_kind {
     /**
      * @brief `FLOOR`,
      * @note `6.17 <numeric value function>` - `<absolute value expression>`
-     * @note format: `(:0)`
+     * @note format: `(:0 [, :1])`
      */
     floor,
 
     /**
      * @brief `MOD`
      * @note `6.17 <numeric value function>` - `<modulus expression>`
-     * @note format: `(:0 IN :1)`
+     * @note format: `(:0, :1)`
      */
     mod,
 
