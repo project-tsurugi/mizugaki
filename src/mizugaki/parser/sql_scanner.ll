@@ -349,12 +349,14 @@ UTF8_CHAR {ASCII}|{UTF8_2}{U}|{UTF8_3}{U}{U}|{UTF8_4}{U}{U}{U}
 "OUT" { TRACE_RETURN parser_type::make_OUT(location()); }
 "OUTER" { TRACE_RETURN parser_type::make_OUTER(location()); }
 "PARAMETER" { TRACE_RETURN parser_type::make_PARAMETER(location()); }
+"PARTITION" { TRACE_RETURN parser_type::make_PARTITION(get_image(driver), location()); }
 "PRECISION" { TRACE_RETURN parser_type::make_PRECISION(location()); }
 "PREPARE" { TRACE_RETURN parser_type::make_PREPARE(location()); }
 "PRIMARY" { TRACE_RETURN parser_type::make_PRIMARY(location()); }
 "PRIVILEGES" { TRACE_RETURN parser_type::make_PRIVILEGES(location()); }
 "PROCEDURE" { TRACE_RETURN parser_type::make_PROCEDURE(location()); }
 "PUBLIC" { TRACE_RETURN parser_type::make_PUBLIC(location()); }
+"RANGE" { TRACE_RETURN parser_type::make_RANGE(get_image(driver), location()); }
 "REAL" { TRACE_RETURN parser_type::make_REAL(location()); }
 "RECURSIVE" { TRACE_RETURN parser_type::make_RECURSIVE(location()); }
 "REF" { TRACE_RETURN parser_type::make_REF(location()); }

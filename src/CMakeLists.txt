@@ -149,6 +149,8 @@ add_library(mizugaki
     mizugaki/ast/statement/empty_statement.cpp
     mizugaki/ast/statement/set_element.cpp
     mizugaki/ast/statement/storage_parameter.cpp
+    mizugaki/ast/statement/partition_definition.cpp
+    mizugaki/ast/statement/partition_key_element.cpp
     mizugaki/ast/statement/table_element.cpp
     mizugaki/ast/statement/column_definition.cpp
     mizugaki/ast/statement/table_constraint_definition.cpp

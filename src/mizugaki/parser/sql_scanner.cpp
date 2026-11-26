@@ -50,7 +50,7 @@ sql_scanner::location_type sql_scanner::exit_comment(bool inclusive) noexcept {
 
 bool is_contextual_keyword(sql_scanner::symbol_kind_type kind) noexcept {
     using symbol_kind_type = sql_scanner::symbol_kind_type;
-    static constexpr std::array<symbol_kind_type, 16> contextual_keywords {
+    static constexpr std::array<symbol_kind_type, 18> contextual_keywords {
         symbol_kind_type::S_ASC,
         symbol_kind_type::S_CONTINUE,
         symbol_kind_type::S_DESC,
@@ -67,6 +67,8 @@ bool is_contextual_keyword(sql_scanner::symbol_kind_type kind) noexcept {
         symbol_kind_type::S_VALUE,
         symbol_kind_type::S_CATALOG,
         symbol_kind_type::S_SERVER,
+        symbol_kind_type::S_PARTITION,
+        symbol_kind_type::S_RANGE,
     };
     auto iter = std::find(contextual_keywords.begin(), contextual_keywords.end(), kind);
     return iter != contextual_keywords.end();

@@ -290,6 +290,12 @@ public:
     [[nodiscard]] bool operator()(ast::statement::table_definition const& element, std::size_t depth) {
         ACCEPT(element.name());
         ACCEPT(element.elements());
+        if (auto&& partition = element.partition()) {
+            for (auto&& key : partition->elements()) { // NOLINT(*-use-anyofallof)
+                ACCEPT(key.value());
+                ACCEPT(key.name());
+            }
+        }
         for (auto&& parameter : element.parameters()) { // NOLINT(*-use-anyofallof)
             ACCEPT(parameter.name());
             ACCEPT(parameter.value());

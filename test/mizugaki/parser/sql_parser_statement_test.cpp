@@ -1087,6 +1087,7 @@ TEST_F(sql_parser_statement_test, table_definition_temporary) {
                             type::decimal {},
                     },
             },
+            {},
             {
                     statement::table_definition_option::temporary,
             },
@@ -1105,6 +1106,7 @@ TEST_F(sql_parser_statement_test, table_definition_if_not_exists) {
                             type::decimal {},
                     },
             },
+            {},
             {
                     statement::table_definition_option::if_not_exists,
             },
@@ -1123,6 +1125,7 @@ TEST_F(sql_parser_statement_test, table_definition_parameters) {
                             type::decimal {},
                     },
             },
+            {},
             {},
             {
                     {
@@ -1146,6 +1149,7 @@ TEST_F(sql_parser_statement_test, table_definition_parameters_multiple) {
                     },
             },
             {},
+            {},
             {
                     {
                             name::simple { "u" },
@@ -1159,6 +1163,90 @@ TEST_F(sql_parser_statement_test, table_definition_parameters_multiple) {
                             name::simple { "x" },
                             v("y"),
                     },
+            },
+    }));
+}
+
+TEST_F(sql_parser_statement_test, table_definition_partition) {
+    auto result = parse("CREATE TABLE t (id DECIMAL) PARTITION BY RANGE (id)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::table_definition {
+            name::simple { "t" },
+            {
+                    statement::column_definition {
+                            name::simple { "id" },
+                            type::decimal {},
+                    },
+            },
+            statement::partition_definition {
+                    name::simple { "id" },
+            },
+    }));
+}
+
+TEST_F(sql_parser_statement_test, table_definition_partition_multiple) {
+    auto result = parse("CREATE TABLE t (a DECIMAL, b DECIMAL) PARTITION BY RANGE (a, b)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::table_definition {
+            name::simple { "t" },
+            {
+                    statement::column_definition {
+                            name::simple { "a" },
+                            type::decimal {},
+                    },
+                    statement::column_definition {
+                            name::simple { "b" },
+                            type::decimal {},
+                    },
+            },
+            statement::partition_definition {
+                    name::simple { "a" },
+                    name::simple { "b" },
+            },
+    }));
+}
+
+TEST_F(sql_parser_statement_test, table_definition_partition_parameters) {
+    auto result = parse("CREATE TABLE t (id DECIMAL) PARTITION BY RANGE (id) WITH (u=v)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::table_definition {
+            name::simple { "t" },
+            {
+                    statement::column_definition {
+                            name::simple { "id" },
+                            type::decimal {},
+                    },
+            },
+            statement::partition_definition {
+                    name::simple { "id" },
+            },
+            {},
+            {
+                    {
+                            name::simple { "u" },
+                            v("v"),
+                    },
+            },
+    }));
+}
+
+TEST_F(sql_parser_statement_test, table_definition_partition_contextual_keywords) {
+    auto result = parse("CREATE TABLE partition (range DECIMAL) PARTITION BY RANGE (range)");
+    ASSERT_TRUE(result) << diagnostics(result);
+
+    EXPECT_EQ(extract(result), (statement::table_definition {
+            name::simple { "partition" },
+            {
+                    statement::column_definition {
+                            name::simple { "range" },
+                            type::decimal {},
+                    },
+            },
+            statement::partition_definition {
+                    name::simple { "range" },
             },
     }));
 }

@@ -14,6 +14,7 @@
 #include "statement.h"
 #include "table_element.h"
 #include "table_definition_option.h"
+#include "partition_definition.h"
 #include "storage_parameter.h"
 
 namespace mizugaki::ast::statement {
@@ -37,6 +38,7 @@ public:
      * @brief creates a new instance.
      * @param name the table name
      * @param elements the table elements
+     * @param partition the partition definition, or empty if the table is not partitioned
      * @param options the declared options
      * @param parameters the storage parameters
      * @param description the region of description comment
@@ -45,6 +47,7 @@ public:
     explicit table_definition(
             std::unique_ptr<name::name> name,
             std::vector<std::unique_ptr<table_element>> elements,
+            std::optional<partition_definition> partition = {},
             std::vector<option_type> options = {},
             std::vector<storage_parameter> parameters = {},
             region_type description = {},
@@ -54,6 +57,7 @@ public:
      * @brief creates a new instance.
      * @param name the table name
      * @param elements the table elements
+     * @param partition the partition definition, or empty if the table is not partitioned
      * @param options the declared options
      * @param parameters the storage parameters
      * @param description the region of description comment
@@ -63,6 +67,7 @@ public:
     explicit table_definition(
             name::name&& name,
             common::rvalue_list<table_element> elements,
+            std::optional<partition_definition> partition = {},
             std::initializer_list<option_type> options = {},
             std::initializer_list<storage_parameter> parameters = {},
             region_type description = {},
@@ -102,6 +107,16 @@ public:
 
     /// @copydoc elements()
     [[nodiscard]] std::vector<std::unique_ptr<table_element>> const& elements() const noexcept;
+
+    /**
+     * @brief returns the partition definition (`PARTITION BY ...`).
+     * @return the partition definition
+     * @return empty if the table is not partitioned
+     */
+    [[nodiscard]] std::optional<partition_definition>& partition() noexcept;
+
+    /// @copydoc partition()
+    [[nodiscard]] std::optional<partition_definition> const& partition() const noexcept;
 
     /**
      * @brief returns list of declared options.
@@ -156,6 +171,7 @@ protected:
 private:
     std::unique_ptr<name::name> name_ {};
     std::vector<std::unique_ptr<table_element>> elements_ {};
+    std::optional<partition_definition> partition_ {};
     std::vector<option_type> options_ {};
     std::vector<storage_parameter> parameters_ {};
     region_type description_ {};

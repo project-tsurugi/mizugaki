@@ -2,6 +2,7 @@
 
 #include <takatori/util/clonable.h>
 
+#include <mizugaki/ast/common/optional.h>
 #include <mizugaki/ast/common/serializers.h>
 #include <mizugaki/ast/common/vector.h>
 
@@ -11,11 +12,13 @@ namespace mizugaki::ast::statement {
 
 using ::takatori::util::clone_unique;
 
+using common::clone_optional;
 using common::clone_vector;
 
 table_definition::table_definition(
         std::unique_ptr<name::name> name,
         std::vector<std::unique_ptr<table_element>> elements,
+        std::optional<partition_definition> partition,
         std::vector<option_type> options,
         std::vector<storage_parameter> parameters,
         region_type description,
@@ -23,6 +26,7 @@ table_definition::table_definition(
     super { region },
     name_ { std::move(name) },
     elements_ { std::move(elements) },
+    partition_ { std::move(partition) },
     options_ { std::move(options) },
     parameters_ { std::move(parameters) },
     description_ { description }
@@ -31,6 +35,7 @@ table_definition::table_definition(
 table_definition::table_definition(
         name::name&& name,
         common::rvalue_list<table_element> elements,
+        std::optional<partition_definition> partition,
         std::initializer_list<option_type> options,
         std::initializer_list<storage_parameter> parameters,
         region_type description,
@@ -38,6 +43,7 @@ table_definition::table_definition(
     table_definition {
             clone_unique(std::move(name)),
             common::to_vector(elements),
+            std::move(partition),
             options,
             parameters,
             description,
@@ -49,6 +55,7 @@ table_definition::table_definition(::takatori::util::clone_tag_t, table_definiti
     table_definition {
             clone_unique(other.name_),
             clone_vector(other.elements_),
+            clone_optional(other.partition_),
             clone_vector(other.options_),
             clone_vector(other.parameters_),
             other.description_,
@@ -60,6 +67,7 @@ table_definition::table_definition(::takatori::util::clone_tag_t, table_definiti
     table_definition {
             std::move(other.name_),
             std::move(other.elements_),
+            std::move(other.partition_),
             std::move(other.options_),
             std::move(other.parameters_),
             other.description_,
@@ -95,6 +103,14 @@ std::vector<std::unique_ptr<table_element>> const& table_definition::elements() 
     return elements_;
 }
 
+std::optional<partition_definition>& table_definition::partition() noexcept {
+    return partition_;
+}
+
+std::optional<partition_definition> const& table_definition::partition() const noexcept {
+    return partition_;
+}
+
 std::vector<table_definition::option_type>& table_definition::options() noexcept {
     return options_;
 }
@@ -123,6 +139,7 @@ bool operator==(table_definition const& a, table_definition const& b) noexcept {
     // NOTE: never compare description_ here, because it is supplemental information for the definition.
     return eq(a.name_, b.name_)
         && eq(a.elements_, b.elements_)
+        && eq(a.partition_, b.partition_)
         && eq(a.options_, b.options_)
         && eq(a.parameters_, b.parameters_);
 }
@@ -142,6 +159,7 @@ void table_definition::serialize(takatori::serializer::object_acceptor& acceptor
     auto obj = struct_block(acceptor, *this);
     property(acceptor, "name"sv, name_);
     property(acceptor, "elements"sv, elements_);
+    property(acceptor, "partition"sv, partition_);
     property(acceptor, "options"sv, options_);
     property(acceptor, "parameters"sv, parameters_);
     property(acceptor, "description"sv, description_);

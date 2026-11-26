@@ -659,6 +659,7 @@
 %token PARAMETER "PARAMETER"
 // %token <ast::common::chars> PARAMETERS "PARAMETERS"
 // %token <ast::common::chars> PARTIAL "PARTIAL"
+%token <ast::common::chars> PARTITION "PARTITION"
 // %token <ast::common::chars> PATH "PATH"
 // %token <ast::common::chars> POSTFIX "POSTFIX"
 %token PRECISION "PRECISION"
@@ -671,6 +672,7 @@
 %token PRIVILEGES "PRIVILEGES"
 %token PROCEDURE "PROCEDURE"
 %token PUBLIC "PUBLIC"
+%token <ast::common::chars> RANGE "RANGE"
 // %token <ast::common::chars> READ "READ"
 // %token <ast::common::chars> READS "READS"
 %token REAL "REAL"
@@ -854,6 +856,9 @@
 %nterm <details::sequence_option_field> common_sequence_option
 %nterm <details::sequence_option_field> basic_sequence_option
 
+%nterm <std::optional<ast::statement::partition_definition>> partition_definition_opt
+%nterm <element_vector<ast::statement::partition_key_element>> partition_key_element_list
+%nterm <ast::statement::partition_key_element> partition_key_element
 %nterm <element_vector<ast::statement::storage_parameter>> storage_parameter_list_opt
 %nterm <element_vector<ast::statement::storage_parameter>> storage_parameter_list_body_opt
 %nterm <element_vector<ast::statement::storage_parameter>> storage_parameter_list_body
@@ -1391,6 +1396,7 @@ schema_element_list_opt
 schema_element
     : CREATE[c] temporary_opt[temporary] TABLE if_not_exists_opt[exists] table_name[n]
             "(" table_element_list_opt[L] ")"
+            partition_definition_opt[R]
             storage_parameter_list_opt[P]
         {
             auto options = driver.element_vector<ast::statement::table_definition::option_type>();
@@ -1403,6 +1409,7 @@ schema_element
             $$ = driver.node<ast::statement::table_definition>(
                     $n,
                     $L,
+                    $R,
                     std::move(options),
                     $P,
                     driver.leading_description_comment(@c),
@@ -1968,6 +1975,45 @@ basic_sequence_option
                     regioned { false, @k },
                     @k,
             };
+        }
+    ;
+
+partition_definition_opt
+    : %empty
+        {
+            $$ = std::nullopt;
+        }
+    | PARTITION BY RANGE "(" partition_key_element_list[L] ")"
+        {
+            $$ = ast::statement::partition_definition(
+                    $L,
+                    @$);
+        }
+    ;
+
+partition_key_element_list
+    : partition_key_element_list[L] ","[s] partition_key_element[e]
+        {
+            $$ = $L;
+            $$.emplace_back($e);
+            if (!driver.validate(@s, $$, element_kind::column_reference)) {
+                YYABORT;
+            }
+        }
+    | partition_key_element[e]
+        {
+            $$ = driver.element_vector<ast::statement::partition_key_element>();
+            $$.emplace_back($e);
+        }
+    ;
+
+partition_key_element
+    : column_name[n]
+        {
+            $$ = ast::statement::partition_key_element(
+                    driver.node<ast::scalar::variable_reference>($n, @n),
+                    nullptr,
+                    @$);
         }
     ;
 
@@ -4991,4 +5037,6 @@ contextual_identifier
     | VALUE[t] { $$ = driver.to_regular_identifier($t, @$); }
     | CATALOG[t] { $$ = driver.to_regular_identifier($t, @$); }
     | SERVER[t] { $$ = driver.to_regular_identifier($t, @$); }
+    | PARTITION[t] { $$ = driver.to_regular_identifier($t, @$); }
+    | RANGE[t] { $$ = driver.to_regular_identifier($t, @$); }
     ;

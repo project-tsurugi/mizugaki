@@ -574,6 +574,7 @@ TEST_F(analyze_statement_table_definition_test, description) {
             },
             {},
             {},
+            {},
             desc_table,
     });
     auto alternative = std::get_if<statement_result_type>(&r);
@@ -640,6 +641,7 @@ TEST_F(analyze_statement_table_definition_test, duplicate_target_if_not_exists) 
                             ast::type::simple { ast::type::kind::integer },
                     },
             },
+            {},
             {
                     ast::statement::table_definition_option::if_not_exists,
             },
