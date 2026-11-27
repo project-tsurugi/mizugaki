@@ -1802,6 +1802,37 @@ TEST_F(analyze_statement_table_definition_test, partition_virtual_column_extract
     EXPECT_EQ(virtual_key_of(r).prefix_extractor(), p::prefix_extractor { p::date_truncate { p::date_unit::day } });
 }
 
+TEST_F(analyze_statement_table_definition_test, partition_virtual_column_extract_date_date) {
+    // NOTE: EXTRACT(DATE FROM ...) is a synonym of EXTRACT(YEAR TO DAY FROM ...)
+    declare_function("date", ttype::date {}, ttype::date {});
+    auto r = analyze_statement(context(), virtual_column_table(
+            ast::type::simple { ast::type::kind::date },
+            {
+                    { id("k") },
+                    virtual_column(ast::scalar::extract_expression { ast::scalar::extract_field_kind::date, vref(id("v")) }),
+            }));
+    ASSERT_TRUE(std::holds_alternative<statement_result_type>(r)) << diagnostics();
+    expect_no_error();
+
+    namespace p = ::yugawara::storage::partition;
+    EXPECT_EQ(virtual_key_of(r).prefix_extractor(), p::prefix_extractor { p::date_truncate { p::date_unit::day } });
+}
+
+TEST_F(analyze_statement_table_definition_test, partition_virtual_column_extract_timestamp_date) {
+    declare_function("date", ttype::date {}, ttype::time_point {});
+    auto r = analyze_statement(context(), virtual_column_table(
+            ast::type::datetime { ast::type::kind::timestamp },
+            {
+                    { id("k") },
+                    virtual_column(ast::scalar::extract_expression { ast::scalar::extract_field_kind::date, vref(id("v")) }),
+            }));
+    ASSERT_TRUE(std::holds_alternative<statement_result_type>(r)) << diagnostics();
+    expect_no_error();
+
+    namespace p = ::yugawara::storage::partition;
+    EXPECT_EQ(virtual_key_of(r).prefix_extractor(), p::prefix_extractor { p::timestamp_truncate { p::timestamp_unit::day } });
+}
+
 TEST_F(analyze_statement_table_definition_test, partition_virtual_column_extract_year) {
     declare_function("extract_year", ttype::int4 {}, ttype::time_point {});
     auto r = analyze_statement(context(), virtual_column_table(

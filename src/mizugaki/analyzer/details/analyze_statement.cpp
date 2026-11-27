@@ -1573,6 +1573,7 @@ public:
             switch (field) {
                 case kind::year: return virtual_column_source { *column, p::date_truncate { p::date_unit::year } };
                 case kind::year_to_month: return virtual_column_source { *column, p::date_truncate { p::date_unit::month } };
+                case kind::date:
                 case kind::year_to_day: return virtual_column_source { *column, p::date_truncate { p::date_unit::day } };
                 default: break;
             }
@@ -1580,6 +1581,7 @@ public:
             switch (field) {
                 case kind::year: return virtual_column_source { *column, p::timestamp_truncate { p::timestamp_unit::year } };
                 case kind::year_to_month: return virtual_column_source { *column, p::timestamp_truncate { p::timestamp_unit::month } };
+                case kind::date:
                 case kind::year_to_day: return virtual_column_source { *column, p::timestamp_truncate { p::timestamp_unit::day } };
                 case kind::year_to_hour: return virtual_column_source { *column, p::timestamp_truncate { p::timestamp_unit::hour } };
                 case kind::year_to_minute: return virtual_column_source { *column, p::timestamp_truncate { p::timestamp_unit::minute } };
